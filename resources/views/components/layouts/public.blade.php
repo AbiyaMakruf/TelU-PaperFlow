@@ -10,12 +10,12 @@
 </head>
 <body class="min-h-screen bg-warm text-ink antialiased">
     <header class="border-b border-white/10 bg-navy text-white">
-        <div class="container-page flex min-h-20 items-center justify-between">
+        <div class="container-page flex min-h-18 items-center justify-between gap-3 py-3 sm:min-h-20">
             <x-brand class="text-white" />
-            <a href="{{ route('login') }}" class="text-sm font-bold text-white/70 hover:text-orange">Login tim editorial</a>
+            <a href="{{ route('login') }}" class="shrink-0 text-right text-xs font-bold text-white/70 hover:text-orange sm:text-sm">Login tim editorial</a>
         </div>
     </header>
-    <main class="container-page py-10 sm:py-14">
+    <main class="container-page py-7 sm:py-14">
         @if (session('success'))
             <div class="mb-6 rounded-xl border border-success/20 bg-success/10 px-5 py-4 text-sm font-bold text-success">{{ session('success') }}</div>
         @endif

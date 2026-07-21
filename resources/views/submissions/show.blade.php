@@ -1,6 +1,6 @@
 <x-layouts.app :title="$submission->paper_code" heading="Detail paper">
     <a class="back-link" href="{{ route('submissions.index') }}">&larr; Kembali ke paper</a>
-    <div class="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+    <div class="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div><p class="eyebrow">{{ $submission->conference->name }} · kode internal {{ $submission->paper_code }}</p><h1 class="page-title">{{ $submission->paper_id ?: $submission->paper_code }}</h1><p class="page-subtitle">{{ $submission->title }}</p></div>
         <span class="badge badge-{{ $submission->status->color() }}">{{ $submission->status->label() }}</span>
     </div>
@@ -10,7 +10,7 @@
     <div class="mt-7 grid gap-6 xl:grid-cols-[1fr_340px]">
         <div class="space-y-6">
             <section class="card p-6">
-                <div class="flex items-center justify-between"><h2 class="text-lg font-black text-navy">Data submission</h2><span class="text-xs text-muted">{{ $submission->submitted_at?->timezone($submission->conference->timezone)->format('d M Y H:i') }}</span></div>
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><h2 class="text-lg font-black text-navy">Data submission</h2><span class="text-xs text-muted">{{ $submission->submitted_at?->timezone($submission->conference->timezone)->format('d M Y H:i') }}</span></div>
                 <dl class="mt-5 grid gap-5 sm:grid-cols-2">
                     <div><dt class="text-xs font-bold uppercase tracking-wider text-muted">Corresponding author</dt><dd class="mt-1 font-bold">{{ $submission->corresponding_author_name }}</dd><dd class="text-sm text-muted">{{ $submission->corresponding_author_email }}</dd></div>
                     <div><dt class="text-xs font-bold uppercase tracking-wider text-muted">Telepon</dt><dd class="mt-1">{{ $submission->corresponding_author_phone ?: '-' }}</dd></div>

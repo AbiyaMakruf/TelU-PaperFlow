@@ -8,8 +8,24 @@
     <title>{{ $title ?? 'Paperflow' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-warm text-ink antialiased">
-    <div class="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
+<body class="min-h-screen overflow-x-hidden bg-warm text-ink antialiased">
+    <div class="min-h-screen lg:grid lg:grid-cols-[260px_1fr]" x-data="{ mobileMenu: false }" x-on:keydown.escape.window="mobileMenu = false">
+        <div x-cloak x-show="mobileMenu" x-transition.opacity class="fixed inset-0 z-40 bg-navy/55 backdrop-blur-sm lg:hidden" x-on:click="mobileMenu = false"></div>
+        <aside x-cloak x-show="mobileMenu" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="fixed inset-y-0 left-0 z-50 flex w-[min(84vw,320px)] flex-col overflow-y-auto bg-navy px-5 py-6 text-white shadow-2xl lg:hidden">
+            <div class="flex items-center justify-between"><x-brand class="px-2 text-white" /><button type="button" class="grid size-11 place-items-center rounded-xl bg-white/10 text-xl" x-on:click="mobileMenu = false" aria-label="Tutup menu">&times;</button></div>
+            <nav class="mt-8 space-y-2 text-sm font-semibold">
+                <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}">Dashboard</a>
+                <a href="{{ route('submissions.index') }}" class="nav-link {{ request()->routeIs('submissions.*') ? 'nav-link-active' : '' }}">Paper</a>
+                <a href="{{ route('conferences.index') }}" class="nav-link {{ request()->routeIs('conferences.*') ? 'nav-link-active' : '' }}">Conference</a>
+                <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}">Performa editor</a>
+                <a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}">Audit log</a>
+                @if(auth()->user()->isSuperAdmin())
+                    <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}">Pengguna</a>
+                    <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') ? 'nav-link-active' : '' }}">Monitoring</a>
+                @endif
+            </nav>
+            <div class="mt-auto border-t border-white/10 pt-5"><p class="truncate font-bold">{{ auth()->user()->name }}</p><p class="mt-1 truncate text-xs text-white/55">{{ auth()->user()->email }}</p><form method="POST" action="{{ route('logout') }}" class="mt-4">@csrf<button class="btn w-full border border-white/15 text-white hover:border-orange hover:text-orange">Keluar</button></form></div>
+        </aside>
         <aside class="hidden bg-navy px-5 py-7 text-white lg:flex lg:flex-col">
             <x-brand class="px-2 text-white" />
             <nav class="mt-10 space-y-2 text-sm font-semibold">
@@ -30,13 +46,13 @@
             </div>
         </aside>
         <div class="min-w-0">
-            <header class="flex min-h-18 items-center justify-between gap-4 border-b border-navy/10 bg-white/80 px-5 py-3 backdrop-blur sm:px-8 lg:px-10">
-                <x-brand class="text-navy lg:hidden" />
+            <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-2 border-b border-navy/10 bg-white/90 px-4 py-3 backdrop-blur sm:px-8 lg:px-10">
+                <button type="button" class="grid size-11 shrink-0 place-items-center rounded-xl bg-navy text-xl text-white lg:hidden" x-on:click="mobileMenu = true" aria-label="Buka menu"><span class="-mt-1">☰</span></button>
+                <x-brand class="min-w-0 scale-90 text-navy sm:scale-100 lg:hidden" />
                 <div class="hidden lg:block"><p class="text-xs font-bold uppercase tracking-[.18em] text-muted">Paperflow workspace</p><p class="font-bold text-navy">{{ $heading ?? 'Dashboard' }}</p></div>
-                <nav class="ml-auto flex gap-1 lg:hidden"><a class="btn btn-ghost px-3" href="{{ route('dashboard') }}">Dashboard</a><a class="btn btn-ghost px-3" href="{{ route('submissions.index') }}">Paper</a></nav>
-                <div class="flex items-center gap-3"><a href="{{ route('notifications.index') }}" class="relative grid size-10 place-items-center rounded-full bg-navy/5 font-bold text-navy">N @if(auth()->user()->unreadNotifications()->exists())<span class="absolute right-0 top-0 size-2.5 rounded-full bg-orange"></span>@endif</a>@if(auth()->user()->isSuperAdmin())<span class="badge badge-warning hidden sm:inline-flex">Superadmin</span>@endif<span class="grid size-10 place-items-center rounded-full bg-navy font-bold text-white">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span></div>
+                <div class="ml-auto flex items-center gap-2 sm:gap-3"><a href="{{ route('notifications.index') }}" class="relative grid size-10 place-items-center rounded-full bg-navy/5 font-bold text-navy" aria-label="Notifikasi">N @if(auth()->user()->unreadNotifications()->exists())<span class="absolute right-0 top-0 size-2.5 rounded-full bg-orange"></span>@endif</a>@if(auth()->user()->isSuperAdmin())<span class="badge badge-warning hidden sm:inline-flex">Superadmin</span>@endif<span class="hidden size-10 place-items-center rounded-full bg-navy font-bold text-white sm:grid">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span></div>
             </header>
-            <main class="p-5 sm:p-8 lg:p-10"><x-flash />{{ $slot }}</main>
+            <main class="min-w-0 p-4 sm:p-8 lg:p-10"><x-flash />{{ $slot }}</main>
         </div>
     </div>
 </body>

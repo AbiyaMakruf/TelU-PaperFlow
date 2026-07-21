@@ -14,7 +14,7 @@
     <div class="mt-8 grid gap-6 xl:grid-cols-[1.4fr_.6fr]">
         <section class="card overflow-hidden">
             <div class="flex items-center justify-between border-b border-navy/10 px-6 py-5"><div><h2 class="font-extrabold text-navy">Paper terbaru</h2><p class="mt-1 text-xs text-muted">Submission dan assignment terakhir</p></div></div>
-            <div class="overflow-x-auto">
+            <div class="hidden overflow-x-auto sm:block">
                 <table class="data-table">
                     <thead><tr><th>Paper</th><th>Conference</th><th>Status</th><th>PIC</th></tr></thead>
                     <tbody>
@@ -25,6 +25,16 @@
                     @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="divide-y divide-navy/10 sm:hidden">
+                @forelse ($recentSubmissions as $submission)
+                    <a href="{{ route('submissions.show', $submission) }}" class="block p-5 active:bg-warm">
+                        <div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="truncate font-black text-navy">{{ $submission->paper_id ?: $submission->paper_code ?: 'Belum bernomor' }}</p><p class="mt-1 line-clamp-2 text-sm">{{ $submission->title }}</p></div><x-status-badge :status="$submission->status" /></div>
+                        <div class="mt-3 flex items-center justify-between gap-3 text-xs text-muted"><span class="truncate">{{ $submission->conference->name }}</span><span class="shrink-0">PIC: {{ $submission->editor?->name ?? $submission->reviewer?->name ?? '-' }}</span></div>
+                    </a>
+                @empty
+                    <p class="p-8 text-center text-sm text-muted">Belum ada paper pada workspace Anda.</p>
+                @endforelse
             </div>
         </section>
         <section class="card p-6">

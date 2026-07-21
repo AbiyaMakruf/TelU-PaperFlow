@@ -1,4 +1,10 @@
 import './bootstrap';
+import Alpine from 'alpinejs';
+import collapse from '@alpinejs/collapse';
+
+Alpine.plugin(collapse);
+window.Alpine = Alpine;
+Alpine.start();
 
 document.addEventListener('click', (event) => {
     const removeButton = event.target.closest('[data-builder-remove]');

@@ -17,7 +17,7 @@ Production data services:
 
 - Laravel 12
 - PHP `^8.2`; `ext-zip` is required for DOCX preview
-- Blade, Alpine.js, Tailwind CSS 4, Vite
+- Blade, Alpine.js with the Collapse plugin, Tailwind CSS 4, Vite
 - PostgreSQL 17 in Supabase; SQLite is used by automated tests
 - Database queue driver
 - The Composer platform is pinned to PHP 8.2 for dependency resolution
@@ -268,6 +268,7 @@ Preserve user changes and never commit `.env`, credentials, runtime logs, tempor
 
 - Keep Indonesian UI copy consistent and understandable to non-technical editorial staff.
 - Preserve the navy/orange/warm visual system unless conference branding overrides public surfaces.
+- Keep navigation, tables, forms, and workflow actions usable at 320px mobile width; important data tables should have a card alternative rather than relying only on horizontal scrolling.
 - Keep authorization server-side and scope all operational views to visible conferences.
 - Record meaningful administrative and workflow mutations in the audit log.
 - Send assignment/status notifications through the database notification channel.
