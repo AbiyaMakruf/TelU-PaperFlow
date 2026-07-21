@@ -1,6 +1,7 @@
 <x-layouts.app title="Paper" heading="Paper">
     <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div><p class="eyebrow">Editorial pipeline</p><h1 class="page-title">Semua paper</h1><p class="page-subtitle">Pantau submission, PIC, dan tahap pemeriksaan dalam satu tabel.</p></div>
+        <a class="btn btn-secondary" href="{{ route('submissions.export', request()->only(['conference', 'status'])) }}">Export CSV</a>
     </div>
 
     <form class="card mt-7 grid gap-4 p-5 md:grid-cols-[1fr_220px_220px_auto]">

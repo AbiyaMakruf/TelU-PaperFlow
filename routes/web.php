@@ -11,9 +11,11 @@ use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ConferenceController;
 use App\Http\Controllers\ConferenceMemberController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\FormBuilderController;
 use App\Http\Controllers\PublicSubmissionController;
 use App\Http\Controllers\SubmissionController;
+use App\Http\Controllers\SubmissionExportController;
 use App\Models\Conference;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +46,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
         Route::get('/papers', [SubmissionController::class, 'index'])->name('submissions.index');
+        Route::get('/papers-export.csv', SubmissionExportController::class)->name('submissions.export');
         Route::get('/papers/{submission}', [SubmissionController::class, 'show'])->name('submissions.show');
         Route::post('/papers/{submission}/accept', [SubmissionController::class, 'accept'])->name('submissions.accept');
         Route::post('/papers/{submission}/correction', [SubmissionController::class, 'requestCorrection'])->name('submissions.correction');
@@ -64,6 +67,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/conferences/{conference}/form/{form}/publish', [FormBuilderController::class, 'publish'])->name('conferences.form.publish');
         Route::get('/conferences/{conference}/checklists', [ChecklistController::class, 'edit'])->name('conferences.checklists.edit');
         Route::put('/conferences/{conference}/checklists', [ChecklistController::class, 'update'])->name('conferences.checklists.update');
+        Route::get('/conferences/{conference}/email-templates', [EmailTemplateController::class, 'edit'])->name('conferences.email-templates.edit');
+        Route::put('/conferences/{conference}/email-templates', [EmailTemplateController::class, 'update'])->name('conferences.email-templates.update');
 
         Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
             Route::resource('users', UserController::class)->except(['show', 'destroy']);

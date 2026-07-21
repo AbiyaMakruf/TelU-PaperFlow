@@ -73,6 +73,16 @@ class EditorialWorkflowTest extends TestCase
         $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
     }
 
+    public function test_conference_admin_can_export_visible_papers_as_csv(): void
+    {
+        [, $admin, , , $submission] = $this->workflowFixture();
+
+        $response = $this->actingAs($admin)->get(route('submissions.export'));
+
+        $response->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString($submission->paper_code, $response->streamedContent());
+    }
+
     /** @return array{Conference, User, User, User, Submission, mixed, mixed} */
     private function workflowFixture(): array
     {

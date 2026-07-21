@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ConferenceRole;
 use App\Models\Conference;
+use App\Models\EmailTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -81,6 +82,41 @@ class ConferenceAdministrationTest extends TestCase
 
         $this->assertSame('published', $form->fresh()->status);
         $this->assertNotNull($form->fresh()->published_at);
+    }
+
+    public function test_conference_admin_can_customize_email_templates(): void
+    {
+        [$conference, $admin] = $this->conferenceWithAdmin();
+        $template = EmailTemplate::create([
+            'conference_id' => $conference->id,
+            'key' => 'revision_requested',
+            'subject' => 'Old subject',
+            'body' => 'Old body',
+        ]);
+
+        $this->actingAs($admin)->put(route('conferences.email-templates.update', $conference), [
+            'templates' => [$template->id => [
+                'subject' => '[{{conference}}] Revisi {{paper_code}}',
+                'body' => 'Halo {{author_name}}, {{feedback}}',
+                'default_cc' => 'chair@example.com, editor@example.com',
+                'is_enabled' => '1',
+            ]],
+        ])->assertRedirect();
+
+        $this->assertSame(['chair@example.com', 'editor@example.com'], $template->fresh()->default_cc);
+    }
+
+    public function test_make_superadmin_command_creates_bootstrap_account(): void
+    {
+        $this->artisan('paperflow:make-superadmin', [
+            'email' => 'owner@paperflow.id',
+            '--name' => 'Paperflow Owner',
+            '--password' => 'Temporary-Password-123!',
+        ])->assertSuccessful();
+
+        $user = User::where('email', 'owner@paperflow.id')->firstOrFail();
+        $this->assertTrue($user->is_super_admin);
+        $this->assertTrue($user->must_change_password);
     }
 
     /** @return array{Conference, User} */
