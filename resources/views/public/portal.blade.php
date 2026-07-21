@@ -90,33 +90,35 @@
                     </form>
                 </div>
 
-                <!-- Live Editorial Checklist Monitoring -->
-                @if($submission->conference->checklistTemplates->isNotEmpty())
-                    <div class="card p-6">
-                        <h2 class="text-lg font-black text-navy">Monitoring Checklist Editorial (Live)</h2>
-                        <p class="text-xs text-muted mt-1">Status kelengkapan format paper berdasarkan pemeriksaan tim editorial.</p>
-                        <div class="mt-4 space-y-2">
-                            @foreach($submission->conference->checklistTemplates as $tmpl)
-                                @foreach($tmpl->items as $item)
-                                    @php $res = isset($checklistResults) ? $checklistResults->get($item->id) : null; @endphp
-                                    <div class="flex items-start justify-between gap-3 p-3 rounded-xl border {{ $res?->is_checked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200' }}">
-                                        <div>
-                                            <p class="text-xs font-extrabold {{ $res?->is_checked ? 'text-emerald-900' : 'text-rose-900' }}">{{ $item->title }}</p>
-                                            @if($item->description)
-                                                <p class="text-[11px] text-slate-600 mt-0.5">{{ $item->description }}</p>
-                                            @endif
-                                            @if($res?->note)
-                                                <p class="text-[11px] font-semibold text-slate-800 mt-1">Catatan: {{ $res->note }}</p>
-                                            @endif
+                <!-- Live Editorial Checklist Monitoring (Only visible after editor requests revision / sends feedback) -->
+                @if(in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true) || $submission->feedback->isNotEmpty())
+                    @if($submission->conference->checklistTemplates->isNotEmpty())
+                        <div class="card p-6">
+                            <h2 class="text-lg font-black text-navy">Monitoring Checklist Editorial (Live)</h2>
+                            <p class="text-xs text-muted mt-1">Status kelengkapan format paper berdasarkan pemeriksaan tim editorial.</p>
+                            <div class="mt-4 space-y-2">
+                                @foreach($submission->conference->checklistTemplates as $tmpl)
+                                    @foreach($tmpl->items as $item)
+                                        @php $res = isset($checklistResults) ? $checklistResults->get($item->id) : null; @endphp
+                                        <div class="flex items-start justify-between gap-3 p-3 rounded-xl border {{ $res?->is_checked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200' }}">
+                                            <div>
+                                                <p class="text-xs font-extrabold {{ $res?->is_checked ? 'text-emerald-900' : 'text-rose-900' }}">{{ $item->title }}</p>
+                                                @if($item->description)
+                                                    <p class="text-[11px] text-slate-600 mt-0.5">{{ $item->description }}</p>
+                                                @endif
+                                                @if($res?->note)
+                                                    <p class="text-[11px] font-semibold text-slate-800 mt-1">Catatan: {{ $res->note }}</p>
+                                                @endif
+                                            </div>
+                                            <span class="badge {{ $res?->is_checked ? 'badge-success' : 'badge-danger' }} shrink-0">
+                                                {{ $res?->is_checked ? '✓ OK' : '✕ Perlu Perbaikan' }}
+                                            </span>
                                         </div>
-                                        <span class="badge {{ $res?->is_checked ? 'badge-success' : 'badge-danger' }} shrink-0">
-                                            {{ $res?->is_checked ? '✓ OK' : '✕ Perlu Perbaikan' }}
-                                        </span>
-                                    </div>
+                                    @endforeach
                                 @endforeach
-                            @endforeach
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 @endif
 
                 @if ($submission->feedback->isNotEmpty())
