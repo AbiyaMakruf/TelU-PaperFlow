@@ -20,6 +20,7 @@ class DashboardController extends Controller
         $conferences = Conference::query()
             ->whereIn('id', $conferenceIds)
             ->withCount('submissions')
+            ->withExists(['formVersions as has_published_form' => fn ($query) => $query->where('status', 'published')])
             ->orderBy('name')
             ->get();
 

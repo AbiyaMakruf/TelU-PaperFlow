@@ -6,6 +6,7 @@ use App\Enums\ConferenceRole;
 use App\Enums\ReviewStage;
 use App\Enums\SubmissionStatus;
 use App\Models\Conference;
+use App\Models\FormVersion;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -115,6 +116,26 @@ class EditorialWorkflowTest extends TestCase
         $response = $this->actingAs($user)->get(route('dashboard'));
 
         $response->assertOk()->assertSee($adminPaper->paper_code)->assertSee($assignedPaper->paper_code)->assertDontSee($hiddenPaper->paper_code);
+    }
+
+    public function test_dashboard_provides_active_links_to_conference_and_public_form(): void
+    {
+        $user = User::factory()->create();
+        $conference = Conference::create(['name' => 'Linked Conf', 'slug' => 'linked-conf', 'status' => 'active']);
+        $conference->memberships()->create(['user_id' => $user->id, 'role' => ConferenceRole::Viewer, 'is_active' => true]);
+        FormVersion::create([
+            'conference_id' => $conference->id,
+            'version' => 1,
+            'status' => 'published',
+            'schema' => [],
+            'published_at' => now(),
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('href="'.route('conferences.show', $conference).'"', false)
+            ->assertSee('href="'.route('public.submission.show', $conference->slug).'"', false);
     }
 
     public function test_inactive_membership_cannot_see_previously_assigned_paper(): void

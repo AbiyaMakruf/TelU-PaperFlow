@@ -31,7 +31,20 @@
             <h2 class="font-extrabold text-navy">Conference</h2>
             <div class="mt-5 space-y-3">
                 @forelse ($conferences as $conference)
-                    <div class="rounded-xl border border-navy/10 p-4"><div class="flex items-center justify-between gap-3"><div class="min-w-0"><p class="truncate font-bold text-navy">{{ $conference->name }}</p><p class="mt-1 text-xs text-muted">{{ $conference->submissions_count }} paper</p></div><span class="badge badge-primary">{{ $conference->status->label() }}</span></div></div>
+                    <div class="rounded-xl border border-navy/10 p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="min-w-0"><a class="truncate font-bold text-navy hover:text-orange" href="{{ route('conferences.show', $conference) }}">{{ $conference->name }}</a><p class="mt-1 text-xs text-muted">{{ $conference->submissions_count }} paper · /{{ $conference->slug }}</p></div>
+                            <span class="badge badge-primary">{{ $conference->status->label() }}</span>
+                        </div>
+                        <div class="mt-4 flex flex-wrap gap-2 border-t border-navy/8 pt-3">
+                            <a class="btn btn-ghost px-3 py-2 text-xs" href="{{ route('conferences.show', $conference) }}">Buka conference</a>
+                            @if ($conference->has_published_form && $conference->isSubmissionOpen())
+                                <a class="btn btn-secondary px-3 py-2 text-xs" href="{{ route('public.submission.show', $conference->slug) }}" target="_blank" rel="noopener">Buka form ↗</a>
+                            @else
+                                <span class="inline-flex items-center px-3 py-2 text-xs font-semibold text-muted">Form belum aktif</span>
+                            @endif
+                        </div>
+                    </div>
                 @empty
                     <p class="text-sm text-muted">Belum memiliki akses conference.</p>
                 @endforelse
