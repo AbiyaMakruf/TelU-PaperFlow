@@ -6,15 +6,15 @@
     <title>Paperflow · Editorial workflow</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-warm text-ink antialiased" x-data="{ openSearch: false, search: '' }">
-    <header class="border-b border-navy/10 bg-warm/90 backdrop-blur">
+<body class="min-h-screen flex flex-col justify-between bg-warm text-ink antialiased" x-data="{ openSearch: false, search: '' }">
+    <header class="border-b border-navy/10 bg-warm/90 backdrop-blur shrink-0">
         <div class="container-page flex h-20 items-center justify-between">
             <x-brand class="text-navy" />
             <a href="{{ route('login') }}" class="btn btn-secondary">Login editorial</a>
         </div>
     </header>
-    <main>
-        <section class="container-page grid min-h-[650px] items-center gap-12 py-20 lg:grid-cols-[1.1fr_.9fr]">
+    <main class="flex-1 flex flex-col justify-center">
+        <section class="container-page grid items-center gap-12 py-12 lg:grid-cols-[1.1fr_.9fr]">
             <div>
                 <p class="text-sm font-black uppercase tracking-[.24em] text-orange">Conference editorial workflow</p>
                 <h1 class="mt-5 max-w-3xl text-5xl font-black leading-[1.05] text-navy sm:text-6xl">Dari submission hingga siap ke EDAS.</h1>
@@ -66,6 +66,6 @@
             </div>
         </div>
     </main>
-    <footer class="bg-navy py-8 text-white/60"><div class="container-page flex flex-wrap justify-between gap-3 text-sm"><span>© {{ date('Y') }} Paperflow</span><span>Editorial work, clearly moving.</span></div></footer>
+    <footer class="bg-navy py-8 text-white/60 shrink-0"><div class="container-page flex flex-wrap justify-between gap-3 text-sm"><span>© {{ date('Y') }} Paperflow</span><span>Editorial work, clearly moving.</span></div></footer>
 </body>
 </html>
