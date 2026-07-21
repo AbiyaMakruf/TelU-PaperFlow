@@ -10,6 +10,7 @@ use App\Services\ConferenceProvisioner;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class DemoUsersSeeder extends Seeder
@@ -33,6 +34,7 @@ class DemoUsersSeeder extends Seeder
                     ['email' => $email],
                     [
                         'name' => $name,
+                        'username' => Str::before($email, '@'),
                         'password' => Hash::make($password),
                         'email_verified_at' => now(),
                         'is_super_admin' => $email === 'superadmin@paperflow.test',

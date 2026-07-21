@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -19,7 +19,10 @@ class UserController extends Controller
         $users = User::query()
             ->withCount('conferenceMemberships')
             ->when($request->string('search')->toString(), fn ($query, $search) => $query
-                ->where(fn ($scope) => $scope->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")))
+                ->where(fn ($scope) => $scope
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")))
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
@@ -34,23 +37,25 @@ class UserController extends Controller
 
     public function store(Request $request, AuditLogger $audit): RedirectResponse
     {
+        $request->merge(['username' => Str::lower(trim($request->string('username')->toString()))]);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'username' => ['required', 'string', 'min:3', 'max:50', 'alpha_dash:ascii', 'unique:users,username'],
             'is_super_admin' => ['nullable', 'boolean'],
         ]);
 
         $user = User::create([
-            ...$validated,
+            'name' => $validated['name'],
+            'username' => Str::lower($validated['username']),
+            'email' => null,
             'is_super_admin' => $request->boolean('is_super_admin'),
-            'password' => Str::password(32),
+            'password' => Hash::make('user1234'),
             'must_change_password' => true,
             'is_active' => true,
         ]);
-        Password::sendResetLink(['email' => $user->email]);
-        $audit->record('user.created', $user, newValues: ['email' => $user->email, 'is_super_admin' => $user->is_super_admin]);
+        $audit->record('user.created', $user, newValues: ['username' => $user->username, 'is_super_admin' => $user->is_super_admin]);
 
-        return redirect()->route('admin.users.index')->with('success', 'Akun dibuat dan tautan aktivasi dikirim.');
+        return redirect()->route('admin.users.index')->with('success', 'Akun dibuat. Password awal pengguna adalah user1234.');
     }
 
     public function edit(User $user): View
@@ -60,9 +65,14 @@ class UserController extends Controller
 
     public function update(Request $request, User $user, AuditLogger $audit): RedirectResponse
     {
+        $request->merge([
+            'username' => Str::lower(trim($request->string('username')->toString())),
+            'email' => $request->filled('email') ? Str::lower(trim($request->string('email')->toString())) : null,
+        ]);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user)],
+            'username' => ['required', 'string', 'min:3', 'max:50', 'alpha_dash:ascii', Rule::unique('users')->ignore($user)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users')->ignore($user)],
             'is_active' => ['nullable', 'boolean'],
             'is_super_admin' => ['nullable', 'boolean'],
         ]);
@@ -71,9 +81,11 @@ class UserController extends Controller
             return back()->withErrors(['is_active' => 'Anda tidak dapat menonaktifkan atau mencabut akses superadmin sendiri.']);
         }
 
-        $old = $user->only(['name', 'email', 'is_active', 'is_super_admin']);
+        $old = $user->only(['name', 'username', 'email', 'is_active', 'is_super_admin']);
         $user->update([
-            ...$validated,
+            'name' => $validated['name'],
+            'username' => Str::lower($validated['username']),
+            'email' => filled($validated['email'] ?? null) ? Str::lower($validated['email']) : null,
             'is_active' => $request->boolean('is_active'),
             'is_super_admin' => $request->boolean('is_super_admin'),
         ]);
@@ -82,10 +94,14 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'Akun berhasil diperbarui.');
     }
 
-    public function resendActivation(User $user): RedirectResponse
+    public function resetPassword(User $user, AuditLogger $audit): RedirectResponse
     {
-        Password::sendResetLink(['email' => $user->email]);
+        $user->update([
+            'password' => Hash::make('user1234'),
+            'must_change_password' => true,
+        ]);
+        $audit->record('user.password_reset_to_default', $user, newValues: ['must_change_password' => true]);
 
-        return back()->with('success', 'Tautan aktivasi/reset telah dikirim ulang.');
+        return back()->with('success', 'Password dikembalikan ke user1234. Pengguna wajib mengubahnya saat login berikutnya.');
     }
 }

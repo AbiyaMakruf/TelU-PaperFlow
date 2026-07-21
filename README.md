@@ -5,6 +5,7 @@ Paperflow adalah workspace editorial conference berbasis Laravel. Aplikasi ini m
 ## Fitur
 
 - Satu login staf dengan UI dan izin sesuai role: superadmin, conference admin, editorial, reviewer, dan viewer.
+- Login staf menerima username atau email. Akun baru dibuat dengan nama + username dan password awal `user1234`; login pertama wajib melengkapi email serta mengganti password.
 - Conference dan slug form publik yang dapat diduplikasi.
 - Form builder, checklist editorial/reviewer, dan template email per conference.
 - Submission author tanpa akun melalui `/{slug-conference}`.
@@ -30,7 +31,7 @@ php artisan key:generate
 php artisan migrate
 pnpm install
 pnpm build
-php artisan paperflow:make-superadmin admin@example.com --name="Super Admin"
+php artisan paperflow:make-superadmin admin --email=admin@example.com --name="Super Admin"
 php artisan serve
 ```
 

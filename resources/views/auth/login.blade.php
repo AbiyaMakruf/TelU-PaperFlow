@@ -8,8 +8,8 @@
     <form method="POST" action="{{ route('login.store') }}" class="space-y-5">
         @csrf
         <div>
-            <label class="form-label" for="email">Email</label>
-            <input class="form-input" id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email" placeholder="nama@organisasi.id">
+            <label class="form-label" for="login">Username atau email</label>
+            <input class="form-input" id="login" type="text" name="login" value="{{ old('login') }}" required autofocus autocomplete="username" placeholder="username atau nama@organisasi.id">
         </div>
         <div>
             <div class="flex items-center justify-between">

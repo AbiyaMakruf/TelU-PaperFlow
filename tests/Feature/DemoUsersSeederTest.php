@@ -38,7 +38,7 @@ class DemoUsersSeederTest extends TestCase
             $user = User::where('email', $email)->firstOrFail();
 
             $this->post(route('login.store'), [
-                'email' => $email,
+                'login' => $user->username,
                 'password' => self::DEMO_PASSWORD,
             ])->assertRedirect(route('dashboard'));
             $this->assertAuthenticatedAs($user);

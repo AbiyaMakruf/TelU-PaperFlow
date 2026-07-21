@@ -20,23 +20,26 @@ class AuthenticatedSessionController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        $validated = $request->validate([
+            'login' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
+        $login = Str::lower(trim($validated['login']));
+        $loginField = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $credentials = [$loginField => $login, 'password' => $validated['password']];
 
-        $throttleKey = Str::lower($credentials['email']).'|'.$request->ip();
+        $throttleKey = $login.'|'.$request->ip();
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             throw ValidationException::withMessages([
-                'email' => "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik.",
+                'login' => "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik.",
             ]);
         }
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             RateLimiter::hit($throttleKey, 60);
             throw ValidationException::withMessages([
-                'email' => 'Email atau password tidak sesuai.',
+                'login' => 'Username/email atau password tidak sesuai.',
             ]);
         }
 
@@ -47,7 +50,7 @@ class AuthenticatedSessionController extends Controller
             Auth::logout();
             RateLimiter::hit($throttleKey, 60);
             throw ValidationException::withMessages([
-                'email' => 'Akun Anda tidak aktif. Hubungi superadmin Paperflow.',
+                'login' => 'Akun Anda tidak aktif. Hubungi superadmin Paperflow.',
             ]);
         }
 

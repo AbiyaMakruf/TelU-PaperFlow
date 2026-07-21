@@ -72,7 +72,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
-            Route::post('/users/{user}/resend-activation', [UserController::class, 'resendActivation'])->name('users.resend-activation');
+            Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         });
     });
 });

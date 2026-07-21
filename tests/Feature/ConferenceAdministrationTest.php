@@ -109,12 +109,13 @@ class ConferenceAdministrationTest extends TestCase
     public function test_make_superadmin_command_creates_bootstrap_account(): void
     {
         $this->artisan('paperflow:make-superadmin', [
-            'email' => 'owner@paperflow.id',
+            'username' => 'owner',
+            '--email' => 'owner@paperflow.id',
             '--name' => 'Paperflow Owner',
             '--password' => 'Temporary-Password-123!',
         ])->assertSuccessful();
 
-        $user = User::where('email', 'owner@paperflow.id')->firstOrFail();
+        $user = User::where('username', 'owner')->firstOrFail();
         $this->assertTrue($user->is_super_admin);
         $this->assertTrue($user->must_change_password);
     }
