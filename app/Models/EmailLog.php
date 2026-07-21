@@ -12,7 +12,7 @@ class EmailLog extends Model
 
     protected $fillable = [
         'conference_id', 'submission_id', 'template_key', 'recipient', 'cc', 'subject',
-        'status', 'attempts', 'error', 'sent_at',
+        'status', 'attempts', 'error', 'sent_at', 'sender_name',
     ];
 
     protected function casts(): array

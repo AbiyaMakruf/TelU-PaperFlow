@@ -27,7 +27,10 @@ class SendLoggedEmail implements ShouldQueue
 
         try {
             Mail::raw($this->body, function ($message) {
-                $message->to($this->emailLog->recipient)->subject($this->emailLog->subject);
+                $message->from(
+                    (string) config('mail.from.address'),
+                    $this->emailLog->sender_name ?: (string) config('mail.from.name'),
+                )->to($this->emailLog->recipient)->subject($this->emailLog->subject);
                 if ($this->cc !== []) {
                     $message->cc($this->cc);
                 }

@@ -95,6 +95,7 @@ class ConferenceAdministrationTest extends TestCase
         ]);
 
         $this->actingAs($admin)->put(route('conferences.email-templates.update', $conference), [
+            'email_sender_name' => 'ICoICT Editorial Team',
             'templates' => [$template->id => [
                 'subject' => '[{{conference}}] Revisi {{paper_code}}',
                 'body' => 'Halo {{author_name}}, {{feedback}}',
@@ -104,6 +105,7 @@ class ConferenceAdministrationTest extends TestCase
         ])->assertRedirect();
 
         $this->assertSame(['chair@example.com', 'editor@example.com'], $template->fresh()->default_cc);
+        $this->assertSame('ICoICT Editorial Team', $conference->fresh()->email_sender_name);
     }
 
     public function test_make_superadmin_command_creates_bootstrap_account(): void

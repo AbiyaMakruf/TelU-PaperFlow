@@ -38,6 +38,7 @@ class ConferenceMailer
             'recipient' => $submission->corresponding_author_email,
             'cc' => $recipients,
             'subject' => $subject,
+            'sender_name' => $submission->conference->email_sender_name ?: $submission->conference->name,
             'status' => 'queued',
         ]);
         SendLoggedEmail::dispatch($log, $body, $recipients);

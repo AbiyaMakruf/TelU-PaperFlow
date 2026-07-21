@@ -20,6 +20,7 @@ class Conference extends Model
         'submission_opens_at', 'submission_closes_at', 'settings', 'created_by',
         'google_drive_token', 'google_drive_folder_id', 'google_drive_connected_at',
         'storage_provider',
+        'email_sender_name',
     ];
 
     protected $hidden = ['google_drive_token'];

@@ -43,6 +43,7 @@ class PublicSubmissionTest extends TestCase
         $this->assertNull($submission->files->first()->external_provider);
         Storage::disk('local')->assertExists($submission->files->first()->storage_path);
         $this->assertDatabaseHas('email_logs', ['submission_id' => $submission->id, 'template_key' => 'submission_received']);
+        $this->assertDatabaseHas('email_logs', ['submission_id' => $submission->id, 'sender_name' => 'Paper Conference']);
 
         $token = basename($response->headers->get('Location'));
         $this->get(route('author.portal', $token))->assertOk()->assertSee($submission->paper_code);

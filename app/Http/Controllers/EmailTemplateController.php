@@ -22,11 +22,18 @@ class EmailTemplateController extends Controller
     {
         $this->authorize('update', $conference);
         $validated = $request->validate([
+            'email_sender_name' => ['nullable', 'string', 'max:255'],
             'templates' => ['required', 'array'],
             'templates.*.subject' => ['required', 'string', 'max:500'],
             'templates.*.body' => ['required', 'string', 'max:20000'],
             'templates.*.default_cc' => ['nullable', 'string', 'max:2000'],
             'templates.*.is_enabled' => ['nullable', 'boolean'],
+        ]);
+
+        $conference->update([
+            'email_sender_name' => filled($validated['email_sender_name'] ?? null)
+                ? trim($validated['email_sender_name'])
+                : null,
         ]);
 
         foreach ($conference->emailTemplates as $template) {
