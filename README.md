@@ -50,7 +50,12 @@ APP_DEBUG=false
 APP_URL=https://paperflow.id
 
 DB_CONNECTION=pgsql
-DB_URL=postgresql://...connection-string-server...
+DB_URL=null
+DB_HOST=aws-0-ap-southeast-1.pooler.supabase.com
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USERNAME=postgres.rbwkivxgmadvtlcefrie
+DB_PASSWORD=your-database-password
 DB_SSLMODE=require
 
 PAPERFLOW_STORAGE_DRIVER=supabase
