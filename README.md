@@ -119,6 +119,24 @@ Document root web server harus menunjuk ke `public/`. Pastikan `storage/` dan `b
 4. Publish form lalu ubah status conference menjadi aktif.
 5. Uji satu submission dan pastikan email, signed download, dan queue worker berjalan.
 
+## Akun demo per role
+
+Untuk environment development, isi `PAPERFLOW_DEMO_PASSWORD` di `.env` dengan password minimal 12 karakter, lalu jalankan:
+
+```bash
+php artisan db:seed --class=Database\\Seeders\\DemoUsersSeeder
+```
+
+Seeder bersifat idempotent dan membuat conference `paperflow-demo` beserta akun berikut:
+
+- `superadmin@paperflow.test`
+- `admin@paperflow.test`
+- `editorial@paperflow.test`
+- `reviewer@paperflow.test`
+- `viewer@paperflow.test`
+
+Seluruh akun menggunakan nilai `PAPERFLOW_DEMO_PASSWORD`. Jangan menjalankan seeder akun demo pada production.
+
 ## Quality checks
 
 ```bash
