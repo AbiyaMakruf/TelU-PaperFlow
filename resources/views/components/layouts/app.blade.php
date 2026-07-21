@@ -9,6 +9,15 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen overflow-x-hidden bg-warm text-ink antialiased">
+    @if(session('impersonated_by'))
+        <div class="bg-amber-500 text-slate-950 px-4 py-2 text-sm font-bold flex items-center justify-between z-50 sticky top-0">
+            <span>⚠️ Mode Impersonation Aktif: Masuk sebagai {{ auth()->user()->name }} ({{ auth()->user()->email }}).</span>
+            <form method="POST" action="{{ route('impersonate.leave') }}" class="inline">
+                @csrf
+                <button class="bg-slate-900 text-white text-xs px-3 py-1 rounded-lg hover:bg-slate-800 font-extrabold">Keluar Impersonation &rarr;</button>
+            </form>
+        </div>
+    @endif
     <div class="min-h-screen lg:grid lg:grid-cols-[260px_1fr]" x-data="{ mobileMenu: false }" x-on:keydown.escape.window="mobileMenu = false">
         <div x-cloak x-show="mobileMenu" x-transition.opacity class="fixed inset-0 z-40 bg-navy/55 backdrop-blur-sm lg:hidden" x-on:click="mobileMenu = false"></div>
         <aside x-cloak x-show="mobileMenu" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="fixed inset-y-0 left-0 z-50 flex w-[min(84vw,320px)] flex-col overflow-y-auto bg-navy px-5 py-6 text-white shadow-2xl lg:hidden">

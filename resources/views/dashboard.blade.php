@@ -6,11 +6,60 @@
             <p class="mt-2 text-sm text-muted">Lihat paper yang membutuhkan perhatian Anda.</p>
         </div>
     </div>
-    <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        @foreach ([['Total paper', $stats['total'], 'bg-navy'], ['Sedang diproses', $stats['active'], 'bg-orange'], ['Menunggu author', $stats['waiting'], 'bg-warning'], ['Selesai', $stats['done'], 'bg-success']] as $stat)
-            <div class="card p-5"><div class="flex items-center justify-between"><p class="text-sm font-semibold text-muted">{{ $stat[0] }}</p><span class="size-2.5 rounded-full {{ $stat[2] }}"></span></div><p class="mt-3 text-3xl font-black text-navy">{{ number_format($stat[1]) }}</p></div>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        @foreach ([['Total paper', $stats['total'], 'bg-navy'], ['Sedang diproses', $stats['active'], 'bg-orange'], ['Menunggu author', $stats['waiting'], 'bg-warning'], ['Selesai', $stats['done'], 'bg-success'], ['Rata-rata Waktu (Turnaround)', ($turnaroundDays ?? 0).' hari', 'bg-info']] as $stat)
+            <div class="card p-5"><div class="flex items-center justify-between"><p class="text-sm font-semibold text-muted">{{ $stat[0] }}</p><span class="size-2.5 rounded-full {{ $stat[2] }}"></span></div><p class="mt-3 text-3xl font-black text-navy">{{ is_numeric($stat[1]) ? number_format($stat[1]) : $stat[1] }}</p></div>
         @endforeach
     </div>
+
+    <!-- Deep Analytics Section -->
+    <div class="mt-8 grid gap-6 md:grid-cols-2">
+        <!-- Status Distribution Chart/List -->
+        <div class="card p-6">
+            <h2 class="font-extrabold text-navy text-lg">Distribusi Status Paper</h2>
+            <p class="text-xs text-muted mt-1">Penyebaran status pada seluruh paper di workspace Anda</p>
+            <div class="mt-4 space-y-3">
+                @php $totalSub = max(1, array_sum($statusDistribution ?? [])); @endphp
+                @foreach(\App\Enums\SubmissionStatus::cases() as $st)
+                    @php
+                        $count = $statusDistribution[$st->value] ?? 0;
+                        $pct = round(($count / $totalSub) * 100);
+                    @endphp
+                    @if($count > 0)
+                        <div>
+                            <div class="flex items-center justify-between text-xs font-semibold mb-1">
+                                <span class="text-slate-800">{{ $st->label() }}</span>
+                                <span class="text-slate-500">{{ $count }} paper ({{ $pct }}%)</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div class="bg-orange h-2 rounded-full" style="width: {{ $pct }}%"></div>
+                            </div>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        </div>
+
+        <!-- PIC Workload Breakdown -->
+        <div class="card p-6">
+            <h2 class="font-extrabold text-navy text-lg">Beban Kerja PIC (Editor/Reviewer)</h2>
+            <p class="text-xs text-muted mt-1">Jumlah paper aktif dan total penugasan per staf</p>
+            <div class="mt-4 space-y-3">
+                @forelse($picWorkload ?? [] as $name => $wl)
+                    <div class="flex items-center justify-between p-3 bg-warm/60 rounded-xl">
+                        <div>
+                            <p class="text-sm font-bold text-navy">{{ $name }}</p>
+                            <p class="text-xs text-muted">{{ $wl['active'] ?? 0 }} paper aktif</p>
+                        </div>
+                        <span class="badge badge-primary">{{ $wl['total'] ?? 0 }} total</span>
+                    </div>
+                @empty
+                    <p class="text-sm text-muted italic">Belum ada data penugasan PIC.</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
     <div class="mt-8 grid gap-6 xl:grid-cols-[1.4fr_.6fr]">
         <section class="card overflow-hidden">
             <div class="flex items-center justify-between border-b border-navy/10 px-6 py-5"><div><h2 class="font-extrabold text-navy">Paper terbaru</h2><p class="mt-1 text-xs text-muted">Submission dan assignment terakhir</p></div></div>

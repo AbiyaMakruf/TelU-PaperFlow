@@ -5,6 +5,13 @@
         <span class="badge badge-{{ $submission->status->color() }}">{{ $submission->status->label() }}</span>
     </div>
 
+    @if($submission->is_flagged_duplicate)
+        <div class="mt-6 rounded-xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800">
+            <p class="font-extrabold text-rose-900">⚠️ Peringatan Potensi Duplikat Submission</p>
+            <p class="mt-1">{{ $submission->duplicate_notes }}</p>
+        </div>
+    @endif
+
     @if($errors->any())<div class="mt-6 rounded-xl border border-danger/20 bg-danger/8 p-4 text-sm text-danger"><ul class="list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 
     <div class="mt-7 grid gap-6 xl:grid-cols-[1fr_340px]">
@@ -73,8 +80,37 @@
         <aside class="space-y-6">
             @can('assign', $submission)
                 <section class="card p-6"><h2 class="font-black text-navy">Assignment PIC</h2>
-                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="mt-4 space-y-3">@csrf<input type="hidden" name="role" value="editorial"><select class="form-input" name="user_id" required><option value="">Pilih editor...</option>@foreach($editors as $member)<option value="{{ $member->user_id }}" @selected($submission->editor_id === $member->user_id)>{{ $member->user->name }}</option>@endforeach</select><label><span class="form-label">Format dokumen author *</span><select class="form-input" name="manuscript_format" required><option value="">Pilih format...</option><option value="docx" @selected($submission->manuscript_format === 'docx')>Microsoft Word (.docx)</option><option value="latex" @selected($submission->manuscript_format === 'latex')>LaTeX (.zip)</option></select></label><input class="form-input" type="datetime-local" name="deadline_at" value="{{ $submission->deadline_at?->format('Y-m-d\TH:i') }}"><input class="form-input" name="note" placeholder="Catatan assignment"><button class="btn btn-secondary w-full">Assign editor</button></form>
-                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="mt-5 space-y-3 border-t border-navy/10 pt-5">@csrf<input type="hidden" name="role" value="reviewer"><select class="form-input" name="user_id" required><option value="">Pilih reviewer...</option>@foreach($reviewers as $member)<option value="{{ $member->user_id }}" @selected($submission->reviewer_id === $member->user_id)>{{ $member->user->name }}</option>@endforeach</select><button class="btn btn-secondary w-full">Assign reviewer</button></form>
+                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="mt-4 space-y-3">
+                        @csrf
+                        <input type="hidden" name="role" value="editorial">
+                        <select class="form-input" name="user_id" required>
+                            <option value="">Pilih editor...</option>
+                            @foreach($editors as $member)
+                                <option value="{{ $member->user_id }}" @selected($submission->editor_id === $member->user_id)>{{ $member->user->name }}</option>
+                            @endforeach
+                        </select>
+                        <label><span class="form-label">Format dokumen author *</span><select class="form-input" name="manuscript_format" required><option value="">Pilih format...</option><option value="docx" @selected($submission->manuscript_format === 'docx')>Microsoft Word (.docx)</option><option value="latex" @selected($submission->manuscript_format === 'latex')>LaTeX (.zip)</option></select></label>
+                        <input class="form-input" type="datetime-local" name="deadline_at" value="{{ $submission->deadline_at?->format('Y-m-d\TH:i') }}">
+                        @if($submission->editor_id)
+                            <input class="form-input border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="Alasan mengganti Editor (wajib)">
+                        @endif
+                        <input class="form-input" name="note" placeholder="Catatan assignment">
+                        <button class="btn btn-secondary w-full">Assign editor</button>
+                    </form>
+                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="mt-5 space-y-3 border-t border-navy/10 pt-5">
+                        @csrf
+                        <input type="hidden" name="role" value="reviewer">
+                        <select class="form-input" name="user_id" required>
+                            <option value="">Pilih reviewer...</option>
+                            @foreach($reviewers as $member)
+                                <option value="{{ $member->user_id }}" @selected($submission->reviewer_id === $member->user_id)>{{ $member->user->name }}</option>
+                            @endforeach
+                        </select>
+                        @if($submission->reviewer_id)
+                            <input class="form-input border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="Alasan mengganti Reviewer (wajib)">
+                        @endif
+                        <button class="btn btn-secondary w-full">Assign reviewer</button>
+                    </form>
                 </section>
             @endcan
 

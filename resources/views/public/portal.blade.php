@@ -11,6 +11,85 @@
 
         <div class="mt-8 grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
             <section class="space-y-6">
+                <!-- Edit Detail Submission Card -->
+                <div class="card p-6" x-data="{ openEdit: false }">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-black text-navy">Detail Submission</h2>
+                            <p class="text-xs text-muted">Judul, data corresponding author, dan daftar co-authors.</p>
+                        </div>
+                        <button type="button" @click="openEdit = !openEdit" class="btn btn-secondary text-xs">
+                            <span x-text="openEdit ? 'Batal Edit' : 'Edit Detail Submission'"></span>
+                        </button>
+                    </div>
+
+                    <div x-show="!openEdit" class="mt-5 space-y-3 text-sm">
+                        <div><span class="text-xs font-bold text-muted">Judul Paper:</span><p class="font-bold text-navy mt-0.5">{{ $submission->title }}</p></div>
+                        <div class="grid grid-cols-2 gap-4 pt-2">
+                            <div><span class="text-xs font-bold text-muted">Corresponding Author:</span><p class="font-semibold text-navy mt-0.5">{{ $submission->corresponding_author_name }}</p><p class="text-xs text-muted">{{ $submission->corresponding_author_email }}</p></div>
+                            <div><span class="text-xs font-bold text-muted">Nomor Telepon/WA:</span><p class="font-semibold text-navy mt-0.5">{{ $submission->corresponding_author_phone ?: '-' }}</p></div>
+                        </div>
+                        @if($submission->authors->where('is_corresponding', false)->isNotEmpty())
+                            <div class="pt-2">
+                                <span class="text-xs font-bold text-muted">Co-Authors:</span>
+                                <ul class="mt-1 list-disc list-inside text-xs text-slate-700 space-y-1">
+                                    @foreach($submission->authors->where('is_corresponding', false) as $co)
+                                        <li>{{ $co->name }} ({{ $co->email ?: 'Tanpa email' }}) - {{ $co->affiliation ?: '-' }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    </div>
+
+                    <form x-show="openEdit" x-cloak method="POST" action="{{ route('author.details.update', $token) }}" class="mt-5 space-y-4">
+                        @csrf
+                        @method('PUT')
+                        <div>
+                            <label class="form-label">Judul Paper *</label>
+                            <input class="form-input" name="title" value="{{ old('title', $submission->title) }}" required>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="form-label">Nama Corresponding Author *</label>
+                                <input class="form-input" name="author_name" value="{{ old('author_name', $submission->corresponding_author_name) }}" required>
+                            </div>
+                            <div>
+                                <label class="form-label">Email Corresponding Author *</label>
+                                <input class="form-input" type="email" name="author_email" value="{{ old('author_email', $submission->corresponding_author_email) }}" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Nomor Telepon/WA *</label>
+                            <input class="form-input" name="author_phone" value="{{ old('author_phone', $submission->corresponding_author_phone) }}" required>
+                        </div>
+
+                        <!-- Co-authors list editor -->
+                        <div class="pt-2" x-data="{
+                            coAuthors: {{ Js::from($submission->authors->where('is_corresponding', false)->values()->map(fn($a) => ['name' => $a->name, 'email' => $a->email, 'affiliation' => $a->affiliation])) }}
+                        }">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="form-label">Daftar Co-Authors</span>
+                                <button type="button" @click="coAuthors.push({name: '', email: '', affiliation: ''})" class="text-xs font-bold text-orange hover:underline">+ Tambah Co-author</button>
+                            </div>
+                            <template x-for="(co, index) in coAuthors" :key="index">
+                                <div class="grid gap-2 sm:grid-cols-3 items-center mb-2 p-3 bg-warm/50 rounded-xl">
+                                    <input class="form-input text-xs" :name="`co_authors[${index}][name]`" x-model="co.name" placeholder="Nama lengkap *" required>
+                                    <input class="form-input text-xs" type="email" :name="`co_authors[${index}][email]`" x-model="co.email" placeholder="Email (opsional)">
+                                    <div class="flex items-center gap-2">
+                                        <input class="form-input text-xs flex-1" :name="`co_authors[${index}][affiliation]`" x-model="co.affiliation" placeholder="Afiliasi (opsional)">
+                                        <button type="button" @click="coAuthors.splice(index, 1)" class="text-rose-600 font-bold px-2">✕</button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-3">
+                            <button type="button" @click="openEdit = false" class="btn btn-ghost">Batal</button>
+                            <button class="btn btn-primary">Simpan Perubahan</button>
+                        </div>
+                    </form>
+                </div>
+
                 @if ($submission->feedback->isNotEmpty())
                     <div class="card p-6">
                         <h2 class="text-lg font-black text-navy">Catatan dari tim</h2>

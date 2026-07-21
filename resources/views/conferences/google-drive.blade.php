@@ -36,6 +36,20 @@
             </div>
         </section>
 
+        <!-- Storage Migration Tool -->
+        <section class="card mt-6 p-6">
+            <h2 class="font-extrabold text-navy">Migrasi Berkas Antar Provider</h2>
+            <p class="mt-1 text-xs text-muted">Pindahkan seluruh berkas lama dari provider sebelumnya ke provider penyimpanan yang aktif saat ini.</p>
+            <form method="POST" action="{{ route('conferences.storage-provider.migrate', $conference) }}" class="mt-4 flex flex-wrap items-center gap-3">
+                @csrf
+                <select name="target_provider" class="form-input text-xs w-auto" required>
+                    <option value="supabase">Migrasi ke Supabase Storage</option>
+                    <option value="google_drive" @selected($conference->usesGoogleDrive())>Migrasi ke Google Drive</option>
+                </select>
+                <button class="btn btn-secondary text-xs" type="submit" onclick="return confirm('Apakah Anda yakin ingin memindahkan seluruh berkas conference ini?')">Jalankan Migrasi Berkas</button>
+            </form>
+        </section>
+
         <div class="mt-5 rounded-xl bg-navy/5 p-5 text-sm leading-6 text-muted">
             Buat tepat satu folder di Google Drive dengan nama <strong class="text-navy">{{ $drive->folderName($conference) }}</strong>. Paperflow akan mencari folder tersebut saat otorisasi dan menggunakan nama paper code untuk memperbarui file bila nama yang sama sudah ada.
         </div>

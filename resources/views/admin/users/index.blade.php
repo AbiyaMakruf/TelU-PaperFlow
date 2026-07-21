@@ -10,7 +10,21 @@
     <div class="card mt-5 overflow-hidden">
         <div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Pengguna</th><th>Akses</th><th>Conference</th><th>Status</th><th></th></tr></thead><tbody>
             @forelse ($users as $user)
-                <tr><td><p class="font-bold text-navy">{{ $user->name }}</p><p class="text-xs text-muted">{{ $user->username ? '@'.$user->username : 'Belum ada username' }}{{ $user->email ? ' · '.$user->email : '' }}</p></td><td>{{ $user->is_super_admin ? 'Superadmin' : 'Staf' }}</td><td>{{ $user->conference_memberships_count }}</td><td><span class="badge {{ $user->is_active ? 'badge-success' : 'badge-danger' }}">{{ $user->is_active ? 'Aktif' : 'Nonaktif' }}</span></td><td class="text-right"><a class="text-sm font-bold text-orange" href="{{ route('admin.users.edit', $user) }}">Edit</a></td></tr>
+                <tr>
+                    <td><p class="font-bold text-navy">{{ $user->name }}</p><p class="text-xs text-muted">{{ $user->username ? '@'.$user->username : 'Belum ada username' }}{{ $user->email ? ' · '.$user->email : '' }}</p></td>
+                    <td>{{ $user->is_super_admin ? 'Superadmin' : 'Staf' }}</td>
+                    <td>{{ $user->conference_memberships_count }}</td>
+                    <td><span class="badge {{ $user->is_active ? 'badge-success' : 'badge-danger' }}">{{ $user->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
+                    <td class="text-right flex items-center justify-end gap-3">
+                        @if(auth()->id() !== $user->id)
+                            <form method="POST" action="{{ route('admin.users.impersonate', $user) }}" class="inline">
+                                @csrf
+                                <button class="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg">Impersonate 👤</button>
+                            </form>
+                        @endif
+                        <a class="text-sm font-bold text-orange" href="{{ route('admin.users.edit', $user) }}">Edit</a>
+                    </td>
+                </tr>
             @empty<tr><td colspan="5" class="py-12 text-center text-muted">Belum ada pengguna.</td></tr>@endforelse
         </tbody></table></div>
     </div>
