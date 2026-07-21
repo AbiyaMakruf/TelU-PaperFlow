@@ -225,7 +225,7 @@ class SubmissionController extends Controller
     {
         $this->authorize('view', $submission);
         abort_unless($file->submission_id === $submission->id, 404);
-        $copy = $storage->getPreviewCopy($file);
+        $copy = $storage->temporaryCopy($file);
         $extension = strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION));
         if ($extension === 'pdf') {
             return response()->file($copy['path'], ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$file->original_name.'"'])->deleteFileAfterSend($copy['cleanup']);
@@ -401,32 +401,6 @@ class SubmissionController extends Controller
         abort_unless($file->submission_id === $submission->id, 404);
 
         return $storage->download($file);
-    }
-
-    public function preview(Submission $submission, FileVersion $file, ConferenceFileStorage $storage): View|BinaryFileResponse
-    {
-        $this->authorize('view', $submission);
-        abort_unless($file->submission_id === $submission->id, 404);
-        $copy = $storage->temporaryCopy($file);
-        $extension = strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION));
-        if ($extension === 'pdf') {
-            return response()->file($copy['path'], ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$file->original_name.'"'])->deleteFileAfterSend($copy['cleanup']);
-        }
-        if ($extension === 'docx') {
-            $zip = new ZipArchive;
-            abort_unless($zip->open($copy['path']) === true, 422, 'DOCX tidak dapat dibaca.');
-            $xml = $zip->getFromName('word/document.xml') ?: '';
-            $zip->close();
-            if ($copy['cleanup']) {
-                @unlink($copy['path']);
-            }
-            $text = trim(html_entity_decode(strip_tags(str_replace(['</w:p>', '</w:tr>'], ["\n", "\n"], $xml))));
-
-            return view('submissions.preview', compact('submission', 'file', 'text'));
-        }
-        if ($copy['cleanup']) {
-            @unlink($copy['path']);
-        } abort(422, 'Preview hanya tersedia untuk PDF dan DOCX.');
     }
 
     public function retryUpload(Request $request, Submission $submission, UploadAttempt $attempt, ConferenceFileStorage $storage): RedirectResponse
