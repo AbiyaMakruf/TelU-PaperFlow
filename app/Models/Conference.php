@@ -64,6 +64,11 @@ class Conference extends Model
         return $this->hasMany(ChecklistTemplate::class);
     }
 
+    public function emailTemplates(): HasMany
+    {
+        return $this->hasMany(EmailTemplate::class);
+    }
+
     public function publishedForm(): ?FormVersion
     {
         return $this->formVersions()->where('status', 'published')->latest('version')->first();

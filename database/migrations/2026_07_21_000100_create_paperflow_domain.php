@@ -219,7 +219,9 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignUlid('conference_id')->nullable()->constrained()->nullOnDelete();
             $table->string('event')->index();
-            $table->nullableUlidMorphs('auditable');
+            $table->string('auditable_type')->nullable();
+            $table->string('auditable_id')->nullable();
+            $table->index(['auditable_type', 'auditable_id']);
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();
             $table->string('ip_address', 45)->nullable();

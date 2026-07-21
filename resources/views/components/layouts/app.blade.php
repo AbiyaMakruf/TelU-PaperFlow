@@ -14,6 +14,10 @@
             <x-brand class="px-2 text-white" />
             <nav class="mt-10 space-y-2 text-sm font-semibold">
                 <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}"><span>⌂</span><span>Dashboard</span></a>
+                <a href="{{ route('conferences.index') }}" class="nav-link {{ request()->routeIs('conferences.*') ? 'nav-link-active' : '' }}"><span>◫</span><span>Conference</span></a>
+                @if(auth()->user()->isSuperAdmin())
+                    <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}"><span>◎</span><span>Pengguna</span></a>
+                @endif
             </nav>
             <div class="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
                 <p class="truncate font-bold">{{ auth()->user()->name }}</p>
