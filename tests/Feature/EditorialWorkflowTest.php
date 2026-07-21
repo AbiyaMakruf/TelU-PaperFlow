@@ -73,6 +73,22 @@ class EditorialWorkflowTest extends TestCase
         $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
     }
 
+    public function test_reviewer_cannot_approve_before_required_checklist_is_complete(): void
+    {
+        [, $admin, $editor, $reviewer, $submission, $editorialItem] = $this->workflowFixture();
+        $this->actingAs($admin)->post(route('submissions.accept', $submission));
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial']);
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
+        $this->actingAs($editor)->put(route('submissions.checklist', [$submission, 'editorial']), [
+            'items' => [$editorialItem->id => ['checked' => '1']],
+        ]);
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer']);
+
+        $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'reviewer_approve'])
+            ->assertSessionHasErrors('workflow');
+        $this->assertSame(SubmissionStatus::ReviewerReview, $submission->fresh()->status);
+    }
+
     public function test_conference_admin_can_export_visible_papers_as_csv(): void
     {
         [, $admin, , , $submission] = $this->workflowFixture();

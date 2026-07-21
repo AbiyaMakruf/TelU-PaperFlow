@@ -55,7 +55,13 @@ class PrivateFileStorage
             throw new RuntimeException('Supabase tidak mengembalikan signed URL.');
         }
 
-        return str_starts_with($signedUrl, 'http') ? $signedUrl : rtrim($this->baseUrl(), '/').$signedUrl;
+        if (str_starts_with($signedUrl, 'http')) {
+            return $signedUrl;
+        }
+
+        return str_starts_with($signedUrl, '/storage/v1/')
+            ? rtrim($this->baseUrl(), '/').$signedUrl
+            : $this->storageUrl('/'.ltrim($signedUrl, '/'));
     }
 
     public function localPath(string $path): string

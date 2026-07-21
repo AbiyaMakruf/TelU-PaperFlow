@@ -153,7 +153,7 @@ class SubmissionController extends Controller
                 'request_author_revision' => $this->requestRevision($request, $submission, $workflow, $mailer, $validated['note'] ?? ''),
                 'send_reviewer' => $this->sendReviewer($request, $submission, $workflow, $validated['note'] ?? null),
                 'reviewer_changes' => $this->reviewerChanges($request, $submission, $workflow, $validated['note'] ?? null),
-                'reviewer_approve' => $workflow->transition($submission, SubmissionStatus::ReadyForEdas, $request->user(), $validated['note'] ?? null),
+                'reviewer_approve' => $this->reviewerApprove($request, $submission, $workflow, $validated['note'] ?? null),
                 'edas_fix' => $this->edasFix($request, $submission, $workflow, $validated['note'] ?? null),
                 'done' => $this->markDone($request, $submission, $workflow, $mailer, $validated),
             };
@@ -273,6 +273,12 @@ class SubmissionController extends Controller
         $this->ensureChecklistComplete($submission, ReviewStage::Reviewer);
         $workflow->transition($submission, SubmissionStatus::ReviewerChangesRequested, $request->user(), $note);
         $workflow->transition($submission->fresh(), SubmissionStatus::EditorialReview, $request->user(), $note);
+    }
+
+    private function reviewerApprove(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note): void
+    {
+        $this->ensureChecklistComplete($submission, ReviewStage::Reviewer);
+        $workflow->transition($submission, SubmissionStatus::ReadyForEdas, $request->user(), $note);
     }
 
     private function edasFix(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note): void
