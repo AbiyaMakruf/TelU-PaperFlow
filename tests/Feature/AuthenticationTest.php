@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -45,5 +46,15 @@ class AuthenticationTest extends TestCase
         $this->actingAs($user)->get('/dashboard')
             ->assertOk()
             ->assertSee('Selamat datang');
+    }
+
+    public function test_email_diagnostic_command_sends_one_message(): void
+    {
+        Mail::fake();
+
+        $this->artisan('paperflow:test-email', ['recipient' => 'diagnostic@example.com'])
+            ->assertSuccessful();
+
+        Mail::assertSentCount(1);
     }
 }

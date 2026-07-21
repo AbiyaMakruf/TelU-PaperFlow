@@ -75,7 +75,7 @@ Aktifkan 2-Step Verification pada `paperflowadmin@gmail.com`, buat Google App Pa
 
 ```dotenv
 MAIL_MAILER=smtp
-MAIL_SCHEME=tls
+MAIL_SCHEME=null
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USERNAME=paperflowadmin@gmail.com
