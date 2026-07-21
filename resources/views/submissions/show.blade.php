@@ -44,12 +44,59 @@
                 @if($allowed && $template)
                     <details class="card overflow-hidden" @if(($stage === \App\Enums\ReviewStage::Editorial && $submission->status === \App\Enums\SubmissionStatus::EditorialReview) || ($stage === \App\Enums\ReviewStage::Reviewer && $submission->status === \App\Enums\SubmissionStatus::ReviewerReview)) open @endif>
                         <summary class="cursor-pointer list-none p-6 text-lg font-black text-navy">Checklist {{ $stage->label() }} <span class="float-right text-orange">+</span></summary>
-                        <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" class="space-y-4 border-t border-navy/10 p-6">@csrf @method('PUT')
+                        <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" class="space-y-4 border-t border-navy/10 p-6" id="checklist-form-{{ $stage->value }}">
+                            @csrf @method('PUT')
                             @foreach($template->items as $item)
                                 @php($result = $cycle?->results->firstWhere('checklist_item_id', $item->id))
-                                <div class="rounded-xl border border-navy/10 p-4"><label class="flex items-start gap-3"><input class="mt-1" type="checkbox" name="items[{{ $item->id }}][checked]" value="1" @checked($result?->is_checked)><span><strong class="text-navy">{{ $item->title }} @if($item->is_required)<span class="text-orange">*</span>@endif</strong>@if($item->description)<span class="mt-1 block text-sm text-muted">{{ $item->description }}</span>@endif</span></label><textarea class="form-input mt-3 min-h-20 py-3" name="items[{{ $item->id }}][note]" placeholder="Catatan item (opsional)">{{ $result?->note }}</textarea></div>
+                                <div class="rounded-xl border border-navy/10 p-4" x-data="{ openGuidance: false, checked: {{ json_encode((bool)($result?->is_checked)) }} }">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <label class="flex items-start gap-3 flex-1 cursor-pointer">
+                                            <input class="mt-1" type="checkbox" name="items[{{ $item->id }}][checked]" value="1" x-model="checked" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description) }}">
+                                            <div>
+                                                <strong class="text-navy text-sm font-extrabold">{{ $item->title }} @if($item->is_required)<span class="text-orange">*</span>@endif</strong>
+                                            </div>
+                                        </label>
+                                        @if($item->description)
+                                            <button type="button" @click="openGuidance = !openGuidance" class="text-xs font-bold text-orange hover:underline shrink-0">
+                                                <span x-text="openGuidance ? 'Tutup Guidance −' : 'Guidance Accordion +'"></span>
+                                            </button>
+                                        @endif
+                                    </div>
+                                    @if($item->description)
+                                        <div x-show="openGuidance" x-cloak class="mt-3 rounded-lg bg-warm/80 p-3 text-xs leading-5 text-slate-700 border border-navy/8">
+                                            <strong class="block text-navy font-bold mb-1">💡 Guidance / Detail Pemeriksaan:</strong>
+                                            <p>{{ $item->description }}</p>
+                                        </div>
+                                    @endif
+                                    <textarea class="form-input mt-3 min-h-16 py-2 text-xs" name="items[{{ $item->id }}][note]" placeholder="Catatan item (opsional)">{{ $result?->note }}</textarea>
+                                </div>
                             @endforeach
-                            <button class="btn btn-primary">Simpan checklist</button>
+                            <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-navy/10">
+                                <button class="btn btn-primary">Simpan Checklist</button>
+                                <button type="button" @click="
+                                    let unchecked = [];
+                                    document.querySelectorAll('#checklist-form-{{ $stage->value }} input[type=checkbox]').forEach(el => {
+                                        if (!el.checked) {
+                                            let title = el.getAttribute('data-title');
+                                            let guidance = el.getAttribute('data-guidance');
+                                            unchecked.push('• ' + title + (guidance ? ': ' + guidance : ''));
+                                        }
+                                    });
+                                    if (unchecked.length === 0) {
+                                        alert('Seluruh item checklist sudah dicentang (OK)!');
+                                        return;
+                                    }
+                                    let text = 'Halo Author,\n\nMohon perbaiki poin-poin berikut berdasarkan hasil pemeriksaan editorial:\n\n' + unchecked.join('\n\n') + '\n\nTerima kasih,\nTim Editorial';
+                                    let feedbackEl = document.querySelector('textarea[name=body]');
+                                    if (feedbackEl) {
+                                        feedbackEl.value = text;
+                                        feedbackEl.scrollIntoView({ behavior: 'smooth' });
+                                        feedbackEl.focus();
+                                    }
+                                " class="btn btn-secondary text-xs">
+                                    ⚡ Gunakan Template Revisi (Unchecked Items)
+                                </button>
+                            </div>
                         </form>
                     </details>
                 @endif
@@ -60,9 +107,41 @@
                     <h2 class="text-lg font-black text-navy">Feedback &amp; komunikasi</h2>
                     <div class="mt-5 space-y-3">@forelse($submission->feedback as $feedback)<div class="rounded-xl bg-warm p-4"><div class="flex justify-between gap-3"><span class="badge {{ $feedback->visibility === 'author' ? 'badge-warning' : 'badge-primary' }}">{{ $feedback->visibility === 'author' ? 'Author' : 'Internal' }}</span><span class="text-xs text-muted">{{ $feedback->author?->name }} &middot; {{ $feedback->created_at->format('d M H:i') }}</span></div><p class="mt-3 whitespace-pre-line text-sm leading-6">{{ $feedback->body }}</p></div>@empty<p class="text-sm text-muted">Belum ada feedback.</p>@endforelse</div>
                     <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="mt-5 grid gap-4 sm:grid-cols-2">@csrf
-                        <textarea class="form-input min-h-28 py-3 sm:col-span-2" name="body" placeholder="Tulis feedback..." required></textarea>
+                        <textarea class="form-input min-h-28 py-3 sm:col-span-2 text-sm" name="body" placeholder="Tulis feedback..." required></textarea>
                         <select class="form-input" name="visibility"><option value="internal">Catatan internal</option><option value="author">Terlihat author</option></select>
-                        <input class="form-input" name="cc" placeholder="CC email, pisahkan koma">
+                        <!-- Interactive CC Tag Input -->
+                        <div x-data="{
+                            ccInput: '',
+                            tags: {{ json_encode(array_values(array_filter(explode(',', old('cc', ''))))) }},
+                            addTag() {
+                                let val = this.ccInput.trim().replace(/,$/, '');
+                                if (val && !this.tags.includes(val)) {
+                                    this.tags.push(val);
+                                }
+                                this.ccInput = '';
+                            },
+                            removeTag(index) {
+                                this.tags.splice(index, 1);
+                            }
+                        }" class="sm:col-span-2">
+                            <label class="form-label mb-1 block">CC Email (Ketik email lalu tekan koma / Enter)</label>
+                            <input type="hidden" name="cc" :value="tags.join(',')">
+                            <div class="flex flex-wrap items-center gap-2 rounded-xl border border-navy/20 bg-white p-2 min-h-12 focus-within:ring-2 focus-within:ring-orange">
+                                <template x-for="(tag, index) in tags" :key="index">
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-navy text-white px-3 py-1 text-xs font-bold shadow-sm">
+                                        <span x-text="tag"></span>
+                                        <button type="button" @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-1">&times;</button>
+                                    </span>
+                                </template>
+                                <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[200px]"
+                                       x-model="ccInput"
+                                       @keydown.comma.prevent="addTag()"
+                                       @keydown.enter.prevent="addTag()"
+                                       @blur="addTag()"
+                                       placeholder="Ketik email CC...">
+                            </div>
+                        </div>
+
                         <label class="check-row sm:col-span-2"><input type="checkbox" name="send_email" value="1"><span>Kirim email ke author (hanya untuk feedback author)</span></label>
                         <button class="btn btn-secondary sm:col-span-2">Simpan feedback</button>
                     </form>
