@@ -17,15 +17,18 @@ class Submission extends Model
     protected $fillable = [
         'conference_id', 'form_version_id', 'paper_code', 'title', 'corresponding_author_name',
         'corresponding_author_email', 'corresponding_author_phone', 'answers', 'status',
-        'editor_id', 'reviewer_id', 'author_token_hash', 'author_token_expires_at',
+        'editor_id', 'reviewer_id', 'author_token_hash', 'author_token_encrypted', 'author_token_expires_at',
         'submitted_at', 'validated_at', 'completed_at', 'edas_reference', 'edas_notes', 'lock_version',
     ];
+
+    protected $hidden = ['author_token_hash', 'author_token_encrypted'];
 
     protected function casts(): array
     {
         return [
             'answers' => 'array',
             'status' => SubmissionStatus::class,
+            'author_token_encrypted' => 'encrypted',
             'author_token_expires_at' => 'datetime',
             'submitted_at' => 'datetime',
             'validated_at' => 'datetime',

@@ -2,27 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ConferenceRole;
-use App\Models\Conference;
 use App\Models\Submission;
+use App\Services\VisibleSubmissions;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SubmissionExportController extends Controller
 {
-    public function __invoke(Request $request): StreamedResponse
+    public function __invoke(Request $request, VisibleSubmissions $visibleSubmissions): StreamedResponse
     {
         $this->authorize('viewAny', Submission::class);
-        $user = $request->user();
-        $conferenceIds = $user->isSuperAdmin()
-            ? Conference::pluck('id')
-            : $user->conferenceMemberships()->where('is_active', true)->pluck('conference_id');
-        $oversightIds = $user->isSuperAdmin() ? $conferenceIds : $user->conferenceMemberships()
-            ->where('is_active', true)->whereIn('role', [ConferenceRole::Admin, ConferenceRole::Viewer])->pluck('conference_id');
-
-        $query = Submission::query()->with(['conference', 'editor', 'reviewer'])
-            ->whereIn('conference_id', $conferenceIds)
-            ->where(fn ($scope) => $scope->whereIn('conference_id', $oversightIds)->orWhere('editor_id', $user->id)->orWhere('reviewer_id', $user->id))
+        $query = $visibleSubmissions->for($request->user())
+            ->with(['conference', 'editor', 'reviewer'])
             ->when($request->filled('conference'), fn ($q) => $q->where('conference_id', $request->string('conference')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->orderBy('submitted_at');

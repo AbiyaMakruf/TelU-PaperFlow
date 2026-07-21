@@ -14,6 +14,7 @@ use App\Services\AuditLogger;
 use App\Services\ConferenceMailer;
 use App\Services\PrivateFileStorage;
 use App\Services\SubmissionWorkflow;
+use App\Services\VisibleSubmissions;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,22 +27,14 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SubmissionController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, VisibleSubmissions $visibleSubmissions): View
     {
         $this->authorize('viewAny', Submission::class);
         $user = $request->user();
         $conferenceIds = $user->isSuperAdmin()
             ? Conference::pluck('id')
             : $user->conferenceMemberships()->where('is_active', true)->pluck('conference_id');
-        $oversightIds = $user->isSuperAdmin() ? $conferenceIds : $user->conferenceMemberships()
-            ->where('is_active', true)
-            ->whereIn('role', [ConferenceRole::Admin, ConferenceRole::Viewer])
-            ->pluck('conference_id');
-
-        $query = Submission::query()->whereIn('conference_id', $conferenceIds)
-            ->where(fn ($scope) => $scope->whereIn('conference_id', $oversightIds)
-                ->orWhere('editor_id', $user->id)
-                ->orWhere('reviewer_id', $user->id));
+        $query = $visibleSubmissions->for($user);
 
         $query->when($request->filled('conference'), fn ($q) => $q->where('conference_id', $request->string('conference')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
@@ -85,7 +78,7 @@ class SubmissionController extends Controller
         $workflow->transition($submission, SubmissionStatus::NeedsAuthorCorrection, $request->user(), $validated['feedback']);
         $mailer->queue($submission->load('conference'), 'revision_requested', [
             'feedback' => $validated['feedback'],
-            'portal_url' => route('author.portal', $this->rotateAuthorToken($submission)),
+            'portal_url' => route('author.portal', $this->authorToken($submission)),
         ]);
 
         return back()->with('success', 'Permintaan koreksi dikirim ke author.');
@@ -183,7 +176,7 @@ class SubmissionController extends Controller
             $cc = collect(preg_split('/[,;\s]+/', $validated['cc'] ?? ''))->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))->values()->all();
             $mailer->queue($submission->load('conference'), 'revision_requested', [
                 'feedback' => $feedback->body,
-                'portal_url' => route('author.portal', $this->rotateAuthorToken($submission)),
+                'portal_url' => route('author.portal', $this->authorToken($submission)),
             ], $cc);
         }
 
@@ -258,7 +251,7 @@ class SubmissionController extends Controller
         }
         $submission->feedback()->create(['visibility' => 'author', 'body' => $note, 'created_by' => $request->user()->id, 'emailed_at' => now()]);
         $workflow->transition($submission, SubmissionStatus::WaitingAuthorRevision, $request->user(), $note);
-        $mailer->queue($submission->load('conference'), 'revision_requested', ['feedback' => $note, 'portal_url' => route('author.portal', $this->rotateAuthorToken($submission))]);
+        $mailer->queue($submission->load('conference'), 'revision_requested', ['feedback' => $note, 'portal_url' => route('author.portal', $this->authorToken($submission))]);
     }
 
     private function sendReviewer(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note): void
@@ -295,10 +288,25 @@ class SubmissionController extends Controller
         $mailer->queue($submission->load('conference'), 'paper_completed', []);
     }
 
-    private function rotateAuthorToken(Submission $submission): string
+    private function authorToken(Submission $submission): string
     {
+        try {
+            $existing = $submission->author_token_encrypted;
+            if (is_string($existing)
+                && $submission->author_token_expires_at?->isFuture()
+                && hash_equals((string) $submission->author_token_hash, hash('sha256', $existing))) {
+                return $existing;
+            }
+        } catch (\Throwable) {
+            // A token encrypted with an old APP_KEY is safely replaced below.
+        }
+
         $token = Str::random(64);
-        $submission->update(['author_token_hash' => hash('sha256', $token), 'author_token_expires_at' => now()->addYear()]);
+        $submission->update([
+            'author_token_hash' => hash('sha256', $token),
+            'author_token_encrypted' => $token,
+            'author_token_expires_at' => now()->addYear(),
+        ]);
 
         return $token;
     }

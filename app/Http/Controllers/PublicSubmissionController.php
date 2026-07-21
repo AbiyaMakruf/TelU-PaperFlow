@@ -62,6 +62,7 @@ class PublicSubmissionController extends Controller
                 'answers' => $validated['answers'] ?? [],
                 'status' => SubmissionStatus::Submitted,
                 'author_token_hash' => hash('sha256', $token),
+                'author_token_encrypted' => $token,
                 'author_token_expires_at' => now()->addYear(),
                 'submitted_at' => now(),
             ]);

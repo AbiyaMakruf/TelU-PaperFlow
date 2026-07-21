@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\SubmissionStatus;
 use App\Models\Conference;
-use App\Models\Submission;
+use App\Services\VisibleSubmissions;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, VisibleSubmissions $visibleSubmissions): View
     {
         $user = $request->user();
         $conferenceIds = $user->isSuperAdmin()
@@ -23,12 +23,7 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
-        $query = Submission::query()->whereIn('conference_id', $conferenceIds);
-        if (! $user->isSuperAdmin() && ! $user->conferenceMemberships()->where('role', 'conference_admin')->exists()) {
-            $query->where(fn ($scope) => $scope
-                ->where('editor_id', $user->id)
-                ->orWhere('reviewer_id', $user->id));
-        }
+        $query = $visibleSubmissions->for($user);
 
         $stats = [
             'total' => (clone $query)->count(),

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -55,5 +56,18 @@ class AuthenticationTest extends TestCase
         $this->artisan('paperflow:test-email', ['recipient' => 'diagnostic@example.com'])
             ->expectsOutputToContain('Email pengujian berhasil dikirim')
             ->assertSuccessful();
+    }
+
+    public function test_login_is_rate_limited_after_five_failed_attempts(): void
+    {
+        $email = 'limited@example.com';
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->post('/login', ['email' => $email, 'password' => 'wrong-password']);
+        }
+
+        $this->assertTrue(RateLimiter::tooManyAttempts($email.'|127.0.0.1', 5));
+        $response = $this->post('/login', ['email' => $email, 'password' => 'wrong-password'])
+            ->assertSessionHasErrors('email');
+        $this->assertStringContainsString('Terlalu banyak percobaan login', $response->getSession()->get('errors')->first('email'));
     }
 }

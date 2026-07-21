@@ -9,6 +9,7 @@ use App\Models\Conference;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class EditorialWorkflowTest extends TestCase
@@ -99,6 +100,67 @@ class EditorialWorkflowTest extends TestCase
         $this->assertStringContainsString($submission->paper_code, $response->streamedContent());
     }
 
+    public function test_dashboard_scopes_each_conference_by_the_users_role(): void
+    {
+        $user = User::factory()->create();
+        $adminConference = Conference::create(['name' => 'Admin Conf', 'slug' => 'admin-conf', 'status' => 'active']);
+        $editorConference = Conference::create(['name' => 'Editor Conf', 'slug' => 'editor-conf', 'status' => 'active']);
+        $adminConference->memberships()->create(['user_id' => $user->id, 'role' => ConferenceRole::Admin, 'is_active' => true]);
+        $editorConference->memberships()->create(['user_id' => $user->id, 'role' => ConferenceRole::Editorial, 'is_active' => true]);
+
+        $adminPaper = $this->submissionFor($adminConference, 'ADMIN-1', 'Visible admin paper');
+        $assignedPaper = $this->submissionFor($editorConference, 'EDITOR-1', 'Visible assigned paper', $user);
+        $hiddenPaper = $this->submissionFor($editorConference, 'EDITOR-2', 'Hidden unassigned paper');
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk()->assertSee($adminPaper->paper_code)->assertSee($assignedPaper->paper_code)->assertDontSee($hiddenPaper->paper_code);
+    }
+
+    public function test_inactive_membership_cannot_see_previously_assigned_paper(): void
+    {
+        $user = User::factory()->create();
+        $conference = Conference::create(['name' => 'Inactive Conf', 'slug' => 'inactive-conf', 'status' => 'active']);
+        $conference->memberships()->create([
+            'user_id' => $user->id,
+            'role' => ConferenceRole::Editorial,
+            'is_active' => false,
+        ]);
+        $submission = $this->submissionFor($conference, 'INACTIVE-1', 'Previously assigned paper', $user);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee($submission->paper_code);
+    }
+
+    public function test_author_portal_token_remains_stable_across_follow_up_emails(): void
+    {
+        Mail::fake();
+        [$conference, $admin, $editor, , $submission] = $this->workflowFixture();
+        $conference->emailTemplates()->create([
+            'key' => 'revision_requested', 'subject' => 'Revision {{paper_code}}',
+            'body' => '{{feedback}} {{portal_url}}', 'is_enabled' => true,
+        ]);
+        $token = 'stable-author-token';
+        $submission->update([
+            'status' => SubmissionStatus::EditorialReview,
+            'editor_id' => $editor->id,
+            'author_token_hash' => hash('sha256', $token),
+            'author_token_encrypted' => $token,
+            'author_token_expires_at' => now()->addMonth(),
+        ]);
+
+        $this->actingAs($admin)->post(route('submissions.feedback', $submission), [
+            'body' => 'Please revise the references.',
+            'visibility' => 'author',
+            'send_email' => '1',
+        ])->assertRedirect();
+
+        $submission->refresh();
+        $this->assertSame(hash('sha256', $token), $submission->author_token_hash);
+        $this->assertSame($token, $submission->author_token_encrypted);
+    }
+
     /** @return array{Conference, User, User, User, Submission, mixed, mixed} */
     private function workflowFixture(): array
     {
@@ -124,5 +186,19 @@ class EditorialWorkflowTest extends TestCase
         ]);
 
         return [$conference, $admin, $editor, $reviewer, $submission, $editorialItem, $reviewerItem];
+    }
+
+    private function submissionFor(Conference $conference, string $code, string $title, ?User $editor = null): Submission
+    {
+        return Submission::create([
+            'conference_id' => $conference->id,
+            'paper_code' => $code,
+            'title' => $title,
+            'corresponding_author_name' => 'Author',
+            'corresponding_author_email' => strtolower($code).'@example.com',
+            'status' => SubmissionStatus::EditorialReview,
+            'editor_id' => $editor?->id,
+            'submitted_at' => now(),
+        ]);
     }
 }
