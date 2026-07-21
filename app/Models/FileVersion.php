@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class FileVersion extends Model
+{
+    use HasFactory, HasUlids;
+
+    protected $fillable = [
+        'submission_id', 'version_number', 'label', 'source', 'disk', 'storage_path',
+        'original_name', 'mime_type', 'size', 'checksum', 'uploaded_by', 'notes', 'is_final',
+    ];
+
+    protected function casts(): array
+    {
+        return ['is_final' => 'boolean'];
+    }
+
+    public function submission(): BelongsTo
+    {
+        return $this->belongsTo(Submission::class);
+    }
+
+    public function uploader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
+}
