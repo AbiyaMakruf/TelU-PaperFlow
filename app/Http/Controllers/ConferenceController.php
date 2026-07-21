@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 class ConferenceController extends Controller
 {
-    private const RESERVED_SLUGS = ['admin', 'api', 'dashboard', 'login', 'logout', 'forgot-password', 'reset-password', 'change-password', 'storage', 'up'];
+    private const RESERVED_SLUGS = ['admin', 'api', 'dashboard', 'login', 'logout', 'forgot-password', 'reset-password', 'change-password', 'storage', 'submission', 'conferences', 'up'];
 
     public function index(Request $request): View
     {

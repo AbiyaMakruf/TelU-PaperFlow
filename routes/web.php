@@ -6,11 +6,13 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\AuthorPortalController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ConferenceController;
 use App\Http\Controllers\ConferenceMemberController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FormBuilderController;
+use App\Http\Controllers\PublicSubmissionController;
 use App\Models\Conference;
 use Illuminate\Support\Facades\Route;
 
@@ -57,3 +59,12 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
+
+Route::prefix('submission')->group(function () {
+    Route::get('/access/{token}', [AuthorPortalController::class, 'show'])->name('author.portal');
+    Route::post('/access/{token}/revision', [AuthorPortalController::class, 'uploadRevision'])->middleware('throttle:10,1')->name('author.revision');
+    Route::get('/access/{token}/files/{file}', [AuthorPortalController::class, 'download'])->name('author.files.download');
+});
+
+Route::get('/{conference:slug}', [PublicSubmissionController::class, 'show'])->name('public.submission.show');
+Route::post('/{conference:slug}', [PublicSubmissionController::class, 'store'])->middleware('throttle:10,1')->name('public.submission.store');
