@@ -50,10 +50,13 @@ class AuthorPortalController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
             $from = $submission->status;
-            $submission->update(['status' => SubmissionStatus::EditorialReview]);
+            $to = $from === SubmissionStatus::NeedsAuthorCorrection
+                ? SubmissionStatus::Submitted
+                : SubmissionStatus::EditorialReview;
+            $submission->update(['status' => $to]);
             $submission->statusHistory()->create([
                 'from_status' => $from,
-                'to_status' => SubmissionStatus::EditorialReview,
+                'to_status' => $to,
                 'note' => 'Author mengunggah revisi.',
                 'created_at' => now(),
             ]);

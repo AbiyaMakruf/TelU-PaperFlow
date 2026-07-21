@@ -13,6 +13,7 @@ use App\Http\Controllers\ConferenceMemberController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FormBuilderController;
 use App\Http\Controllers\PublicSubmissionController;
+use App\Http\Controllers\SubmissionController;
 use App\Models\Conference;
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +42,17 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+        Route::get('/papers', [SubmissionController::class, 'index'])->name('submissions.index');
+        Route::get('/papers/{submission}', [SubmissionController::class, 'show'])->name('submissions.show');
+        Route::post('/papers/{submission}/accept', [SubmissionController::class, 'accept'])->name('submissions.accept');
+        Route::post('/papers/{submission}/correction', [SubmissionController::class, 'requestCorrection'])->name('submissions.correction');
+        Route::post('/papers/{submission}/assign', [SubmissionController::class, 'assign'])->name('submissions.assign');
+        Route::put('/papers/{submission}/checklist/{stage}', [SubmissionController::class, 'saveChecklist'])->name('submissions.checklist');
+        Route::post('/papers/{submission}/advance', [SubmissionController::class, 'advance'])->name('submissions.advance');
+        Route::post('/papers/{submission}/feedback', [SubmissionController::class, 'addFeedback'])->name('submissions.feedback');
+        Route::post('/papers/{submission}/files', [SubmissionController::class, 'uploadFile'])->name('submissions.files.store');
+        Route::get('/papers/{submission}/files/{file}', [SubmissionController::class, 'download'])->name('submissions.files.download');
 
         Route::resource('conferences', ConferenceController::class)->except(['destroy']);
         Route::post('/conferences/{conference}/duplicate', [ConferenceController::class, 'duplicate'])->name('conferences.duplicate');
