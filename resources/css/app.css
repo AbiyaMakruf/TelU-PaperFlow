@@ -6,6 +6,42 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-navy: #102a43;
+    --color-navy-dark: #071a2e;
+    --color-orange: #f47c20;
+    --color-warm: #f7f3ec;
+    --color-ink: #111827;
+    --color-muted: #64748b;
+    --color-success: #198754;
+    --color-danger: #c0392b;
+    --color-warning: #d99a00;
+    --color-info: #2878b5;
+    --font-sans: 'Inter', 'Segoe UI', sans-serif;
+}
+
+@layer base {
+    button, a { @apply transition-colors; }
+    button { @apply cursor-pointer; }
+}
+
+@layer components {
+    .container-page { @apply mx-auto w-full max-w-7xl px-5 sm:px-8; }
+    .card { @apply rounded-2xl border border-navy/10 bg-white shadow-sm; }
+    .btn { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-extrabold outline-none focus:ring-4; }
+    .btn-primary { @apply bg-navy text-white shadow-lg shadow-navy/15 hover:bg-navy-dark focus:ring-navy/20; }
+    .btn-secondary { @apply border border-navy/15 bg-white text-navy hover:border-orange hover:text-orange focus:ring-orange/20; }
+    .btn-ghost { @apply text-navy hover:bg-white/70 focus:ring-navy/10; }
+    .form-label { @apply mb-2 block text-sm font-bold text-navy; }
+    .form-input { @apply min-h-12 w-full rounded-xl border border-navy/15 bg-white px-4 text-sm text-ink outline-none placeholder:text-slate-400 focus:border-orange focus:ring-4 focus:ring-orange/10; }
+    .nav-link { @apply flex items-center gap-3 rounded-xl px-4 py-3 text-white/65 hover:bg-white/8 hover:text-white; }
+    .nav-link-active { @apply bg-orange text-white shadow-lg shadow-orange/15; }
+    .badge { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-extrabold; }
+    .badge-primary { @apply bg-navy/10 text-navy; }
+    .badge-warning { @apply bg-warning/15 text-amber-700; }
+    .badge-success { @apply bg-success/12 text-success; }
+    .badge-danger { @apply bg-danger/10 text-danger; }
+    .badge-info { @apply bg-info/10 text-info; }
+    .data-table { @apply w-full min-w-[650px] text-left text-sm; }
+    .data-table th { @apply bg-navy/[.035] px-6 py-3 text-xs font-extrabold uppercase tracking-wider text-muted; }
+    .data-table td { @apply border-t border-navy/8 px-6 py-4; }
 }
