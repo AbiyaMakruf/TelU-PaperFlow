@@ -19,6 +19,7 @@ class Conference extends Model
         'name', 'slug', 'description', 'status', 'timezone', 'starts_at', 'ends_at',
         'submission_opens_at', 'submission_closes_at', 'settings', 'created_by',
         'google_drive_token', 'google_drive_folder_id', 'google_drive_connected_at',
+        'storage_provider',
     ];
 
     protected $hidden = ['google_drive_token'];
@@ -89,5 +90,10 @@ class Conference extends Model
 
         return (! $this->submission_opens_at || $now->greaterThanOrEqualTo($this->submission_opens_at))
             && (! $this->submission_closes_at || $now->lessThanOrEqualTo($this->submission_closes_at));
+    }
+
+    public function usesGoogleDrive(): bool
+    {
+        return $this->storage_provider === 'google_drive';
     }
 }

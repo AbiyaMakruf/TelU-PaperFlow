@@ -5,9 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\SubmissionStatus;
 use App\Models\Conference;
 use App\Models\Submission;
+use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceMailer;
-use App\Services\GoogleDriveStorage;
-use App\Services\PrivateFileStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,16 +17,16 @@ use RuntimeException;
 
 class PublicSubmissionController extends Controller
 {
-    public function show(Conference $conference, GoogleDriveStorage $drive): View
+    public function show(Conference $conference, ConferenceFileStorage $storage): View
     {
         abort_unless($conference->isSubmissionOpen(), 404);
         $form = $conference->publishedForm();
         abort_unless($form, 404);
 
-        return view('public.submit', ['conference' => $conference, 'form' => $form, 'driveReady' => $drive->connected($conference)]);
+        return view('public.submit', ['conference' => $conference, 'form' => $form, 'storageReady' => $storage->ready($conference)]);
     }
 
-    public function store(Request $request, Conference $conference, PrivateFileStorage $storage, ConferenceMailer $mailer, GoogleDriveStorage $drive): RedirectResponse
+    public function store(Request $request, Conference $conference, ConferenceFileStorage $storage, ConferenceMailer $mailer): RedirectResponse
     {
         abort_unless($conference->isSubmissionOpen(), 404);
         $form = $conference->publishedForm();
@@ -49,20 +48,19 @@ class PublicSubmissionController extends Controller
         $token = Str::random(64);
         $file = $request->file('paper_file');
         $paperCode = Str::upper($conference->slug).'-'.Str::upper(substr($id, -8));
-        if (! $drive->connected($conference)) {
-            return back()->withInput()->withErrors(['paper_file' => 'Submission belum dapat diterima karena Google Drive conference belum terhubung.']);
+        if (! $storage->ready($conference)) {
+            return back()->withInput()->withErrors(['paper_file' => 'Penyimpanan conference belum siap.']);
         }
+        $path = $conference->slug.'/'.$id.'/v1-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
         try {
-            $driveFile = $drive->upload($conference, $file, $paperCode);
+            $storedFile = $storage->put($conference, $file, $path, $paperCode);
         } catch (RuntimeException $exception) {
             report($exception);
 
-            return back()->withInput()->withErrors(['paper_file' => 'Upload Google Drive gagal: '.$exception->getMessage()]);
+            return back()->withInput()->withErrors(['paper_file' => 'Upload file gagal: '.$exception->getMessage()]);
         }
-        $path = $conference->slug.'/'.$id.'/v1-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
-        $storage->put($file, $path);
 
-        $submission = DB::transaction(function () use ($conference, $form, $validated, $file, $path, $id, $token, $storage, $paperCode, $driveFile) {
+        $submission = DB::transaction(function () use ($conference, $form, $validated, $file, $id, $token, $paperCode, $storedFile) {
             $submission = Submission::create([
                 'id' => $id,
                 'conference_id' => $conference->id,
@@ -91,15 +89,15 @@ class PublicSubmissionController extends Controller
                 'version_number' => 1,
                 'label' => 'Submission awal',
                 'source' => 'author',
-                'disk' => $storage->usesSupabase() ? 'supabase' : 'local',
-                'storage_path' => $path,
+                'disk' => $storedFile['disk'],
+                'storage_path' => $storedFile['storage_path'],
                 'original_name' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType(),
                 'size' => $file->getSize(),
                 'checksum' => hash_file('sha256', $file->getRealPath()),
-                'external_provider' => 'google_drive',
-                'external_id' => $driveFile['id'],
-                'external_url' => $driveFile['webViewLink'],
+                'external_provider' => $storedFile['external_provider'],
+                'external_id' => $storedFile['external_id'],
+                'external_url' => $storedFile['external_url'],
             ]);
             $submission->statusHistory()->create(['to_status' => SubmissionStatus::Submitted, 'created_at' => now()]);
 

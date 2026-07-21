@@ -7,6 +7,7 @@ use App\Services\GoogleDriveStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
 
@@ -30,6 +31,20 @@ class GoogleDriveController extends Controller
         $request->session()->put('google_drive_oauth', ['state' => $state, 'conference_id' => $conference->id]);
 
         return redirect()->away($drive->authorizationUrl($state));
+    }
+
+    public function updateProvider(Request $request, Conference $conference, GoogleDriveStorage $drive): RedirectResponse
+    {
+        $this->authorize('update', $conference);
+        $validated = $request->validate([
+            'storage_provider' => ['required', Rule::in(['supabase', 'google_drive'])],
+        ]);
+        if ($validated['storage_provider'] === 'google_drive' && ! $drive->connected($conference)) {
+            return back()->withErrors(['storage_provider' => 'Hubungkan Google Drive sebelum memilihnya sebagai penyimpanan.']);
+        }
+        $conference->update($validated);
+
+        return back()->with('success', 'Penyimpanan default conference berhasil diperbarui.');
     }
 
     public function callback(Request $request, GoogleDriveStorage $drive): RedirectResponse

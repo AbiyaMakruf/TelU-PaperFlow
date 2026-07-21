@@ -3,19 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conference;
-use App\Services\GoogleDriveStorage;
+use App\Services\ConferenceFileStorage;
 use Illuminate\View\View;
 
 class ConferenceLandingController extends Controller
 {
-    public function __invoke(Conference $conference, GoogleDriveStorage $drive): View
+    public function __invoke(Conference $conference, ConferenceFileStorage $storage): View
     {
         $formAvailable = $conference->isSubmissionOpen() && $conference->publishedForm();
 
         return view('public.conference', [
             'conference' => $conference,
             'formAvailable' => (bool) $formAvailable,
-            'driveReady' => $drive->connected($conference),
+            'storageReady' => $storage->ready($conference),
         ]);
     }
 }

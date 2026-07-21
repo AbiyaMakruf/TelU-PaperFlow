@@ -23,7 +23,6 @@ class PublicSubmissionTest extends TestCase
         Storage::fake('local');
         Mail::fake();
         [$conference] = $this->openConference();
-        $this->fakeGoogleDrive($conference);
 
         $response = $this->post(route('public.submission.store', $conference->slug), [
             'title' => 'A Reliable Paper Workflow',
@@ -40,7 +39,8 @@ class PublicSubmissionTest extends TestCase
         $this->assertSame(SubmissionStatus::Submitted, $submission->status);
         $this->assertSame('Telkom University', $submission->answers['affiliation']);
         $this->assertCount(1, $submission->files);
-        $this->assertSame('google_drive', $submission->files->first()->external_provider);
+        $this->assertSame('local', $submission->files->first()->disk);
+        $this->assertNull($submission->files->first()->external_provider);
         Storage::disk('local')->assertExists($submission->files->first()->storage_path);
         $this->assertDatabaseHas('email_logs', ['submission_id' => $submission->id, 'template_key' => 'submission_received']);
 
@@ -60,9 +60,27 @@ class PublicSubmissionTest extends TestCase
         [$conference] = $this->openConference();
 
         $this->get(route('public.conference.show', $conference))->assertOk()->assertSee($conference->name);
-        $this->get(route('public.submission.show', $conference))->assertOk()->assertSee('Submission sementara belum tersedia');
+        $this->get(route('public.submission.show', $conference))->assertOk()->assertSee('Kirim submission');
         $this->assertSame('/paperconf', route('public.conference.show', $conference, false));
         $this->assertSame('/paperconf/submit', route('public.submission.show', $conference, false));
+    }
+
+    public function test_conference_can_store_submission_in_google_drive_instead_of_supabase(): void
+    {
+        Mail::fake();
+        [$conference] = $this->openConference();
+        $this->fakeGoogleDrive($conference);
+
+        $this->post(route('public.submission.store', $conference), [
+            'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com',
+            'answers' => ['affiliation' => 'Telkom University'],
+            'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        ])->assertRedirect();
+
+        $file = Submission::firstOrFail()->files()->firstOrFail();
+        $this->assertSame('google_drive', $file->disk);
+        $this->assertSame('drive-file-123', $file->storage_path);
+        $this->assertSame('google_drive', $file->external_provider);
     }
 
     public function test_author_can_upload_revision_only_when_requested(): void
@@ -126,6 +144,7 @@ class PublicSubmissionTest extends TestCase
             'services.google_drive.redirect_uri' => 'http://localhost/google-drive/callback',
         ]);
         $conference->update([
+            'storage_provider' => 'google_drive',
             'google_drive_folder_id' => 'folder-123',
             'google_drive_token' => ['access_token' => 'token', 'refresh_token' => 'refresh', 'expires_at' => now()->addHour()->timestamp],
             'google_drive_connected_at' => now(),

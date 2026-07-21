@@ -1,12 +1,24 @@
 <x-layouts.app :title="'Google Drive - '.$conference->name" :heading="$conference->name">
     <div class="mx-auto max-w-3xl">
         <a href="{{ route('conferences.show', $conference) }}" class="back-link">&larr; Kembali ke conference</a>
-        <div class="mt-4"><p class="eyebrow">Integrasi penyimpanan</p><h1 class="page-title">Google Drive</h1><p class="page-subtitle">Hubungkan Drive untuk menerima salinan file editable dari form publik.</p></div>
+        <div class="mt-4"><p class="eyebrow">Konfigurasi conference</p><h1 class="page-title">Penyimpanan file</h1><p class="page-subtitle">Pilih Supabase Storage atau folder Google Drive sebagai lokasi file conference.</p></div>
 
         @if($errors->any())<div class="mt-6 rounded-xl border border-danger/20 bg-danger/8 p-4 text-sm text-danger">{{ $errors->first() }}</div>@endif
         @if(session('success'))<div class="mt-6 rounded-xl border border-success/20 bg-success/8 p-4 text-sm text-success">{{ session('success') }}</div>@endif
 
         <section class="card mt-6 p-6">
+            <h2 class="font-extrabold text-navy">Penyimpanan default</h2>
+            <form method="POST" action="{{ route('conferences.storage-provider.update', $conference) }}" class="mt-4">@csrf @method('PUT')
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="check-row rounded-xl border border-navy/10 p-4"><input type="radio" name="storage_provider" value="supabase" @checked($conference->storage_provider === 'supabase')><span><strong class="block text-navy">Supabase Storage</strong><small class="text-muted">Default, privat melalui server Laravel.</small></span></label>
+                    <label class="check-row rounded-xl border border-navy/10 p-4"><input type="radio" name="storage_provider" value="google_drive" @checked($conference->storage_provider === 'google_drive')><span><strong class="block text-navy">Google Drive</strong><small class="text-muted">Gunakan folder Drive yang terhubung.</small></span></label>
+                </div>
+                <button class="btn btn-primary mt-4" type="submit">Simpan pilihan</button>
+            </form>
+        </section>
+
+        <section class="card mt-6 p-6">
+            <h2 class="font-extrabold text-navy">Koneksi Google Drive</h2>
             <dl class="grid gap-5 text-sm sm:grid-cols-2">
                 <div><dt class="text-muted">Konfigurasi OAuth</dt><dd class="mt-1 font-black {{ $drive->configured() ? 'text-success' : 'text-danger' }}">{{ $drive->configured() ? 'Lengkap' : 'Belum lengkap' }}</dd></div>
                 <div><dt class="text-muted">Status koneksi</dt><dd class="mt-1 font-black {{ $drive->connected($conference) ? 'text-success' : 'text-muted' }}">{{ $drive->connected($conference) ? 'Terhubung' : 'Belum terhubung' }}</dd></div>

@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\SubmissionStatus;
 use App\Models\FileVersion;
 use App\Models\Submission;
-use App\Services\PrivateFileStorage;
+use App\Services\ConferenceFileStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +23,7 @@ class AuthorPortalController extends Controller
         return view('public.portal', compact('submission', 'token'));
     }
 
-    public function uploadRevision(Request $request, string $token, PrivateFileStorage $storage): RedirectResponse
+    public function uploadRevision(Request $request, string $token, ConferenceFileStorage $storage): RedirectResponse
     {
         $submission = $this->submissionFor($token);
         abort_unless(in_array($submission->status, [SubmissionStatus::NeedsAuthorCorrection, SubmissionStatus::WaitingAuthorRevision], true), 422, 'Paper ini belum meminta revisi author.');
@@ -34,20 +34,23 @@ class AuthorPortalController extends Controller
         $file = $request->file('paper_file');
         $version = $submission->files()->max('version_number') + 1;
         $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
-        $storage->put($file, $path);
+        $storedFile = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-V'.$version);
 
-        DB::transaction(function () use ($submission, $file, $path, $version, $validated, $storage) {
+        DB::transaction(function () use ($submission, $file, $version, $validated, $storedFile) {
             $submission->files()->create([
                 'version_number' => $version,
                 'label' => 'Revisi author '.$version,
                 'source' => 'author',
-                'disk' => $storage->usesSupabase() ? 'supabase' : 'local',
-                'storage_path' => $path,
+                'disk' => $storedFile['disk'],
+                'storage_path' => $storedFile['storage_path'],
                 'original_name' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType(),
                 'size' => $file->getSize(),
                 'checksum' => hash_file('sha256', $file->getRealPath()),
                 'notes' => $validated['notes'] ?? null,
+                'external_provider' => $storedFile['external_provider'],
+                'external_id' => $storedFile['external_id'],
+                'external_url' => $storedFile['external_url'],
             ]);
             $from = $submission->status;
             $to = $from === SubmissionStatus::NeedsAuthorCorrection
@@ -65,16 +68,12 @@ class AuthorPortalController extends Controller
         return back()->with('success', 'File revisi berhasil diunggah dan masuk kembali ke antrean editorial.');
     }
 
-    public function download(string $token, FileVersion $file, PrivateFileStorage $storage): RedirectResponse|BinaryFileResponse
+    public function download(string $token, FileVersion $file, ConferenceFileStorage $storage): RedirectResponse|BinaryFileResponse
     {
         $submission = $this->submissionFor($token);
         abort_unless($file->submission_id === $submission->id, 404);
 
-        if ($url = $storage->temporaryUrl($file->storage_path)) {
-            return redirect()->away($url);
-        }
-
-        return response()->download($storage->localPath($file->storage_path), $file->original_name);
+        return $storage->download($file);
     }
 
     private function submissionFor(string $token): Submission

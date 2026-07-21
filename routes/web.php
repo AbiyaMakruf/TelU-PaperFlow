@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/conferences/{conference}/email-templates', [EmailTemplateController::class, 'edit'])->name('conferences.email-templates.edit');
         Route::put('/conferences/{conference}/email-templates', [EmailTemplateController::class, 'update'])->name('conferences.email-templates.update');
         Route::get('/conferences/{conference}/drive', [GoogleDriveController::class, 'show'])->name('conferences.drive.show');
+        Route::put('/conferences/{conference}/storage-provider', [GoogleDriveController::class, 'updateProvider'])->name('conferences.storage-provider.update');
         Route::post('/conferences/{conference}/drive/connect', [GoogleDriveController::class, 'connect'])->name('conferences.drive.connect');
         Route::delete('/conferences/{conference}/drive', [GoogleDriveController::class, 'disconnect'])->name('conferences.drive.disconnect');
         Route::get('/google-drive/callback', [GoogleDriveController::class, 'callback'])->name('google-drive.callback');

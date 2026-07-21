@@ -7,8 +7,8 @@
             @if ($conference->description)<p class="page-subtitle">{{ $conference->description }}</p>@endif
         </div>
 
-        @unless($driveReady)
-            <div class="card border border-orange/30 p-6"><h2 class="font-black text-navy">Submission sementara belum tersedia</h2><p class="mt-2 text-sm text-muted">Admin conference perlu menghubungkan Google Drive terlebih dahulu.</p></div>
+        @unless($storageReady)
+            <div class="card border border-orange/30 p-6"><h2 class="font-black text-navy">Submission sementara belum tersedia</h2><p class="mt-2 text-sm text-muted">Admin conference perlu menyiapkan penyimpanan file terlebih dahulu.</p></div>
         @else
         <form method="POST" action="{{ route('public.submission.store', $conference->slug) }}" enctype="multipart/form-data" class="card p-6 sm:p-8">
             @csrf

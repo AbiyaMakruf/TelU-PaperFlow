@@ -12,12 +12,12 @@
                     <div><p class="text-xs font-bold uppercase tracking-wide text-muted">Batas submission</p><p class="mt-1 font-black text-navy">{{ $conference->submission_closes_at?->timezone($conference->timezone)->format('d M Y H:i') ?? 'Tidak ditentukan' }}</p></div>
                 </div>
                 <div class="mt-8 border-t border-navy/10 pt-6">
-                    @if($formAvailable && $driveReady)
+                    @if($formAvailable && $storageReady)
                         <a href="{{ route('public.submission.show', $conference) }}" class="btn btn-primary">Submit manuscript</a>
                     @elseif(!$formAvailable)
                         <p class="font-bold text-muted">Form submission belum dibuka atau sudah ditutup.</p>
                     @else
-                        <p class="font-bold text-muted">Submission sementara belum tersedia karena penyimpanan Drive belum dihubungkan.</p>
+                        <p class="font-bold text-muted">Submission sementara belum tersedia karena penyimpanan conference belum siap.</p>
                     @endif
                 </div>
             </div>

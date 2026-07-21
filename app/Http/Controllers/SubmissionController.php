@@ -11,8 +11,8 @@ use App\Models\ReviewCycle;
 use App\Models\Submission;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceMailer;
-use App\Services\PrivateFileStorage;
 use App\Services\SubmissionWorkflow;
 use App\Services\VisibleSubmissions;
 use DomainException;
@@ -183,7 +183,7 @@ class SubmissionController extends Controller
         return back()->with('success', 'Feedback tersimpan.');
     }
 
-    public function uploadFile(Request $request, Submission $submission, PrivateFileStorage $storage): RedirectResponse
+    public function uploadFile(Request $request, Submission $submission, ConferenceFileStorage $storage): RedirectResponse
     {
         $this->authorize('editorialReview', $submission);
         $validated = $request->validate([
@@ -195,30 +195,30 @@ class SubmissionController extends Controller
         $file = $request->file('paper_file');
         $version = $submission->files()->max('version_number') + 1;
         $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
-        $storage->put($file, $path);
+        $storedFile = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-V'.$version);
         if ($request->boolean('is_final')) {
             $submission->files()->update(['is_final' => false]);
         }
         $submission->files()->create([
             'version_number' => $version, 'label' => $validated['label'], 'source' => 'editorial',
-            'disk' => $storage->usesSupabase() ? 'supabase' : 'local', 'storage_path' => $path,
+            'disk' => $storedFile['disk'], 'storage_path' => $storedFile['storage_path'],
             'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(), 'checksum' => hash_file('sha256', $file->getRealPath()),
             'uploaded_by' => $request->user()->id, 'notes' => $validated['notes'] ?? null,
             'is_final' => $request->boolean('is_final'),
+            'external_provider' => $storedFile['external_provider'], 'external_id' => $storedFile['external_id'],
+            'external_url' => $storedFile['external_url'],
         ]);
 
         return back()->with('success', 'Versi file baru berhasil disimpan.');
     }
 
-    public function download(Submission $submission, FileVersion $file, PrivateFileStorage $storage): RedirectResponse|BinaryFileResponse
+    public function download(Submission $submission, FileVersion $file, ConferenceFileStorage $storage): RedirectResponse|BinaryFileResponse
     {
         $this->authorize('view', $submission);
         abort_unless($file->submission_id === $submission->id, 404);
 
-        return ($url = $storage->temporaryUrl($file->storage_path))
-            ? redirect()->away($url)
-            : response()->download($storage->localPath($file->storage_path), $file->original_name);
+        return $storage->download($file);
     }
 
     private function currentCycle(Submission $submission, ReviewStage $stage, string $templateId, int $userId): ReviewCycle
