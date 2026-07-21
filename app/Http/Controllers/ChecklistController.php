@@ -30,6 +30,8 @@ class ChecklistController extends Controller
             'templates.*.items.*.title' => ['required', 'string', 'max:200'],
             'templates.*.items.*.description' => ['nullable', 'string', 'max:1000'],
             'templates.*.items.*.is_required' => ['nullable', 'boolean'],
+            'templates.*.items.*.condition_type' => ['nullable', 'string', 'max:50'],
+            'templates.*.items.*.condition_value' => ['nullable', 'string', 'max:100'],
         ]);
 
         DB::transaction(function () use ($conference, $validated) {
@@ -48,6 +50,8 @@ class ChecklistController extends Controller
                         'title' => $item['title'],
                         'description' => $item['description'] ?? null,
                         'is_required' => (bool) ($item['is_required'] ?? false),
+                        'condition_type' => $item['condition_type'] ?? null,
+                        'condition_value' => $item['condition_value'] ?? null,
                         'sort_order' => $index + 1,
                     ]);
                 }

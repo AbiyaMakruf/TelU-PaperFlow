@@ -9,9 +9,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SubmissionExportController extends Controller
 {
-    public function __invoke(Request $request, VisibleSubmissions $visibleSubmissions): StreamedResponse
+    public function __invoke(Request $request, VisibleSubmissions $visibleSubmissions)
     {
         $this->authorize('viewAny', Submission::class);
+        $format = $request->query('format', 'csv');
+
         $query = $visibleSubmissions->for($request->user())
             ->with(['conference', 'editor', 'reviewer'])
             ->when($request->filled('conference'), fn ($q) => $q->where('conference_id', $request->string('conference')))
@@ -21,6 +23,44 @@ class SubmissionExportController extends Controller
             ->when($request->filled('date_from'), fn ($q) => $q->whereDate('submitted_at', '>=', $request->date('date_from')))
             ->when($request->filled('date_to'), fn ($q) => $q->whereDate('submitted_at', '<=', $request->date('date_to')))
             ->orderBy('submitted_at');
+
+        if ($format === 'pdf') {
+            $submissions = $query->get();
+
+            return view('submissions.report-pdf', compact('submissions'));
+        }
+
+        if ($format === 'xlsx') {
+            $submissions = $query->get();
+
+            return response()->streamDownload(function () use ($submissions) {
+                echo '<?xml version="1.0"?>';
+                echo '<?mso-application progid="Excel.Sheet"?>';
+                echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+                echo '<Worksheet ss:Name="Submissions"><Table>';
+                echo '<Row>';
+                foreach (['Paper ID', 'Internal Code', 'Conference', 'Title', 'Format', 'Author', 'Email', 'Status', 'Editor', 'Reviewer', 'Submitted At'] as $col) {
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars($col).'</Data></Cell>';
+                }
+                echo '</Row>';
+                foreach ($submissions as $sub) {
+                    echo '<Row>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) $sub->paper_id).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) $sub->paper_code).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) $sub->conference->name).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) $sub->title).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) $sub->manuscript_format).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) $sub->corresponding_author_name).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) $sub->corresponding_author_email).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) $sub->status->label()).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) ($sub->editor?->name ?? '-')).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) ($sub->reviewer?->name ?? '-')).'</Data></Cell>';
+                    echo '<Cell><Data ss:Type="String">'.htmlspecialchars((string) ($sub->submitted_at?->toIso8601String() ?? '-')).'</Data></Cell>';
+                    echo '</Row>';
+                }
+                echo '</Table></Worksheet></Workbook>';
+            }, 'paperflow-export-'.now()->format('Ymd-His').'.xlsx', ['Content-Type' => 'application/vnd.ms-excel']);
+        }
 
         return response()->streamDownload(function () use ($query) {
             $output = fopen('php://output', 'w');

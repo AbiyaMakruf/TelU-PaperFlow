@@ -79,7 +79,11 @@ class PublicSubmissionController extends Controller
             return back()->withInput()->withErrors(['paper_file' => 'Upload file gagal: '.$exception->getMessage()]);
         }
 
-        $submission = DB::transaction(function () use ($conference, $form, $validated, $file, $id, $token, $paperCode, $storedFile) {
+        $fileHash = hash_file('sha256', $file->getRealPath());
+        $detector = app(\App\Services\DuplicateSubmissionDetector::class);
+        $duplicateWarning = $detector->check($conference, $validated['title'], $validated['author_email'], $fileHash);
+
+        $submission = DB::transaction(function () use ($conference, $form, $validated, $file, $id, $token, $paperCode, $storedFile, $fileHash, $duplicateWarning) {
             $submission = Submission::create([
                 'id' => $id,
                 'conference_id' => $conference->id,
@@ -92,6 +96,8 @@ class PublicSubmissionController extends Controller
                 'corresponding_author_phone' => $validated['author_phone'] ?? null,
                 'answers' => $validated['answers'] ?? [],
                 'status' => SubmissionStatus::Submitted,
+                'is_flagged_duplicate' => $duplicateWarning !== null,
+                'duplicate_notes' => $duplicateWarning,
                 'author_token_hash' => hash('sha256', $token),
                 'author_token_encrypted' => $token,
                 'author_token_expires_at' => now()->addYear(),
@@ -123,7 +129,8 @@ class PublicSubmissionController extends Controller
                 'original_name' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType(),
                 'size' => $file->getSize(),
-                'checksum' => hash_file('sha256', $file->getRealPath()),
+                'file_hash' => $fileHash,
+                'checksum' => $fileHash,
                 'external_provider' => $storedFile['external_provider'],
                 'external_id' => $storedFile['external_id'],
                 'external_url' => $storedFile['external_url'],

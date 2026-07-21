@@ -113,9 +113,30 @@ class ConferenceProvisioner
     private function defaultEmailTemplates(): array
     {
         return [
-            ['key' => 'submission_received', 'subject' => '[{{conference}}] Submission {{paper_code}} diterima', 'body' => "Halo {{author_name}},\n\nSubmission {{paper_code}} telah kami terima. Pantau status melalui {{portal_url}}.", 'is_enabled' => true],
-            ['key' => 'revision_requested', 'subject' => '[{{conference}}] Revisi diperlukan untuk {{paper_code}}', 'body' => "Halo {{author_name}},\n\nTim editorial memerlukan perbaikan berikut:\n\n{{feedback}}\n\nUnggah revisi melalui {{portal_url}}.", 'is_enabled' => true],
-            ['key' => 'paper_completed', 'subject' => '[{{conference}}] {{paper_code}} selesai diproses', 'body' => "Halo {{author_name}},\n\nPaper Anda telah selesai diperiksa dan siap untuk proses berikutnya.", 'is_enabled' => true],
+            [
+                'key' => 'submission_received',
+                'subject' => '[{{conference}}] Submission {{paper_code}} Received',
+                'body' => "Dear {{author_name}},\n\nThank you for your submission {{paper_code}} to {{conference}}. We have successfully received your paper.\n\nYou can track the progress of your paper and manage your submission via your private author portal:\n{{portal_url}}\n\nBest regards,\nEditorial Team\n{{conference}}",
+                'is_enabled' => true,
+            ],
+            [
+                'key' => 'revision_requested',
+                'subject' => '[{{conference}}] Revision Requested for {{paper_code}}',
+                'body' => "Dear {{author_name}},\n\nThe editorial team has reviewed your manuscript {{paper_code}} and requested the following revisions:\n\n{{feedback}}\n\nPlease submit your updated revision via your author portal:\n{{portal_url}}\n\nBest regards,\nEditorial Team\n{{conference}}",
+                'is_enabled' => true,
+            ],
+            [
+                'key' => 'paper_completed',
+                'subject' => '[{{conference}}] {{paper_code}} Processing Completed',
+                'body' => "Dear {{author_name}},\n\nWe are pleased to inform you that the editorial and review process for your paper {{paper_code}} has been completed successfully.\n\nThank you for contributing to {{conference}}.\n\nBest regards,\nEditorial Team\n{{conference}}",
+                'is_enabled' => true,
+            ],
+            [
+                'key' => 'deadline_reminder',
+                'subject' => '[{{conference}}] Reminder: Pending Action for {{paper_code}}',
+                'body' => "Dear {{author_name}},\n\nThis is a friendly reminder that an action or revision is pending for your manuscript {{paper_code}} submitted to {{conference}}.\n\nPlease visit your author portal to review the requirements:\n{{portal_url}}\n\nBest regards,\nEditorial Team\n{{conference}}",
+                'is_enabled' => true,
+            ],
         ];
     }
 }

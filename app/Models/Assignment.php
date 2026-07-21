@@ -12,7 +12,7 @@ class Assignment extends Model
 {
     use HasFactory, HasUlids;
 
-    protected $fillable = ['submission_id', 'user_id', 'role', 'assigned_by', 'note', 'assigned_at', 'unassigned_at'];
+    protected $fillable = ['submission_id', 'user_id', 'role', 'assigned_by', 'note', 'reassignment_reason', 'assigned_at', 'unassigned_at'];
 
     protected function casts(): array
     {

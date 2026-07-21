@@ -120,12 +120,20 @@ class SubmissionController extends Controller
             'user_id' => ['required', 'exists:users,id'],
             'role' => ['required', Rule::in([ConferenceRole::Editorial->value, ConferenceRole::Reviewer->value])],
             'note' => ['nullable', 'string', 'max:2000'],
+            'reassignment_reason' => ['nullable', 'string', 'max:2000'],
             'deadline_at' => ['nullable', 'date'],
             'manuscript_format' => ['nullable', Rule::requiredIf($request->input('role') === ConferenceRole::Editorial->value), Rule::in(['docx', 'latex'])],
         ]);
 
         try {
-            $workflow->assign($submission, User::findOrFail($validated['user_id']), ConferenceRole::from($validated['role']), $request->user(), $validated['note'] ?? null);
+            $workflow->assign(
+                $submission,
+                User::findOrFail($validated['user_id']),
+                ConferenceRole::from($validated['role']),
+                $request->user(),
+                $validated['note'] ?? null,
+                $validated['reassignment_reason'] ?? null
+            );
         } catch (DomainException $exception) {
             return back()->withErrors(['assignment' => $exception->getMessage()]);
         }
@@ -138,6 +146,129 @@ class SubmissionController extends Controller
         }
 
         return back()->with('success', 'PIC berhasil diperbarui.');
+    }
+
+    public function bulkAssign(Request $request, SubmissionWorkflow $workflow): RedirectResponse
+    {
+        $validated = $request->validate([
+            'submission_ids' => ['required', 'array', 'min:1'],
+            'submission_ids.*' => ['required', 'exists:submissions,id'],
+            'editor_id' => ['nullable', 'exists:users,id'],
+            'reviewer_id' => ['nullable', 'exists:users,id'],
+            'manuscript_format' => ['nullable', Rule::in(['docx', 'latex'])],
+            'deadline_at' => ['nullable', 'date'],
+            'reassignment_reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $submissions = Submission::whereIn('id', $validated['submission_ids'])->get();
+        foreach ($submissions as $sub) {
+            $this->authorize('assign', $sub);
+        }
+
+        DB::transaction(function () use ($submissions, $validated, $workflow, $request) {
+            foreach ($submissions as $sub) {
+                if (! empty($validated['editor_id'])) {
+                    $editor = User::findOrFail($validated['editor_id']);
+                    $workflow->assign($sub, $editor, ConferenceRole::Editorial, $request->user(), 'Bulk assign editor', $validated['reassignment_reason'] ?? null);
+                }
+                if (! empty($validated['reviewer_id'])) {
+                    $reviewer = User::findOrFail($validated['reviewer_id']);
+                    $workflow->assign($sub, $reviewer, ConferenceRole::Reviewer, $request->user(), 'Bulk assign reviewer', $validated['reassignment_reason'] ?? null);
+                }
+                $updates = [];
+                if (! empty($validated['manuscript_format'])) {
+                    $updates['manuscript_format'] = $validated['manuscript_format'];
+                }
+                if (! empty($validated['deadline_at'])) {
+                    $updates['deadline_at'] = $validated['deadline_at'];
+                }
+                if (! empty($updates)) {
+                    $sub->update($updates);
+                }
+            }
+        });
+
+        return back()->with('success', count($submissions).' paper berhasil diperbarui massal.');
+    }
+
+    public function bulkStatusUpdate(Request $request, SubmissionWorkflow $workflow): RedirectResponse
+    {
+        $validated = $request->validate([
+            'submission_ids' => ['required', 'array', 'min:1'],
+            'submission_ids.*' => ['required', 'exists:submissions,id'],
+            'action' => ['required', Rule::in(['accept', 'reject', 'withdraw'])],
+            'note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $submissions = Submission::whereIn('id', $validated['submission_ids'])->get();
+        foreach ($submissions as $sub) {
+            $this->authorize('assign', $sub);
+        }
+
+        $count = 0;
+        foreach ($submissions as $sub) {
+            $targetStatus = match ($validated['action']) {
+                'accept' => SubmissionStatus::ReadyForAssignment,
+                'reject' => SubmissionStatus::Rejected,
+                'withdraw' => SubmissionStatus::Withdrawn,
+            };
+            if ($workflow->canTransition($sub->status, $targetStatus)) {
+                $workflow->transition($sub, $targetStatus, $request->user(), $validated['note'] ?? 'Aksi massal');
+                $count++;
+            }
+        }
+
+        return back()->with('success', "Status {$count} paper berhasil diperbarui massal.");
+    }
+
+    public function preview(Request $request, Submission $submission, FileVersion $file, ConferenceFileStorage $storage): View|BinaryFileResponse
+    {
+        $this->authorize('view', $submission);
+        abort_unless($file->submission_id === $submission->id, 404);
+        $copy = $storage->getPreviewCopy($file);
+        $extension = strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION));
+        if ($extension === 'pdf') {
+            return response()->file($copy['path'], ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$file->original_name.'"'])->deleteFileAfterSend($copy['cleanup']);
+        }
+        if ($extension === 'docx') {
+            $zip = new ZipArchive;
+            abort_unless($zip->open($copy['path']) === true, 422, 'DOCX tidak dapat dibaca.');
+            $xml = $zip->getFromName('word/document.xml') ?: '';
+            $zip->close();
+            if ($copy['cleanup']) {
+                @unlink($copy['path']);
+            }
+            $html = '';
+            if (preg_match_all('/<w:p[^>]*>(.*?)<\/w:p>/s', $xml, $paragraphs)) {
+                foreach ($paragraphs[1] as $pXml) {
+                    $pText = '';
+                    if (preg_match_all('/<w:r[^>]*>(.*?)<\/w:r>/s', $pXml, $runs)) {
+                        foreach ($runs[1] as $rXml) {
+                            $textVal = '';
+                            if (preg_match('/<w:t[^>]*>(.*?)<\/w:t>/s', $rXml, $tMatch)) {
+                                $textVal = htmlspecialchars(html_entity_decode($tMatch[1]), ENT_QUOTES, 'UTF-8');
+                            }
+                            if (str_contains($rXml, '<w:b/>') || str_contains($rXml, '<w:b ')) {
+                                $textVal = '<strong>'.$textVal.'</strong>';
+                            }
+                            if (str_contains($rXml, '<w:i/>') || str_contains($rXml, '<w:i ')) {
+                                $textVal = '<em>'.$textVal.'</em>';
+                            }
+                            $pText .= $textVal;
+                        }
+                    }
+                    if (trim(strip_tags($pText)) !== '') {
+                        $html .= '<p class="mb-3 text-slate-800 leading-relaxed font-sans">'.$pText.'</p>';
+                    }
+                }
+            }
+            $text = $html ?: '<p class="text-slate-500 italic">Dokumen kosong atau tidak berisi teks yang dapat diekstrak.</p>';
+
+            return view('submissions.preview', compact('submission', 'file', 'text'));
+        }
+        if ($copy['cleanup']) {
+            @unlink($copy['path']);
+        } abort(422, 'Preview hanya tersedia untuk PDF dan DOCX.');
     }
 
     public function saveChecklist(Request $request, Submission $submission, ReviewStage $stage): RedirectResponse

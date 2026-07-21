@@ -11,7 +11,7 @@ class ChecklistItem extends Model
 {
     use HasFactory, HasUlids;
 
-    protected $fillable = ['checklist_template_id', 'title', 'description', 'is_required', 'sort_order'];
+    protected $fillable = ['checklist_template_id', 'title', 'description', 'is_required', 'condition_type', 'condition_value', 'sort_order'];
 
     protected function casts(): array
     {

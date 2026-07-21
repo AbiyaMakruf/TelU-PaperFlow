@@ -111,6 +111,50 @@ class AuthorPortalController extends Controller
         return back()->with('success', 'Revisi berhasil diunggah ulang.');
     }
 
+    public function updateDetails(Request $request, string $token): RedirectResponse
+    {
+        $submission = $this->submissionFor($token);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:500'],
+            'author_name' => ['required', 'string', 'max:255'],
+            'author_email' => ['required', 'email:rfc', 'max:255'],
+            'author_phone' => ['required', 'string', 'max:50'],
+            'co_authors' => ['nullable', 'array', 'max:30'],
+            'co_authors.*.name' => ['required', 'string', 'max:255'],
+            'co_authors.*.email' => ['nullable', 'email:rfc', 'max:255'],
+            'co_authors.*.affiliation' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        DB::transaction(function () use ($submission, $validated) {
+            $submission->update([
+                'title' => $validated['title'],
+                'corresponding_author_name' => $validated['author_name'],
+                'corresponding_author_email' => Str::lower($validated['author_email']),
+                'corresponding_author_phone' => $validated['author_phone'],
+            ]);
+
+            $submission->authors()->delete();
+            $submission->authors()->create([
+                'name' => $validated['author_name'],
+                'email' => Str::lower($validated['author_email']),
+                'is_corresponding' => true,
+                'sort_order' => 1,
+            ]);
+            foreach ($validated['co_authors'] ?? [] as $index => $author) {
+                $submission->authors()->create([
+                    'name' => $author['name'],
+                    'email' => isset($author['email']) ? Str::lower($author['email']) : null,
+                    'affiliation' => $author['affiliation'] ?? null,
+                    'is_corresponding' => false,
+                    'sort_order' => $index + 2,
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Data submission berhasil diperbarui.');
+    }
+
     private function submissionFor(string $token): Submission
     {
         return Submission::query()

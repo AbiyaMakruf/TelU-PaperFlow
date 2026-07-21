@@ -88,4 +88,46 @@ class ConferenceFileStorage
 
         return ['path' => $path, 'cleanup' => true];
     }
+
+    public function migrateStorage(Conference $conference, string $targetProvider): int
+    {
+        $files = FileVersion::query()
+            ->whereHas('submission', fn ($q) => $q->where('conference_id', $conference->id))
+            ->get();
+
+        $migratedCount = 0;
+        $originalProvider = $conference->storage_provider;
+        $conference->update(['storage_provider' => $targetProvider]);
+
+        foreach ($files as $file) {
+            if ($file->disk === $targetProvider) {
+                continue;
+            }
+            try {
+                $temp = $this->temporaryCopy($file);
+                $uploadedFile = new UploadedFile($temp['path'], $file->original_name, $file->mime_type, null, true);
+                $paperCode = $file->submission ? $file->submission->paper_code : 'FILE-'.$file->id;
+                $newPath = $conference->slug.'/'.$file->submission_id.'/v'.$file->version_number.'-migrated-'.Str::slug(pathinfo($file->original_name, PATHINFO_FILENAME)).'.'.pathinfo($file->original_name, PATHINFO_EXTENSION);
+
+                $stored = $this->put($conference, $uploadedFile, $newPath, $paperCode.'-V'.$file->version_number);
+
+                $file->update([
+                    'disk' => $stored['disk'],
+                    'storage_path' => $stored['storage_path'],
+                    'external_provider' => $stored['external_provider'],
+                    'external_id' => $stored['external_id'],
+                    'external_url' => $stored['external_url'],
+                ]);
+
+                if ($temp['cleanup'] && is_file($temp['path'])) {
+                    @unlink($temp['path']);
+                }
+                $migratedCount++;
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $migratedCount;
+    }
 }

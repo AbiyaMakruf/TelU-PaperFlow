@@ -81,6 +81,7 @@ class SubmissionWorkflow
         ConferenceRole $role,
         User $actor,
         ?string $note = null,
+        ?string $reassignmentReason = null,
     ): Submission {
         if (! in_array($role, [ConferenceRole::Editorial, ConferenceRole::Reviewer], true)) {
             throw new DomainException('Role assignment harus editorial atau reviewer.');
@@ -90,7 +91,12 @@ class SubmissionWorkflow
             throw new DomainException('Pengguna tidak memiliki role aktif pada conference ini.');
         }
 
-        return DB::transaction(function () use ($submission, $assignee, $role, $actor, $note) {
+        $currentAssigneeId = $role === ConferenceRole::Editorial ? $submission->editor_id : $submission->reviewer_id;
+        if ($currentAssigneeId && $currentAssigneeId !== $assignee->id && empty(trim((string) $reassignmentReason))) {
+            throw new DomainException('Alasan reassignment wajib diisi saat mengganti PIC yang sudah ditugaskan.');
+        }
+
+        return DB::transaction(function () use ($submission, $assignee, $role, $actor, $note, $reassignmentReason) {
             Assignment::query()
                 ->where('submission_id', $submission->id)
                 ->where('role', $role->value)
@@ -103,6 +109,7 @@ class SubmissionWorkflow
                 'role' => $role,
                 'assigned_by' => $actor->id,
                 'note' => $note,
+                'reassignment_reason' => $reassignmentReason,
                 'assigned_at' => now(),
             ]);
 
@@ -110,7 +117,11 @@ class SubmissionWorkflow
                 $role === ConferenceRole::Editorial ? 'editor_id' : 'reviewer_id' => $assignee->id,
             ]);
             $assignee->notify(new WorkflowNotification($submission, 'Assignment baru', "Anda ditugaskan pada {$submission->paper_code} sebagai {$role->label()}."));
-            app(AuditLogger::class)->record('submission.assigned', $submission, $submission->conference, [], ['user_id' => $assignee->id, 'role' => $role->value]);
+            app(AuditLogger::class)->record('submission.assigned', $submission, $submission->conference, [], [
+                'user_id' => $assignee->id,
+                'role' => $role->value,
+                'reassignment_reason' => $reassignmentReason,
+            ]);
 
             if ($role === ConferenceRole::Editorial && $submission->status === SubmissionStatus::ReadyForAssignment) {
                 return $this->transition($submission, SubmissionStatus::EditorialReview, $actor, $note);
@@ -118,6 +129,33 @@ class SubmissionWorkflow
 
             return $submission->refresh();
         });
+    }
+
+    public function getStaffWorkload(int|string $conferenceId): array
+    {
+        $submissions = Submission::query()
+            ->where('conference_id', $conferenceId)
+            ->whereNotIn('status', [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn])
+            ->get();
+
+        $workload = [];
+
+        foreach ($submissions as $sub) {
+            if ($sub->editor_id) {
+                $workload[$sub->editor_id]['active'] = ($workload[$sub->editor_id]['active'] ?? 0) + 1;
+                if ($sub->isOverdue()) {
+                    $workload[$sub->editor_id]['overdue'] = ($workload[$sub->editor_id]['overdue'] ?? 0) + 1;
+                }
+            }
+            if ($sub->reviewer_id) {
+                $workload[$sub->reviewer_id]['active'] = ($workload[$sub->reviewer_id]['active'] ?? 0) + 1;
+                if ($sub->isOverdue()) {
+                    $workload[$sub->reviewer_id]['overdue'] = ($workload[$sub->reviewer_id]['overdue'] ?? 0) + 1;
+                }
+            }
+        }
+
+        return $workload;
     }
 
     /** @return list<SubmissionStatus> */

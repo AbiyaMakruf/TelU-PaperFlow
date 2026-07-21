@@ -16,7 +16,7 @@ class Submission extends Model
 
     protected $fillable = [
         'conference_id', 'form_version_id', 'paper_id', 'paper_code', 'manuscript_format', 'title', 'corresponding_author_name',
-        'corresponding_author_email', 'corresponding_author_phone', 'answers', 'status',
+        'corresponding_author_email', 'corresponding_author_phone', 'answers', 'status', 'is_flagged_duplicate', 'duplicate_notes',
         'editor_id', 'reviewer_id', 'author_token_hash', 'author_token_encrypted', 'author_token_expires_at',
         'submitted_at', 'validated_at', 'completed_at', 'edas_reference', 'edas_notes', 'lock_version',
         'deadline_at', 'edas_submitted_at', 'edas_submitted_by', 'edas_approved_at', 'edas_approved_by',
@@ -29,6 +29,7 @@ class Submission extends Model
         return [
             'answers' => 'array',
             'status' => SubmissionStatus::class,
+            'is_flagged_duplicate' => 'boolean',
             'author_token_encrypted' => 'encrypted',
             'author_token_expires_at' => 'datetime',
             'submitted_at' => 'datetime',

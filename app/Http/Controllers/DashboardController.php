@@ -33,8 +33,41 @@ class DashboardController extends Controller
             'done' => (clone $query)->where('status', SubmissionStatus::Done)->count(),
         ];
 
+        // Status distribution
+        $statusDistribution = (clone $query)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->all();
+
+        // Submissions trend by day (last 14 days)
+        $submissionsTrend = (clone $query)
+            ->where('submitted_at', '>=', now()->subDays(14))
+            ->selectRaw('DATE(submitted_at) as date, count(*) as count')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->pluck('count', 'date')
+            ->all();
+
+        // Workload per editor
+        $allVisible = (clone $query)->with(['editor', 'reviewer'])->get();
+        $picWorkload = [];
+        foreach ($allVisible as $sub) {
+            if ($sub->editor) {
+                $name = $sub->editor->name;
+                $picWorkload[$name]['active'] = ($picWorkload[$name]['active'] ?? 0) + (! in_array($sub->status, [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn]) ? 1 : 0);
+                $picWorkload[$name]['total'] = ($picWorkload[$name]['total'] ?? 0) + 1;
+            }
+        }
+
+        // Average turnaround time (days between submitted_at and completed_at)
+        $completedSubmissions = (clone $query)->whereNotNull('completed_at')->get();
+        $turnaroundDays = $completedSubmissions->count() > 0
+            ? round($completedSubmissions->avg(fn ($s) => $s->submitted_at->diffInDays($s->completed_at)), 1)
+            : 0;
+
         $recentSubmissions = $query->with(['conference', 'editor', 'reviewer'])->latest('submitted_at')->limit(8)->get();
 
-        return view('dashboard', compact('conferences', 'stats', 'recentSubmissions'));
+        return view('dashboard', compact('conferences', 'stats', 'statusDistribution', 'submissionsTrend', 'picWorkload', 'turnaroundDays', 'recentSubmissions'));
     }
 }

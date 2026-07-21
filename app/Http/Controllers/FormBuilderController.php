@@ -29,10 +29,13 @@ class FormBuilderController extends Controller
             'fields' => ['nullable', 'array', 'max:40'],
             'fields.*.key' => ['required', 'string', 'max:60', 'regex:/^[a-z][a-z0-9_]*$/'],
             'fields.*.label' => ['required', 'string', 'max:150'],
-            'fields.*.type' => ['required', Rule::in(['text', 'email', 'tel', 'number', 'url', 'date', 'textarea', 'select', 'radio', 'checkbox'])],
+            'fields.*.type' => ['required', Rule::in(['text', 'email', 'tel', 'number', 'url', 'date', 'textarea', 'select', 'radio', 'checkbox', 'section'])],
             'fields.*.required' => ['nullable', 'boolean'],
             'fields.*.help' => ['nullable', 'string', 'max:500'],
             'fields.*.options' => ['nullable', 'string', 'max:2000'],
+            'fields.*.depends_on_field' => ['nullable', 'string', 'max:60'],
+            'fields.*.depends_on_value' => ['nullable', 'string', 'max:100'],
+            'fields.*.validation_regex' => ['nullable', 'string', 'max:255'],
         ]);
 
         $fields = collect($validated['fields'] ?? [])->map(function ($field) {
@@ -40,6 +43,9 @@ class FormBuilderController extends Controller
             $field['options'] = in_array($field['type'], ['select', 'radio'], true)
                 ? collect(preg_split('/\r\n|\r|\n/', $field['options'] ?? ''))->map(fn ($option) => trim($option))->filter()->values()->all()
                 : [];
+            $field['depends_on_field'] = $field['depends_on_field'] ?? null;
+            $field['depends_on_value'] = $field['depends_on_value'] ?? null;
+            $field['validation_regex'] = $field['validation_regex'] ?? null;
 
             return $field;
         })->values();

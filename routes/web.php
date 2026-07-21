@@ -57,6 +57,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/editor-performance', EditorPerformanceController::class)->name('editor-performance.index');
 
         Route::get('/papers', [SubmissionController::class, 'index'])->name('submissions.index');
+        Route::post('/papers/bulk-assign', [SubmissionController::class, 'bulkAssign'])->name('submissions.bulk-assign');
+        Route::post('/papers/bulk-status', [SubmissionController::class, 'bulkStatusUpdate'])->name('submissions.bulk-status');
         Route::get('/papers-export.csv', SubmissionExportController::class)->name('submissions.export');
         Route::get('/papers/{submission}', [SubmissionController::class, 'show'])->name('submissions.show');
         Route::post('/papers/{submission}/accept', [SubmissionController::class, 'accept'])->name('submissions.accept');
@@ -84,21 +86,26 @@ Route::middleware('auth')->group(function () {
         Route::put('/conferences/{conference}/email-templates', [EmailTemplateController::class, 'update'])->name('conferences.email-templates.update');
         Route::get('/conferences/{conference}/drive', [GoogleDriveController::class, 'show'])->name('conferences.drive.show');
         Route::put('/conferences/{conference}/storage-provider', [GoogleDriveController::class, 'updateProvider'])->name('conferences.storage-provider.update');
+        Route::post('/conferences/{conference}/storage-provider/migrate', [GoogleDriveController::class, 'migrateStorage'])->name('conferences.storage-provider.migrate');
         Route::post('/conferences/{conference}/drive/connect', [GoogleDriveController::class, 'connect'])->name('conferences.drive.connect');
         Route::delete('/conferences/{conference}/drive', [GoogleDriveController::class, 'disconnect'])->name('conferences.drive.disconnect');
         Route::get('/google-drive/callback', [GoogleDriveController::class, 'callback'])->name('google-drive.callback');
+
+        Route::post('/impersonate/leave', [\App\Http\Controllers\Admin\ImpersonationController::class, 'leave'])->name('impersonate.leave');
 
         Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
             Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');
             Route::post('/monitoring/failed-jobs/{uuid}/retry', [MonitoringController::class, 'retry'])->name('monitoring.retry');
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
             Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+            Route::post('/users/{user}/impersonate', [\App\Http\Controllers\Admin\ImpersonationController::class, 'impersonate'])->name('users.impersonate');
         });
     });
 });
 
 Route::prefix('submission')->group(function () {
     Route::get('/access/{token}', [AuthorPortalController::class, 'show'])->name('author.portal');
+    Route::put('/access/{token}/details', [AuthorPortalController::class, 'updateDetails'])->name('author.details.update');
     Route::post('/access/{token}/revision', [AuthorPortalController::class, 'uploadRevision'])->middleware('throttle:author-revision')->name('author.revision');
     Route::post('/access/{token}/uploads/{attempt}/retry', [AuthorPortalController::class, 'retryUpload'])->middleware('throttle:author-revision')->name('author.uploads.retry');
     Route::get('/access/{token}/files/{file}', [AuthorPortalController::class, 'download'])->name('author.files.download');

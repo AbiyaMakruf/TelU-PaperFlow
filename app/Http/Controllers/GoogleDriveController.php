@@ -77,4 +77,16 @@ class GoogleDriveController extends Controller
 
         return back()->with('success', 'Koneksi Google Drive dilepas dari conference.');
     }
+
+    public function migrateStorage(Request $request, Conference $conference, \App\Services\ConferenceFileStorage $storage): RedirectResponse
+    {
+        $this->authorize('update', $conference);
+        $validated = $request->validate([
+            'target_provider' => ['required', Rule::in(['supabase', 'google_drive'])],
+        ]);
+
+        $count = $storage->migrateStorage($conference, $validated['target_provider']);
+
+        return back()->with('success', "Proses migrasi selesai. {$count} berkas berhasil dipindahkan ke {$validated['target_provider']}.");
+    }
 }
