@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
@@ -69,5 +70,29 @@ class AuthenticationTest extends TestCase
         $response = $this->post('/login', ['email' => $email, 'password' => 'wrong-password'])
             ->assertSessionHasErrors('email');
         $this->assertStringContainsString('Terlalu banyak percobaan login', $response->getSession()->get('errors')->first('email'));
+    }
+
+    public function test_password_only_requires_eight_characters_without_complexity_rules(): void
+    {
+        $user = User::factory()->create(['must_change_password' => true]);
+
+        $this->actingAs($user)->put(route('password.change.update'), [
+            'current_password' => 'password',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertTrue(Hash::check('12345678', $user->fresh()->password));
+    }
+
+    public function test_password_shorter_than_eight_characters_is_rejected(): void
+    {
+        $user = User::factory()->create(['must_change_password' => true]);
+
+        $this->actingAs($user)->put(route('password.change.update'), [
+            'current_password' => 'password',
+            'password' => '1234567',
+            'password_confirmation' => '1234567',
+        ])->assertSessionHasErrors('password');
     }
 }

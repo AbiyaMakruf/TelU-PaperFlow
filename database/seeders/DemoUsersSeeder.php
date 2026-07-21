@@ -95,8 +95,8 @@ class DemoUsersSeeder extends Seeder
     {
         $password = (string) config('paperflow.demo_password');
 
-        if (mb_strlen($password) < 12) {
-            throw new RuntimeException('PAPERFLOW_DEMO_PASSWORD wajib diisi minimal 12 karakter sebelum menjalankan DemoUsersSeeder.');
+        if (mb_strlen($password) < 8) {
+            throw new RuntimeException('PAPERFLOW_DEMO_PASSWORD wajib diisi minimal 8 karakter sebelum menjalankan DemoUsersSeeder.');
         }
 
         return $password;

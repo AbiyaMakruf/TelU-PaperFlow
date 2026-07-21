@@ -13,7 +13,7 @@ class DemoUsersSeederTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const DEMO_PASSWORD = 'Paperflow-Test-123!';
+    private const DEMO_PASSWORD = '12345678';
 
     protected function setUp(): void
     {
@@ -63,7 +63,7 @@ class DemoUsersSeederTest extends TestCase
 
     public function test_demo_seeder_requires_a_strong_configured_password(): void
     {
-        config()->set('paperflow.demo_password', 'short');
+        config()->set('paperflow.demo_password', '1234567');
 
         $this->expectException(\RuntimeException::class);
         $this->seed(DemoUsersSeeder::class);

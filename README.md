@@ -121,7 +121,7 @@ Document root web server harus menunjuk ke `public/`. Pastikan `storage/` dan `b
 
 ## Akun demo per role
 
-Untuk environment development, isi `PAPERFLOW_DEMO_PASSWORD` di `.env` dengan password minimal 12 karakter, lalu jalankan:
+Untuk environment development, isi `PAPERFLOW_DEMO_PASSWORD` di `.env` dengan password minimal 8 karakter, lalu jalankan:
 
 ```bash
 php artisan db:seed --class=Database\\Seeders\\DemoUsersSeeder
