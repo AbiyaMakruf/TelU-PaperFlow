@@ -6,8 +6,10 @@ use App\Models\Conference;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class GoogleDriveStorage
 {
@@ -113,6 +115,43 @@ class GoogleDriveStorage
 
         return ['id' => $id, 'name' => $uploaded['name'] ?? $name,
             'webViewLink' => $uploaded['webViewLink'] ?? "https://drive.google.com/file/d/{$id}/view"];
+    }
+
+    public function download(Conference $conference, string $fileId, string $originalName): BinaryFileResponse
+    {
+        if (! $this->connected($conference)) {
+            throw new RuntimeException('Google Drive conference belum terhubung.');
+        }
+
+        $directory = storage_path('app/private/google-drive-downloads');
+        File::ensureDirectoryExists($directory);
+        $temporaryPath = tempnam($directory, 'paperflow-');
+        if ($temporaryPath === false) {
+            throw new RuntimeException('Gagal menyiapkan file sementara untuk download Google Drive.');
+        }
+
+        try {
+            $response = $this->client($conference)
+                ->withOptions(['sink' => $temporaryPath])
+                ->get("https://www.googleapis.com/drive/v3/files/{$fileId}", [
+                    'alt' => 'media', 'supportsAllDrives' => 'true',
+                ])->throw();
+
+            // HTTP fakes do not write to Guzzle's sink, so retain their body for testability.
+            if (filesize($temporaryPath) === 0 && $response->body() !== '') {
+                file_put_contents($temporaryPath, $response->body());
+            }
+
+            return response()->download($temporaryPath, $originalName, [
+                'Content-Type' => $response->header('Content-Type') ?: 'application/octet-stream',
+            ])->deleteFileAfterSend(true);
+        } catch (\Throwable $exception) {
+            if (is_file($temporaryPath)) {
+                unlink($temporaryPath);
+            }
+
+            throw $exception;
+        }
     }
 
     private function resolveFolderId(Conference $conference): string

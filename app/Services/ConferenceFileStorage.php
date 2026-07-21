@@ -49,9 +49,14 @@ class ConferenceFileStorage
     public function download(FileVersion $file): RedirectResponse|BinaryFileResponse
     {
         if ($file->disk === 'google_drive') {
-            abort_unless($file->external_url, 404);
+            $file->loadMissing('submission.conference');
+            abort_unless($file->submission?->conference, 404);
 
-            return redirect()->away($file->external_url);
+            return $this->googleDrive->download(
+                $file->submission->conference,
+                $file->external_id ?: $file->storage_path,
+                $file->original_name,
+            );
         }
 
         if ($url = $this->privateStorage->temporaryUrl($file->storage_path)) {

@@ -7,6 +7,7 @@ use App\Models\Conference;
 use App\Models\EmailTemplate;
 use App\Models\FormVersion;
 use App\Models\Submission;
+use App\Services\GoogleDriveStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -98,6 +99,19 @@ class PublicSubmissionTest extends TestCase
         $this->assertDatabaseCount('submissions', 0);
     }
 
+    public function test_google_drive_file_is_returned_as_a_direct_attachment(): void
+    {
+        [$conference] = $this->openConference();
+        $this->fakeGoogleDrive($conference, true, 'drive-file-content');
+
+        $response = app(GoogleDriveStorage::class)->download($conference->fresh(), 'drive-file-123', 'manuscript.zip');
+
+        $this->assertStringContainsString('attachment; filename=manuscript.zip', (string) $response->headers->get('Content-Disposition'));
+        $this->assertSame('application/zip', $response->headers->get('Content-Type'));
+        $this->assertSame('drive-file-content', file_get_contents($response->getFile()->getPathname()));
+        @unlink($response->getFile()->getPathname());
+    }
+
     public function test_author_can_upload_revision_only_when_requested(): void
     {
         Storage::fake('local');
@@ -151,7 +165,7 @@ class PublicSubmissionTest extends TestCase
         return [$conference, $form];
     }
 
-    private function fakeGoogleDrive(Conference $conference, bool $folderWritable = true): void
+    private function fakeGoogleDrive(Conference $conference, bool $folderWritable = true, ?string $downloadContent = null): void
     {
         config([
             'services.google_drive.client_id' => 'client-id',
@@ -164,7 +178,10 @@ class PublicSubmissionTest extends TestCase
             'google_drive_token' => ['access_token' => 'token', 'refresh_token' => 'refresh', 'expires_at' => now()->addHour()->timestamp],
             'google_drive_connected_at' => now(),
         ]);
-        Http::fake(function ($request) use ($folderWritable) {
+        Http::fake(function ($request) use ($folderWritable, $downloadContent) {
+            if ($downloadContent !== null && str_contains($request->url(), 'alt=media')) {
+                return Http::response($downloadContent, 200, ['Content-Type' => 'application/zip']);
+            }
             if ($request->method() === 'GET') {
                 if (str_contains($request->url(), '/files/folder-123')) {
                     return Http::response(['id' => 'folder-123', 'name' => 'Paper Conference', 'capabilities' => ['canAddChildren' => $folderWritable]]);
