@@ -42,6 +42,22 @@ class OperationalFeaturesTest extends TestCase
         $this->actingAs($superadmin)->get(route('admin.monitoring.index'))->assertOk()->assertSee('Failed jobs');
     }
 
+    public function test_superadmin_can_impersonate_user_and_leave(): void
+    {
+        $superadmin = User::factory()->create(['is_super_admin' => true, 'must_change_password' => false]);
+        $targetUser = User::factory()->create(['must_change_password' => false]);
+
+        $response = $this->actingAs($superadmin)->post(route('admin.users.impersonate', $targetUser));
+        $response->assertRedirect(route('dashboard'));
+        $this->assertEquals($targetUser->id, auth()->id());
+        $this->assertEquals($superadmin->id, session('impersonated_by'));
+
+        $leaveResponse = $this->post(route('impersonate.leave'));
+        $leaveResponse->assertRedirect(route('admin.users.index'));
+        $this->assertEquals($superadmin->id, auth()->id());
+        $this->assertNull(session('impersonated_by'));
+    }
+
     private function fixture(): array
     {
         $admin = User::factory()->create(['must_change_password' => false]);

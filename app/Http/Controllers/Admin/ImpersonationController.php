@@ -21,7 +21,7 @@ class ImpersonationController extends Controller
         Auth::login($user);
         $request->session()->put('impersonated_by', $originalUserId);
 
-        $audit->record('user.impersonated', $user, metadata: ['impersonated_by' => $originalUserId, 'target_user' => $user->id]);
+        $audit->record('user.impersonated', $user, newValues: ['impersonated_by' => $originalUserId, 'target_user' => $user->id]);
 
         return redirect()->route('dashboard')->with('success', "Anda sekarang masuk sebagai {$user->name} ({$user->username}).");
     }
@@ -36,7 +36,7 @@ class ImpersonationController extends Controller
 
         Auth::login($originalUser);
 
-        $audit->record('user.impersonated_leave', $originalUser, metadata: ['impersonated_user' => $impersonatedUser->id]);
+        $audit->record('user.impersonated_leave', $originalUser, newValues: ['impersonated_user' => $impersonatedUser->id]);
 
         return redirect()->route('admin.users.index')->with('success', 'Kembali ke akun Superadmin.');
     }
