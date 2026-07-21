@@ -24,9 +24,13 @@ class GoogleDriveStorage
 
     public function connected(Conference $conference): bool
     {
-        return $this->configured() && filled($conference->google_drive_folder_id)
-            && is_array($conference->google_drive_token)
-            && filled($conference->google_drive_token['refresh_token'] ?? $conference->google_drive_token['access_token'] ?? null);
+        try {
+            return $this->configured() && filled($conference->google_drive_folder_id)
+                && is_array($conference->google_drive_token)
+                && filled($conference->google_drive_token['refresh_token'] ?? $conference->google_drive_token['access_token'] ?? null);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     public function folderName(Conference $conference): string
@@ -187,7 +191,11 @@ class GoogleDriveStorage
 
     private function client(Conference $conference): PendingRequest
     {
-        $token = $conference->google_drive_token ?? [];
+        try {
+            $token = $conference->google_drive_token ?? [];
+        } catch (\Throwable $e) {
+            throw new RuntimeException('Token Google Drive terenkripsi tidak dapat didekripsi karena APP_KEY berbeda. Harap hubungkan ulang akun Google Drive.', previous: $e);
+        }
         if (($token['expires_at'] ?? 0) <= now()->timestamp) {
             if (blank($token['refresh_token'] ?? null)) {
                 throw new RuntimeException('Sesi Google Drive kedaluwarsa. Hubungkan ulang akun.');
