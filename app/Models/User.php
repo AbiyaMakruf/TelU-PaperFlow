@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\ConferenceRole;
+use App\Notifications\PaperflowResetPassword;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -91,5 +92,10 @@ class User extends Authenticatable
             ->where('is_active', true)
             ->whereIn('role', $roleValues)
             ->exists();
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new PaperflowResetPassword($token));
     }
 }

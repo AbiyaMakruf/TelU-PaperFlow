@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Mail\PaperflowMail;
 use App\Models\EmailLog;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -26,15 +27,27 @@ class SendLoggedEmail implements ShouldQueue
         $this->emailLog->update(['status' => 'sending', 'attempts' => $this->attempts()]);
 
         try {
-            Mail::raw($this->body, function ($message) {
-                $message->from(
-                    (string) config('mail.from.address'),
-                    $this->emailLog->sender_name ?: (string) config('mail.from.name'),
-                )->to($this->emailLog->recipient)->subject($this->emailLog->subject);
-                if ($this->cc !== []) {
-                    $message->cc($this->cc);
-                }
-            });
+            preg_match('/https?:\/\/[^\s]+/', $this->body, $matches);
+            $actionUrl = isset($matches[0]) ? rtrim($matches[0], '.,);') : null;
+            $actionLabel = match ($this->emailLog->template_key) {
+                'revision_requested' => 'Buka portal & unggah revisi',
+                'submission_received' => 'Pantau submission',
+                'paper_completed' => 'Buka portal paper',
+                default => 'Buka Paperflow',
+            };
+            $mail = new PaperflowMail(
+                mailSubject: $this->emailLog->subject,
+                messageBody: $this->body,
+                senderName: $this->emailLog->sender_name ?: (string) config('mail.from.name'),
+                contextName: $this->emailLog->conference?->name ?: 'Paperflow',
+                actionUrl: $actionUrl,
+                actionLabel: $actionLabel,
+            );
+            $pending = Mail::to($this->emailLog->recipient);
+            if ($this->cc !== []) {
+                $pending->cc($this->cc);
+            }
+            $pending->send($mail);
             $this->emailLog->update(['status' => 'sent', 'sent_at' => now(), 'error' => null]);
         } catch (Throwable $exception) {
             $this->emailLog->update([
