@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/papers/{submission}/accept', [SubmissionController::class, 'accept'])->name('submissions.accept');
         Route::post('/papers/{submission}/correction', [SubmissionController::class, 'requestCorrection'])->name('submissions.correction');
         Route::post('/papers/{submission}/assign', [SubmissionController::class, 'assign'])->name('submissions.assign');
+        Route::post('/papers/{submission}/edas-status', [SubmissionController::class, 'updateEdasStatus'])->name('submissions.edas-status');
         Route::put('/papers/{submission}/checklist/{stage}', [SubmissionController::class, 'saveChecklist'])->name('submissions.checklist');
         Route::post('/papers/{submission}/advance', [SubmissionController::class, 'advance'])->name('submissions.advance');
         Route::post('/papers/{submission}/feedback', [SubmissionController::class, 'addFeedback'])->middleware('throttle:editorial-email')->name('submissions.feedback');

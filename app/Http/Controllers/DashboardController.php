@@ -49,10 +49,58 @@ class DashboardController extends Controller
             ->pluck('count', 'date')
             ->all();
 
-        // Workload per editor
+        // Workload & Granular Status Matrix per PIC
         $allVisible = (clone $query)->with(['editor', 'reviewer'])->get();
         $picWorkload = [];
+        $picMatrix = [];
+        $formatStats = ['Words' => 0, 'Latex' => 0, 'PDF' => 0, 'Other' => 0];
+
         foreach ($allVisible as $sub) {
+            // Count manuscript formats
+            $fmt = strtolower($sub->manuscript_format ?? '');
+            if ($fmt === 'docx' || $fmt === 'words') {
+                $formatStats['Words']++;
+            } elseif ($fmt === 'latex') {
+                $formatStats['Latex']++;
+            } elseif ($fmt === 'pdf') {
+                $formatStats['PDF']++;
+            } else {
+                $formatStats['Other']++;
+            }
+
+            // Assignee name
+            $picName = $sub->editor?->name ?? $sub->reviewer?->name ?? 'Unassigned';
+
+            if (! isset($picMatrix[$picName])) {
+                $picMatrix[$picName] = [
+                    'Total' => 0,
+                    'Belum' => 0,
+                    'In Progress' => 0,
+                    'Menunggu Jawaban' => 0,
+                    'Revised by Editor' => 0,
+                    'Revised by Author' => 0,
+                    'Selesai' => 0,
+                ];
+            }
+
+            $picMatrix[$picName]['Total']++;
+
+            if (in_array($sub->status, [SubmissionStatus::Submitted, SubmissionStatus::ReadyForAssignment], true)) {
+                $picMatrix[$picName]['Belum']++;
+            } elseif (in_array($sub->status, [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview, SubmissionStatus::ReadyForEdas], true)) {
+                $picMatrix[$picName]['In Progress']++;
+            } elseif (in_array($sub->status, [SubmissionStatus::WaitingAuthorRevision, SubmissionStatus::NeedsAuthorCorrection], true)) {
+                $picMatrix[$picName]['Menunggu Jawaban']++;
+            } elseif ($sub->status === SubmissionStatus::Done) {
+                $picMatrix[$picName]['Selesai']++;
+            }
+
+            if ($sub->revision_substatus === 'revised_by_editor') {
+                $picMatrix[$picName]['Revised by Editor']++;
+            } elseif ($sub->revision_substatus === 'revised_by_author') {
+                $picMatrix[$picName]['Revised by Author']++;
+            }
+
             if ($sub->editor) {
                 $name = $sub->editor->name;
                 $picWorkload[$name]['active'] = ($picWorkload[$name]['active'] ?? 0) + (! in_array($sub->status, [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn]) ? 1 : 0);
@@ -68,6 +116,6 @@ class DashboardController extends Controller
 
         $recentSubmissions = $query->with(['conference', 'editor', 'reviewer'])->latest('submitted_at')->limit(8)->get();
 
-        return view('dashboard', compact('conferences', 'stats', 'statusDistribution', 'submissionsTrend', 'picWorkload', 'turnaroundDays', 'recentSubmissions'));
+        return view('dashboard', compact('conferences', 'stats', 'statusDistribution', 'submissionsTrend', 'picWorkload', 'picMatrix', 'formatStats', 'turnaroundDays', 'recentSubmissions'));
     }
 }

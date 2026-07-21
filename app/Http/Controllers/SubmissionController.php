@@ -221,6 +221,25 @@ class SubmissionController extends Controller
         return back()->with('success', "Status {$count} paper berhasil diperbarui massal.");
     }
 
+    public function updateEdasStatus(Request $request, Submission $submission): RedirectResponse
+    {
+        $this->authorize('reviewerReview', $submission);
+
+        $validated = $request->validate([
+            'pdf_express_status' => ['required', Rule::in(['pending', 'passed', 'failed'])],
+            'edas_reference' => ['nullable', 'string', 'max:255'],
+            'edas_error_note' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $submission->update([
+            'pdf_express_status' => $validated['pdf_express_status'],
+            'edas_reference' => $validated['edas_reference'] ?? $submission->edas_reference,
+            'edas_error_note' => $validated['edas_error_note'],
+        ]);
+
+        return back()->with('success', 'Status IEEE PDF eXpress dan catatan EDAS berhasil diperbarui oleh Reviewer.');
+    }
+
     public function preview(Request $request, Submission $submission, FileVersion $file, ConferenceFileStorage $storage): View|BinaryFileResponse
     {
         $this->authorize('view', $submission);

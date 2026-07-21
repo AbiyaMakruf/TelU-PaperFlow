@@ -14,7 +14,7 @@ class FileVersion extends Model
     protected $fillable = [
         'submission_id', 'version_number', 'label', 'source', 'disk', 'storage_path',
         'original_name', 'mime_type', 'size', 'file_hash', 'checksum', 'uploaded_by', 'notes', 'is_final',
-        'external_provider', 'external_id', 'external_url',
+        'external_provider', 'external_id', 'external_url', 'file_category',
     ];
 
     protected function casts(): array

@@ -20,6 +20,7 @@ class Submission extends Model
         'editor_id', 'reviewer_id', 'author_token_hash', 'author_token_encrypted', 'author_token_expires_at',
         'submitted_at', 'validated_at', 'completed_at', 'edas_reference', 'edas_notes', 'lock_version',
         'deadline_at', 'edas_submitted_at', 'edas_submitted_by', 'edas_approved_at', 'edas_approved_by',
+        'pdf_express_status', 'edas_error_note', 'revision_substatus',
     ];
 
     protected $hidden = ['author_token_hash', 'author_token_encrypted'];

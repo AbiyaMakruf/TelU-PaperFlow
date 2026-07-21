@@ -60,6 +60,74 @@
         </div>
     </div>
 
+    <!-- Exact Spreadsheet PIC Workload Summary & Format Stats Matrix -->
+    <div class="mt-8">
+        <div class="card p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="font-black text-navy text-xl">Tabel Matriks Beban Kerja PIC &amp; Status Revisi</h2>
+                    <p class="text-xs text-muted mt-1">Ringkasan status paper per PIC (sesuai format checking spreadsheet)</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="badge badge-neutral text-xs">Words: {{ $formatStats['Words'] ?? 0 }}</span>
+                    <span class="badge badge-warning text-xs">LaTeX: {{ $formatStats['Latex'] ?? 0 }}</span>
+                    <span class="badge badge-info text-xs">PDF: {{ $formatStats['PDF'] ?? 0 }}</span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="data-table text-xs">
+                    <thead>
+                        <tr class="bg-navy text-white">
+                            <th class="py-3 px-4">PIC</th>
+                            <th class="py-3 px-4 text-center">Total</th>
+                            <th class="py-3 px-4 text-center bg-slate-800">Belum</th>
+                            <th class="py-3 px-4 text-center bg-blue-900">In Progress</th>
+                            <th class="py-3 px-4 text-center bg-amber-800">Menunggu Jawaban Author</th>
+                            <th class="py-3 px-4 text-center bg-indigo-900">Done - Revised by Editor</th>
+                            <th class="py-3 px-4 text-center bg-emerald-900">Done - Revised by Author</th>
+                            <th class="py-3 px-4 text-center bg-emerald-950">DONE / Selesai</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $totals = ['Total' => 0, 'Belum' => 0, 'In Progress' => 0, 'Menunggu Jawaban' => 0, 'Revised by Editor' => 0, 'Revised by Author' => 0, 'Selesai' => 0];
+                        @endphp
+                        @forelse($picMatrix ?? [] as $picName => $row)
+                            @php
+                                foreach($totals as $k => $v) { $totals[$k] += ($row[$k] ?? 0); }
+                            @endphp
+                            <tr class="border-b hover:bg-warm/50">
+                                <td class="font-extrabold text-navy py-3 px-4">{{ $picName }}</td>
+                                <td class="text-center font-black py-3 px-4">{{ $row['Total'] }}</td>
+                                <td class="text-center font-bold text-slate-700 py-3 px-4">{{ $row['Belum'] }}</td>
+                                <td class="text-center font-bold text-blue-700 py-3 px-4">{{ $row['In Progress'] }}</td>
+                                <td class="text-center font-bold text-amber-700 py-3 px-4">{{ $row['Menunggu Jawaban'] }}</td>
+                                <td class="text-center font-bold text-indigo-700 py-3 px-4">{{ $row['Revised by Editor'] }}</td>
+                                <td class="text-center font-bold text-emerald-700 py-3 px-4">{{ $row['Revised by Author'] }}</td>
+                                <td class="text-center font-black text-emerald-900 py-3 px-4">{{ $row['Selesai'] }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="8" class="text-center py-6 text-muted">Belum ada data matriks PIC.</td></tr>
+                        @endforelse
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-warm/80 font-black text-navy border-t-2 border-navy">
+                            <td class="py-3 px-4">TOTAL SUMMARY</td>
+                            <td class="text-center py-3 px-4">{{ $totals['Total'] }}</td>
+                            <td class="text-center py-3 px-4">{{ $totals['Belum'] }}</td>
+                            <td class="text-center py-3 px-4">{{ $totals['In Progress'] }}</td>
+                            <td class="text-center py-3 px-4">{{ $totals['Menunggu Jawaban'] }}</td>
+                            <td class="text-center py-3 px-4">{{ $totals['Revised by Editor'] }}</td>
+                            <td class="text-center py-3 px-4">{{ $totals['Revised by Author'] }}</td>
+                            <td class="text-center py-3 px-4 text-emerald-800">{{ $totals['Selesai'] }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div class="mt-8 grid gap-6 xl:grid-cols-[1.4fr_.6fr]">
         <section class="card overflow-hidden">
             <div class="flex items-center justify-between border-b border-navy/10 px-6 py-5"><div><h2 class="font-extrabold text-navy">Paper terbaru</h2><p class="mt-1 text-xs text-muted">Submission dan assignment terakhir</p></div></div>

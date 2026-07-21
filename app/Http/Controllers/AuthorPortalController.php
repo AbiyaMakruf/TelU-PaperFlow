@@ -22,9 +22,19 @@ class AuthorPortalController extends Controller
 {
     public function show(string $token): View
     {
-        $submission = $this->submissionFor($token)->load(['conference', 'files', 'uploadAttempts', 'feedback' => fn ($query) => $query->where('visibility', 'author'), 'statusHistory']);
+        $submission = $this->submissionFor($token)->load([
+            'conference.checklistTemplates.items',
+            'files',
+            'uploadAttempts',
+            'feedback' => fn ($query) => $query->where('visibility', 'author'),
+            'statusHistory',
+            'reviewCycles.results',
+        ]);
 
-        return view('public.portal', compact('submission', 'token'));
+        $latestCycle = $submission->reviewCycles->first();
+        $checklistResults = $latestCycle?->results->keyBy('checklist_item_id') ?? collect();
+
+        return view('public.portal', compact('submission', 'token', 'checklistResults'));
     }
 
     public function uploadRevision(Request $request, string $token, ConferenceFileStorage $storage): RedirectResponse
@@ -33,13 +43,21 @@ class AuthorPortalController extends Controller
         abort_unless(in_array($submission->status, [SubmissionStatus::NeedsAuthorCorrection, SubmissionStatus::WaitingAuthorRevision], true), 422, 'Paper ini belum meminta revisi author.');
         $validated = $request->validate([
             'paper_file' => ['required', File::types(['docx', 'zip'])->max($submission->conference->maxFileSizeMb().'mb')],
+            'guidance_pdf' => ['nullable', File::types(['pdf'])->max($submission->conference->maxFileSizeMb().'mb')],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $file = $request->file('paper_file');
+        $guidanceFile = $request->file('guidance_pdf');
         $version = $submission->files()->max('version_number') + 1;
         $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
         try {
             $storedFile = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-V'.$version);
+
+            $storedGuidance = null;
+            if ($guidanceFile) {
+                $gPath = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-guidance-'.Str::slug(pathinfo($guidanceFile->getClientOriginalName(), PATHINFO_FILENAME)).'.pdf';
+                $storedGuidance = $storage->put($submission->conference, $guidanceFile, $gPath, $submission->paper_code.'-V'.$version.'-Guidance');
+            }
         } catch (Throwable $e) {
             $pending = $file->storeAs('pending-uploads/'.$submission->id, Str::ulid().'-'.$file->getClientOriginalName(), 'local');
             $submission->uploadAttempts()->create(['source' => 'author', 'label' => 'Revisi author '.$version, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size' => $file->getSize(), 'temporary_path' => $pending, 'notes' => $validated['notes'] ?? null, 'status' => 'failed', 'error' => $e->getMessage()]);
@@ -48,11 +66,12 @@ class AuthorPortalController extends Controller
             return back()->withErrors(['paper_file' => 'Upload gagal. File disimpan sementara; klik Coba lagi.']);
         }
 
-        DB::transaction(function () use ($submission, $file, $version, $validated, $storedFile) {
+        DB::transaction(function () use ($submission, $file, $guidanceFile, $version, $validated, $storedFile, $storedGuidance) {
             $submission->files()->create([
                 'version_number' => $version,
                 'label' => 'Revisi author '.$version,
                 'source' => 'author',
+                'file_category' => 'editable_manuscript',
                 'disk' => $storedFile['disk'],
                 'storage_path' => $storedFile['storage_path'],
                 'original_name' => $file->getClientOriginalName(),
@@ -64,11 +83,31 @@ class AuthorPortalController extends Controller
                 'external_id' => $storedFile['external_id'],
                 'external_url' => $storedFile['external_url'],
             ]);
+
+            if ($guidanceFile && $storedGuidance) {
+                $submission->files()->create([
+                    'version_number' => $version,
+                    'label' => 'PDF Petunjuk Revisi v'.$version,
+                    'source' => 'author',
+                    'file_category' => 'revision_guidance_pdf',
+                    'disk' => $storedGuidance['disk'],
+                    'storage_path' => $storedGuidance['storage_path'],
+                    'original_name' => $guidanceFile->getClientOriginalName(),
+                    'mime_type' => $guidanceFile->getMimeType(),
+                    'size' => $guidanceFile->getSize(),
+                    'checksum' => hash_file('sha256', $guidanceFile->getRealPath()),
+                    'notes' => 'PDF Petunjuk Revisi / Response Form',
+                    'external_provider' => $storedGuidance['external_provider'],
+                    'external_id' => $storedGuidance['external_id'],
+                    'external_url' => $storedGuidance['external_url'],
+                ]);
+            }
+
             $from = $submission->status;
             $to = $from === SubmissionStatus::NeedsAuthorCorrection
                 ? SubmissionStatus::Submitted
                 : SubmissionStatus::EditorialReview;
-            $submission->update(['status' => $to]);
+            $submission->update(['status' => $to, 'revision_substatus' => 'revised_by_author']);
             $submission->statusHistory()->create([
                 'from_status' => $from,
                 'to_status' => $to,

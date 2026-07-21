@@ -90,6 +90,35 @@
                     </form>
                 </div>
 
+                <!-- Live Editorial Checklist Monitoring -->
+                @if($submission->conference->checklistTemplates->isNotEmpty())
+                    <div class="card p-6">
+                        <h2 class="text-lg font-black text-navy">Monitoring Checklist Editorial (Live)</h2>
+                        <p class="text-xs text-muted mt-1">Status kelengkapan format paper berdasarkan pemeriksaan tim editorial.</p>
+                        <div class="mt-4 space-y-2">
+                            @foreach($submission->conference->checklistTemplates as $tmpl)
+                                @foreach($tmpl->items as $item)
+                                    @php $res = isset($checklistResults) ? $checklistResults->get($item->id) : null; @endphp
+                                    <div class="flex items-start justify-between gap-3 p-3 rounded-xl border {{ $res?->is_checked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200' }}">
+                                        <div>
+                                            <p class="text-xs font-extrabold {{ $res?->is_checked ? 'text-emerald-900' : 'text-rose-900' }}">{{ $item->title }}</p>
+                                            @if($item->description)
+                                                <p class="text-[11px] text-slate-600 mt-0.5">{{ $item->description }}</p>
+                                            @endif
+                                            @if($res?->note)
+                                                <p class="text-[11px] font-semibold text-slate-800 mt-1">Catatan: {{ $res->note }}</p>
+                                            @endif
+                                        </div>
+                                        <span class="badge {{ $res?->is_checked ? 'badge-success' : 'badge-danger' }} shrink-0">
+                                            {{ $res?->is_checked ? '✓ OK' : '✕ Perlu Perbaikan' }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 @if ($submission->feedback->isNotEmpty())
                     <div class="card p-6">
                         <h2 class="text-lg font-black text-navy">Catatan dari tim</h2>
@@ -107,6 +136,7 @@
                         @csrf
                         <h2 class="text-lg font-black text-navy">Unggah revisi</h2>
                         <label class="mt-5 block"><span class="form-label">File editable baru *</span><input class="form-input py-3" type="file" name="paper_file" accept=".docx,.zip" required><span class="mt-2 block text-xs text-muted">Gunakan DOCX atau ZIP yang berisi seluruh source LaTeX.</span></label>
+                        <label class="mt-4 block"><span class="form-label">PDF Petunjuk Revisi / Response Form (Opsional)</span><input class="form-input py-2 text-xs" type="file" name="guidance_pdf" accept=".pdf"><span class="mt-1 block text-xs text-muted">Upload berkas PDF penjelasan revisi/response form dari author jika ada.</span></label>
                         <label class="mt-5 block"><span class="form-label">Catatan perubahan</span><textarea class="form-input min-h-24 py-3" name="notes"></textarea></label>
                         <button class="btn btn-primary mt-5">Kirim revisi</button>
                     </form>

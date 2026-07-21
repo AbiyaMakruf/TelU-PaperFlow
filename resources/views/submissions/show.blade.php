@@ -150,7 +150,7 @@
 
             <section class="card overflow-hidden">
                 <div class="p-6"><h2 class="text-lg font-black text-navy">Versioning file</h2></div>
-                <div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Versi</th><th>File</th><th>Sumber</th><th>Oleh</th><th></th></tr></thead><tbody>@foreach($submission->files as $file)<tr><td>v{{ $file->version_number }} @if($file->is_final)<span class="badge badge-success">Final</span>@endif</td><td><p class="font-bold text-navy">{{ $file->label }}</p><p class="text-xs text-muted">{{ $file->original_name }} &middot; {{ number_format($file->size / 1024, 0) }} KB</p></td><td>{{ ucfirst($file->source) }}</td><td>{{ $file->uploader?->name ?? 'Author' }}</td><td class="space-x-3"><a class="font-bold text-orange" href="{{ route('submissions.files.preview', [$submission, $file]) }}">Preview</a><a class="font-bold text-orange" href="{{ route('submissions.files.download', [$submission, $file]) }}">Download</a></td></tr>@endforeach</tbody></table></div>
+                <div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Versi</th><th>File</th><th>Kategori</th><th>Sumber</th><th>Oleh</th><th></th></tr></thead><tbody>@foreach($submission->files as $file)<tr><td>v{{ $file->version_number }} @if($file->is_final)<span class="badge badge-success">Final</span>@endif</td><td><p class="font-bold text-navy">{{ $file->label }}</p><p class="text-xs text-muted">{{ $file->original_name }} &middot; {{ number_format($file->size / 1024, 0) }} KB</p></td><td><span class="badge {{ $file->file_category === 'revision_guidance_pdf' ? 'badge-warning' : 'badge-neutral' }} text-[10px]">{{ $file->file_category === 'revision_guidance_pdf' ? 'PDF Petunjuk Revisi' : 'Editable Manuscript' }}</span></td><td>{{ ucfirst($file->source) }}</td><td>{{ $file->uploader?->name ?? 'Author' }}</td><td class="space-x-3"><a class="font-bold text-orange" href="{{ route('submissions.files.preview', [$submission, $file]) }}">Preview</a><a class="font-bold text-orange" href="{{ route('submissions.files.download', [$submission, $file]) }}">Download</a></td></tr>@endforeach</tbody></table></div>
                 @if($submission->uploadAttempts->where('status','failed')->isNotEmpty())<div class="border-t border-danger/10 p-6"><h3 class="font-bold text-danger">Upload gagal</h3>@foreach($submission->uploadAttempts->where('status','failed') as $attempt)<div class="mt-3 flex items-center justify-between rounded-xl bg-danger/5 p-4"><div><p class="font-bold">{{ $attempt->original_name }}</p><p class="text-xs text-danger">{{ Str::limit($attempt->error,150) }}</p></div><form method="POST" action="{{ route('submissions.uploads.retry',[$submission,$attempt]) }}">@csrf<button class="btn btn-secondary">Coba lagi</button></form></div>@endforeach</div>@endif
                 @can('editorialReview', $submission)<form method="POST" action="{{ route('submissions.files.store', $submission) }}" enctype="multipart/form-data" class="grid gap-4 border-t border-navy/10 p-6 sm:grid-cols-2">@csrf<input class="form-input" name="label" placeholder="Label, mis. Revisi editorial 1" required><input class="form-input py-3" type="file" name="paper_file" required><textarea class="form-input min-h-20 py-3 sm:col-span-2" name="notes" placeholder="Catatan file"></textarea><label class="check-row"><input type="checkbox" name="is_final" value="1"><span>Tandai sebagai file final</span></label><button class="btn btn-primary">Upload versi</button></form>@endcan
             </section>
@@ -192,6 +192,61 @@
                     </form>
                 </section>
             @endcan
+
+            <section class="card p-6 border-2 border-orange/30 bg-amber-50/20">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-black text-navy text-base">IEEE PDF eXpress &amp; EDAS</h2>
+                    <span class="badge {{ $submission->pdf_express_status === 'passed' ? 'badge-success' : ($submission->pdf_express_status === 'failed' ? 'badge-danger' : 'badge-warning') }}">
+                        PDF eXpress: {{ ucfirst($submission->pdf_express_status ?? 'pending') }}
+                    </span>
+                </div>
+
+                @can('reviewerReview', $submission)
+                    <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" class="mt-4 space-y-3" x-data="{
+                        setError(msg) {
+                            let current = $refs.noteInput.value;
+                            $refs.noteInput.value = current ? current + '\n' + msg : msg;
+                        }
+                    }">
+                        @csrf
+                        <div>
+                            <label class="form-label text-xs">Status IEEE PDF eXpress *</label>
+                            <select class="form-input text-xs" name="pdf_express_status">
+                                <option value="pending" @selected(($submission->pdf_express_status ?? 'pending') === 'pending')>Pending (Belum Diperiksa)</option>
+                                <option value="passed" @selected(($submission->pdf_express_status ?? '') === 'passed')>✓ Passed / Done</option>
+                                <option value="failed" @selected(($submission->pdf_express_status ?? '') === 'failed')>✕ Failed / Error</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label text-xs">Link / Referensi EDAS</label>
+                            <input class="form-input text-xs" name="edas_reference" value="{{ old('edas_reference', $submission->edas_reference) }}" placeholder="https://edas.info/manuscript/...">
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="form-label text-xs">Catatan Error EDAS (Reviewer Only)</label>
+                            </div>
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <button type="button" @click="setError('pagesize: The page size is US letter size (8.5 by 11 inches), but only A4 size (210 x 297 mm) is allowed.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-0.5 rounded hover:bg-rose-50">+ Page Size US Letter</button>
+                                <button type="button" @click="setError('The final manuscript must have at least 5 filled pages, not just 4.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-0.5 rounded hover:bg-rose-50">+ Min 5 Pages</button>
+                                <button type="button" @click="setError('authorname: Doubleblind conference, but author names are visible on the first page.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-0.5 rounded hover:bg-rose-50">+ Doubleblind Author Visible</button>
+                                <button type="button" @click="setError('Authors must first upload or fill out the IEEE copyright form.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-0.5 rounded hover:bg-rose-50">+ IEEE Copyright Missing</button>
+                            </div>
+                            <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Tulis rincian error EDAS atau klik tombol preset di atas...">{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
+                        </div>
+                        <button class="btn btn-secondary w-full text-xs">Simpan Status Reviewer</button>
+                    </form>
+                @else
+                    <div class="mt-3 space-y-2 text-xs">
+                        <p><strong>EDAS Ref:</strong> {{ $submission->edas_reference ?: '-' }}</p>
+                        @if($submission->edas_error_note)
+                            <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-900">
+                                <p class="font-bold">Catatan Error EDAS:</p>
+                                <p class="mt-1 whitespace-pre-line">{{ $submission->edas_error_note }}</p>
+                            </div>
+                        @endif
+                    </div>
+                @endcan
+            </section>
 
             <section class="card p-6"><h2 class="font-black text-navy">Aksi tahap</h2><div class="mt-4 space-y-4">
                 @can('editorialReview', $submission)
