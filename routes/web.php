@@ -9,10 +9,12 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\AuthorPortalController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ConferenceController;
+use App\Http\Controllers\ConferenceLandingController;
 use App\Http\Controllers\ConferenceMemberController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\FormBuilderController;
+use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\PublicSubmissionController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SubmissionExportController;
@@ -69,6 +71,10 @@ Route::middleware('auth')->group(function () {
         Route::put('/conferences/{conference}/checklists', [ChecklistController::class, 'update'])->name('conferences.checklists.update');
         Route::get('/conferences/{conference}/email-templates', [EmailTemplateController::class, 'edit'])->name('conferences.email-templates.edit');
         Route::put('/conferences/{conference}/email-templates', [EmailTemplateController::class, 'update'])->name('conferences.email-templates.update');
+        Route::get('/conferences/{conference}/drive', [GoogleDriveController::class, 'show'])->name('conferences.drive.show');
+        Route::post('/conferences/{conference}/drive/connect', [GoogleDriveController::class, 'connect'])->name('conferences.drive.connect');
+        Route::delete('/conferences/{conference}/drive', [GoogleDriveController::class, 'disconnect'])->name('conferences.drive.disconnect');
+        Route::get('/google-drive/callback', [GoogleDriveController::class, 'callback'])->name('google-drive.callback');
 
         Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
@@ -83,5 +89,6 @@ Route::prefix('submission')->group(function () {
     Route::get('/access/{token}/files/{file}', [AuthorPortalController::class, 'download'])->name('author.files.download');
 });
 
-Route::get('/{conference:slug}', [PublicSubmissionController::class, 'show'])->name('public.submission.show');
-Route::post('/{conference:slug}', [PublicSubmissionController::class, 'store'])->middleware('throttle:10,1')->name('public.submission.store');
+Route::get('/{conference:slug}/submit', [PublicSubmissionController::class, 'show'])->name('public.submission.show');
+Route::post('/{conference:slug}/submit', [PublicSubmissionController::class, 'store'])->middleware('throttle:10,1')->name('public.submission.store');
+Route::get('/{conference:slug}', ConferenceLandingController::class)->name('public.conference.show');

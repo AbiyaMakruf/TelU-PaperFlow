@@ -18,7 +18,10 @@ class Conference extends Model
     protected $fillable = [
         'name', 'slug', 'description', 'status', 'timezone', 'starts_at', 'ends_at',
         'submission_opens_at', 'submission_closes_at', 'settings', 'created_by',
+        'google_drive_token', 'google_drive_folder_id', 'google_drive_connected_at',
     ];
+
+    protected $hidden = ['google_drive_token'];
 
     protected function casts(): array
     {
@@ -29,6 +32,8 @@ class Conference extends Model
             'submission_opens_at' => 'datetime',
             'submission_closes_at' => 'datetime',
             'settings' => 'array',
+            'google_drive_token' => 'encrypted:array',
+            'google_drive_connected_at' => 'datetime',
         ];
     }
 

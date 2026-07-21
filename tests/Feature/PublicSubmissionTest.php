@@ -9,6 +9,7 @@ use App\Models\FormVersion;
 use App\Models\Submission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -22,6 +23,7 @@ class PublicSubmissionTest extends TestCase
         Storage::fake('local');
         Mail::fake();
         [$conference] = $this->openConference();
+        $this->fakeGoogleDrive($conference);
 
         $response = $this->post(route('public.submission.store', $conference->slug), [
             'title' => 'A Reliable Paper Workflow',
@@ -38,6 +40,7 @@ class PublicSubmissionTest extends TestCase
         $this->assertSame(SubmissionStatus::Submitted, $submission->status);
         $this->assertSame('Telkom University', $submission->answers['affiliation']);
         $this->assertCount(1, $submission->files);
+        $this->assertSame('google_drive', $submission->files->first()->external_provider);
         Storage::disk('local')->assertExists($submission->files->first()->storage_path);
         $this->assertDatabaseHas('email_logs', ['submission_id' => $submission->id, 'template_key' => 'submission_received']);
 
@@ -50,6 +53,16 @@ class PublicSubmissionTest extends TestCase
         $conference = Conference::create(['name' => 'Closed Conference', 'slug' => 'closed', 'status' => 'draft']);
 
         $this->get(route('public.submission.show', $conference->slug))->assertNotFound();
+    }
+
+    public function test_conference_slug_is_landing_page_and_submit_has_its_own_url(): void
+    {
+        [$conference] = $this->openConference();
+
+        $this->get(route('public.conference.show', $conference))->assertOk()->assertSee($conference->name);
+        $this->get(route('public.submission.show', $conference))->assertOk()->assertSee('Submission sementara belum tersedia');
+        $this->assertSame('/paperconf', route('public.conference.show', $conference, false));
+        $this->assertSame('/paperconf/submit', route('public.submission.show', $conference, false));
     }
 
     public function test_author_can_upload_revision_only_when_requested(): void
@@ -103,5 +116,29 @@ class PublicSubmissionTest extends TestCase
         ]);
 
         return [$conference, $form];
+    }
+
+    private function fakeGoogleDrive(Conference $conference): void
+    {
+        config([
+            'services.google_drive.client_id' => 'client-id',
+            'services.google_drive.client_secret' => 'client-secret',
+            'services.google_drive.redirect_uri' => 'http://localhost/google-drive/callback',
+        ]);
+        $conference->update([
+            'google_drive_folder_id' => 'folder-123',
+            'google_drive_token' => ['access_token' => 'token', 'refresh_token' => 'refresh', 'expires_at' => now()->addHour()->timestamp],
+            'google_drive_connected_at' => now(),
+        ]);
+        Http::fake(function ($request) {
+            if ($request->method() === 'GET') {
+                return Http::response(['files' => []]);
+            }
+            if (str_contains($request->url(), '/upload/')) {
+                return Http::response(['id' => 'drive-file-123', 'name' => 'paper.docx', 'webViewLink' => 'https://drive.google.com/file/d/drive-file-123/view']);
+            }
+
+            return Http::response(['id' => 'drive-file-123']);
+        });
     }
 }

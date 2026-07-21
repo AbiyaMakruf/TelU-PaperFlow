@@ -42,4 +42,11 @@ return [
         'storage_driver' => env('PAPERFLOW_STORAGE_DRIVER', 'local'),
     ],
 
+    'google_drive' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
+        'folder_name' => env('GOOGLE_DRIVE_FOLDER_NAME', '{conference}'),
+    ],
+
 ];

@@ -1,11 +1,15 @@
 <x-layouts.public :title="$conference->name">
     <div class="mx-auto max-w-4xl">
         <div class="mb-8">
+            <a href="{{ route('public.conference.show', $conference) }}" class="back-link">&larr; Halaman conference</a>
             <p class="eyebrow">Paper submission</p>
             <h1 class="page-title">{{ $conference->name }}</h1>
             @if ($conference->description)<p class="page-subtitle">{{ $conference->description }}</p>@endif
         </div>
 
+        @unless($driveReady)
+            <div class="card border border-orange/30 p-6"><h2 class="font-black text-navy">Submission sementara belum tersedia</h2><p class="mt-2 text-sm text-muted">Admin conference perlu menghubungkan Google Drive terlebih dahulu.</p></div>
+        @else
         <form method="POST" action="{{ route('public.submission.store', $conference->slug) }}" enctype="multipart/form-data" class="card p-6 sm:p-8">
             @csrf
             @if ($errors->any())
@@ -53,11 +57,12 @@
             @endif
 
             <div class="my-8 border-t border-navy/10"></div>
-            <label><span class="form-label">File editable paper *</span><input class="form-input py-3" type="file" name="paper_file" accept=".doc,.docx,.tex,.zip" required><span class="mt-2 block text-xs text-muted">Format DOC, DOCX, TEX, atau ZIP. Maksimal 25 MB.</span></label>
+            <label><span class="form-label">File editable paper *</span><input class="form-input py-3" type="file" name="paper_file" accept=".doc,.docx,.tex,.zip" required><span class="mt-2 block text-xs text-muted">Format DOC, DOCX, TEX, atau ZIP. Maksimal 100 MB.</span></label>
             <div class="mt-8 flex items-center justify-between gap-4 border-t border-navy/10 pt-6">
                 <p class="text-xs text-muted">File disimpan privat dan hanya dapat diakses pihak berwenang.</p>
                 <button class="btn btn-primary" type="submit">Kirim submission</button>
             </div>
         </form>
+        @endunless
     </div>
 </x-layouts.public>
