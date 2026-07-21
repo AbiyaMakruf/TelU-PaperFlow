@@ -83,6 +83,20 @@ class PublicSubmissionTest extends TestCase
         $this->assertSame('google_drive', $file->external_provider);
     }
 
+    public function test_unwritable_google_drive_folder_returns_a_form_error(): void
+    {
+        [$conference] = $this->openConference();
+        $this->fakeGoogleDrive($conference, false);
+
+        $this->from(route('public.submission.show', $conference))->post(route('public.submission.store', $conference), [
+            'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com',
+            'answers' => ['affiliation' => 'Telkom University'],
+            'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        ])->assertRedirect(route('public.submission.show', $conference))->assertSessionHasErrors('paper_file');
+
+        $this->assertDatabaseCount('submissions', 0);
+    }
+
     public function test_author_can_upload_revision_only_when_requested(): void
     {
         Storage::fake('local');
@@ -136,7 +150,7 @@ class PublicSubmissionTest extends TestCase
         return [$conference, $form];
     }
 
-    private function fakeGoogleDrive(Conference $conference): void
+    private function fakeGoogleDrive(Conference $conference, bool $folderWritable = true): void
     {
         config([
             'services.google_drive.client_id' => 'client-id',
@@ -149,8 +163,12 @@ class PublicSubmissionTest extends TestCase
             'google_drive_token' => ['access_token' => 'token', 'refresh_token' => 'refresh', 'expires_at' => now()->addHour()->timestamp],
             'google_drive_connected_at' => now(),
         ]);
-        Http::fake(function ($request) {
+        Http::fake(function ($request) use ($folderWritable) {
             if ($request->method() === 'GET') {
+                if (str_contains($request->url(), '/files/folder-123')) {
+                    return Http::response(['id' => 'folder-123', 'name' => 'Paper Conference', 'capabilities' => ['canAddChildren' => $folderWritable]]);
+                }
+
                 return Http::response(['files' => []]);
             }
             if (str_contains($request->url(), '/upload/')) {

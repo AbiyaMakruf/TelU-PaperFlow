@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Conference;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -77,28 +78,38 @@ class GoogleDriveStorage
             throw new RuntimeException('Google Drive conference belum terhubung.');
         }
 
-        $name = preg_replace('/[^A-Za-z0-9._-]/', '-', $paperCode).'.'.strtolower($file->getClientOriginalExtension());
-        $files = $this->client($conference)->get('https://www.googleapis.com/drive/v3/files', [
-            'q' => sprintf("name = '%s' and '%s' in parents and trashed = false", $this->escapeQuery($name), $conference->google_drive_folder_id),
-            'spaces' => 'drive', 'fields' => 'files(id,name,webViewLink)', 'pageSize' => 2,
-        ])->throw()->json('files', []);
+        try {
+            $this->assertFolderWritable($conference);
+            $name = preg_replace('/[^A-Za-z0-9._-]/', '-', $paperCode).'.'.strtolower($file->getClientOriginalExtension());
+            $files = $this->client($conference)->get('https://www.googleapis.com/drive/v3/files', [
+                'q' => sprintf("name = '%s' and '%s' in parents and trashed = false", $this->escapeQuery($name), $conference->google_drive_folder_id),
+                'spaces' => 'drive', 'fields' => 'files(id,name,webViewLink)', 'pageSize' => 2,
+                'supportsAllDrives' => 'true', 'includeItemsFromAllDrives' => 'true',
+            ])->throw()->json('files', []);
 
-        if (count($files) > 1) {
-            throw new RuntimeException("Lebih dari satu file Google Drive bernama {$name} ditemukan.");
+            if (count($files) > 1) {
+                throw new RuntimeException("Lebih dari satu file Google Drive bernama {$name} ditemukan.");
+            }
+
+            $id = $files[0]['id'] ?? null;
+            if (! $id) {
+                $created = $this->client($conference)->post('https://www.googleapis.com/drive/v3/files?fields=id,name,webViewLink&supportsAllDrives=true', [
+                    'name' => $name, 'parents' => [$conference->google_drive_folder_id],
+                ])->throw()->json();
+                $id = $created['id'];
+            }
+
+            $uploaded = $this->client($conference)
+                ->withBody(file_get_contents($file->getRealPath()), $file->getMimeType() ?: 'application/octet-stream')
+                ->patch("https://www.googleapis.com/upload/drive/v3/files/{$id}?uploadType=media&fields=id,name,webViewLink&supportsAllDrives=true")
+                ->throw()->json();
+        } catch (RequestException $exception) {
+            if ($exception->response->status() === 403) {
+                throw new RuntimeException('Akun Google yang terhubung tidak memiliki izin Editor untuk menambahkan file ke folder conference.', previous: $exception);
+            }
+
+            throw $exception;
         }
-
-        $id = $files[0]['id'] ?? null;
-        if (! $id) {
-            $created = $this->client($conference)->post('https://www.googleapis.com/drive/v3/files?fields=id,name,webViewLink', [
-                'name' => $name, 'parents' => [$conference->google_drive_folder_id],
-            ])->throw()->json();
-            $id = $created['id'];
-        }
-
-        $uploaded = $this->client($conference)
-            ->withBody(file_get_contents($file->getRealPath()), $file->getMimeType() ?: 'application/octet-stream')
-            ->patch("https://www.googleapis.com/upload/drive/v3/files/{$id}?uploadType=media&fields=id,name,webViewLink")
-            ->throw()->json();
 
         return ['id' => $id, 'name' => $uploaded['name'] ?? $name,
             'webViewLink' => $uploaded['webViewLink'] ?? "https://drive.google.com/file/d/{$id}/view"];
@@ -109,15 +120,30 @@ class GoogleDriveStorage
         $name = $this->folderName($conference);
         $files = $this->client($conference)->get('https://www.googleapis.com/drive/v3/files', [
             'q' => sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.folder' and trashed = false", $this->escapeQuery($name)),
-            'spaces' => 'drive', 'fields' => 'files(id,name)', 'pageSize' => 10,
+            'spaces' => 'drive', 'fields' => 'files(id,name,capabilities(canAddChildren))', 'pageSize' => 10,
+            'supportsAllDrives' => 'true', 'includeItemsFromAllDrives' => 'true',
         ])->throw()->json('files', []);
         if (count($files) !== 1) {
             throw new RuntimeException(count($files) === 0
                 ? "Folder Google Drive '{$name}' tidak ditemukan."
                 : "Ditemukan lebih dari satu folder Google Drive bernama '{$name}'.");
         }
+        if (! ($files[0]['capabilities']['canAddChildren'] ?? false)) {
+            throw new RuntimeException("Akun Google tidak memiliki izin Editor pada folder '{$name}'.");
+        }
 
         return $files[0]['id'];
+    }
+
+    private function assertFolderWritable(Conference $conference): void
+    {
+        $folder = $this->client($conference)->get("https://www.googleapis.com/drive/v3/files/{$conference->google_drive_folder_id}", [
+            'fields' => 'id,name,capabilities(canAddChildren)', 'supportsAllDrives' => 'true',
+        ])->throw()->json();
+
+        if (! ($folder['capabilities']['canAddChildren'] ?? false)) {
+            throw new RuntimeException('Akun Google yang terhubung tidak memiliki izin Editor pada folder conference.');
+        }
     }
 
     private function client(Conference $conference): PendingRequest

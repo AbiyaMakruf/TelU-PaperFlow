@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\File;
 use Illuminate\View\View;
-use RuntimeException;
+use Throwable;
 
 class PublicSubmissionController extends Controller
 {
@@ -54,7 +54,7 @@ class PublicSubmissionController extends Controller
         $path = $conference->slug.'/'.$id.'/v1-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
         try {
             $storedFile = $storage->put($conference, $file, $path, $paperCode);
-        } catch (RuntimeException $exception) {
+        } catch (Throwable $exception) {
             report($exception);
 
             return back()->withInput()->withErrors(['paper_file' => 'Upload file gagal: '.$exception->getMessage()]);
