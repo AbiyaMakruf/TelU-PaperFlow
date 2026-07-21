@@ -31,7 +31,7 @@ class ConferenceAdministrationTest extends TestCase
         $this->assertTrue($conference->memberships()->where('user_id', $admin->id)->where('role', ConferenceRole::Admin)->exists());
         $this->assertCount(1, $conference->formVersions);
         $this->assertCount(2, $conference->checklistTemplates);
-        $this->assertCount(3, $conference->emailTemplates);
+        $this->assertCount(4, $conference->emailTemplates);
     }
 
     public function test_regular_user_cannot_create_a_conference(): void

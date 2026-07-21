@@ -6,7 +6,7 @@
     <title>Paperflow · Editorial workflow</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-warm text-ink antialiased">
+<body class="bg-warm text-ink antialiased" x-data="{ openSearch: false, search: '' }">
     <header class="border-b border-navy/10 bg-warm/90 backdrop-blur">
         <div class="container-page flex h-20 items-center justify-between">
             <x-brand class="text-navy" />
@@ -20,7 +20,7 @@
                 <h1 class="mt-5 max-w-3xl text-5xl font-black leading-[1.05] text-navy sm:text-6xl">Dari submission hingga siap ke EDAS.</h1>
                 <p class="mt-6 max-w-2xl text-lg leading-8 text-muted">Paperflow menyatukan form author, assignment PIC, pemeriksaan editorial, versioning dokumen, dan final review dalam satu workspace.</p>
                 <div class="mt-8 flex flex-wrap gap-3">
-                    <a href="#conferences" class="btn btn-primary">Cari conference</a>
+                    <button type="button" @click="openSearch = true" class="btn btn-primary">Cari conference 🔍</button>
                     <a href="{{ route('login') }}" class="btn btn-ghost">Saya tim editorial →</a>
                 </div>
             </div>
@@ -40,23 +40,31 @@
                 </div>
             </div>
         </section>
-        <section id="conferences" class="border-t border-navy/10 bg-white py-20">
-            <div class="container-page">
-                <p class="text-sm font-black uppercase tracking-[.2em] text-orange">Open submission</p>
-                <h2 class="mt-3 text-3xl font-black text-navy">Conference tersedia</h2>
-                <div class="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+
+        <!-- Interactive Conference Search Modal -->
+        <div x-show="openSearch" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl" @click.away="openSearch = false">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-extrabold text-navy">Cari Conference Active</h3>
+                    <button type="button" @click="openSearch = false" class="text-slate-400 hover:text-slate-700 font-bold text-2xl leading-none">&times;</button>
+                </div>
+                <p class="text-xs text-muted mt-1">Cari nama atau deskripsi conference yang sedang membuka submission.</p>
+                <input class="form-input mt-4 py-3" x-model="search" placeholder="Ketik nama conference..." autofocus>
+                <div class="mt-4 max-h-96 overflow-y-auto space-y-3 pr-1">
                     @forelse ($conferences as $conference)
-                        <a href="/{{ $conference->slug }}" class="card group p-6 transition hover:-translate-y-1 hover:border-orange/40 hover:shadow-xl">
-                            <div class="flex items-start justify-between"><span class="grid size-11 place-items-center rounded-xl bg-navy/8 font-black text-navy">{{ strtoupper(substr($conference->name, 0, 1)) }}</span><span class="text-orange transition group-hover:translate-x-1">→</span></div>
-                            <h3 class="mt-5 text-lg font-extrabold text-navy">{{ $conference->name }}</h3>
-                            <p class="mt-2 line-clamp-2 text-sm leading-6 text-muted">{{ $conference->description ?: 'Submission paper dan dokumen editable.' }}</p>
+                        <a href="/{{ $conference->slug }}" x-show="!search || '{{ strtolower($conference->name) }}'.includes(search.toLowerCase())" class="card block p-4 hover:border-orange transition">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-extrabold text-navy">{{ $conference->name }}</h4>
+                                <span class="text-xs font-bold text-orange">Buka Landing Page &rarr;</span>
+                            </div>
+                            <p class="mt-1 text-xs text-muted line-clamp-2">{{ $conference->description ?: 'Submission paper dan dokumen editable.' }}</p>
                         </a>
                     @empty
-                        <div class="card col-span-full p-8 text-center text-muted">Belum ada conference yang membuka submission.</div>
+                        <p class="text-center py-6 text-sm text-muted">Belum ada conference yang membuka submission.</p>
                     @endforelse
                 </div>
             </div>
-        </section>
+        </div>
     </main>
     <footer class="bg-navy py-8 text-white/60"><div class="container-page flex flex-wrap justify-between gap-3 text-sm"><span>© {{ date('Y') }} Paperflow</span><span>Editorial work, clearly moving.</span></div></footer>
 </body>

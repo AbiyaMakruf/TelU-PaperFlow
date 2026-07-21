@@ -22,6 +22,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PublicSubmissionController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SubmissionExportController;
+use App\Http\Controllers\WorkspaceController;
 use App\Models\Conference;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/change-password', [PasswordChangeController::class, 'edit'])->name('password.change.edit');
     Route::put('/change-password', [PasswordChangeController::class, 'update'])->name('password.change.update');
+    Route::post('/workspace/switch', [WorkspaceController::class, 'switch'])->name('workspace.switch');
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
