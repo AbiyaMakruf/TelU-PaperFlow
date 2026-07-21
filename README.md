@@ -1,5 +1,7 @@
 # Paperflow
 
+> AI/coding agents: read [`AGENTS.md`](AGENTS.md) first for architecture, workflow, security constraints, and the current verification baseline.
+
 Paperflow adalah workspace editorial conference berbasis Laravel. Aplikasi ini menggantikan Google Form dan spreadsheet terpisah dengan form per conference, assignment PIC, checklist editorial/reviewer, versioning file, email author, timeline, statistik, dan ekspor CSV.
 
 ## Fitur
