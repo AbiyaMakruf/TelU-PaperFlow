@@ -60,9 +60,9 @@ Statuses are defined in `App\Enums\SubmissionStatus`. The allowed transition gra
 
 Typical workflow:
 
-1. Author submits an editable manuscript.
+1. Author enters the conference Paper ID, required phone number, corresponding-author data, optional structured co-authors, and uploads an editable DOCX or a ZIP containing LaTeX sources.
 2. Conference Admin validates or returns it for correction.
-3. Admin assigns Editorial and Reviewer PICs, optionally with a deadline.
+3. Admin assigns Editorial and Reviewer PICs, confirms whether the editable manuscript is DOCX or LaTeX, and optionally sets a deadline.
 4. Editorial completes required checklist items and may request author revision.
 5. Editorial sends the paper to Reviewer.
 6. Reviewer requests changes or marks it ready for EDAS.
@@ -141,14 +141,15 @@ When updating `settings`, merge with existing values. Do not overwrite unrelated
 - Audit log is scoped to conferences visible to the current staff member.
 - Email history appears on the paper detail page.
 - Database notifications cover assignment and status changes.
-- Paper filters include conference, status, editor, reviewer, overdue, search, and date range.
+- Every active conference member can see the conference paper table and open paper details; mutation permissions remain role/assignment scoped.
+- Paper filters include conference, status, editor, reviewer, overdue, search, and date range, with whitelisted server-side sorting.
 - Editor performance shows paper count, average processing days, and overdue count.
 - Full CSV report includes contact, workflow, deadline, file-version, and EDAS fields.
 - Superadmin monitoring shows `failed_jobs`, supports retry, and shows recent Laravel ERROR log lines.
 
 ## Database and Supabase
 
-Laravel migrations in `database/migrations` are the source of truth. Current production migrations through `2026_07_21_001000_add_operational_features.php` have been applied to Supabase.
+Laravel migrations in `database/migrations` are the source of truth. Current production migrations through `2026_07_21_001100_add_author_paper_id_and_manuscript_format.php` have been applied to Supabase.
 
 Application tables are server-only. RLS is enabled without anon/authenticated policies because the browser does not use Supabase Data API for these tables. Laravel connects with the server database role.
 
@@ -237,9 +238,9 @@ php artisan migrate --force
 Current baseline at the time of this handoff:
 
 - 46 tests
-- 217 assertions
+- 219 assertions
 - Production Vite build passes
-- Supabase migration `001000` is batch 6 / Ran
+- Supabase migration `001100` is batch 7 / Ran
 
 ## Git workflow
 

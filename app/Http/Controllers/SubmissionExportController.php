@@ -24,11 +24,11 @@ class SubmissionExportController extends Controller
 
         return response()->streamDownload(function () use ($query) {
             $output = fopen('php://output', 'w');
-            fputcsv($output, ['Paper Code', 'Conference', 'Title', 'Author', 'Email', 'Phone', 'Status', 'Editor', 'Reviewer', 'Deadline', 'Overdue', 'File Versions', 'EDAS Reference', 'EDAS Submitted', 'EDAS Approved', 'Submitted At', 'Validated At', 'Completed At'], ',', '"', '');
+            fputcsv($output, ['Paper ID', 'Internal Code', 'Conference', 'Title', 'Editable Format', 'Author', 'Email', 'Phone', 'Status', 'Editor', 'Reviewer', 'Deadline', 'Overdue', 'File Versions', 'EDAS Reference', 'EDAS Submitted', 'EDAS Approved', 'Submitted At', 'Validated At', 'Completed At'], ',', '"', '');
             $query->chunk(500, function ($submissions) use ($output) {
                 foreach ($submissions as $submission) {
                     fputcsv($output, [
-                        $submission->paper_code, $submission->conference->name, $submission->title,
+                        $submission->paper_id, $submission->paper_code, $submission->conference->name, $submission->title, $submission->manuscript_format,
                         $submission->corresponding_author_name, $submission->corresponding_author_email, $submission->corresponding_author_phone,
                         $submission->status->label(), $submission->editor?->name, $submission->reviewer?->name,
                         $submission->deadline_at?->toIso8601String(), $submission->isOverdue() ? 'Yes' : 'No', $submission->files()->count(),

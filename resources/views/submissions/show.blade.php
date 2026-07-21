@@ -1,7 +1,7 @@
 <x-layouts.app :title="$submission->paper_code" heading="Detail paper">
     <a class="back-link" href="{{ route('submissions.index') }}">&larr; Kembali ke paper</a>
     <div class="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
-        <div><p class="eyebrow">{{ $submission->conference->name }}</p><h1 class="page-title">{{ $submission->paper_code }}</h1><p class="page-subtitle">{{ $submission->title }}</p></div>
+        <div><p class="eyebrow">{{ $submission->conference->name }} · kode internal {{ $submission->paper_code }}</p><h1 class="page-title">{{ $submission->paper_id ?: $submission->paper_code }}</h1><p class="page-subtitle">{{ $submission->title }}</p></div>
         <span class="badge badge-{{ $submission->status->color() }}">{{ $submission->status->label() }}</span>
     </div>
 
@@ -14,8 +14,10 @@
                 <dl class="mt-5 grid gap-5 sm:grid-cols-2">
                     <div><dt class="text-xs font-bold uppercase tracking-wider text-muted">Corresponding author</dt><dd class="mt-1 font-bold">{{ $submission->corresponding_author_name }}</dd><dd class="text-sm text-muted">{{ $submission->corresponding_author_email }}</dd></div>
                     <div><dt class="text-xs font-bold uppercase tracking-wider text-muted">Telepon</dt><dd class="mt-1">{{ $submission->corresponding_author_phone ?: '-' }}</dd></div>
-                    @foreach($submission->formVersion?->schema ?? [] as $field)<div><dt class="text-xs font-bold uppercase tracking-wider text-muted">{{ $field['label'] }}</dt><dd class="mt-1 whitespace-pre-line">{{ $submission->answers[$field['key']] ?? '-' }}</dd></div>@endforeach
+                    <div><dt class="text-xs font-bold uppercase tracking-wider text-muted">Format editable</dt><dd class="mt-1">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Belum dikonfirmasi') }}</dd></div>
+                    @foreach($submission->formVersion?->schema ?? [] as $field)@continue($field['key'] === 'co_authors')<div><dt class="text-xs font-bold uppercase tracking-wider text-muted">{{ $field['label'] }}</dt><dd class="mt-1 whitespace-pre-line">{{ $submission->answers[$field['key']] ?? '-' }}</dd></div>@endforeach
                 </dl>
+                @if($submission->authors->count() > 1)<div class="mt-5 border-t border-navy/10 pt-5"><h3 class="font-bold text-navy">Co-author</h3><div class="mt-3 grid gap-3 sm:grid-cols-2">@foreach($submission->authors->where('is_corresponding',false) as $author)<div class="rounded-xl bg-warm p-4"><p class="font-bold">{{ $author->name }}</p><p class="text-xs text-muted">{{ $author->email ?: '-' }} @if($author->affiliation)· {{ $author->affiliation }}@endif</p></div>@endforeach</div></div>@endif
                 @can('assign', $submission)
                     @if($submission->status === \App\Enums\SubmissionStatus::Submitted)
                         <div class="mt-6 grid gap-4 border-t border-navy/10 pt-6 md:grid-cols-2">
@@ -71,7 +73,7 @@
         <aside class="space-y-6">
             @can('assign', $submission)
                 <section class="card p-6"><h2 class="font-black text-navy">Assignment PIC</h2>
-                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="mt-4 space-y-3">@csrf<input type="hidden" name="role" value="editorial"><select class="form-input" name="user_id" required><option value="">Pilih editor...</option>@foreach($editors as $member)<option value="{{ $member->user_id }}" @selected($submission->editor_id === $member->user_id)>{{ $member->user->name }}</option>@endforeach</select><input class="form-input" type="datetime-local" name="deadline_at" value="{{ $submission->deadline_at?->format('Y-m-d\TH:i') }}"><input class="form-input" name="note" placeholder="Catatan assignment"><button class="btn btn-secondary w-full">Assign editor</button></form>
+                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="mt-4 space-y-3">@csrf<input type="hidden" name="role" value="editorial"><select class="form-input" name="user_id" required><option value="">Pilih editor...</option>@foreach($editors as $member)<option value="{{ $member->user_id }}" @selected($submission->editor_id === $member->user_id)>{{ $member->user->name }}</option>@endforeach</select><label><span class="form-label">Format dokumen author *</span><select class="form-input" name="manuscript_format" required><option value="">Pilih format...</option><option value="docx" @selected($submission->manuscript_format === 'docx')>Microsoft Word (.docx)</option><option value="latex" @selected($submission->manuscript_format === 'latex')>LaTeX (.zip)</option></select></label><input class="form-input" type="datetime-local" name="deadline_at" value="{{ $submission->deadline_at?->format('Y-m-d\TH:i') }}"><input class="form-input" name="note" placeholder="Catatan assignment"><button class="btn btn-secondary w-full">Assign editor</button></form>
                     <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="mt-5 space-y-3 border-t border-navy/10 pt-5">@csrf<input type="hidden" name="role" value="reviewer"><select class="form-input" name="user_id" required><option value="">Pilih reviewer...</option>@foreach($reviewers as $member)<option value="{{ $member->user_id }}" @selected($submission->reviewer_id === $member->user_id)>{{ $member->user->name }}</option>@endforeach</select><button class="btn btn-secondary w-full">Assign reviewer</button></form>
                 </section>
             @endcan

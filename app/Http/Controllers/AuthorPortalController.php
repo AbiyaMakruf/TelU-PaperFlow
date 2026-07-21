@@ -32,7 +32,7 @@ class AuthorPortalController extends Controller
         $submission = $this->submissionFor($token);
         abort_unless(in_array($submission->status, [SubmissionStatus::NeedsAuthorCorrection, SubmissionStatus::WaitingAuthorRevision], true), 422, 'Paper ini belum meminta revisi author.');
         $validated = $request->validate([
-            'paper_file' => ['required', File::types($submission->conference->allowedFileExtensions())->max($submission->conference->maxFileSizeMb().'mb')],
+            'paper_file' => ['required', File::types(['docx', 'zip'])->max($submission->conference->maxFileSizeMb().'mb')],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $file = $request->file('paper_file');

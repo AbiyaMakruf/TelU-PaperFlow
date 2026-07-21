@@ -26,11 +26,13 @@ class PublicSubmissionTest extends TestCase
         [$conference] = $this->openConference();
 
         $response = $this->post(route('public.submission.store', $conference->slug), [
+            'paper_id' => '15700001',
             'title' => 'A Reliable Paper Workflow',
             'author_name' => 'Rani Author',
             'author_email' => 'rani@example.com',
             'author_phone' => '08123456789',
             'answers' => ['affiliation' => 'Telkom University'],
+            'co_authors' => [['name' => 'Co Author', 'email' => 'co@example.com', 'affiliation' => 'Telkom University']],
             'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         ]);
 
@@ -38,6 +40,8 @@ class PublicSubmissionTest extends TestCase
         $response->assertRedirect();
         $this->assertStringContainsString('/submission/access/', $response->headers->get('Location'));
         $this->assertSame(SubmissionStatus::Submitted, $submission->status);
+        $this->assertSame('15700001', $submission->paper_id);
+        $this->assertCount(2, $submission->authors);
         $this->assertSame('Telkom University', $submission->answers['affiliation']);
         $this->assertCount(1, $submission->files);
         $this->assertSame('local', $submission->files->first()->disk);
@@ -74,7 +78,7 @@ class PublicSubmissionTest extends TestCase
         $this->fakeGoogleDrive($conference);
 
         $this->post(route('public.submission.store', $conference), [
-            'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com',
+            'paper_id' => '15700002', 'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com', 'author_phone' => '08123456789',
             'answers' => ['affiliation' => 'Telkom University'],
             'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         ])->assertRedirect();
@@ -91,7 +95,7 @@ class PublicSubmissionTest extends TestCase
         $this->fakeGoogleDrive($conference, false);
 
         $this->from(route('public.submission.show', $conference))->post(route('public.submission.store', $conference), [
-            'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com',
+            'paper_id' => '15700003', 'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com', 'author_phone' => '08123456789',
             'answers' => ['affiliation' => 'Telkom University'],
             'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         ])->assertRedirect(route('public.submission.show', $conference))->assertSessionHasErrors('paper_file');

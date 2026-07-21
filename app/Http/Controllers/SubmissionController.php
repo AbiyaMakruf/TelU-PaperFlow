@@ -41,6 +41,16 @@ class SubmissionController extends Controller
             : $user->conferenceMemberships()->where('is_active', true)->pluck('conference_id');
         $query = $visibleSubmissions->for($user);
 
+        $sort = $request->string('sort')->toString();
+        $direction = $request->string('direction')->lower()->toString() === 'asc' ? 'asc' : 'desc';
+        $sortColumns = [
+            'paper_id' => 'paper_id',
+            'title' => 'title',
+            'status' => 'status',
+            'submitted_at' => 'submitted_at',
+            'deadline_at' => 'deadline_at',
+        ];
+
         $query->when($request->filled('conference'), fn ($q) => $q->where('conference_id', $request->string('conference')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('editor'), fn ($q) => $q->where('editor_id', $request->integer('editor')))
@@ -50,10 +60,18 @@ class SubmissionController extends Controller
             ->when($request->filled('date_to'), fn ($q) => $q->whereDate('submitted_at', '<=', $request->date('date_to')))
             ->when($request->filled('search'), fn ($q) => $q->where(fn ($search) => $search
                 ->where('paper_code', 'like', '%'.$request->string('search').'%')
+                ->orWhere('paper_id', 'like', '%'.$request->string('search').'%')
                 ->orWhere('title', 'like', '%'.$request->string('search').'%')
                 ->orWhere('corresponding_author_name', 'like', '%'.$request->string('search').'%')));
 
-        $submissions = $query->with(['conference', 'editor', 'reviewer'])->latest('submitted_at')->paginate(20)->withQueryString();
+        if ($sort === 'pic') {
+            $query->orderBy(User::query()->select('name')->whereColumn('users.id', 'submissions.editor_id'), $direction);
+        } elseif (isset($sortColumns[$sort])) {
+            $query->orderBy($sortColumns[$sort], $direction);
+        } else {
+            $query->latest('submitted_at');
+        }
+        $submissions = $query->with(['conference', 'editor', 'reviewer', 'authors', 'files'])->paginate(20)->withQueryString();
         $conferences = Conference::whereIn('id', $conferenceIds)->orderBy('name')->get();
         $staff = User::whereHas('conferenceMemberships', fn ($q) => $q->whereIn('conference_id', $conferenceIds)->where('is_active', true))->orderBy('name')->get();
 
@@ -103,6 +121,7 @@ class SubmissionController extends Controller
             'role' => ['required', Rule::in([ConferenceRole::Editorial->value, ConferenceRole::Reviewer->value])],
             'note' => ['nullable', 'string', 'max:2000'],
             'deadline_at' => ['nullable', 'date'],
+            'manuscript_format' => ['nullable', Rule::requiredIf($request->input('role') === ConferenceRole::Editorial->value), Rule::in(['docx', 'latex'])],
         ]);
 
         try {
@@ -113,6 +132,9 @@ class SubmissionController extends Controller
         $audit->record('submission.assigned', $submission, $submission->conference, newValues: $validated);
         if (! empty($validated['deadline_at'])) {
             $submission->update(['deadline_at' => $validated['deadline_at']]);
+        }
+        if ($validated['role'] === ConferenceRole::Editorial->value) {
+            $submission->update(['manuscript_format' => $validated['manuscript_format']]);
         }
 
         return back()->with('success', 'PIC berhasil diperbarui.');

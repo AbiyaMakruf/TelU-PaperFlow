@@ -19,7 +19,7 @@
                     <thead><tr><th>Paper</th><th>Conference</th><th>Status</th><th>PIC</th></tr></thead>
                     <tbody>
                     @forelse ($recentSubmissions as $submission)
-                        <tr><td><p class="font-bold text-navy">{{ $submission->paper_code ?: 'Belum bernomor' }}</p><p class="max-w-xs truncate text-xs text-muted">{{ $submission->title }}</p></td><td>{{ $submission->conference->name }}</td><td><x-status-badge :status="$submission->status" /></td><td>{{ $submission->editor?->name ?? $submission->reviewer?->name ?? 'Belum di-assign' }}</td></tr>
+                        <tr><td><a href="{{ route('submissions.show', $submission) }}" class="font-bold text-navy hover:text-orange">{{ $submission->paper_id ?: $submission->paper_code ?: 'Belum bernomor' }}</a><p class="max-w-xs truncate text-xs text-muted">{{ $submission->title }}</p></td><td>{{ $submission->conference->name }}</td><td><x-status-badge :status="$submission->status" /></td><td>{{ $submission->editor?->name ?? $submission->reviewer?->name ?? 'Belum di-assign' }}</td></tr>
                     @empty
                         <tr><td colspan="4" class="py-12 text-center text-muted">Belum ada paper pada workspace Anda.</td></tr>
                     @endforelse

@@ -16,13 +16,10 @@ class SubmissionPolicy
     public function view(User $user, Submission $submission): bool
     {
         return $user->isSuperAdmin()
-            || $user->hasConferenceRole(
-                $submission->conference_id,
-                ConferenceRole::Admin,
-                ConferenceRole::Viewer,
-            )
-            || $submission->editor_id === $user->id
-            || $submission->reviewer_id === $user->id;
+            || $user->conferenceMemberships()
+                ->where('conference_id', $submission->conference_id)
+                ->where('is_active', true)
+                ->exists();
     }
 
     public function assign(User $user, Submission $submission): bool

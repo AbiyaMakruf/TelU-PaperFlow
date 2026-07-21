@@ -27,7 +27,7 @@
                     <form method="POST" action="{{ route('author.revision', $token) }}" enctype="multipart/form-data" class="card p-6">
                         @csrf
                         <h2 class="text-lg font-black text-navy">Unggah revisi</h2>
-                        <label class="mt-5 block"><span class="form-label">File editable baru *</span><input class="form-input py-3" type="file" name="paper_file" accept=".doc,.docx,.tex,.zip" required></label>
+                        <label class="mt-5 block"><span class="form-label">File editable baru *</span><input class="form-input py-3" type="file" name="paper_file" accept=".docx,.zip" required><span class="mt-2 block text-xs text-muted">Gunakan DOCX atau ZIP yang berisi seluruh source LaTeX.</span></label>
                         <label class="mt-5 block"><span class="form-label">Catatan perubahan</span><textarea class="form-input min-h-24 py-3" name="notes"></textarea></label>
                         <button class="btn btn-primary mt-5">Kirim revisi</button>
                     </form>

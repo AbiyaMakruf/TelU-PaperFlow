@@ -15,7 +15,7 @@ class Submission extends Model
     use HasFactory, HasUlids, SoftDeletes;
 
     protected $fillable = [
-        'conference_id', 'form_version_id', 'paper_code', 'title', 'corresponding_author_name',
+        'conference_id', 'form_version_id', 'paper_id', 'paper_code', 'manuscript_format', 'title', 'corresponding_author_name',
         'corresponding_author_email', 'corresponding_author_phone', 'answers', 'status',
         'editor_id', 'reviewer_id', 'author_token_hash', 'author_token_encrypted', 'author_token_expires_at',
         'submitted_at', 'validated_at', 'completed_at', 'edas_reference', 'edas_notes', 'lock_version',

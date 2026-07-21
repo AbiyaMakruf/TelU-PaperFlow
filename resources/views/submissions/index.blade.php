@@ -15,23 +15,41 @@
         <button class="btn btn-primary">Filter</button>
     </form>
 
+    @php
+        $sortUrl = fn (string $column) => route('submissions.index', array_merge(request()->query(), [
+            'sort' => $column,
+            'direction' => request('sort') === $column && request('direction', 'desc') === 'asc' ? 'desc' : 'asc',
+        ]));
+    @endphp
     <div class="card mt-6 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="data-table">
-                <thead><tr><th>Paper</th><th>Conference</th><th>Status</th><th>PIC</th><th>Masuk</th></tr></thead>
-                <tbody>
+                <thead><tr><th><a href="{{ $sortUrl('paper_id') }}">Paper ID ↕</a></th><th><a href="{{ $sortUrl('title') }}">Title ↕</a></th><th><a href="{{ $sortUrl('pic') }}">PIC ↕</a></th><th><a href="{{ $sortUrl('status') }}">Status ↕</a></th><th><a href="{{ $sortUrl('submitted_at') }}">Masuk ↕</a></th><th>Detail</th></tr></thead>
                     @forelse ($submissions as $submission)
+                        <tbody x-data="{ open: false }" class="border-b border-navy/8">
                         <tr>
-                            <td><a href="{{ route('submissions.show', $submission) }}" class="font-black text-navy hover:text-orange">{{ $submission->paper_code }}</a><p class="mt-1 max-w-lg truncate text-xs text-muted">{{ $submission->title }}</p><p class="mt-1 text-xs">{{ $submission->corresponding_author_name }}</p></td>
-                            <td>{{ $submission->conference->name }}</td>
-                            <td><span class="badge badge-{{ $submission->status->color() }}">{{ $submission->status->label() }}</span></td>
+                            <td><p class="font-black text-navy">{{ $submission->paper_id ?: $submission->paper_code }}</p><p class="mt-1 text-xs text-muted">{{ $submission->conference->name }}</p></td>
+                            <td><p class="max-w-lg font-bold text-navy">{{ $submission->title }}</p></td>
                             <td><p>{{ $submission->editor?->name ?? 'Belum ada editor' }}</p><p class="mt-1 text-xs text-muted">Reviewer: {{ $submission->reviewer?->name ?? '-' }}</p></td>
+                            <td><span class="badge badge-{{ $submission->status->color() }}">{{ $submission->status->label() }}</span></td>
                             <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->deadline_at->format('d M Y') }}</p>@endif</td>
+                            <td><button type="button" class="font-bold text-orange" x-on:click="open = !open" x-text="open ? 'Tutup −' : 'Lihat +'">Lihat +</button></td>
                         </tr>
+                        <tr x-show="open" x-cloak>
+                            <td colspan="6" class="bg-warm/70 p-5">
+                                <div class="grid gap-4 text-sm md:grid-cols-4">
+                                    <div><p class="form-label">Kode internal</p><p class="font-bold text-navy">{{ $submission->paper_code }}</p></div>
+                                    <div><p class="form-label">Corresponding author</p><p class="font-bold text-navy">{{ $submission->corresponding_author_name }}</p><p class="text-muted">{{ $submission->corresponding_author_email }}</p></div>
+                                    <div><p class="form-label">Format editable</p><p class="font-bold text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Belum dikonfirmasi admin') }}</p></div>
+                                    <div><p class="form-label">Jumlah author</p><p class="font-bold text-navy">{{ $submission->authors->count() }}</p></div>
+                                </div>
+                                <div class="mt-4 flex flex-wrap gap-3"><a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-4 py-2 text-xs">Buka detail lengkap</a>@if($submission->files->first())<span class="self-center text-xs text-muted">File: {{ $submission->files->first()->original_name }}</span>@endif</div>
+                            </td>
+                        </tr>
+                        </tbody>
                     @empty
-                        <tr><td colspan="5" class="py-12 text-center text-muted">Belum ada paper yang sesuai filter.</td></tr>
+                        <tbody><tr><td colspan="6" class="py-12 text-center text-muted">Belum ada paper yang sesuai filter.</td></tr></tbody>
                     @endforelse
-                </tbody>
             </table>
         </div>
         @if($submissions->hasPages())<div class="border-t border-navy/10 p-5">{{ $submissions->links() }}</div>@endif

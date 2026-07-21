@@ -27,6 +27,7 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($admin)->post(route('submissions.assign', $submission), [
             'user_id' => $editor->id,
             'role' => ConferenceRole::Editorial->value,
+            'manuscript_format' => 'docx',
         ])->assertRedirect();
         $this->actingAs($admin)->post(route('submissions.assign', $submission), [
             'user_id' => $reviewer->id,
@@ -59,18 +60,18 @@ class EditorialWorkflowTest extends TestCase
         $this->assertNotNull($submission->fresh()->completed_at);
     }
 
-    public function test_editor_cannot_open_an_unassigned_submission(): void
+    public function test_editor_can_open_an_unassigned_submission_in_their_conference(): void
     {
         [, , $editor, , $submission] = $this->workflowFixture();
 
-        $this->actingAs($editor)->get(route('submissions.show', $submission))->assertForbidden();
+        $this->actingAs($editor)->get(route('submissions.show', $submission))->assertOk();
     }
 
     public function test_required_checklist_blocks_advancing_to_reviewer(): void
     {
         [, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
         $this->actingAs($admin)->post(route('submissions.accept', $submission));
-        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial']);
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial', 'manuscript_format' => 'latex']);
         $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
 
         $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer'])
@@ -82,7 +83,7 @@ class EditorialWorkflowTest extends TestCase
     {
         [, $admin, $editor, $reviewer, $submission, $editorialItem] = $this->workflowFixture();
         $this->actingAs($admin)->post(route('submissions.accept', $submission));
-        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial']);
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial', 'manuscript_format' => 'docx']);
         $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
         $this->actingAs($editor)->put(route('submissions.checklist', [$submission, 'editorial']), [
             'items' => [$editorialItem->id => ['checked' => '1']],
@@ -118,7 +119,7 @@ class EditorialWorkflowTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 
-        $response->assertOk()->assertSee($adminPaper->paper_code)->assertSee($assignedPaper->paper_code)->assertDontSee($hiddenPaper->paper_code);
+        $response->assertOk()->assertSee($adminPaper->paper_code)->assertSee($assignedPaper->paper_code)->assertSee($hiddenPaper->paper_code);
     }
 
     public function test_dashboard_provides_active_links_to_conference_and_public_form(): void
