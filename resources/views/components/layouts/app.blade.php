@@ -16,8 +16,11 @@
                 <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}"><span class="text-xs">DB</span><span>Dashboard</span></a>
                 <a href="{{ route('submissions.index') }}" class="nav-link {{ request()->routeIs('submissions.*') ? 'nav-link-active' : '' }}"><span class="text-xs">PF</span><span>Paper</span></a>
                 <a href="{{ route('conferences.index') }}" class="nav-link {{ request()->routeIs('conferences.*') ? 'nav-link-active' : '' }}"><span class="text-xs">CF</span><span>Conference</span></a>
+                <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}"><span class="text-xs">ST</span><span>Performa editor</span></a>
+                <a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}"><span class="text-xs">AU</span><span>Audit log</span></a>
                 @if(auth()->user()->isSuperAdmin())
                     <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}"><span class="text-xs">US</span><span>Pengguna</span></a>
+                    <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') ? 'nav-link-active' : '' }}"><span class="text-xs">MO</span><span>Monitoring</span></a>
                 @endif
             </nav>
             <div class="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -31,7 +34,7 @@
                 <x-brand class="text-navy lg:hidden" />
                 <div class="hidden lg:block"><p class="text-xs font-bold uppercase tracking-[.18em] text-muted">Paperflow workspace</p><p class="font-bold text-navy">{{ $heading ?? 'Dashboard' }}</p></div>
                 <nav class="ml-auto flex gap-1 lg:hidden"><a class="btn btn-ghost px-3" href="{{ route('dashboard') }}">Dashboard</a><a class="btn btn-ghost px-3" href="{{ route('submissions.index') }}">Paper</a></nav>
-                <div class="flex items-center gap-3">@if(auth()->user()->isSuperAdmin())<span class="badge badge-warning hidden sm:inline-flex">Superadmin</span>@endif<span class="grid size-10 place-items-center rounded-full bg-navy font-bold text-white">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span></div>
+                <div class="flex items-center gap-3"><a href="{{ route('notifications.index') }}" class="relative grid size-10 place-items-center rounded-full bg-navy/5 font-bold text-navy">N @if(auth()->user()->unreadNotifications()->exists())<span class="absolute right-0 top-0 size-2.5 rounded-full bg-orange"></span>@endif</a>@if(auth()->user()->isSuperAdmin())<span class="badge badge-warning hidden sm:inline-flex">Superadmin</span>@endif<span class="grid size-10 place-items-center rounded-full bg-navy font-bold text-white">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span></div>
             </header>
             <main class="p-5 sm:p-8 lg:p-10"><x-flash />{{ $slot }}</main>
         </div>

@@ -21,6 +21,7 @@
                         </div>
                     </div>
                 @endif
+                @foreach($submission->uploadAttempts->where('source','author')->where('status','failed') as $attempt)<div class="card border-danger/20 p-5"><p class="font-bold text-danger">Upload {{ $attempt->original_name }} gagal</p><p class="mt-1 text-xs text-muted">{{ Str::limit($attempt->error,160) }}</p><form class="mt-3" method="POST" action="{{ route('author.uploads.retry',[$token,$attempt]) }}">@csrf<button class="btn btn-secondary">Coba lagi tanpa pilih file</button></form></div>@endforeach
 
                 @if (in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true))
                     <form method="POST" action="{{ route('author.revision', $token) }}" enctype="multipart/form-data" class="card p-6">

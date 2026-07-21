@@ -16,18 +16,24 @@ class SubmissionExportController extends Controller
             ->with(['conference', 'editor', 'reviewer'])
             ->when($request->filled('conference'), fn ($q) => $q->where('conference_id', $request->string('conference')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('editor'), fn ($q) => $q->where('editor_id', $request->integer('editor')))
+            ->when($request->filled('reviewer'), fn ($q) => $q->where('reviewer_id', $request->integer('reviewer')))
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('submitted_at', '>=', $request->date('date_from')))
+            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('submitted_at', '<=', $request->date('date_to')))
             ->orderBy('submitted_at');
 
         return response()->streamDownload(function () use ($query) {
             $output = fopen('php://output', 'w');
-            fputcsv($output, ['Paper Code', 'Conference', 'Title', 'Author', 'Email', 'Status', 'Editor', 'Reviewer', 'Submitted At', 'Completed At'], ',', '"', '');
+            fputcsv($output, ['Paper Code', 'Conference', 'Title', 'Author', 'Email', 'Phone', 'Status', 'Editor', 'Reviewer', 'Deadline', 'Overdue', 'File Versions', 'EDAS Reference', 'EDAS Submitted', 'EDAS Approved', 'Submitted At', 'Validated At', 'Completed At'], ',', '"', '');
             $query->chunk(500, function ($submissions) use ($output) {
                 foreach ($submissions as $submission) {
                     fputcsv($output, [
                         $submission->paper_code, $submission->conference->name, $submission->title,
-                        $submission->corresponding_author_name, $submission->corresponding_author_email,
+                        $submission->corresponding_author_name, $submission->corresponding_author_email, $submission->corresponding_author_phone,
                         $submission->status->label(), $submission->editor?->name, $submission->reviewer?->name,
-                        $submission->submitted_at?->toIso8601String(), $submission->completed_at?->toIso8601String(),
+                        $submission->deadline_at?->toIso8601String(), $submission->isOverdue() ? 'Yes' : 'No', $submission->files()->count(),
+                        $submission->edas_reference, $submission->edas_submitted_at?->toIso8601String(), $submission->edas_approved_at?->toIso8601String(),
+                        $submission->submitted_at?->toIso8601String(), $submission->validated_at?->toIso8601String(), $submission->completed_at?->toIso8601String(),
                     ], ',', '"', '');
                 }
             });

@@ -97,4 +97,31 @@ class Conference extends Model
     {
         return $this->storage_provider === 'google_drive';
     }
+
+    public function allowedFileExtensions(bool $includePdf = false): array
+    {
+        $defaults = $includePdf ? ['doc', 'docx', 'tex', 'zip', 'pdf'] : ['doc', 'docx', 'tex', 'zip'];
+
+        return array_values(array_intersect($this->settings['allowed_extensions'] ?? $defaults, $defaults));
+    }
+
+    public function maxFileSizeMb(): int
+    {
+        return max(1, min(100, (int) ($this->settings['max_file_mb'] ?? 25)));
+    }
+
+    public function brandPrimary(): string
+    {
+        return $this->settings['brand_primary'] ?? '#102a43';
+    }
+
+    public function brandAccent(): string
+    {
+        return $this->settings['brand_accent'] ?? '#f47c20';
+    }
+
+    public function brandLogoUrl(): ?string
+    {
+        return isset($this->settings['brand_logo']) ? asset('storage/'.$this->settings['brand_logo']) : null;
+    }
 }

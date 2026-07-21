@@ -8,6 +8,7 @@ use App\Services\AuditLogger;
 use App\Services\ConferenceProvisioner;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -66,6 +67,19 @@ class ConferenceController extends Controller
     {
         $this->authorize('update', $conference);
         $validated = $this->validateConference($request, $conference);
+        $settings = $conference->settings ?? [];
+        $settings['allowed_extensions'] = $request->input('allowed_extensions', ['doc', 'docx', 'tex', 'zip']);
+        $settings['max_file_mb'] = $request->integer('max_file_mb', 25);
+        $settings['brand_primary'] = $request->input('brand_primary', '#102a43');
+        $settings['brand_accent'] = $request->input('brand_accent', '#f47c20');
+        $settings['brand_tagline'] = $request->input('brand_tagline');
+        if ($request->hasFile('brand_logo')) {
+            if (isset($settings['brand_logo'])) {
+                Storage::disk('public')->delete($settings['brand_logo']);
+            }
+            $settings['brand_logo'] = $request->file('brand_logo')->store('conference-branding', 'public');
+        }
+        $validated['settings'] = $settings;
         $old = $conference->only(array_keys($validated));
         $conference->update($validated);
         $audit->record('conference.updated', $conference, $conference, $old, $validated);
@@ -100,7 +114,12 @@ class ConferenceController extends Controller
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'submission_opens_at' => ['nullable', 'date'],
             'submission_closes_at' => ['nullable', 'date', 'after_or_equal:submission_opens_at'],
+            'allowed_extensions' => ['nullable', 'array'], 'allowed_extensions.*' => ['string', Rule::in(['doc', 'docx', 'tex', 'zip', 'pdf'])],
+            'max_file_mb' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'brand_primary' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'], 'brand_accent' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'brand_tagline' => ['nullable', 'string', 'max:255'], 'brand_logo' => ['nullable', 'image', 'max:2048'],
         ]);
+        unset($validated['allowed_extensions'], $validated['max_file_mb'], $validated['brand_primary'], $validated['brand_accent'], $validated['brand_tagline'], $validated['brand_logo']);
         $validated['slug'] = Str::lower($validated['slug']);
 
         return $validated;

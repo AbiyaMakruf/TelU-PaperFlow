@@ -9,6 +9,7 @@ use App\Models\Conference;
 use App\Models\FileVersion;
 use App\Models\ReviewCycle;
 use App\Models\Submission;
+use App\Models\UploadAttempt;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\ConferenceFileStorage;
@@ -18,12 +19,16 @@ use App\Services\VisibleSubmissions;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Throwable;
+use ZipArchive;
 
 class SubmissionController extends Controller
 {
@@ -38,6 +43,11 @@ class SubmissionController extends Controller
 
         $query->when($request->filled('conference'), fn ($q) => $q->where('conference_id', $request->string('conference')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('editor'), fn ($q) => $q->where('editor_id', $request->integer('editor')))
+            ->when($request->filled('reviewer'), fn ($q) => $q->where('reviewer_id', $request->integer('reviewer')))
+            ->when($request->boolean('overdue'), fn ($q) => $q->where('deadline_at', '<', now())->whereNotIn('status', [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn]))
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('submitted_at', '>=', $request->date('date_from')))
+            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('submitted_at', '<=', $request->date('date_to')))
             ->when($request->filled('search'), fn ($q) => $q->where(fn ($search) => $search
                 ->where('paper_code', 'like', '%'.$request->string('search').'%')
                 ->orWhere('title', 'like', '%'.$request->string('search').'%')
@@ -45,8 +55,9 @@ class SubmissionController extends Controller
 
         $submissions = $query->with(['conference', 'editor', 'reviewer'])->latest('submitted_at')->paginate(20)->withQueryString();
         $conferences = Conference::whereIn('id', $conferenceIds)->orderBy('name')->get();
+        $staff = User::whereHas('conferenceMemberships', fn ($q) => $q->whereIn('conference_id', $conferenceIds)->where('is_active', true))->orderBy('name')->get();
 
-        return view('submissions.index', compact('submissions', 'conferences'));
+        return view('submissions.index', compact('submissions', 'conferences', 'staff'));
     }
 
     public function show(Submission $submission): View
@@ -54,7 +65,7 @@ class SubmissionController extends Controller
         $this->authorize('view', $submission);
         $submission->load([
             'conference', 'authors', 'editor', 'reviewer', 'files.uploader', 'feedback.author',
-            'statusHistory.actor', 'reviewCycles.template.items', 'reviewCycles.results',
+            'statusHistory.actor', 'reviewCycles.template.items', 'reviewCycles.results', 'emailLogs', 'uploadAttempts.user',
         ]);
         $editors = $submission->conference->memberships()->with('user')->where('role', ConferenceRole::Editorial)->where('is_active', true)->get();
         $reviewers = $submission->conference->memberships()->with('user')->where('role', ConferenceRole::Reviewer)->where('is_active', true)->get();
@@ -91,6 +102,7 @@ class SubmissionController extends Controller
             'user_id' => ['required', 'exists:users,id'],
             'role' => ['required', Rule::in([ConferenceRole::Editorial->value, ConferenceRole::Reviewer->value])],
             'note' => ['nullable', 'string', 'max:2000'],
+            'deadline_at' => ['nullable', 'date'],
         ]);
 
         try {
@@ -99,6 +111,9 @@ class SubmissionController extends Controller
             return back()->withErrors(['assignment' => $exception->getMessage()]);
         }
         $audit->record('submission.assigned', $submission, $submission->conference, newValues: $validated);
+        if (! empty($validated['deadline_at'])) {
+            $submission->update(['deadline_at' => $validated['deadline_at']]);
+        }
 
         return back()->with('success', 'PIC berhasil diperbarui.');
     }
@@ -133,13 +148,16 @@ class SubmissionController extends Controller
     public function advance(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse
     {
         $validated = $request->validate([
-            'action' => ['required', Rule::in(['request_author_revision', 'send_reviewer', 'reviewer_changes', 'reviewer_approve', 'edas_fix', 'done'])],
+            'action' => ['required', Rule::in(['request_author_revision', 'send_reviewer', 'reviewer_changes', 'reviewer_approve', 'edas_fix', 'record_edas', 'approve_edas', 'reject', 'withdraw'])],
             'note' => ['nullable', 'string', 'max:10000'],
             'edas_reference' => ['nullable', 'string', 'max:255'],
         ]);
         $action = $validated['action'];
-        $isEditorial = in_array($action, ['request_author_revision', 'send_reviewer', 'edas_fix'], true);
-        $this->authorize($isEditorial ? 'editorialReview' : 'reviewerReview', $submission);
+        if (in_array($action, ['reject', 'withdraw'], true)) {
+            $this->authorize('assign', $submission);
+        } else {
+            $this->authorize(in_array($action, ['request_author_revision', 'send_reviewer', 'edas_fix', 'record_edas'], true) ? 'editorialReview' : 'reviewerReview', $submission);
+        }
 
         try {
             match ($action) {
@@ -148,7 +166,10 @@ class SubmissionController extends Controller
                 'reviewer_changes' => $this->reviewerChanges($request, $submission, $workflow, $validated['note'] ?? null),
                 'reviewer_approve' => $this->reviewerApprove($request, $submission, $workflow, $validated['note'] ?? null),
                 'edas_fix' => $this->edasFix($request, $submission, $workflow, $validated['note'] ?? null),
-                'done' => $this->markDone($request, $submission, $workflow, $mailer, $validated),
+                'record_edas' => $this->recordEdas($request, $submission, $validated),
+                'approve_edas' => $this->approveEdas($request, $submission, $workflow, $mailer, $validated),
+                'reject' => $workflow->transition($submission, SubmissionStatus::Rejected, $request->user(), $validated['note'] ?? null),
+                'withdraw' => $workflow->transition($submission, SubmissionStatus::Withdrawn, $request->user(), $validated['note'] ?? null),
             };
         } catch (DomainException $exception) {
             return back()->withErrors(['workflow' => $exception->getMessage()]);
@@ -187,7 +208,7 @@ class SubmissionController extends Controller
     {
         $this->authorize('editorialReview', $submission);
         $validated = $request->validate([
-            'paper_file' => ['required', File::types(['doc', 'docx', 'tex', 'zip', 'pdf'])->max('25mb')],
+            'paper_file' => ['required', File::types($submission->conference->allowedFileExtensions(true))->max($submission->conference->maxFileSizeMb().'mb')],
             'label' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'is_final' => ['nullable', 'boolean'],
@@ -195,7 +216,15 @@ class SubmissionController extends Controller
         $file = $request->file('paper_file');
         $version = $submission->files()->max('version_number') + 1;
         $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
-        $storedFile = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-V'.$version);
+        try {
+            $storedFile = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-V'.$version);
+        } catch (Throwable $exception) {
+            $pendingPath = $file->storeAs('pending-uploads/'.$submission->id, Str::ulid().'-'.$file->getClientOriginalName(), 'local');
+            $submission->uploadAttempts()->create(['user_id' => $request->user()->id, 'source' => 'editorial', 'label' => $validated['label'], 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size' => $file->getSize(), 'temporary_path' => $pendingPath, 'notes' => $validated['notes'] ?? null, 'is_final' => $request->boolean('is_final'), 'status' => 'failed', 'error' => $exception->getMessage()]);
+            report($exception);
+
+            return back()->withErrors(['paper_file' => 'Upload gagal. File disimpan sementara dan dapat dicoba kembali.']);
+        }
         if ($request->boolean('is_final')) {
             $submission->files()->update(['is_final' => false]);
         }
@@ -219,6 +248,54 @@ class SubmissionController extends Controller
         abort_unless($file->submission_id === $submission->id, 404);
 
         return $storage->download($file);
+    }
+
+    public function preview(Submission $submission, FileVersion $file, ConferenceFileStorage $storage): View|BinaryFileResponse
+    {
+        $this->authorize('view', $submission);
+        abort_unless($file->submission_id === $submission->id, 404);
+        $copy = $storage->temporaryCopy($file);
+        $extension = strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION));
+        if ($extension === 'pdf') {
+            return response()->file($copy['path'], ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$file->original_name.'"'])->deleteFileAfterSend($copy['cleanup']);
+        }
+        if ($extension === 'docx') {
+            $zip = new ZipArchive;
+            abort_unless($zip->open($copy['path']) === true, 422, 'DOCX tidak dapat dibaca.');
+            $xml = $zip->getFromName('word/document.xml') ?: '';
+            $zip->close();
+            if ($copy['cleanup']) {
+                @unlink($copy['path']);
+            }
+            $text = trim(html_entity_decode(strip_tags(str_replace(['</w:p>', '</w:tr>'], ["\n", "\n"], $xml))));
+
+            return view('submissions.preview', compact('submission', 'file', 'text'));
+        }
+        if ($copy['cleanup']) {
+            @unlink($copy['path']);
+        } abort(422, 'Preview hanya tersedia untuk PDF dan DOCX.');
+    }
+
+    public function retryUpload(Request $request, Submission $submission, UploadAttempt $attempt, ConferenceFileStorage $storage): RedirectResponse
+    {
+        $this->authorize('editorialReview', $submission);
+        abort_unless($attempt->submission_id === $submission->id && $attempt->status === 'failed', 404);
+        $absolute = Storage::disk('local')->path($attempt->temporary_path);
+        abort_unless(is_file($absolute), 404, 'File sementara tidak ditemukan.');
+        $uploaded = new UploadedFile($absolute, $attempt->original_name, $attempt->mime_type, null, true);
+        $version = $submission->files()->max('version_number') + 1;
+        try {
+            $stored = $storage->put($submission->conference, $uploaded, $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-'.Str::slug(pathinfo($attempt->original_name, PATHINFO_FILENAME)).'.'.pathinfo($attempt->original_name, PATHINFO_EXTENSION), $submission->paper_code.'-V'.$version);
+        } catch (Throwable $e) {
+            $attempt->update(['attempts' => $attempt->attempts + 1, 'error' => $e->getMessage()]);
+
+            return back()->withErrors(['paper_file' => 'Retry upload masih gagal: '.$e->getMessage()]);
+        }
+        $submission->files()->create(['version_number' => $version, 'label' => $attempt->label, 'source' => $attempt->source, 'disk' => $stored['disk'], 'storage_path' => $stored['storage_path'], 'original_name' => $attempt->original_name, 'mime_type' => $attempt->mime_type, 'size' => $attempt->size, 'checksum' => hash_file('sha256', $absolute), 'uploaded_by' => $request->user()->id, 'notes' => $attempt->notes, 'is_final' => $attempt->is_final, 'external_provider' => $stored['external_provider'], 'external_id' => $stored['external_id'], 'external_url' => $stored['external_url']]);
+        Storage::disk('local')->delete($attempt->temporary_path);
+        $attempt->update(['status' => 'completed', 'retried_at' => now(), 'attempts' => $attempt->attempts + 1]);
+
+        return back()->with('success', 'Upload berhasil dicoba ulang.');
     }
 
     private function currentCycle(Submission $submission, ReviewStage $stage, string $templateId, int $userId): ReviewCycle
@@ -281,9 +358,17 @@ class SubmissionController extends Controller
     }
 
     /** @param array<string, mixed> $validated */
-    private function markDone(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer, array $validated): void
+    private function recordEdas(Request $request, Submission $submission, array $validated): void
     {
-        $submission->update(['edas_reference' => $validated['edas_reference'] ?? null, 'edas_notes' => $validated['note'] ?? null]);
+        $submission->update(['edas_reference' => $validated['edas_reference'] ?? null, 'edas_notes' => $validated['note'] ?? null, 'edas_submitted_at' => now(), 'edas_submitted_by' => $request->user()->id, 'edas_approved_at' => null, 'edas_approved_by' => null]);
+    }
+
+    private function approveEdas(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer, array $validated): void
+    {
+        if (! $submission->edas_submitted_at) {
+            throw new DomainException('Upload ke EDAS belum dicatat.');
+        }
+        $submission->update(['edas_approved_at' => now(), 'edas_approved_by' => $request->user()->id, 'edas_notes' => $validated['note'] ?? $submission->edas_notes]);
         $workflow->transition($submission->fresh(), SubmissionStatus::Done, $request->user(), $validated['note'] ?? null);
         $mailer->queue($submission->load('conference'), 'paper_completed', []);
     }
@@ -297,7 +382,7 @@ class SubmissionController extends Controller
                 && hash_equals((string) $submission->author_token_hash, hash('sha256', $existing))) {
                 return $existing;
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // A token encrypted with an old APP_KEY is safely replaced below.
         }
 

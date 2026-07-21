@@ -6,6 +6,8 @@ use App\Models\Conference;
 use App\Models\FileVersion;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ConferenceFileStorage
@@ -64,5 +66,26 @@ class ConferenceFileStorage
         }
 
         return response()->download($this->privateStorage->localPath($file->storage_path), $file->original_name);
+    }
+
+    /** @return array{path:string,cleanup:bool} */
+    public function temporaryCopy(FileVersion $file): array
+    {
+        if ($file->disk === 'local') {
+            return ['path' => $this->privateStorage->localPath($file->storage_path), 'cleanup' => false];
+        }
+        if ($file->disk === 'google_drive') {
+            $file->loadMissing('submission.conference');
+            $response = $this->googleDrive->download($file->submission->conference, $file->external_id ?: $file->storage_path, $file->original_name);
+
+            return ['path' => $response->getFile()->getPathname(), 'cleanup' => true];
+        }
+        $url = $this->privateStorage->temporaryUrl($file->storage_path) ?: throw new \RuntimeException('Signed URL file tidak tersedia.');
+        $directory = storage_path('app/private/previews');
+        File::ensureDirectoryExists($directory);
+        $path = tempnam($directory, 'preview-');
+        Http::withOptions(['sink' => $path])->get($url)->throw();
+
+        return ['path' => $path, 'cleanup' => true];
     }
 }

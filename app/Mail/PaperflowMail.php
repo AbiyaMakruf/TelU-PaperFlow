@@ -20,6 +20,9 @@ class PaperflowMail extends Mailable
         public string $contextName = 'Paperflow',
         public ?string $actionUrl = null,
         public ?string $actionLabel = null,
+        public string $primaryColor = '#102a43',
+        public string $accentColor = '#f47c20',
+        public ?string $logoUrl = null,
     ) {}
 
     public function envelope(): Envelope

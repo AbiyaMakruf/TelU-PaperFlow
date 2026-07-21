@@ -8,11 +8,12 @@ Paperflow adalah workspace editorial conference berbasis Laravel. Aplikasi ini m
 - Login staf menerima username atau email. Akun baru dibuat dengan nama + username dan password awal `user1234`; login pertama wajib melengkapi email serta mengganti password.
 - Conference dan slug form publik yang dapat diduplikasi.
 - Form builder, checklist editorial/reviewer, dan template email per conference.
-- Submission author tanpa akun melalui `/{slug-conference}`.
+- Landing conference `/{slug}` dan submission author tanpa akun melalui `/{slug}/submit`, dilindungi CAPTCHA serta rate limit khusus.
 - Portal author bertoken untuk status, feedback, download, dan upload revisi.
-- File private di Supabase Storage; database hanya menyimpan object path dan checksum.
+- Penyimpanan per conference dapat dipilih antara private Supabase Storage dan Google Drive, termasuk retry upload gagal dan preview PDF/DOCX.
 - Validasi submission, assignment editor/reviewer, checklist per siklus, feedback internal/author, serta alur EDAS.
-- Dashboard personal, statistik conference, audit log, email log, dan export CSV sesuai scope role.
+- Dashboard personal, notifikasi in-app, performa editor, audit log, riwayat email, monitoring failed jobs/error, filter deadline, serta export laporan lengkap sesuai scope role.
+- Branding landing, form, dan email per conference; aturan format dan ukuran file dapat dikonfigurasi admin.
 
 ## Stack
 

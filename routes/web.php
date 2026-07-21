@@ -2,6 +2,7 @@
 
 use App\Enums\ConferenceStatus;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordChangeController;
@@ -12,9 +13,12 @@ use App\Http\Controllers\ConferenceController;
 use App\Http\Controllers\ConferenceLandingController;
 use App\Http\Controllers\ConferenceMemberController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EditorPerformanceController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\FormBuilderController;
 use App\Http\Controllers\GoogleDriveController;
+use App\Http\Controllers\MonitoringController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PublicSubmissionController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SubmissionExportController;
@@ -46,6 +50,11 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::get('/notifications/{notification}', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::get('/audit-logs', AuditLogController::class)->name('audit.index');
+        Route::get('/editor-performance', EditorPerformanceController::class)->name('editor-performance.index');
 
         Route::get('/papers', [SubmissionController::class, 'index'])->name('submissions.index');
         Route::get('/papers-export.csv', SubmissionExportController::class)->name('submissions.export');
@@ -55,9 +64,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/papers/{submission}/assign', [SubmissionController::class, 'assign'])->name('submissions.assign');
         Route::put('/papers/{submission}/checklist/{stage}', [SubmissionController::class, 'saveChecklist'])->name('submissions.checklist');
         Route::post('/papers/{submission}/advance', [SubmissionController::class, 'advance'])->name('submissions.advance');
-        Route::post('/papers/{submission}/feedback', [SubmissionController::class, 'addFeedback'])->name('submissions.feedback');
+        Route::post('/papers/{submission}/feedback', [SubmissionController::class, 'addFeedback'])->middleware('throttle:editorial-email')->name('submissions.feedback');
         Route::post('/papers/{submission}/files', [SubmissionController::class, 'uploadFile'])->name('submissions.files.store');
-        Route::get('/papers/{submission}/files/{file}', [SubmissionController::class, 'download'])->name('submissions.files.download');
+        Route::get('/papers/{submission}/files/{file}', [SubmissionController::class, 'download'])->middleware('throttle:file-download')->name('submissions.files.download');
+        Route::get('/papers/{submission}/files/{file}/preview', [SubmissionController::class, 'preview'])->name('submissions.files.preview');
+        Route::post('/papers/{submission}/uploads/{attempt}/retry', [SubmissionController::class, 'retryUpload'])->name('submissions.uploads.retry');
 
         Route::resource('conferences', ConferenceController::class)->except(['destroy']);
         Route::post('/conferences/{conference}/duplicate', [ConferenceController::class, 'duplicate'])->name('conferences.duplicate');
@@ -78,6 +89,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/google-drive/callback', [GoogleDriveController::class, 'callback'])->name('google-drive.callback');
 
         Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
+            Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');
+            Route::post('/monitoring/failed-jobs/{uuid}/retry', [MonitoringController::class, 'retry'])->name('monitoring.retry');
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
             Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         });
@@ -86,10 +99,11 @@ Route::middleware('auth')->group(function () {
 
 Route::prefix('submission')->group(function () {
     Route::get('/access/{token}', [AuthorPortalController::class, 'show'])->name('author.portal');
-    Route::post('/access/{token}/revision', [AuthorPortalController::class, 'uploadRevision'])->middleware('throttle:10,1')->name('author.revision');
+    Route::post('/access/{token}/revision', [AuthorPortalController::class, 'uploadRevision'])->middleware('throttle:author-revision')->name('author.revision');
+    Route::post('/access/{token}/uploads/{attempt}/retry', [AuthorPortalController::class, 'retryUpload'])->middleware('throttle:author-revision')->name('author.uploads.retry');
     Route::get('/access/{token}/files/{file}', [AuthorPortalController::class, 'download'])->name('author.files.download');
 });
 
 Route::get('/{conference:slug}/submit', [PublicSubmissionController::class, 'show'])->name('public.submission.show');
-Route::post('/{conference:slug}/submit', [PublicSubmissionController::class, 'store'])->middleware('throttle:10,1')->name('public.submission.store');
+Route::post('/{conference:slug}/submit', [PublicSubmissionController::class, 'store'])->middleware('throttle:public-submission')->name('public.submission.store');
 Route::get('/{conference:slug}', ConferenceLandingController::class)->name('public.conference.show');

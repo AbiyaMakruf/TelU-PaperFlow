@@ -47,10 +47,13 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'reviewer_approve'])->assertRedirect();
         $this->assertSame(SubmissionStatus::ReadyForEdas, $submission->fresh()->status);
 
-        $this->actingAs($reviewer)->post(route('submissions.advance', $submission), [
-            'action' => 'done',
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), [
+            'action' => 'record_edas',
             'edas_reference' => '1570123456',
+            'note' => 'Upload berhasil',
         ])->assertRedirect();
+        $this->assertSame(SubmissionStatus::ReadyForEdas, $submission->fresh()->status);
+        $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'approve_edas'])->assertRedirect();
         $this->assertSame(SubmissionStatus::Done, $submission->fresh()->status);
         $this->assertSame('1570123456', $submission->fresh()->edas_reference);
         $this->assertNotNull($submission->fresh()->completed_at);

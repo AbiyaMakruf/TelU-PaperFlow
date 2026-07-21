@@ -8,6 +8,7 @@ use App\Models\Assignment;
 use App\Models\StatusHistory;
 use App\Models\Submission;
 use App\Models\User;
+use App\Notifications\WorkflowNotification;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -18,11 +19,11 @@ class SubmissionWorkflow
         'submitted' => [SubmissionStatus::NeedsAuthorCorrection, SubmissionStatus::ReadyForAssignment, SubmissionStatus::Rejected],
         'needs_author_correction' => [SubmissionStatus::Submitted, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn],
         'ready_for_assignment' => [SubmissionStatus::EditorialReview, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn],
-        'editorial_review' => [SubmissionStatus::WaitingAuthorRevision, SubmissionStatus::ReviewerReview, SubmissionStatus::Withdrawn],
+        'editorial_review' => [SubmissionStatus::WaitingAuthorRevision, SubmissionStatus::ReviewerReview, SubmissionStatus::Withdrawn, SubmissionStatus::Rejected],
         'waiting_author_revision' => [SubmissionStatus::EditorialReview, SubmissionStatus::Withdrawn],
-        'reviewer_review' => [SubmissionStatus::ReviewerChangesRequested, SubmissionStatus::ReadyForEdas],
+        'reviewer_review' => [SubmissionStatus::ReviewerChangesRequested, SubmissionStatus::ReadyForEdas, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn],
         'reviewer_changes_requested' => [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview],
-        'ready_for_edas' => [SubmissionStatus::EdasFixRequired, SubmissionStatus::Done],
+        'ready_for_edas' => [SubmissionStatus::EdasFixRequired, SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn],
         'edas_fix_required' => [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview, SubmissionStatus::ReadyForEdas],
     ];
 
@@ -66,7 +67,11 @@ class SubmissionWorkflow
                 'created_at' => now(),
             ]);
 
-            return $locked->refresh();
+            $updated = $locked->refresh();
+            collect([$updated->editor, $updated->reviewer])->filter()->unique('id')->each(fn ($user) => $user->notify(new WorkflowNotification($updated, 'Status paper berubah', "{$updated->paper_code} sekarang berstatus {$to->label()}.")));
+            app(AuditLogger::class)->record('submission.status_changed', $updated, $updated->conference, ['status' => $from->value], ['status' => $to->value, 'note' => $note]);
+
+            return $updated;
         });
     }
 
@@ -104,6 +109,8 @@ class SubmissionWorkflow
             $submission->update([
                 $role === ConferenceRole::Editorial ? 'editor_id' : 'reviewer_id' => $assignee->id,
             ]);
+            $assignee->notify(new WorkflowNotification($submission, 'Assignment baru', "Anda ditugaskan pada {$submission->paper_code} sebagai {$role->label()}."));
+            app(AuditLogger::class)->record('submission.assigned', $submission, $submission->conference, [], ['user_id' => $assignee->id, 'role' => $role->value]);
 
             if ($role === ConferenceRole::Editorial && $submission->status === SubmissionStatus::ReadyForAssignment) {
                 return $this->transition($submission, SubmissionStatus::EditorialReview, $actor, $note);

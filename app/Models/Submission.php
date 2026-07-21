@@ -19,6 +19,7 @@ class Submission extends Model
         'corresponding_author_email', 'corresponding_author_phone', 'answers', 'status',
         'editor_id', 'reviewer_id', 'author_token_hash', 'author_token_encrypted', 'author_token_expires_at',
         'submitted_at', 'validated_at', 'completed_at', 'edas_reference', 'edas_notes', 'lock_version',
+        'deadline_at', 'edas_submitted_at', 'edas_submitted_by', 'edas_approved_at', 'edas_approved_by',
     ];
 
     protected $hidden = ['author_token_hash', 'author_token_encrypted'];
@@ -33,6 +34,7 @@ class Submission extends Model
             'submitted_at' => 'datetime',
             'validated_at' => 'datetime',
             'completed_at' => 'datetime',
+            'deadline_at' => 'datetime', 'edas_submitted_at' => 'datetime', 'edas_approved_at' => 'datetime',
         ];
     }
 
@@ -84,5 +86,30 @@ class Submission extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(StatusHistory::class)->latest('created_at');
+    }
+
+    public function uploadAttempts(): HasMany
+    {
+        return $this->hasMany(UploadAttempt::class)->latest();
+    }
+
+    public function emailLogs(): HasMany
+    {
+        return $this->hasMany(EmailLog::class)->latest();
+    }
+
+    public function edasSubmitter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'edas_submitted_by');
+    }
+
+    public function edasApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'edas_approved_by');
+    }
+
+    public function isOverdue(): bool
+    {
+        return $this->deadline_at?->isPast() && ! in_array($this->status, [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn], true);
     }
 }

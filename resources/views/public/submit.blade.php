@@ -1,9 +1,10 @@
 <x-layouts.public :title="$conference->name">
-    <div class="mx-auto max-w-4xl">
+    <div class="mx-auto max-w-4xl" style="--brand-primary:{{ $conference->brandPrimary() }};--brand-accent:{{ $conference->brandAccent() }}">
         <div class="mb-8">
+            @if($conference->brandLogoUrl())<img class="mb-5 max-h-20 max-w-56" src="{{ $conference->brandLogoUrl() }}" alt="Logo {{ $conference->name }}">@endif
             <a href="{{ route('public.conference.show', $conference) }}" class="back-link">&larr; Halaman conference</a>
             <p class="eyebrow">Paper submission</p>
-            <h1 class="page-title">{{ $conference->name }}</h1>
+            <h1 class="page-title" style="color:var(--brand-primary)">{{ $conference->name }}</h1>
             @if ($conference->description)<p class="page-subtitle">{{ $conference->description }}</p>@endif
         </div>
 
@@ -57,10 +58,11 @@
             @endif
 
             <div class="my-8 border-t border-navy/10"></div>
-            <label><span class="form-label">File editable paper *</span><input class="form-input py-3" type="file" name="paper_file" accept=".doc,.docx,.tex,.zip" required><span class="mt-2 block text-xs text-muted">Format DOC, DOCX, TEX, atau ZIP. Maksimal 100 MB.</span></label>
+            @if($captchaQuestion)<label class="mb-5 block"><span class="form-label">Verifikasi keamanan: berapa {{ $captchaQuestion }}? *</span><input class="form-input" type="number" name="captcha_answer" required></label>@endif
+            <label><span class="form-label">File editable paper *</span><input class="form-input py-3" type="file" name="paper_file" accept="{{ collect($conference->allowedFileExtensions())->map(fn($e)=>'.'.$e)->implode(',') }}" required><span class="mt-2 block text-xs text-muted">Format {{ strtoupper(implode(', ', $conference->allowedFileExtensions())) }}. Maksimal {{ $conference->maxFileSizeMb() }} MB.</span></label>
             <div class="mt-8 flex items-center justify-between gap-4 border-t border-navy/10 pt-6">
                 <p class="text-xs text-muted">File disimpan privat dan hanya dapat diakses pihak berwenang.</p>
-                <button class="btn btn-primary" type="submit">Kirim submission</button>
+                <button class="btn text-white" style="background:var(--brand-primary)" type="submit">Kirim submission</button>
             </div>
         </form>
         @endunless

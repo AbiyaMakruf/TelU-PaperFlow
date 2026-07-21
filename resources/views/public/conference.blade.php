@@ -1,10 +1,12 @@
 <x-layouts.public :title="$conference->name">
     <div class="mx-auto max-w-4xl">
-        <section class="card overflow-hidden">
-            <div class="bg-navy px-6 py-10 text-white sm:px-10">
+        <section class="card overflow-hidden" style="--brand-primary:{{ $conference->brandPrimary() }};--brand-accent:{{ $conference->brandAccent() }}">
+            <div class="px-6 py-10 text-white sm:px-10" style="background:var(--brand-primary)">
+                @if($conference->brandLogoUrl())<img class="mb-6 max-h-20 max-w-56" src="{{ $conference->brandLogoUrl() }}" alt="Logo {{ $conference->name }}">@endif
                 <p class="eyebrow !text-orange">Paperflow conference</p>
                 <h1 class="mt-3 text-3xl font-black sm:text-4xl">{{ $conference->name }}</h1>
                 @if($conference->description)<p class="mt-4 max-w-2xl text-white/75">{{ $conference->description }}</p>@endif
+                @if($conference->settings['brand_tagline'] ?? null)<p class="mt-3 font-bold" style="color:var(--brand-accent)">{{ $conference->settings['brand_tagline'] }}</p>@endif
             </div>
             <div class="p-6 sm:p-10">
                 <div class="grid gap-4 sm:grid-cols-2">
@@ -13,7 +15,7 @@
                 </div>
                 <div class="mt-8 border-t border-navy/10 pt-6">
                     @if($formAvailable && $storageReady)
-                        <a href="{{ route('public.submission.show', $conference) }}" class="btn btn-primary">Submit manuscript</a>
+                        <a href="{{ route('public.submission.show', $conference) }}" class="btn text-white" style="background:var(--brand-primary)">Submit manuscript</a>
                     @elseif(!$formAvailable)
                         <p class="font-bold text-muted">Form submission belum dibuka atau sudah ditutup.</p>
                     @else

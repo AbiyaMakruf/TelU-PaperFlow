@@ -42,6 +42,9 @@ class SendLoggedEmail implements ShouldQueue
                 contextName: $this->emailLog->conference?->name ?: 'Paperflow',
                 actionUrl: $actionUrl,
                 actionLabel: $actionLabel,
+                primaryColor: $this->emailLog->conference?->brandPrimary() ?? '#102a43',
+                accentColor: $this->emailLog->conference?->brandAccent() ?? '#f47c20',
+                logoUrl: $this->emailLog->conference?->brandLogoUrl(),
             );
             $pending = Mail::to($this->emailLog->recipient);
             if ($this->cc !== []) {

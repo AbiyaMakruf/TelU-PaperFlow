@@ -23,7 +23,13 @@ class PublicSubmissionController extends Controller
         $form = $conference->publishedForm();
         abort_unless($form, 404);
 
-        return view('public.submit', ['conference' => $conference, 'form' => $form, 'storageReady' => $storage->ready($conference)]);
+        if (config('paperflow.captcha_enabled')) {
+            $a = random_int(2, 9);
+            $b = random_int(1, 9);
+            session(['submission_captcha' => $a + $b]);
+        }
+
+        return view('public.submit', ['conference' => $conference, 'form' => $form, 'storageReady' => $storage->ready($conference), 'captchaQuestion' => isset($a) ? "{$a} + {$b}" : null]);
     }
 
     public function store(Request $request, Conference $conference, ConferenceFileStorage $storage, ConferenceMailer $mailer): RedirectResponse
@@ -37,8 +43,15 @@ class PublicSubmissionController extends Controller
             'author_name' => ['required', 'string', 'max:255'],
             'author_email' => ['required', 'email:rfc', 'max:255'],
             'author_phone' => ['nullable', 'string', 'max:50'],
-            'paper_file' => ['required', File::types(['doc', 'docx', 'tex', 'zip'])->max('100mb')],
+            'paper_file' => ['required', File::types($conference->allowedFileExtensions())->max($conference->maxFileSizeMb().'mb')],
         ];
+        if (config('paperflow.captcha_enabled')) {
+            $rules['captcha_answer'] = ['required', 'integer', function ($attribute, $value, $fail) {
+                if ((int) $value !== (int) session()->pull('submission_captcha')) {
+                    $fail('Jawaban CAPTCHA tidak benar.');
+                }
+            }];
+        }
         foreach ($form->schema as $field) {
             $rules['answers.'.$field['key']] = [($field['required'] ?? false) ? 'required' : 'nullable', 'string', 'max:5000'];
         }
