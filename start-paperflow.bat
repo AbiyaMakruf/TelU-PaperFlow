@@ -13,19 +13,56 @@ echo ========================================================
 echo.
 echo  [1/2] Memeriksa instalasi PHP dan Node.js...
 
-:: Auto-detect PHP
+:: 1. Auto-detect PHP (Drives C, D, E, F)
 where php >nul 2>nul
-if %ERRORLEVEL% NEQ 0 call :detect_php
+if %ERRORLEVEL% NEQ 0 (
+    if exist "C:\laragon\bin\php" for /d %%F in ("C:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
+    if exist "D:\laragon\bin\php" for /d %%F in ("D:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
+    if exist "E:\laragon\bin\php" for /d %%F in ("E:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
+    if exist "F:\laragon\bin\php" for /d %%F in ("F:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
+    if exist "C:\xampp\php\php.exe" set "PATH=C:\xampp\php;%PATH%"
+    if exist "D:\xampp\php\php.exe" set "PATH=D:\xampp\php;%PATH%"
+    if exist "E:\xampp\php\php.exe" set "PATH=E:\xampp\php;%PATH%"
+    if exist "F:\xampp\php\php.exe" set "PATH=F:\xampp\php;%PATH%"
+    if exist "C:\php\php.exe" set "PATH=C:\php;%PATH%"
+    if exist "D:\php\php.exe" set "PATH=D:\php;%PATH%"
+)
 
-:: Auto-detect Node
+:: 2. Auto-detect Node.js (Drives C, D, E, F)
 where node >nul 2>nul
-if %ERRORLEVEL% NEQ 0 call :detect_node
+if %ERRORLEVEL% NEQ 0 (
+    if exist "C:\laragon\bin\nodejs" for /d %%F in ("C:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
+    if exist "D:\laragon\bin\nodejs" for /d %%F in ("D:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
+    if exist "E:\laragon\bin\nodejs" for /d %%F in ("E:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
+    if exist "F:\laragon\bin\nodejs" for /d %%F in ("F:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
+    if exist "C:\Program Files\nodejs\node.exe" set "PATH=C:\Program Files\nodejs;%PATH%"
+    if exist "D:\Program Files\nodejs\node.exe" set "PATH=D:\Program Files\nodejs;%PATH%"
+)
 
+:: Verification
 where php >nul 2>nul
-if %ERRORLEVEL% NEQ 0 goto :err_no_php
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo ========================================================
+    echo [ERROR] PHP tidak ditemukan di Laragon / XAMPP / PATH.
+    echo ========================================================
+    echo Mohon pastikan Laragon / XAMPP sudah terinstall.
+    echo.
+    pause
+    exit /b 1
+)
 
 where node >nul 2>nul
-if %ERRORLEVEL% NEQ 0 goto :err_no_node
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo ========================================================
+    echo [ERROR] Node.js tidak ditemukan di komputer ini.
+    echo ========================================================
+    echo Mohon install Node.js dari https://nodejs.org/
+    echo.
+    pause
+    exit /b 1
+)
 
 echo  PHP    : OK
 echo  Node.js: OK
@@ -50,50 +87,5 @@ if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Terjadi kesalahan saat menjalankan service.
 )
 
-:END
-echo.
-echo ========================================================
-echo Sesi selesai. Jendela ini sengaja tetap terbuka agar Anda
-echo dapat membaca log / pesan error jika ada.
-echo ========================================================
 pause
 exit /b 0
-
-:detect_php
-for %%D in (C D E F) do (
-    if exist "%%D:\laragon\bin\php" (
-        for /d %%F in ("%%D:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
-    )
-    if exist "%%D:\xampp\php\php.exe" set "PATH=%%D:\xampp\php;%PATH%"
-    if exist "%%D:\php\php.exe" set "PATH=%%D:\php;%PATH%"
-)
-goto :eof
-
-:detect_node
-for %%D in (C D E F) do (
-    if exist "%%D:\laragon\bin\nodejs" (
-        for /d %%F in ("%%D:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
-    )
-    if exist "%%D:\Program Files\nodejs\node.exe" set "PATH=%%D:\Program Files\nodejs;%PATH%"
-)
-goto :eof
-
-:err_no_php
-echo.
-echo ========================================================
-echo [ERROR] PHP (php.exe) tidak ditemukan di komputer ini!
-echo ========================================================
-echo Lokasi pencarian: Laragon, XAMPP, C:\php, D:\php, PATH.
-echo Pastikan PHP sudah terinstall atau tambahkan folder php.exe
-echo ke Environment Variables Windows (System PATH).
-echo.
-goto :END
-
-:err_no_node
-echo.
-echo ========================================================
-echo [ERROR] Node.js (node.exe) tidak ditemukan di komputer ini!
-echo ========================================================
-echo Mohon install Node.js dari https://nodejs.org/
-echo.
-goto :END
