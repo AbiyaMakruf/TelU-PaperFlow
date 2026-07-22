@@ -64,6 +64,8 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
+php bootstrap/enable-pgsql.php
+
 echo  PHP    : OK
 echo  Node.js: OK
 echo.
