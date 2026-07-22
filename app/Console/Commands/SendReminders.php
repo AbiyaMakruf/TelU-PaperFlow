@@ -24,7 +24,7 @@ class SendReminders extends Command
             ->get();
 
         foreach ($pendingAuthorSubmissions as $sub) {
-            $token = $sub->author_token_encrypted;
+            $token = $sub->getSafeAuthorToken();
             if ($token) {
                 $portalUrl = route('author.portal', $token);
                 $mailer->queue($sub->load('conference'), 'deadline_reminder', ['portal_url' => $portalUrl]);

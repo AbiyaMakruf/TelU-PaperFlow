@@ -8,7 +8,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
             @php
-                $portalToken = $submission->author_token_encrypted ?: $submission->id;
+                $portalToken = $submission->getSafeAuthorToken() ?: $submission->id;
             @endphp
             <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs inline-flex items-center gap-1.5 shadow-sm hover:border-orange hover:text-orange" title="Tinjau tampilan portal seperti yang dilihat oleh Author">
                 <span>👁️</span> Buka Portal Author ↗

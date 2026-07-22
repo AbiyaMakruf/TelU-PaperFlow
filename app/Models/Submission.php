@@ -60,6 +60,15 @@ class Submission extends Model
         return $this->belongsTo(User::class, 'reviewer_id');
     }
 
+    public function getSafeAuthorToken(): ?string
+    {
+        try {
+            return $this->author_token_encrypted;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function authors(): HasMany
     {
         return $this->hasMany(SubmissionAuthor::class)->orderBy('sort_order');
