@@ -17,7 +17,7 @@ class UserManualAccessTest extends TestCase
         $response = $this->get(route('user-manual.author'));
 
         $response->assertOk();
-        $response->assertSee('User Manual: Author');
+        $response->assertSee('Author User Manual');
         $response->assertSee('Public Submission Form');
     }
 
