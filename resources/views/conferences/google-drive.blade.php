@@ -1,7 +1,6 @@
 <x-layouts.app :title="'Google Drive - '.$conference->name" :heading="$conference->name">
-    <div class="mx-auto max-w-3xl">
-        <a href="{{ route('conferences.show', $conference) }}" class="back-link">&larr; Kembali ke conference</a>
-        <div class="mt-4"><p class="eyebrow">Konfigurasi conference</p><h1 class="page-title">Penyimpanan file</h1><p class="page-subtitle">Pilih Supabase Storage atau folder Google Drive sebagai lokasi file conference.</p></div>
+    <div class="max-w-4xl space-y-6">
+        <x-conference-header :conference="$conference" active="storage" />
 
         @if($errors->any())<div class="mt-6 rounded-xl border border-danger/20 bg-danger/8 p-4 text-sm text-danger">{{ $errors->first() }}</div>@endif
         @if(session('success'))<div class="mt-6 rounded-xl border border-success/20 bg-success/8 p-4 text-sm text-success">{{ session('success') }}</div>@endif

@@ -1,5 +1,7 @@
 <x-layouts.app :title="'Checklist '.$conference->name" heading="Checklist">
-    <div class="max-w-5xl"><a href="{{ route('conferences.show', $conference) }}" class="back-link">← Kembali</a><h1 class="page-title mt-4">Checklist pemeriksaan</h1><p class="page-subtitle">Checklist disalin ke setiap siklus pemeriksaan agar riwayat tetap utuh.</p><x-flash />
+    <div class="max-w-5xl space-y-6">
+        <x-conference-header :conference="$conference" active="checklists" />
+        <x-flash />
         <form method="POST" action="{{ route('conferences.checklists.update', $conference) }}" class="mt-7 space-y-6">@csrf @method('PUT')
             @foreach(\App\Enums\ReviewStage::cases() as $stage)
                 @php($template = $templates->get($stage->value))

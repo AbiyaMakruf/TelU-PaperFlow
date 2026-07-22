@@ -1,19 +1,79 @@
 <x-layouts.app :title="$conference->name.' - Paperflow'" :heading="$conference->name">
-    <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-        <div><a href="{{ route('conferences.index') }}" class="back-link">&larr; Semua conference</a><div class="mt-4 flex flex-wrap items-center gap-3"><h1 class="page-title">{{ $conference->name }}</h1><span class="badge badge-primary">{{ $conference->status->label() }}</span></div><p class="page-subtitle">Landing: <a class="font-bold text-orange" href="{{ route('public.conference.show', $conference) }}">/{{ $conference->slug }}</a> &middot; Form: <a class="font-bold text-orange" href="{{ route('public.submission.show', $conference) }}">/{{ $conference->slug }}/submit</a></p></div>
-        @can('update', $conference)<div class="flex flex-wrap gap-2"><a href="{{ route('conferences.form.edit', $conference) }}" class="btn btn-secondary">Form builder</a><a href="{{ route('conferences.drive.show', $conference) }}" class="btn btn-secondary">Penyimpanan</a><a href="{{ route('conferences.checklists.edit', $conference) }}" class="btn btn-secondary">Checklist</a><a href="{{ route('conferences.email-templates.edit', $conference) }}" class="btn btn-secondary">Template email</a><a href="{{ route('conferences.members.index', $conference) }}" class="btn btn-secondary">Anggota</a><a href="{{ route('conferences.edit', $conference) }}" class="btn btn-primary">Pengaturan</a></div>@endcan
+    <x-conference-header :conference="$conference" active="overview" />
+
+    <div class="mt-6 grid gap-4 grid-cols-2 xl:grid-cols-4">
+        <div class="card p-5 border border-navy/10">
+            <p class="text-xs font-extrabold uppercase tracking-wider text-muted">Total Paper</p>
+            <p class="mt-2 text-3xl font-black text-navy">{{ $conference->submissions_count }}</p>
+        </div>
+        <div class="card p-5 border border-navy/10">
+            <p class="text-xs font-extrabold uppercase tracking-wider text-muted">Submission Baru</p>
+            <p class="mt-2 text-3xl font-black text-navy">{{ $statusCounts['submitted'] ?? 0 }}</p>
+        </div>
+        <div class="card p-5 border border-navy/10">
+            <p class="text-xs font-extrabold uppercase tracking-wider text-muted">Editorial Review</p>
+            <p class="mt-2 text-3xl font-black text-navy">{{ $statusCounts['editorial_review'] ?? 0 }}</p>
+        </div>
+        <div class="card p-5 border border-navy/10">
+            <p class="text-xs font-extrabold uppercase tracking-wider text-muted">Selesai (Done)</p>
+            <p class="mt-2 text-3xl font-black text-emerald-600">{{ $statusCounts['done'] ?? 0 }}</p>
+        </div>
     </div>
-    <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="card p-5"><p class="text-sm font-semibold text-muted">Total paper</p><p class="mt-2 text-3xl font-black text-navy">{{ $conference->submissions_count }}</p></div>
-        <div class="card p-5"><p class="text-sm font-semibold text-muted">Submission baru</p><p class="mt-2 text-3xl font-black text-navy">{{ $statusCounts['submitted'] ?? 0 }}</p></div>
-        <div class="card p-5"><p class="text-sm font-semibold text-muted">Editorial review</p><p class="mt-2 text-3xl font-black text-navy">{{ $statusCounts['editorial_review'] ?? 0 }}</p></div>
-        <div class="card p-5"><p class="text-sm font-semibold text-muted">Selesai</p><p class="mt-2 text-3xl font-black text-success">{{ $statusCounts['done'] ?? 0 }}</p></div>
+
+    <div class="mt-6 grid gap-6 grid-cols-1 xl:grid-cols-[1.2fr_.8fr]">
+        <section class="card p-6">
+            <h2 class="font-black text-navy text-lg border-b border-navy/8 pb-3">Konfigurasi Conference</h2>
+            <dl class="mt-5 grid gap-4 text-xs sm:text-sm sm:grid-cols-2">
+                <div>
+                    <dt class="text-muted font-medium text-xs">Zona Waktu</dt>
+                    <dd class="mt-1 font-extrabold text-navy">{{ $conference->timezone }}</dd>
+                </div>
+                <div>
+                    <dt class="text-muted font-medium text-xs">Periode Submission</dt>
+                    <dd class="mt-1 font-extrabold text-navy">
+                        {{ $conference->submission_opens_at?->format('d M Y H:i') ?? 'Tanpa batas awal' }} &ndash; {{ $conference->submission_closes_at?->format('d M Y H:i') ?? 'Tanpa batas akhir' }}
+                    </dd>
+                </div>
+                <div class="sm:col-span-2">
+                    <dt class="text-muted font-medium text-xs">Deskripsi</dt>
+                    <dd class="mt-1 leading-relaxed text-slate-700 break-words">{{ $conference->description ?: 'Belum ada deskripsi.' }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="card p-6">
+            <div class="flex items-center justify-between border-b border-navy/8 pb-3">
+                <h2 class="font-black text-navy text-lg">Tim Staf Active</h2>
+                @can('manageMembers', $conference)
+                    <a href="{{ route('conferences.members.index', $conference) }}" class="text-xs font-extrabold text-orange hover:underline">Kelola Tim &rarr;</a>
+                @endcan
+            </div>
+            <div class="mt-4 space-y-3">
+                @foreach($conference->memberships->where('is_active', true)->take(6) as $membership)
+                    <div class="flex items-center gap-3 p-2 rounded-xl bg-warm/60">
+                        <span class="grid size-9 shrink-0 place-items-center rounded-full bg-navy text-sm font-bold text-white shadow-sm">
+                            {{ strtoupper(substr($membership->user->name, 0, 1)) }}
+                        </span>
+                        <div class="min-w-0">
+                            <p class="truncate text-xs font-bold text-navy">{{ $membership->user->name }}</p>
+                            <p class="text-[11px] text-muted">{{ $membership->role->label() }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
     </div>
-    <div class="mt-8 grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
-        <section class="card p-6"><h2 class="font-extrabold text-navy">Konfigurasi</h2><dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2"><div><dt class="text-muted">Zona waktu</dt><dd class="mt-1 font-bold">{{ $conference->timezone }}</dd></div><div><dt class="text-muted">Submission</dt><dd class="mt-1 font-bold">{{ $conference->submission_opens_at?->format('d M Y H:i') ?? 'Tanpa batas awal' }} &ndash; {{ $conference->submission_closes_at?->format('d M Y H:i') ?? 'Tanpa batas akhir' }}</dd></div><div class="sm:col-span-2"><dt class="text-muted">Deskripsi</dt><dd class="mt-1 leading-6">{{ $conference->description ?: 'Belum ada deskripsi.' }}</dd></div></dl></section>
-        <section class="card p-6"><div class="flex items-center justify-between"><h2 class="font-extrabold text-navy">Tim</h2>@can('manageMembers', $conference)<a href="{{ route('conferences.members.index', $conference) }}" class="text-sm font-bold text-orange">Kelola</a>@endcan</div><div class="mt-5 space-y-3">@foreach($conference->memberships->where('is_active', true)->take(6) as $membership)<div class="flex items-center gap-3"><span class="grid size-9 place-items-center rounded-full bg-navy/10 text-sm font-bold text-navy">{{ strtoupper(substr($membership->user->name, 0, 1)) }}</span><div class="min-w-0"><p class="truncate text-sm font-bold">{{ $membership->user->name }}</p><p class="text-xs text-muted">{{ $membership->role->label() }}</p></div></div>@endforeach</div></section>
-    </div>
+
     @can('update', $conference)
-        <details class="card mt-6 p-6"><summary class="cursor-pointer font-extrabold text-navy">Duplikasi conference</summary><p class="mt-2 text-sm text-muted">Salin form, checklist, dan email template ke conference baru.</p><form method="POST" action="{{ route('conferences.duplicate', $conference) }}" class="mt-5 grid gap-4 sm:grid-cols-[1fr_220px_auto]">@csrf<input class="form-input" name="name" placeholder="Nama conference baru" required><input class="form-input" name="slug" placeholder="slug-baru" required><button class="btn btn-secondary">Duplikasi</button></form></details>
+        <details class="card mt-6 p-6">
+            <summary class="cursor-pointer font-black text-navy text-base select-none">Duplikasi Conference</summary>
+            <p class="mt-2 text-xs text-muted">Salin form submission, checklist IEEE, dan template email ke conference baru.</p>
+            <form method="POST" action="{{ route('conferences.duplicate', $conference) }}" class="mt-5 grid gap-4 grid-cols-1 sm:grid-cols-[1fr_220px_auto]">
+                @csrf
+                <input class="form-input text-xs" name="name" placeholder="Nama conference baru" required>
+                <input class="form-input text-xs" name="slug" placeholder="slug-baru" required>
+                <button class="btn btn-secondary text-xs font-extrabold">Duplikasi Conference</button>
+            </form>
+        </details>
     @endcan
 </x-layouts.app>

@@ -1,6 +1,14 @@
 <x-layouts.app :title="'Form '.$conference->name" heading="Form builder">
     @php($fields = old('fields', $form->schema ?? []))
-    <div class="max-w-5xl"><a href="{{ route('conferences.show', $conference) }}" class="back-link">← Kembali</a><div class="mt-4 flex flex-wrap items-end justify-between gap-4"><div><h1 class="page-title">Form submission</h1><p class="page-subtitle">Draft versi {{ $form->version }}. Field inti paper dan file editable selalu tersedia.</p></div><span class="badge badge-warning">{{ ucfirst($form->status) }}</span></div><x-flash />
+    <div class="max-w-5xl space-y-6">
+        <x-conference-header :conference="$conference" active="form" />
+        <div class="flex items-center justify-between gap-4 bg-white p-4 rounded-xl border border-navy/10 shadow-sm">
+            <div>
+                <h2 class="font-black text-navy text-lg">Form Builder Custom Fields</h2>
+                <p class="text-xs text-muted">Draft versi {{ $form->version }}. Field inti paper dan file editable selalu tersedia secara otomatis.</p>
+            </div>
+            <span class="badge badge-warning text-xs font-black">{{ ucfirst($form->status) }}</span>
+        </div>
         <div class="card mt-7 border-orange/20 bg-orange/5 p-5 text-sm leading-6"><strong class="text-navy">Field inti:</strong> Paper ID, judul paper, nama/email/telepon corresponding author, daftar author, dan file editable. Tambahkan field khusus conference di bawah.</div>
         <form method="POST" action="{{ route('conferences.form.update', [$conference, $form]) }}" class="mt-5" data-builder="fields">@csrf @method('PUT')
             <div class="space-y-4" data-builder-list>

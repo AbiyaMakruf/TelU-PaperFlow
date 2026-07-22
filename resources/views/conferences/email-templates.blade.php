@@ -1,6 +1,6 @@
 <x-layouts.app title="Template email" :heading="$conference->name">
-    <a class="back-link" href="{{ route('conferences.show', $conference) }}">&larr; Kembali ke conference</a>
-    <div class="mt-5"><p class="eyebrow">Communication</p><h1 class="page-title">Template email</h1><p class="page-subtitle">Variabel: <code>@{{conference}}</code>, <code>@{{paper_code}}</code>, <code>@{{author_name}}</code>, <code>@{{portal_url}}</code>, <code>@{{feedback}}</code>, <code>@{{deadline}}</code>, <code>@{{editor_name}}</code>, <code>@{{editor_job_title}}</code>, <code>@{{editor_affiliation}}</code>, dan <code>@{{editor_whatsapp_url}}</code>.</p></div>
+    <div class="space-y-6">
+        <x-conference-header :conference="$conference" active="templates" />
     <form method="POST" action="{{ route('conferences.email-templates.update', $conference) }}" class="mt-7 space-y-5">@csrf @method('PUT')
         <section class="card p-6">
             <h2 class="font-black text-navy">Identitas pengirim</h2>
@@ -72,4 +72,5 @@
         @endforeach
         <div class="sticky bottom-4 flex justify-end"><button class="btn btn-primary shadow-xl">Simpan semua template</button></div>
     </form>
+    </div>
 </x-layouts.app>
