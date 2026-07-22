@@ -76,7 +76,7 @@ call npm run build
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [ERROR] Gagal melakukan kompilasi aset (npm run build).
+    echo [ERROR] Gagal melakukan kompilasi aset npm run build.
     pause
     exit /b 1
 )
