@@ -77,6 +77,11 @@ Do not update `submissions.status` directly when a transition should be validate
 
 ## Key Feature Capabilities
 
+- **GCP-Style Workspace Selector**: Header & draw- **Interactive Chart.js Dashboard Analytics**: 3 interactive visual charts on the dashboard: 14-day continuous submission trend line chart with smooth gradient area fill, paper status ratio doughnut chart, and PIC Editor/Reviewer workload & turnaround bar chart.
+- **Ultrawide & 34-Inch Monitor Layout Optimization**: Constrained main layout container (`max-w-[1600px]`) and `.container-page` / landing page (`max-w-[1400px]`) to ensure balanced, centered presentation on 34-inch ultrawide (3440px / 21:9) displays without horizontal stretching.
+- **Staff Author-Portal Preview Action ("Buka Portal Author")**: Direct header action button on paper detail page allowing staff to inspect the exact portal view seen by authors (`/submission/access/{token}`).
+- **Paper Detail Accordion Sections**: Converted Catatan Internal, Feedback & Komunikasi Author, and Versioning File cards into collapsible `<details>` accordions with `<summary>` headers to keep paper detail pages clean and compact.
+- **Auto-PostgreSQL Driver & Batch Launcher Resilience**: `bootstrap/enable-pgsql.php` auto-enables `extension=pdo_pgsql` in `php.ini`, with persistent CMD launchers (`start-paperflow.bat` & `start-paperflow-ngrok.bat`) and drive C-F PHP/Node auto-detection.
 - **GCP-Style Workspace Selector**: Header & drawer active conference selector scoping `VisibleSubmissions` to `session('active_conference_id')`.
 - **Duplicate Submission Detection**: Automatic flags for title similarity, corresponding author email match, or exact file checksums.
 - **Bulk Actions**: Bulk assignment (PIC, format, deadline), bulk status transitions (validate/accept, reject, withdraw), & bulk download of author manuscript files in a single ZIP named by Paper ID.
@@ -282,6 +287,7 @@ Current baseline:
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
 - Queued email handling (`SendLoggedEmail`) preventing SMTP blocking
 - Mobile-friendly 100% viewport fit verified across all pages (320px–430px)
+- Ultrawide 34-inch monitor layout optimization verified across authenticated dashboard & public landing pages
 - Supabase migration `2026_07_22_000100_add_staff_profiles_and_email_ownership` is batch 11 / Ran
 
 ## Git workflow
