@@ -278,7 +278,11 @@ Current baseline:
 
 - **52 tests**
 - **252 assertions**
-- Production Vite build passes
+- Production Vite build passes (`npm run build`)
+- Blade view caching compiled (`php artisan view:cache`)
+- Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
+- Queued email handling (`SendLoggedEmail`) preventing SMTP blocking
+- Mobile-friendly 100% viewport fit verified across all pages (320px–430px)
 - Supabase migration `2026_07_22_000100_add_staff_profiles_and_email_ownership` is batch 11 / Ran
 
 ## Git workflow
