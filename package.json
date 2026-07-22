@@ -5,8 +5,8 @@
     "packageManager": "pnpm@11.9.0",
     "scripts": {
         "build": "vite build",
-        "dev": "concurrently -k -n \"SERVE,QUEUE,VITE\" -c \"blue,magenta,yellow\" \"php artisan serve\" \"php artisan queue:work --tries=3\" \"vite\"",
-        "dev:ngrok": "node -e \"try{require('fs').unlinkSync('public/hot')}catch(e){}\" && npm run build && concurrently -k -n \"SERVE,QUEUE,NGROK\" -c \"blue,magenta,cyan\" \"php artisan serve\" \"php artisan queue:work --tries=3\" \"ngrok http --url=hormonal-shari-noncommodiously.ngrok-free.dev 8000\""
+        "dev": "concurrently -k -n \"SERVE,QUEUE,VITE\" -c \"blue,magenta,yellow\" \"php -d display_startup_errors=0 -d extension=pdo_pgsql -d extension=pgsql artisan serve\" \"php -d display_startup_errors=0 -d extension=pdo_pgsql -d extension=pgsql artisan queue:work --tries=3\" \"vite\"",
+        "dev:ngrok": "node -e \"try{require('fs').unlinkSync('public/hot')}catch(e){}\" && npm run build && concurrently -k -n \"SERVE,QUEUE,NGROK\" -c \"blue,magenta,cyan\" \"php -d display_startup_errors=0 -d extension=pdo_pgsql -d extension=pgsql artisan serve\" \"php -d display_startup_errors=0 -d extension=pdo_pgsql -d extension=pgsql artisan queue:work --tries=3\" \"ngrok http --url=hormonal-shari-noncommodiously.ngrok-free.dev 8000\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
