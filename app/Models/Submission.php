@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Submission extends Model
@@ -64,31 +66,42 @@ class Submission extends Model
     public function getSafeAuthorToken(): ?string
     {
         try {
-            return $this->author_token_encrypted;
-        } catch (\Throwable $e) {
+            $raw = $this->getRawOriginal('author_token_encrypted');
+            if (! is_string($raw) || $raw === '') {
+                return null;
+            }
+
+            return Crypt::decryptString($raw);
+        } catch (\Throwable) {
             return null;
         }
     }
 
     public function ensureValidAuthorToken(): string
     {
-        try {
-            $existing = $this->author_token_encrypted;
-            if (is_string($existing)
-                && $this->author_token_expires_at?->isFuture()
-                && hash_equals((string) $this->author_token_hash, hash('sha256', $existing))) {
-                return $existing;
-            }
-        } catch (\Throwable) {
-            // Token from an old APP_KEY or invalid MAC is safely regenerated below.
+        $existing = $this->getSafeAuthorToken();
+        if (is_string($existing)
+            && $this->author_token_expires_at?->isFuture()
+            && hash_equals((string) $this->author_token_hash, hash('sha256', $existing))) {
+            return $existing;
         }
 
         $token = Str::random(64);
-        $this->update([
-            'author_token_hash' => hash('sha256', $token),
-            'author_token_encrypted' => $token,
-            'author_token_expires_at' => now()->addYear(),
-        ]);
+        $encryptedToken = Crypt::encryptString($token);
+        $expiresAt = now()->addYear();
+
+        DB::table('submissions')
+            ->where('id', $this->id)
+            ->update([
+                'author_token_hash' => hash('sha256', $token),
+                'author_token_encrypted' => $encryptedToken,
+                'author_token_expires_at' => $expiresAt,
+            ]);
+
+        $this->attributes['author_token_hash'] = hash('sha256', $token);
+        $this->attributes['author_token_encrypted'] = $encryptedToken;
+        $this->author_token_expires_at = $expiresAt;
+        $this->syncOriginal();
 
         return $token;
     }
