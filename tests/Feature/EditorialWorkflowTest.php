@@ -11,6 +11,7 @@ use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class EditorialWorkflowTest extends TestCase
@@ -187,6 +188,32 @@ class EditorialWorkflowTest extends TestCase
     }
 
     /** @return array{Conference, User, User, User, Submission, mixed, mixed} */
+    public function test_staff_can_bulk_download_author_files_in_zip_named_by_paper_id(): void
+    {
+        [$conference, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+        $submission->update(['paper_id' => '15702004']);
+        $submission->files()->create([
+            'version_number' => 1,
+            'label' => 'Original Naskah',
+            'source' => 'author',
+            'disk' => 'local',
+            'storage_path' => 'test-manuscript.docx',
+            'original_name' => 'manuscript.docx',
+            'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'size' => 1024,
+            'checksum' => 'checksum123',
+        ]);
+        Storage::disk('local')->put('test-manuscript.docx', 'dummy file content');
+
+        $response = $this->actingAs($admin)->post(route('submissions.bulk-download'), [
+            'submission_ids' => [$submission->id],
+        ]);
+
+        $response->assertOk();
+        $this->assertEquals('application/zip', $response->headers->get('content-type'));
+        $this->assertStringContainsString('Paperflow_Author_Files', (string) $response->headers->get('content-disposition'));
+    }
+
     private function workflowFixture(): array
     {
         $admin = User::factory()->create();

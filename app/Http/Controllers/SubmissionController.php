@@ -23,6 +23,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File as FileFacade;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -273,6 +274,89 @@ class SubmissionController extends Controller
         }
 
         return back()->with('success', "Status {$count} paper berhasil diperbarui massal.");
+    }
+
+    public function bulkDownload(Request $request, VisibleSubmissions $visibleSubmissions, ConferenceFileStorage $storage): RedirectResponse|BinaryFileResponse
+    {
+        $validated = $request->validate([
+            'submission_ids' => ['required', 'array', 'min:1'],
+            'submission_ids.*' => ['required', 'exists:submissions,id'],
+        ]);
+
+        $submissions = $visibleSubmissions->for($request->user())
+            ->whereIn('id', $validated['submission_ids'])
+            ->with(['files' => fn ($q) => $q->orderByDesc('version_number')])
+            ->get();
+
+        if ($submissions->isEmpty()) {
+            return back()->withErrors(['bulk' => 'Tidak ada paper valid yang dipilih.']);
+        }
+
+        if (! class_exists(ZipArchive::class)) {
+            return back()->withErrors(['bulk' => 'Ekstensi PHP ext-zip belum aktif pada server.']);
+        }
+
+        $zipDirectory = storage_path('app/private/temp-zip');
+        FileFacade::ensureDirectoryExists($zipDirectory);
+        $zipPath = $zipDirectory.'/Paperflow_Author_Files_'.now()->format('Ymd_His').'_'.Str::random(6).'.zip';
+
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            return back()->withErrors(['bulk' => 'Gagal membuat berkas ZIP.']);
+        }
+
+        $filesAdded = 0;
+        $cleanupPaths = [];
+        $usedFilenames = [];
+
+        foreach ($submissions as $sub) {
+            $latestFile = $sub->files->first();
+            if (! $latestFile) {
+                continue;
+            }
+
+            try {
+                $copy = $storage->temporaryCopy($latestFile);
+                if (! is_file($copy['path'])) {
+                    continue;
+                }
+                if ($copy['cleanup']) {
+                    $cleanupPaths[] = $copy['path'];
+                }
+
+                $paperId = $sub->paper_id ?: $sub->paper_code ?: ('paper_'.$sub->id);
+                $extension = pathinfo($latestFile->original_name, PATHINFO_EXTENSION);
+                $baseFilename = $extension ? "{$paperId}.{$extension}" : $paperId;
+
+                $zipFilename = $baseFilename;
+                $counter = 1;
+                while (in_array(strtolower($zipFilename), $usedFilenames, true)) {
+                    $nameWithoutExt = pathinfo($baseFilename, PATHINFO_FILENAME);
+                    $zipFilename = $extension ? "{$nameWithoutExt}_v{$counter}.{$extension}" : "{$nameWithoutExt}_v{$counter}";
+                    $counter++;
+                }
+                $usedFilenames[] = strtolower($zipFilename);
+
+                $zip->addFile($copy['path'], $zipFilename);
+                $filesAdded++;
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        $zip->close();
+
+        foreach ($cleanupPaths as $tempPath) {
+            @unlink($tempPath);
+        }
+
+        if ($filesAdded === 0) {
+            @unlink($zipPath);
+
+            return back()->withErrors(['bulk' => 'Tidak ada naskah author yang tersedia dari paper yang dipilih.']);
+        }
+
+        return response()->download($zipPath, 'Paperflow_Author_Files_'.now()->format('Ymd_His').'.zip')->deleteFileAfterSend(true);
     }
 
     public function updateEdasStatus(Request $request, Submission $submission): RedirectResponse

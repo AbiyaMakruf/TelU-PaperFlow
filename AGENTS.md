@@ -82,7 +82,7 @@ Do not update `submissions.status` directly when a transition should be validate
 
 - **GCP-Style Workspace Selector**: Header & drawer active conference selector scoping `VisibleSubmissions` to `session('active_conference_id')`.
 - **Duplicate Submission Detection**: Automatic flags for title similarity, corresponding author email match, or exact file checksums.
-- **Bulk Actions**: Bulk assignment (PIC, format, deadline) & bulk status transitions (validate/accept, reject, withdraw).
+- **Bulk Actions**: Bulk assignment (PIC, format, deadline), bulk status transitions (validate/accept, reject, withdraw), & bulk download of author manuscript files in a single ZIP named by Paper ID.
 - **IEEE Editorial Checklist**: 16 default IEEE formatting rules with guidance accordions and auto-generated revision feedback templates.
 - **Interactive CC Email Chips**: Alpine.js tag input for CC emails with remove buttons.
 - **Author Live Checklist Monitoring**: Live checklist results card on author portal visible after editor requests revision / sends feedback.
@@ -276,8 +276,8 @@ php artisan migrate --force
 
 Current baseline:
 
-- **52 tests**
-- **252 assertions**
+- **53 tests**
+- **255 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)

@@ -106,11 +106,20 @@
             </div>
             <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <button type="button" @click="$dispatch('open-bulk-assign')" class="btn btn-primary text-xs py-1.5 px-3 w-full sm:w-auto">
-                    Bulk Assign PIC & Deadline
+                    Bulk Assign PIC &amp; Deadline
                 </button>
                 <button type="button" @click="$dispatch('open-bulk-status')" class="btn btn-secondary text-xs py-1.5 px-3 w-full sm:w-auto">
                     Bulk Update Status
                 </button>
+                <form method="POST" action="{{ route('submissions.bulk-download') }}" class="inline-block w-full sm:w-auto">
+                    @csrf
+                    <template x-for="id in selected" :key="id">
+                        <input type="hidden" name="submission_ids[]" :value="id">
+                    </template>
+                    <button type="submit" class="btn text-xs py-1.5 px-3 w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-extrabold border-0 shadow-sm transition">
+                        📦 Bulk Download File Author (ZIP)
+                    </button>
+                </form>
                 <button type="button" @click="selected = []" class="text-xs text-slate-400 hover:text-white underline">
                     Batal pilih
                 </button>
