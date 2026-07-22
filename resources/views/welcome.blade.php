@@ -16,7 +16,7 @@
             </div>
         </div>
     </header>
-    <main class="flex-1 flex flex-col justify-center">
+    <main class="flex-1 flex flex-col justify-center max-w-[1400px] mx-auto w-full">
         <section class="container-page grid items-center gap-12 py-12 lg:grid-cols-[1.1fr_.9fr]">
             <div>
                 <p class="text-sm font-black uppercase tracking-[.24em] text-orange">Conference editorial workflow</p>

@@ -34,7 +34,7 @@ html, body {
 }
 
 @layer components {
-    .container-page { @apply mx-auto w-full max-w-7xl px-4 sm:px-8 max-w-full; }
+    .container-page { @apply mx-auto w-full max-w-[1400px] px-4 sm:px-8 lg:px-12; }
     .card { @apply min-w-0 max-w-full rounded-2xl border border-navy/10 bg-white shadow-sm overflow-hidden; }
     .btn { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-extrabold outline-none focus:ring-4; }
     .btn-primary { @apply bg-navy text-white shadow-lg shadow-navy/15 hover:bg-navy-dark focus:ring-navy/20; }
