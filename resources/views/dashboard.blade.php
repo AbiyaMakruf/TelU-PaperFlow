@@ -78,15 +78,15 @@
             <div class="overflow-x-auto">
                 <table class="data-table text-xs">
                     <thead>
-                        <tr class="bg-navy text-white">
-                            <th class="py-3 px-4">PIC</th>
-                            <th class="py-3 px-4 text-center">Total</th>
-                            <th class="py-3 px-4 text-center bg-slate-800">Belum</th>
-                            <th class="py-3 px-4 text-center bg-blue-900">In Progress</th>
-                            <th class="py-3 px-4 text-center bg-amber-800">Menunggu Jawaban Author</th>
-                            <th class="py-3 px-4 text-center bg-indigo-900">Done - Revised by Editor</th>
-                            <th class="py-3 px-4 text-center bg-emerald-900">Done - Revised by Author</th>
-                            <th class="py-3 px-4 text-center bg-emerald-950">DONE / Selesai</th>
+                        <tr>
+                            <th class="!bg-navy !text-white py-3.5 px-4 font-bold">PIC</th>
+                            <th class="!bg-navy-dark !text-white py-3.5 px-4 text-center font-bold">Total</th>
+                            <th class="!bg-slate-600 !text-white py-3.5 px-4 text-center font-bold">Belum</th>
+                            <th class="!bg-blue-600 !text-white py-3.5 px-4 text-center font-bold">In Progress</th>
+                            <th class="!bg-amber-600 !text-white py-3.5 px-4 text-center font-bold">Menunggu Jawaban Author</th>
+                            <th class="!bg-indigo-600 !text-white py-3.5 px-4 text-center font-bold">Done - Revised by Editor</th>
+                            <th class="!bg-emerald-600 !text-white py-3.5 px-4 text-center font-bold">Done - Revised by Author</th>
+                            <th class="!bg-teal-700 !text-white py-3.5 px-4 text-center font-bold">DONE / Selesai</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -160,7 +160,7 @@
                 @forelse ($conferences as $conference)
                     <div class="rounded-xl border border-navy/10 p-4">
                         <div class="flex items-center justify-between gap-3">
-                            <div class="min-w-0"><a class="truncate font-bold text-navy hover:text-orange" href="{{ route('conferences.show', $conference) }}">{{ $conference->name }}</a><p class="mt-1 text-xs text-muted">{{ $conference->submissions_count }} paper · /{{ $conference->slug }}</p></div>
+                            <div class="min-w-0"><a class="block truncate font-bold text-navy hover:text-orange" href="{{ route('conferences.show', $conference) }}" title="{{ $conference->name }}">{{ $conference->name }}</a><p class="mt-1 text-xs text-muted">{{ $conference->submissions_count }} paper · /{{ $conference->slug }}</p></div>
                             <span class="badge badge-primary">{{ $conference->status->label() }}</span>
                         </div>
                         <div class="mt-4 flex flex-wrap gap-2 border-t border-navy/8 pt-3">

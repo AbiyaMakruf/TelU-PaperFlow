@@ -19,17 +19,23 @@
     --font-sans: 'Inter', 'Segoe UI', sans-serif;
 }
 
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
 @layer base {
     button, a { @apply transition-colors; }
     button { @apply cursor-pointer; }
     [x-cloak] { display: none !important; }
     img, video { max-width: 100%; height: auto; }
-    pre { max-width: 100%; overflow-x: auto; }
+    pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+    table { max-width: 100%; }
 }
 
 @layer components {
-    .container-page { @apply mx-auto w-full max-w-7xl px-4 sm:px-8; }
-    .card { @apply min-w-0 rounded-2xl border border-navy/10 bg-white shadow-sm; }
+    .container-page { @apply mx-auto w-full max-w-7xl px-4 sm:px-8 max-w-full; }
+    .card { @apply min-w-0 max-w-full rounded-2xl border border-navy/10 bg-white shadow-sm overflow-hidden; }
     .btn { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-extrabold outline-none focus:ring-4; }
     .btn-primary { @apply bg-navy text-white shadow-lg shadow-navy/15 hover:bg-navy-dark focus:ring-navy/20; }
     .btn-secondary { @apply border border-navy/15 bg-white text-navy hover:border-orange hover:text-orange focus:ring-orange/20; }
@@ -49,15 +55,15 @@
     .page-subtitle { @apply mt-2 max-w-3xl text-sm leading-6 text-muted; }
     .back-link { @apply inline-flex items-center gap-2 text-sm font-extrabold text-navy hover:text-orange; }
     .check-row { @apply flex items-start gap-3 rounded-xl border border-navy/10 bg-warm/60 p-4; }
-    .data-table { @apply w-full min-w-[650px] text-left text-sm; }
+    .data-table { @apply w-full min-w-[500px] text-left text-sm; }
     .data-table th { @apply bg-navy/[.035] px-6 py-3 text-xs font-extrabold uppercase tracking-wider text-muted; }
     .data-table td { @apply border-t border-navy/8 px-6 py-4; }
 }
 
 @media (max-width: 639px) {
-    .data-table { min-width: 600px; }
-    .data-table th { padding-left: 1rem; padding-right: 1rem; }
-    .data-table td { padding: .875rem 1rem; }
+    .data-table { min-width: 480px; }
+    .data-table th { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .data-table td { padding: 0.75rem; }
     .mobile-actions > .btn,
     .mobile-actions > button,
     .mobile-actions > a { width: 100%; }

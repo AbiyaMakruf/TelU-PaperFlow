@@ -5,7 +5,7 @@
     "packageManager": "pnpm@11.9.0",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "concurrently -k -n \"SERVE,QUEUE,VITE\" -c \"blue,magenta,yellow\" \"php artisan serve\" \"php artisan queue:work --tries=3\" \"vite\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

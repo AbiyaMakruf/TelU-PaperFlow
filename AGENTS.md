@@ -87,7 +87,9 @@ Do not update `submissions.status` directly when a transition should be validate
 - **Interactive CC Email Chips**: Alpine.js tag input for CC emails with remove buttons.
 - **Author Live Checklist Monitoring**: Live checklist results card on author portal visible after editor requests revision / sends feedback.
 - **Reviewer EDAS & PDF eXpress Management**: Reviewer-restricted controls for IEEE PDF eXpress status and EDAS error logging.
-- **PIC Workload Summary Matrix**: Dashboard table matching format checking spreadsheet structure (Total, Belum, In Progress, Menunggu Jawaban, Revised by Editor, Revised by Author, Selesai).
+- **PIC Workload Summary Matrix & Staff Modal**: Dashboard workload matrix table and interactive Alpine.js PIC detail modal displaying workload, email, WhatsApp, and conference roles.
+- **Separated Internal Notes & Author Feedback**: Dedicated confidential Catatan Internal card and author-facing Komunikasi Author card with CC email chips and WhatsApp action.
+- **Full Mobile Responsiveness & Viewport Fit**: 100% fit on 320px–430px mobile screens without horizontal overflow, compact header truncation, and consistent outer card margins.
 - **Email Preview and Test Send**: Conference Admin can live-preview unsaved template edits and queue a test message to a chosen recipient.
 - **Scoped Communication Monitoring**: superadmin sees all email logs, Conference Admin sees email for administered conferences, and Editorial sees only messages sent by that user. Failed messages with persisted bodies can be re-sent.
 - **International Phone and WhatsApp**: public/author profile forms use country-code selectors and normalized numbers; Editorial gets a `wa.me` action with checklist-derived draft text.

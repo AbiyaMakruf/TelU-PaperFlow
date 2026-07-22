@@ -75,9 +75,48 @@ class SubmissionController extends Controller
         }
         $submissions = $query->with(['conference', 'editor', 'reviewer', 'authors', 'files'])->paginate(20)->withQueryString();
         $conferences = Conference::whereIn('id', $conferenceIds)->orderBy('name')->get();
-        $staff = User::whereHas('conferenceMemberships', fn ($q) => $q->whereIn('conference_id', $conferenceIds)->where('is_active', true))->orderBy('name')->get();
+        $staff = User::whereHas('conferenceMemberships', fn ($q) => $q->whereIn('conference_id', $conferenceIds)->where('is_active', true))
+            ->with([
+                'conferenceMemberships' => fn ($q) => $q->whereIn('conference_id', $conferenceIds)->where('is_active', true)->with('conference'),
+                'editorSubmissions.conference',
+                'reviewerSubmissions.conference',
+            ])->orderBy('name')->get();
 
-        return view('submissions.index', compact('submissions', 'conferences', 'staff'));
+        $staffData = $staff->mapWithKeys(function ($person) {
+            $memberships = $person->conferenceMemberships->map(function ($m) use ($person) {
+                $conf = $m->conference;
+                $assignedAsEditor = $person->editorSubmissions->where('conference_id', $conf->id)->count();
+                $assignedAsReviewer = $person->reviewerSubmissions->where('conference_id', $conf->id)->count();
+
+                return [
+                    'conference_name' => $conf->name,
+                    'conference_slug' => $conf->slug,
+                    'role_label' => $m->role->label(),
+                    'editor_papers_count' => $assignedAsEditor,
+                    'reviewer_papers_count' => $assignedAsReviewer,
+                    'total_papers_count' => $assignedAsEditor + $assignedAsReviewer,
+                ];
+            });
+
+            $totalEditor = $person->editorSubmissions->count();
+            $totalReviewer = $person->reviewerSubmissions->count();
+
+            return [$person->id => [
+                'id' => $person->id,
+                'name' => $person->name,
+                'email' => $person->email,
+                'whatsapp' => $person->whatsapp(),
+                'whatsapp_raw' => $person->whatsapp_country_code && $person->whatsapp_number ? $person->whatsapp_country_code.$person->whatsapp_number : null,
+                'job_title' => $person->job_title ?: 'Staf Publikasi',
+                'affiliation' => $person->affiliation ?: 'Paperflow Team',
+                'memberships' => $memberships->values(),
+                'total_editor_papers' => $totalEditor,
+                'total_reviewer_papers' => $totalReviewer,
+                'total_assigned_papers' => $totalEditor + $totalReviewer,
+            ]];
+        });
+
+        return view('submissions.index', compact('submissions', 'conferences', 'staff', 'staffData'));
     }
 
     public function show(Submission $submission, VisibleEmailLogs $visibleEmailLogs): View

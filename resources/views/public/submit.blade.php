@@ -27,7 +27,7 @@
                 <label class="sm:col-span-2"><span class="form-label">Judul paper *</span><input class="form-input" name="title" value="{{ old('title') }}" required></label>
                 <label><span class="form-label">Corresponding author *</span><input class="form-input" name="author_name" value="{{ old('author_name') }}" required></label>
                 <label><span class="form-label">Email author *</span><input class="form-input" type="email" name="author_email" value="{{ old('author_email') }}" required></label>
-                <div><span class="form-label">Nomor handphone / WhatsApp *</span><div class="grid grid-cols-[minmax(0,1.25fr)_minmax(0,1.75fr)] gap-2"><select class="form-input px-2" name="author_phone_country_code" required>@foreach($countryCodes as $code=>$label)<option value="{{ $code }}" @selected(old('author_phone_country_code','+62')===$code)>{{ $label }}</option>@endforeach</select><input class="form-input" type="tel" name="author_phone" value="{{ old('author_phone') }}" placeholder="81234567890" required></div></div>
+                <div><span class="form-label">Nomor handphone / WhatsApp *</span><div class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2"><select class="form-input px-2" name="author_phone_country_code" required>@foreach($countryCodes as $code=>$label)<option value="{{ $code }}" @selected(old('author_phone_country_code','+62')===$code)>{{ $label }}</option>@endforeach</select><input class="form-input" type="tel" name="author_phone" value="{{ old('author_phone') }}" placeholder="81234567890" required></div></div>
             </div>
 
             <div class="my-8 border-t border-navy/10"></div>

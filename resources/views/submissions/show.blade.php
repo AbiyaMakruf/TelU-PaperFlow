@@ -103,12 +103,88 @@
             @endforeach
 
             @can('editorialReview', $submission)
-                <section class="card p-6">
-                    <h2 class="text-lg font-black text-navy">Feedback &amp; komunikasi</h2>
-                    <div class="mt-5 space-y-3">@forelse($submission->feedback as $feedback)<div class="rounded-xl bg-warm p-4"><div class="flex justify-between gap-3"><span class="badge {{ $feedback->visibility === 'author' ? 'badge-warning' : 'badge-primary' }}">{{ $feedback->visibility === 'author' ? 'Author' : 'Internal' }}</span><span class="text-xs text-muted">{{ $feedback->author?->name }} &middot; {{ $feedback->created_at->format('d M H:i') }}</span></div><p class="mt-3 whitespace-pre-line text-sm leading-6">{{ $feedback->body }}</p></div>@empty<p class="text-sm text-muted">Belum ada feedback.</p>@endforelse</div>
-                    <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="mt-5 grid gap-4 sm:grid-cols-2">@csrf
-                        <textarea class="form-input min-h-28 py-3 sm:col-span-2 text-sm" name="body" placeholder="Tulis feedback..." required></textarea>
-                        <select class="form-input" name="visibility"><option value="internal">Catatan internal</option><option value="author">Terlihat author</option></select>
+                <!-- 1. Catatan Internal (Internal Notes Only) -->
+                <section class="card p-6 border-l-4 border-l-navy bg-slate-50/50">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <h2 class="text-base font-black text-navy flex items-center gap-2">
+                                🔒 Catatan Internal (Khusus Tim)
+                            </h2>
+                            <p class="text-xs text-muted mt-0.5">Catatan ini tersimpan rahasia untuk tim editorial &amp; reviewer. <strong>TIDAK PERNAH</strong> dikirim ke author.</p>
+                        </div>
+                        <span class="badge badge-primary text-[10px] self-start sm:self-auto">Rahasia Internal</span>
+                    </div>
+
+                    <!-- Internal Notes History -->
+                    <div class="mt-4 space-y-3">
+                        @forelse($submission->feedback->where('visibility', 'internal') as $feedback)
+                            <div class="rounded-xl bg-white p-3.5 border border-navy/10 shadow-sm text-xs">
+                                <div class="flex items-center justify-between gap-2 text-muted">
+                                    <span class="font-bold text-navy">👤 {{ $feedback->author?->name ?? 'Staf Internal' }}</span>
+                                    <span>{{ $feedback->created_at->format('d M Y H:i') }}</span>
+                                </div>
+                                <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed">{{ $feedback->body }}</p>
+                            </div>
+                        @empty
+                            <p class="text-xs text-muted italic">Belum ada catatan internal.</p>
+                        @endforelse
+                    </div>
+
+                    <!-- Add Internal Note Form -->
+                    <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="mt-4 space-y-3">
+                        @csrf
+                        <input type="hidden" name="visibility" value="internal">
+                        <textarea class="form-input min-h-20 py-2.5 text-xs" name="body" placeholder="Tulis catatan internal (hanya untuk tim editorial & reviewer)..." required></textarea>
+                        <div class="flex justify-end">
+                            <button type="submit" class="btn btn-primary px-4 py-2 text-xs font-extrabold w-full sm:w-auto">
+                                💾 Simpan Catatan Internal
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- 2. Komunikasi & Feedback untuk Author (Author Communication) -->
+                <section class="card p-6 border-l-4 border-l-orange bg-amber-50/20">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <h2 class="text-base font-black text-navy flex items-center gap-2">
+                                📩 Feedback &amp; Komunikasi ke Author
+                            </h2>
+                            <p class="text-xs text-muted mt-0.5">Pesan ini akan terlihat oleh author di portal dan dapat dikirim via Email / WhatsApp.</p>
+                        </div>
+                        <span class="badge badge-warning text-[10px] self-start sm:self-auto">Terlihat Author</span>
+                    </div>
+
+                    <!-- Author Feedback History -->
+                    <div class="mt-4 space-y-3">
+                        @forelse($submission->feedback->where('visibility', 'author') as $feedback)
+                            <div class="rounded-xl bg-white p-3.5 border border-orange/20 shadow-sm text-xs">
+                                <div class="flex flex-wrap items-center justify-between gap-2 text-muted">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-navy">✉️ {{ $feedback->author?->name ?? 'Editorial' }}</span>
+                                        @if($feedback->emailed_at)
+                                            <span class="badge badge-success text-[9px]">Terkirim Email</span>
+                                        @endif
+                                    </div>
+                                    <span>{{ $feedback->created_at->format('d M Y H:i') }}</span>
+                                </div>
+                                <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed">{{ $feedback->body }}</p>
+                            </div>
+                        @empty
+                            <p class="text-xs text-muted italic">Belum ada feedback yang dikirim ke author.</p>
+                        @endforelse
+                    </div>
+
+                    <!-- Author Feedback Form -->
+                    <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="mt-4 space-y-4">
+                        @csrf
+                        <input type="hidden" name="visibility" value="author">
+
+                        <div>
+                            <label class="form-label text-xs">Pesan / Feedback Revisi untuk Author *</label>
+                            <textarea class="form-input min-h-24 py-2.5 text-xs" name="body" placeholder="Tulis feedback revisi atau pesan yang akan disampaikan ke author..." required></textarea>
+                        </div>
+
                         <!-- Interactive CC Tag Input -->
                         <div x-data="{
                             ccInput: '',
@@ -123,17 +199,17 @@
                             removeTag(index) {
                                 this.tags.splice(index, 1);
                             }
-                        }" class="sm:col-span-2">
-                            <label class="form-label mb-1 block">CC Email (Ketik email lalu tekan koma / Enter)</label>
+                        }">
+                            <label class="form-label text-xs mb-1 block">CC Email (Ketik email lalu tekan koma / Enter)</label>
                             <input type="hidden" name="cc" :value="tags.join(',')">
-                            <div class="flex flex-wrap items-center gap-2 rounded-xl border border-navy/20 bg-white p-2 min-h-12 focus-within:ring-2 focus-within:ring-orange">
+                            <div class="flex flex-wrap items-center gap-2 rounded-xl border border-navy/20 bg-white p-2 min-h-11 focus-within:ring-2 focus-within:ring-orange">
                                 <template x-for="(tag, index) in tags" :key="index">
-                                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-navy text-white px-3 py-1 text-xs font-bold shadow-sm">
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-navy text-white px-2.5 py-0.5 text-xs font-bold shadow-sm">
                                         <span x-text="tag"></span>
-                                        <button type="button" @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-1">&times;</button>
+                                        <button type="button" @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5">&times;</button>
                                     </span>
                                 </template>
-                                <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[200px]"
+                                <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[160px]"
                                        x-model="ccInput"
                                        @keydown.comma.prevent="addTag()"
                                        @keydown.enter.prevent="addTag()"
@@ -142,10 +218,19 @@
                             </div>
                         </div>
 
-                        <label class="check-row sm:col-span-2"><input type="checkbox" name="send_email" value="1"><span>Kirim email ke author (hanya untuk feedback author)</span></label>
-                        <button class="btn btn-secondary sm:col-span-2">Simpan feedback</button>
+                        <!-- Action Buttons: Kirim lewat Email & Kirim lewat WhatsApp -->
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
+                            <button type="submit" name="send_email" value="1" class="btn btn-primary px-4 py-2 text-xs font-extrabold flex items-center justify-center gap-1.5">
+                                📧 Kirim lewat Email
+                            </button>
+
+                            @if($whatsappUrl)
+                                <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5">
+                                    📱 Kirim lewat WhatsApp ↗
+                                </a>
+                            @endif
+                        </div>
                     </form>
-                    @if($whatsappUrl)<a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn mt-4 w-full bg-[#25D366] text-white hover:bg-[#1faa52]">Hubungi author via WhatsApp</a><p class="mt-2 text-xs text-muted">Pesan WhatsApp otomatis memuat item checklist yang belum sesuai. Periksa kembali sebelum mengirim.</p>@endif
                 </section>
             @endcan
 
@@ -153,57 +238,135 @@
                 <div class="p-6"><h2 class="text-lg font-black text-navy">Versioning file</h2></div>
                 <div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Versi</th><th>File</th><th>Kategori</th><th>Sumber</th><th>Oleh</th><th></th></tr></thead><tbody>@foreach($submission->files as $file)<tr><td>v{{ $file->version_number }} @if($file->is_final)<span class="badge badge-success">Final</span>@endif</td><td><p class="font-bold text-navy">{{ $file->label }}</p><p class="text-xs text-muted">{{ $file->original_name }} &middot; {{ number_format($file->size / 1024, 0) }} KB</p></td><td><span class="badge {{ $file->file_category === 'revision_guidance_pdf' ? 'badge-warning' : 'badge-neutral' }} text-[10px]">{{ $file->file_category === 'revision_guidance_pdf' ? 'PDF Petunjuk Revisi' : 'Editable Manuscript' }}</span></td><td>{{ ucfirst($file->source) }}</td><td>{{ $file->uploader?->name ?? 'Author' }}</td><td class="space-x-3"><a class="font-bold text-orange" href="{{ route('submissions.files.preview', [$submission, $file]) }}">Preview</a><a class="font-bold text-orange" href="{{ route('submissions.files.download', [$submission, $file]) }}">Download</a></td></tr>@endforeach</tbody></table></div>
                 @if($submission->uploadAttempts->where('status','failed')->isNotEmpty())<div class="border-t border-danger/10 p-6"><h3 class="font-bold text-danger">Upload gagal</h3>@foreach($submission->uploadAttempts->where('status','failed') as $attempt)<div class="mt-3 flex items-center justify-between rounded-xl bg-danger/5 p-4"><div><p class="font-bold">{{ $attempt->original_name }}</p><p class="text-xs text-danger">{{ Str::limit($attempt->error,150) }}</p></div><form method="POST" action="{{ route('submissions.uploads.retry',[$submission,$attempt]) }}">@csrf<button class="btn btn-secondary">Coba lagi</button></form></div>@endforeach</div>@endif
-                @can('editorialReview', $submission)<form method="POST" action="{{ route('submissions.files.store', $submission) }}" enctype="multipart/form-data" class="grid gap-4 border-t border-navy/10 p-6 sm:grid-cols-2">@csrf<input class="form-input" name="label" placeholder="Label, mis. Revisi editorial 1" required><input class="form-input py-3" type="file" name="paper_file" required><textarea class="form-input min-h-20 py-3 sm:col-span-2" name="notes" placeholder="Catatan file"></textarea><label class="check-row"><input type="checkbox" name="is_final" value="1"><span>Tandai sebagai file final</span></label><button class="btn btn-primary">Upload versi</button></form>@endcan
+                @can('editorialReview', $submission)
+                    <div class="border-t border-navy/10 p-6 bg-slate-50/50">
+                        <h3 class="font-extrabold text-navy text-sm mb-3">Upload Versi File Baru</h3>
+                        <form method="POST" action="{{ route('submissions.files.store', $submission) }}" enctype="multipart/form-data" class="grid gap-4 sm:grid-cols-2">
+                            @csrf
+                            <div>
+                                <label class="form-label text-xs">Label File *</label>
+                                <input class="form-input text-xs" name="label" placeholder="Misal: Revisi Editorial 1 / Final Camera Ready" required>
+                            </div>
+                            <div>
+                                <label class="form-label text-xs">Pilih File *</label>
+                                <input class="form-input text-xs py-2" type="file" name="paper_file" required>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="form-label text-xs">Catatan File (Opsional)</label>
+                                <textarea class="form-input text-xs min-h-20 py-2" name="notes" placeholder="Catatan opsional untuk versi file ini..."></textarea>
+                            </div>
+                            <div class="sm:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                                <label class="check-row h-11 py-0 px-4 flex items-center cursor-pointer rounded-xl border border-navy/15 bg-white hover:bg-slate-100 transition">
+                                    <input type="checkbox" name="is_final" value="1" class="rounded text-orange focus:ring-orange">
+                                    <span class="text-xs font-bold text-navy ml-2">🏁 Tandai sebagai versi file final</span>
+                                </label>
+                                <button type="submit" class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto">
+                                    ⬆️ Upload Versi Baru
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                @endcan
             </section>
         </div>
 
         <aside class="space-y-6">
             @can('assign', $submission)
-                <section class="card p-6"><h2 class="font-black text-navy">Assignment PIC</h2>
-                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="mt-4 space-y-3">
+                <section class="card p-6 space-y-6">
+                    <div>
+                        <h2 class="font-black text-navy text-base">Assignment PIC</h2>
+                        <p class="text-xs text-muted mt-0.5">Penugasan Editor &amp; Reviewer untuk paper ini.</p>
+                    </div>
+
+                    <!-- Editor Assignment Form -->
+                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="space-y-4 rounded-2xl bg-warm/60 p-4 border border-navy/10">
                         @csrf
                         <input type="hidden" name="role" value="editorial">
-                        <select class="form-input" name="user_id" required>
-                            <option value="">Pilih editor...</option>
-                            @foreach($editors as $member)
-                                <option value="{{ $member->user_id }}" @selected($submission->editor_id === $member->user_id)>{{ $member->user->name }}</option>
-                            @endforeach
-                        </select>
-                        <label><span class="form-label">Format dokumen author *</span><select class="form-input" name="manuscript_format" required><option value="">Pilih format...</option><option value="docx" @selected($submission->manuscript_format === 'docx')>Microsoft Word (.docx)</option><option value="latex" @selected($submission->manuscript_format === 'latex')>LaTeX (.zip)</option></select></label>
-                        <input class="form-input" type="datetime-local" name="deadline_at" value="{{ $submission->deadline_at?->format('Y-m-d\TH:i') }}">
+                        <div>
+                            <label class="form-label">Editor PIC *</label>
+                            <select class="form-input" name="user_id" required>
+                                <option value="">Pilih editor...</option>
+                                @foreach($editors as $member)
+                                    <option value="{{ $member->user_id }}" @selected($submission->editor_id === $member->user_id)>{{ $member->user->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="form-label">Format Dokumen Author *</label>
+                            <select class="form-input" name="manuscript_format" required>
+                                <option value="">Pilih format...</option>
+                                <option value="docx" @selected($submission->manuscript_format === 'docx')>Microsoft Word (.docx)</option>
+                                <option value="latex" @selected($submission->manuscript_format === 'latex')>LaTeX (.zip)</option>
+                            </select>
+                        </div>
+
                         @if($submission->editor_id)
-                            <input class="form-input border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="Alasan mengganti Editor (wajib)">
+                            <div>
+                                <label class="form-label text-amber-700">Alasan Perubahan Editor *</label>
+                                <input class="form-input border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="Contoh: Perubahan pembagian beban kerja" required>
+                            </div>
                         @endif
-                        <input class="form-input" name="note" placeholder="Catatan assignment">
-                        <button class="btn btn-secondary w-full">Assign editor</button>
+
+                        <div>
+                            <label class="form-label">Catatan Penugasan (Opsional)</label>
+                            <input class="form-input" name="note" placeholder="Catatan opsional untuk editor...">
+                        </div>
+
+                        <button class="btn btn-primary w-full py-2.5 text-xs font-extrabold">Simpan / Assign Editor</button>
                     </form>
-                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="mt-5 space-y-3 border-t border-navy/10 pt-5">
+
+                    <!-- Reviewer Assignment Form -->
+                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="space-y-4 rounded-2xl bg-warm/60 p-4 border border-navy/10">
                         @csrf
                         <input type="hidden" name="role" value="reviewer">
-                        <select class="form-input" name="user_id" required>
-                            <option value="">Pilih reviewer...</option>
-                            @foreach($reviewers as $member)
-                                <option value="{{ $member->user_id }}" @selected($submission->reviewer_id === $member->user_id)>{{ $member->user->name }}</option>
-                            @endforeach
-                        </select>
+                        <div>
+                            <label class="form-label">Reviewer PIC *</label>
+                            <select class="form-input" name="user_id" required>
+                                <option value="">Pilih reviewer...</option>
+                                @foreach($reviewers as $member)
+                                    <option value="{{ $member->user_id }}" @selected($submission->reviewer_id === $member->user_id)>{{ $member->user->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         @if($submission->reviewer_id)
-                            <input class="form-input border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="Alasan mengganti Reviewer (wajib)">
+                            <div>
+                                <label class="form-label text-amber-700">Alasan Perubahan Reviewer *</label>
+                                <input class="form-input border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="Contoh: Pergantian reviewer yang berhalangan" required>
+                            </div>
                         @endif
-                        <button class="btn btn-secondary w-full">Assign reviewer</button>
+
+                        <button class="btn btn-secondary w-full py-2.5 text-xs font-extrabold">Simpan / Assign Reviewer</button>
                     </form>
                 </section>
             @endcan
 
-            <section class="card p-6 border-2 border-orange/30 bg-amber-50/20">
-                <div class="flex items-center justify-between">
-                    <h2 class="font-black text-navy text-base">IEEE PDF eXpress &amp; EDAS</h2>
-                    <span class="badge {{ $submission->pdf_express_status === 'passed' ? 'badge-success' : ($submission->pdf_express_status === 'failed' ? 'badge-danger' : 'badge-warning') }}">
-                        PDF eXpress: {{ ucfirst($submission->pdf_express_status ?? 'pending') }}
-                    </span>
+            <section class="card p-6 border-2 border-orange/30 bg-amber-50/20 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-navy/10 pb-3">
+                    <div>
+                        <h2 class="font-black text-navy text-base">IEEE PDF eXpress &amp; EDAS</h2>
+                        <p class="text-xs text-muted mt-0.5">Status verifikasi PDF eXpress dan integrasi EDAS.</p>
+                    </div>
+                    <div class="shrink-0 self-start sm:self-auto">
+                        @if(($submission->pdf_express_status ?? 'pending') === 'passed')
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 border border-emerald-300 shadow-sm">
+                                🟢 PDF eXpress: Passed
+                            </span>
+                        @elseif(($submission->pdf_express_status ?? '') === 'failed')
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-black text-rose-800 border border-rose-300 shadow-sm">
+                                🔴 PDF eXpress: Failed
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800 border border-amber-300 shadow-sm">
+                                🟡 PDF eXpress: Pending
+                            </span>
+                        @endif
+                    </div>
                 </div>
 
                 @can('reviewerReview', $submission)
-                    <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" class="mt-4 space-y-3" x-data="{
+                    <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" class="space-y-3" x-data="{
                         setError(msg) {
                             let current = $refs.noteInput.value;
                             $refs.noteInput.value = current ? current + '\n' + msg : msg;
@@ -234,11 +397,11 @@
                             </div>
                             <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Tulis rincian error EDAS atau klik tombol preset di atas...">{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
                         </div>
-                        <button class="btn btn-secondary w-full text-xs">Simpan Status Reviewer</button>
+                        <button class="btn btn-secondary w-full text-xs font-bold">Simpan Status Reviewer</button>
                     </form>
                 @else
-                    <div class="mt-3 space-y-2 text-xs">
-                        <p><strong>EDAS Ref:</strong> {{ $submission->edas_reference ?: '-' }}</p>
+                    <div class="space-y-2 text-xs">
+                        <p class="font-semibold text-navy"><strong>Referensi EDAS:</strong> {{ $submission->edas_reference ?: '-' }}</p>
                         @if($submission->edas_error_note)
                             <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-900">
                                 <p class="font-bold">Catatan Error EDAS:</p>
@@ -280,24 +443,29 @@
                     </div>
                     <div class="mt-4 space-y-3">
                         @forelse($emailLogs as $email)
-                            <div class="rounded-xl bg-warm p-4">
-                                <div class="flex justify-between gap-3">
-                                    <strong>{{ $email->subject }}</strong>
-                                    <span class="badge {{ $email->status === 'sent' ? 'badge-success' : ($email->status === 'failed' ? 'badge-danger' : 'badge-warning') }}">{{ $email->status }}</span>
+                            <div class="rounded-xl bg-warm/80 p-3.5 border border-navy/10 text-xs">
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="badge {{ $email->status === 'sent' ? 'badge-success' : ($email->status === 'failed' ? 'badge-danger' : 'badge-warning') }} text-[10px] uppercase font-black shrink-0">
+                                            {{ $email->status }}
+                                        </span>
+                                        <span class="text-muted text-[11px] truncate">Ke: {{ $email->recipient }}</span>
+                                    </div>
+                                    <span class="text-[11px] text-muted shrink-0">{{ $email->created_at->format('d M H:i') }}</span>
                                 </div>
-                                <p class="mt-1 text-xs text-muted">Ke {{ $email->recipient }} &middot; {{ $email->created_at->format('d M H:i') }}</p>
+                                <p class="font-bold text-navy leading-snug break-words">{{ $email->subject }}</p>
                                 @if($email->error)
-                                    <p class="mt-2 text-xs text-danger">{{ Str::limit($email->error, 180) }}</p>
+                                    <p class="mt-2 text-[11px] text-danger bg-danger/5 p-2 rounded-lg leading-relaxed">{{ Str::limit($email->error, 180) }}</p>
                                 @endif
                                 @if($email->status === 'failed' && $email->body)
-                                    <form class="mt-3" method="POST" action="{{ route('emails.resend', $email) }}">
+                                    <form class="mt-3 flex justify-end" method="POST" action="{{ route('emails.resend', $email) }}">
                                         @csrf
-                                        <button class="btn btn-secondary px-3 py-2 text-xs">Re-send</button>
+                                        <button class="btn btn-secondary px-3 py-1.5 text-xs font-bold">🔁 Re-send Email</button>
                                     </form>
                                 @endif
                             </div>
                         @empty
-                            <p class="text-sm text-muted">Belum ada email yang dapat Anda lihat.</p>
+                            <p class="text-xs text-muted italic">Belum ada riwayat email.</p>
                         @endforelse
                     </div>
                 </section>

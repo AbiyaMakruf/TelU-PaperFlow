@@ -25,7 +25,7 @@
             </form>
         </div>
     @endif
-    <div class="min-h-screen lg:grid lg:grid-cols-[260px_1fr]" x-data="{ mobileMenu: false }" x-on:keydown.escape.window="mobileMenu = false">
+    <div class="min-h-screen lg:grid lg:grid-cols-[260px_1fr] max-w-full overflow-x-hidden" x-data="{ mobileMenu: false }" x-on:keydown.escape.window="mobileMenu = false">
         <div x-cloak x-show="mobileMenu" x-transition.opacity class="fixed inset-0 z-40 bg-navy/55 backdrop-blur-sm lg:hidden" x-on:click="mobileMenu = false"></div>
         <aside x-cloak x-show="mobileMenu" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="fixed inset-y-0 left-0 z-50 flex w-[min(84vw,320px)] flex-col overflow-y-auto bg-navy px-5 py-6 text-white shadow-2xl lg:hidden">
             <div class="flex items-center justify-between"><x-brand class="px-2 text-white" /><button type="button" class="grid size-11 place-items-center rounded-xl bg-white/10 text-xl" x-on:click="mobileMenu = false" aria-label="Tutup menu">&times;</button></div>
@@ -49,13 +49,24 @@
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}">Performa editor</a>
                 @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())<a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}">Audit log</a>@endif
                 @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->whereIn('role',[\App\Enums\ConferenceRole::Admin,\App\Enums\ConferenceRole::Editorial])->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}">Monitoring email</a>@endif
-                <a href="{{ route('profile.edit') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'nav-link-active' : '' }}">Profil saya</a>
                 @if(auth()->user()->isSuperAdmin())
                     <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}">Pengguna</a>
                     <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') ? 'nav-link-active' : '' }}">Monitoring</a>
                 @endif
             </nav>
-            <div class="mt-auto border-t border-white/10 pt-5"><p class="truncate font-bold">{{ auth()->user()->name }}</p><p class="mt-1 truncate text-xs text-white/55">{{ auth()->user()->email }}</p><form method="POST" action="{{ route('logout') }}" class="mt-4">@csrf<button class="btn w-full border border-white/15 text-white hover:border-orange hover:text-orange">Keluar</button></form></div>
+            <div class="mt-auto border-t border-white/10 pt-5">
+                <a href="{{ route('profile.edit') }}" class="block group cursor-pointer" title="Kelola Profil Saya">
+                    <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
+                    <p class="mt-1 truncate text-xs text-white/55 group-hover:text-white/85 transition">{{ auth()->user()->email }}</p>
+                </a>
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    <a href="{{ route('profile.edit') }}" class="btn border border-white/15 text-white hover:bg-white/10 text-xs px-2 py-2 text-center">Edit Profil</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="btn w-full border border-white/15 text-white hover:border-orange hover:text-orange text-xs px-2 py-2">Keluar</button>
+                    </form>
+                </div>
+            </div>
         </aside>
         <aside class="hidden bg-navy px-5 py-7 text-white lg:flex lg:flex-col">
             <x-brand class="px-2 text-white" />
@@ -66,41 +77,66 @@
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}"><span class="text-xs">ST</span><span>Performa editor</span></a>
                 @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())<a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}"><span class="text-xs">AU</span><span>Audit log</span></a>@endif
                 @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->whereIn('role',[\App\Enums\ConferenceRole::Admin,\App\Enums\ConferenceRole::Editorial])->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}"><span class="text-xs">EM</span><span>Monitoring email</span></a>@endif
-                <a href="{{ route('profile.edit') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'nav-link-active' : '' }}"><span class="text-xs">PR</span><span>Profil saya</span></a>
                 @if(auth()->user()->isSuperAdmin())
                     <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}"><span class="text-xs">US</span><span>Pengguna</span></a>
                     <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') ? 'nav-link-active' : '' }}"><span class="text-xs">MO</span><span>Monitoring</span></a>
                 @endif
             </nav>
             <div class="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p class="truncate font-bold">{{ auth()->user()->name }}</p>
-                <p class="mt-1 truncate text-xs text-white/55">{{ auth()->user()->email }}</p>
-                <form method="POST" action="{{ route('logout') }}" class="mt-4">@csrf<button class="text-xs font-bold text-orange hover:text-white">Keluar &rarr;</button></form>
+                <a href="{{ route('profile.edit') }}" class="block group cursor-pointer" title="Kelola Profil Saya">
+                    <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
+                    <p class="mt-1 truncate text-xs text-white/55 group-hover:text-white/85 transition">{{ auth()->user()->email }}</p>
+                </a>
+                <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                    <a href="{{ route('profile.edit') }}" class="font-bold text-white/70 hover:text-white transition">Edit Profil</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="font-bold text-orange hover:text-white transition">Keluar &rarr;</button>
+                    </form>
+                </div>
             </div>
         </aside>
-        <div class="min-w-0">
-            <header class="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-2 border-b border-navy/10 bg-white/90 px-4 py-3 backdrop-blur sm:px-8 lg:px-10">
-                <button type="button" class="grid size-11 shrink-0 place-items-center rounded-xl bg-navy text-xl text-white lg:hidden" x-on:click="mobileMenu = true" aria-label="Buka menu"><span class="-mt-1">☰</span></button>
-                <x-brand class="min-w-0 scale-90 text-navy sm:scale-100 lg:hidden" />
+        <div class="min-w-0 w-full max-w-full overflow-x-hidden">
+            <header class="sticky top-0 z-30 flex min-h-14 sm:min-h-16 items-center justify-between gap-2 border-b border-navy/10 bg-white/95 px-3 sm:px-8 lg:px-10 py-2.5 backdrop-blur">
+                <div class="flex items-center gap-2 min-w-0 shrink-0">
+                    <button type="button" class="grid size-9 sm:size-10 shrink-0 place-items-center rounded-xl bg-navy text-lg text-white lg:hidden" x-on:click="mobileMenu = true" aria-label="Buka menu"><span class="-mt-0.5">☰</span></button>
+                    <x-brand class="min-w-0 scale-90 sm:scale-100 lg:hidden shrink-0" />
+                </div>
                 <div class="hidden lg:block"><p class="text-xs font-bold uppercase tracking-[.18em] text-muted">Paperflow workspace</p><p class="font-bold text-navy">{{ $heading ?? 'Dashboard' }}</p></div>
-                <!-- GCP-style Workspace Selector in Header -->
-                <div class="ml-auto flex items-center gap-2 sm:gap-4">
-                    <form method="POST" action="{{ route('workspace.switch') }}" class="flex items-center gap-1.5">
+                <!-- GCP-style Workspace Selector & Profile Icon in Header -->
+                <div class="ml-auto flex items-center gap-1.5 sm:gap-4 shrink-0">
+                    <form method="POST" action="{{ route('workspace.switch') }}" class="flex items-center gap-1">
                         @csrf
-                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 hidden sm:inline">Workspace:</span>
-                        <select name="conference_id" onchange="this.form.submit()" class="rounded-xl border border-navy/20 bg-slate-100 px-3 py-1.5 text-xs font-extrabold text-navy hover:bg-slate-200 transition focus:ring-2 focus:ring-orange cursor-pointer">
+                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 hidden md:inline">Workspace:</span>
+                        <select name="conference_id" onchange="this.form.submit()" class="max-w-[100px] xs:max-w-[130px] sm:max-w-xs truncate rounded-xl border border-navy/20 bg-slate-100 px-2.5 sm:px-3 py-1.5 text-xs font-extrabold text-navy hover:bg-slate-200 transition focus:ring-2 focus:ring-orange cursor-pointer">
                             <option value="all" @selected(!$activeConf)>🌐 Semua Conference</option>
                             @foreach($userConferences as $conf)
                                 <option value="{{ $conf->id }}" @selected($activeConf?->id === $conf->id)>📌 {{ $conf->name }}</option>
                             @endforeach
                         </select>
                     </form>
-                    <a href="{{ route('notifications.index') }}" class="relative grid size-10 place-items-center rounded-full bg-navy/5 font-bold text-navy" aria-label="Notifikasi">N @if(auth()->user()->unreadNotifications()->exists())<span class="absolute right-0 top-0 size-2.5 rounded-full bg-orange"></span>@endif</a>
-                    @if(auth()->user()->isSuperAdmin())<span class="badge badge-warning hidden sm:inline-flex">Superadmin</span>@endif
-                    <span class="hidden size-10 place-items-center rounded-full bg-navy font-bold text-white sm:grid">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                    <!-- Notification Button with Bell Icon & Label -->
+                    <a href="{{ route('notifications.index') }}" class="relative inline-flex items-center justify-center gap-1.5 rounded-xl border border-navy/20 bg-slate-100 p-2 sm:px-3 sm:py-1.5 text-xs font-extrabold text-navy hover:bg-slate-200 transition focus:ring-2 focus:ring-orange shrink-0" title="Notifikasi">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-4 text-navy">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                        </svg>
+                        <span class="hidden sm:inline">Notifikasi</span>
+                        @if(auth()->user()->unreadNotifications()->exists())
+                            <span class="absolute -top-0.5 -right-0.5 sm:static size-2 rounded-full bg-orange animate-pulse"></span>
+                        @endif
+                    </a>
+                    <!-- Profile Header Link & Avatar Icon -->
+                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-1.5 rounded-full p-0.5 hover:bg-navy/5 transition group shrink-0" title="Kelola Profil Saya ({{ auth()->user()->name }})">
+                        @if(auth()->user()->isSuperAdmin())
+                            <span class="badge badge-warning hidden md:inline-flex">Superadmin</span>
+                        @endif
+                        <span class="grid size-9 sm:size-10 place-items-center rounded-full bg-navy text-xs sm:text-sm font-bold text-white shadow-sm group-hover:bg-orange transition">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                        </span>
+                    </a>
                 </div>
             </header>
-            <main class="min-w-0 p-4 sm:p-8 lg:p-10"><x-flash />{{ $slot }}</main>
+            <main class="min-w-0 w-full max-w-full px-3 py-4 sm:px-8 sm:py-8 lg:px-10 lg:py-10 space-y-6 overflow-x-hidden"><x-flash />{{ $slot }}</main>
         </div>
     </div>
 </body>

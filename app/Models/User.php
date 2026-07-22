@@ -71,6 +71,16 @@ class User extends Authenticatable
         return $this->hasMany(ConferenceMember::class);
     }
 
+    public function editorSubmissions(): HasMany
+    {
+        return $this->hasMany(Submission::class, 'editor_id');
+    }
+
+    public function reviewerSubmissions(): HasMany
+    {
+        return $this->hasMany(Submission::class, 'reviewer_id');
+    }
+
     public function conferences(): BelongsToMany
     {
         return $this->belongsToMany(Conference::class, 'conference_members')
