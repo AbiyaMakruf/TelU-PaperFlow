@@ -25,6 +25,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicSubmissionController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SubmissionExportController;
+use App\Http\Controllers\UserManualController;
 use App\Http\Controllers\WorkspaceController;
 use App\Models\Conference;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,8 @@ Route::get('/', function () {
 
     return view('welcome', compact('conferences'));
 })->name('home');
+
+Route::get('/user-manual/author', [UserManualController::class, 'author'])->name('user-manual.author');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -57,6 +60,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/user-manual', [UserManualController::class, 'index'])->name('user-manual.index');
+        Route::get('/user-manual/{role}', [UserManualController::class, 'show'])->name('user-manual.show');
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::get('/notifications/{notification}', [NotificationController::class, 'read'])->name('notifications.read');

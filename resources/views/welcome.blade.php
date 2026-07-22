@@ -10,7 +10,10 @@
     <header class="border-b border-navy/10 bg-warm/90 backdrop-blur shrink-0">
         <div class="container-page flex h-20 items-center justify-between">
             <x-brand class="text-navy" />
-            <a href="{{ route('login') }}" class="btn btn-secondary">Login editorial</a>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('user-manual.author') }}" class="btn btn-ghost text-xs font-bold text-navy hover:text-orange">📖 Panduan Author</a>
+                <a href="{{ route('login') }}" class="btn btn-secondary text-xs">Login editorial</a>
+            </div>
         </div>
     </header>
     <main class="flex-1 flex flex-col justify-center">
