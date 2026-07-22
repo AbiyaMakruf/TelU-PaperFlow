@@ -6,7 +6,15 @@
             <h1 class="page-title leading-tight break-words">{{ $submission->paper_id ?: $submission->paper_code }}</h1>
             <p class="page-subtitle leading-snug break-words max-w-full">{{ $submission->title }}</p>
         </div>
-        <span class="badge badge-{{ $submission->status->color() }} shrink-0 self-start sm:self-auto">{{ $submission->status->label() }}</span>
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            @php
+                $portalToken = $submission->author_token_encrypted ?: $submission->id;
+            @endphp
+            <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs inline-flex items-center gap-1.5 shadow-sm hover:border-orange hover:text-orange" title="Tinjau tampilan portal seperti yang dilihat oleh Author">
+                <span>👁️</span> Buka Portal Author ↗
+            </a>
+            <span class="badge badge-{{ $submission->status->color() }}">{{ $submission->status->label() }}</span>
+        </div>
     </div>
 
     @if($submission->is_flagged_duplicate)
@@ -164,142 +172,162 @@
             @endforeach
 
             @can('editorialReview', $submission)
-                <!-- 1. Catatan Internal (Internal Notes Only) -->
-                <section class="card p-4 sm:p-6 border-l-4 border-l-navy bg-slate-50/50 max-w-full min-w-0">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-navy/8 pb-3 min-w-0">
-                        <div class="min-w-0">
-                            <h2 class="text-base font-black text-navy flex items-center gap-2">
-                                🔒 Catatan Internal (Khusus Tim)
-                            </h2>
-                            <p class="text-xs text-muted mt-0.5">Catatan ini tersimpan rahasia untuk tim editorial &amp; reviewer. <strong>TIDAK PERNAH</strong> dikirim ke author.</p>
-                        </div>
-                        <span class="badge badge-primary text-[10px] shrink-0 self-start sm:self-auto">Rahasia Internal</span>
-                    </div>
-
-                    <!-- Internal Notes History -->
-                    <div class="mt-4 space-y-3">
-                        @forelse($submission->feedback->where('visibility', 'internal') as $feedback)
-                            <div class="rounded-xl bg-white p-3.5 border border-navy/10 shadow-sm text-xs min-w-0">
-                                <div class="flex items-center justify-between gap-2 text-muted min-w-0">
-                                    <span class="font-bold text-navy truncate">👤 {{ $feedback->author?->name ?? 'Staf Internal' }}</span>
-                                    <span class="shrink-0 text-[11px]">{{ $feedback->created_at->format('d M Y H:i') }}</span>
-                                </div>
-                                <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
+                <!-- 1. Catatan Internal (Accordion) -->
+                <details class="card overflow-hidden border-l-4 border-l-navy bg-slate-50/50 max-w-full min-w-0" open>
+                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-100/70 hover:bg-slate-200/60 transition select-none">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-base sm:text-lg">🔒</span>
+                            <div class="min-w-0">
+                                <h2 class="text-sm sm:text-base font-black text-navy">Catatan Internal (Khusus Tim)</h2>
+                                <p class="text-[11px] text-muted font-normal truncate">Catatan rahasia untuk tim editorial &amp; reviewer (tidak terlihat author).</p>
                             </div>
-                        @empty
-                            <p class="text-xs text-muted italic">Belum ada catatan internal.</p>
-                        @endforelse
-                    </div>
-
-                    <!-- Add Internal Note Form -->
-                    <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="mt-4 space-y-3">
-                        @csrf
-                        <input type="hidden" name="visibility" value="internal">
-                        <textarea class="form-input min-h-20 py-2.5 text-xs" name="body" placeholder="Tulis catatan internal (hanya untuk tim editorial & reviewer)..." required></textarea>
-                        <div class="flex justify-end">
-                            <button type="submit" class="btn btn-primary px-4 py-2 text-xs font-extrabold w-full sm:w-auto">
-                                💾 Simpan Catatan Internal
-                            </button>
                         </div>
-                    </form>
-                </section>
-
-                <!-- 2. Komunikasi & Feedback untuk Author (Author Communication) -->
-                <section class="card p-4 sm:p-6 border-l-4 border-l-orange bg-amber-50/20 max-w-full min-w-0">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-navy/8 pb-3 min-w-0">
-                        <div class="min-w-0">
-                            <h2 class="text-base font-black text-navy flex items-center gap-2">
-                                📩 Feedback &amp; Komunikasi ke Author
-                            </h2>
-                            <p class="text-xs text-muted mt-0.5">Pesan ini akan terlihat oleh author di portal dan dapat dikirim via Email / WhatsApp.</p>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="badge badge-primary text-[10px]">Rahasia Internal</span>
+                            <span class="text-xs text-muted">▼</span>
                         </div>
-                        <span class="badge badge-warning text-[10px] shrink-0 self-start sm:self-auto">Terlihat Author</span>
-                    </div>
-
-                    <!-- Author Feedback History -->
-                    <div class="mt-4 space-y-3">
-                        @forelse($submission->feedback->where('visibility', 'author') as $feedback)
-                            <div class="rounded-xl bg-white p-3.5 border border-orange/20 shadow-sm text-xs min-w-0">
-                                <div class="flex flex-wrap items-center justify-between gap-2 text-muted">
-                                    <div class="flex items-center gap-2 min-w-0">
-                                        <span class="font-bold text-navy truncate">✉️ {{ $feedback->author?->name ?? 'Editorial' }}</span>
-                                        @if($feedback->emailed_at)
-                                            <span class="badge badge-success text-[9px] shrink-0">Terkirim Email</span>
-                                        @endif
+                    </summary>
+                    <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
+                        <!-- Internal Notes History -->
+                        <div class="space-y-3">
+                            @forelse($submission->feedback->where('visibility', 'internal') as $feedback)
+                                <div class="rounded-xl bg-slate-50 p-3.5 border border-navy/10 shadow-sm text-xs min-w-0">
+                                    <div class="flex items-center justify-between gap-2 text-muted min-w-0">
+                                        <span class="font-bold text-navy truncate">👤 {{ $feedback->author?->name ?? 'Staf Internal' }}</span>
+                                        <span class="shrink-0 text-[11px]">{{ $feedback->created_at->format('d M Y H:i') }}</span>
                                     </div>
-                                    <span class="text-[11px] shrink-0">{{ $feedback->created_at->format('d M Y H:i') }}</span>
+                                    <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
                                 </div>
-                                <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
+                            @empty
+                                <p class="text-xs text-muted italic">Belum ada catatan internal.</p>
+                            @endforelse
+                        </div>
+
+                        <!-- Add Internal Note Form -->
+                        <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-3">
+                            @csrf
+                            <input type="hidden" name="visibility" value="internal">
+                            <textarea class="form-input min-h-20 py-2.5 text-xs" name="body" placeholder="Tulis catatan internal (hanya untuk tim editorial & reviewer)..." required></textarea>
+                            <div class="flex justify-end">
+                                <button type="submit" class="btn btn-primary px-4 py-2 text-xs font-extrabold w-full sm:w-auto">
+                                    💾 Simpan Catatan Internal
+                                </button>
                             </div>
-                        @empty
-                            <p class="text-xs text-muted italic">Belum ada feedback yang dikirim ke author.</p>
-                        @endforelse
+                        </form>
                     </div>
+                </details>
 
-                    <!-- Author Feedback Form -->
-                    <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="mt-4 space-y-4">
-                        @csrf
-                        <input type="hidden" name="visibility" value="author">
-
-                        <div>
-                            <label class="form-label text-xs">Pesan / Feedback Revisi untuk Author *</label>
-                            <textarea class="form-input min-h-24 py-2.5 text-xs" name="body" placeholder="Tulis feedback revisi atau pesan yang akan disampaikan ke author..." required></textarea>
-                        </div>
-
-                        <!-- Interactive CC Tag Input -->
-                        <div x-data="{
-                            ccInput: '',
-                            tags: @js(old('cc') ? array_values(array_filter(preg_split('/[,;\s]+/', old('cc')))) : $defaultCc),
-                            addTag() {
-                                let val = this.ccInput.trim().replace(/,$/, '');
-                                if (val && !this.tags.includes(val)) {
-                                    this.tags.push(val);
-                                }
-                                this.ccInput = '';
-                            },
-                            removeTag(index) {
-                                this.tags.splice(index, 1);
-                            }
-                        }" class="min-w-0">
-                            <label class="form-label text-xs mb-1 block">CC Email (Ketik email lalu tekan koma / Enter)</label>
-                            <input type="hidden" name="cc" :value="tags.join(',')">
-                            <div class="flex flex-wrap items-center gap-1.5 rounded-xl border border-navy/20 bg-white p-2 min-h-11 focus-within:ring-2 focus-within:ring-orange max-w-full">
-                                <template x-for="(tag, index) in tags" :key="index">
-                                    <span class="inline-flex items-center gap-1 rounded-lg bg-navy text-white px-2 py-0.5 text-xs font-bold shadow-sm max-w-full truncate">
-                                        <span x-text="tag" class="truncate"></span>
-                                        <button type="button" @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0">&times;</button>
-                                    </span>
-                                </template>
-                                <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[120px]"
-                                       x-model="ccInput"
-                                       @keydown.comma.prevent="addTag()"
-                                       @keydown.enter.prevent="addTag()"
-                                       @blur="addTag()"
-                                       placeholder="Ketik email CC...">
+                <!-- 2. Komunikasi & Feedback untuk Author (Accordion) -->
+                <details class="card overflow-hidden border-l-4 border-l-orange bg-amber-50/20 max-w-full min-w-0" open>
+                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-amber-100/50 hover:bg-amber-100/80 transition select-none">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-base sm:text-lg">📩</span>
+                            <div class="min-w-0">
+                                <h2 class="text-sm sm:text-base font-black text-navy">Feedback &amp; Komunikasi ke Author</h2>
+                                <p class="text-[11px] text-muted font-normal truncate">Pesan ini akan terlihat oleh author di portal dan dapat dikirim via Email / WhatsApp.</p>
                             </div>
                         </div>
-
-                        <!-- Action Buttons -->
-                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
-                            <button type="submit" name="send_email" value="1" class="btn btn-primary px-4 py-2 text-xs font-extrabold flex items-center justify-center gap-1.5 w-full sm:w-auto">
-                                📧 Kirim lewat Email
-                            </button>
-
-                            @if($whatsappUrl)
-                                <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center">
-                                    📱 Kirim lewat WhatsApp ↗
-                                </a>
-                            @endif
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="badge badge-warning text-[10px]">Terlihat Author</span>
+                            <span class="text-xs text-muted">▼</span>
                         </div>
-                    </form>
-                </section>
+                    </summary>
+                    <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
+                        <!-- Author Feedback History -->
+                        <div class="space-y-3">
+                            @forelse($submission->feedback->where('visibility', 'author') as $feedback)
+                                <div class="rounded-xl bg-amber-50/40 p-3.5 border border-orange/20 shadow-sm text-xs min-w-0">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 text-muted">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="font-bold text-navy truncate">✉️ {{ $feedback->author?->name ?? 'Editorial' }}</span>
+                                            @if($feedback->emailed_at)
+                                                <span class="badge badge-success text-[9px] shrink-0">Terkirim Email</span>
+                                            @endif
+                                        </div>
+                                        <span class="text-[11px] shrink-0">{{ $feedback->created_at->format('d M Y H:i') }}</span>
+                                    </div>
+                                    <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
+                                </div>
+                            @empty
+                                <p class="text-xs text-muted italic">Belum ada feedback yang dikirim ke author.</p>
+                            @endforelse
+                        </div>
+
+                        <!-- Author Feedback Form -->
+                        <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-4">
+                            @csrf
+                            <input type="hidden" name="visibility" value="author">
+
+                            <div>
+                                <label class="form-label text-xs">Pesan / Feedback Revisi untuk Author *</label>
+                                <textarea class="form-input min-h-24 py-2.5 text-xs" name="body" placeholder="Tulis feedback revisi atau pesan yang akan disampaikan ke author..." required></textarea>
+                            </div>
+
+                            <!-- Interactive CC Tag Input -->
+                            <div x-data="{
+                                ccInput: '',
+                                tags: @js(old('cc') ? array_values(array_filter(preg_split('/[,;\s]+/', old('cc')))) : $defaultCc),
+                                addTag() {
+                                    let val = this.ccInput.trim().replace(/,$/, '');
+                                    if (val && !this.tags.includes(val)) {
+                                        this.tags.push(val);
+                                    }
+                                    this.ccInput = '';
+                                },
+                                removeTag(index) {
+                                    this.tags.splice(index, 1);
+                                }
+                            }" class="min-w-0">
+                                <label class="form-label text-xs mb-1 block">CC Email (Ketik email lalu tekan koma / Enter)</label>
+                                <input type="hidden" name="cc" :value="tags.join(',')">
+                                <div class="flex flex-wrap items-center gap-1.5 rounded-xl border border-navy/20 bg-white p-2 min-h-11 focus-within:ring-2 focus-within:ring-orange max-w-full">
+                                    <template x-for="(tag, index) in tags" :key="index">
+                                        <span class="inline-flex items-center gap-1 rounded-lg bg-navy text-white px-2 py-0.5 text-xs font-bold shadow-sm max-w-full truncate">
+                                            <span x-text="tag" class="truncate"></span>
+                                            <button type="button" @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0">&times;</button>
+                                        </span>
+                                    </template>
+                                    <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[120px]"
+                                           x-model="ccInput"
+                                           @keydown.comma.prevent="addTag()"
+                                           @keydown.enter.prevent="addTag()"
+                                           @blur="addTag()"
+                                           placeholder="Ketik email CC...">
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
+                                <button type="submit" name="send_email" value="1" class="btn btn-primary px-4 py-2 text-xs font-extrabold flex items-center justify-center gap-1.5 w-full sm:w-auto">
+                                    📧 Kirim lewat Email
+                                </button>
+
+                                @if($whatsappUrl)
+                                    <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center">
+                                        📱 Kirim lewat WhatsApp ↗
+                                    </a>
+                                @endif
+                            </div>
+                        </form>
+                    </div>
+                </details>
             @endcan
 
-            <!-- File Versioning Section -->
-            <section class="card overflow-hidden max-w-full min-w-0">
-                <div class="p-4 sm:p-6 border-b border-navy/8">
-                    <h2 class="text-base sm:text-lg font-black text-navy">Versioning file</h2>
-                </div>
+            <!-- 3. File Versioning Section (Accordion) -->
+            <details class="card overflow-hidden max-w-full min-w-0" open>
+                <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-base sm:text-lg">📁</span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm sm:text-base font-black text-navy">Versioning File &amp; Lampiran Berkas</h2>
+                            <p class="text-[11px] text-muted font-normal truncate">Riwayat naskah (.docx/.zip) dan PDF Petunjuk Revisi.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="badge badge-primary text-[10px]">{{ $submission->files->count() }} file</span>
+                        <span class="text-xs text-muted">▼</span>
+                    </div>
+                </summary>
                 <div class="overflow-x-auto min-w-0 max-w-full">
                     <table class="data-table min-w-[560px]">
                         <thead>
