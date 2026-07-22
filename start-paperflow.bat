@@ -60,27 +60,22 @@ pause
 exit /b 0
 
 :detect_php
-if exist "C:\laragon\bin\php" (
-    for /d %%D in ("C:\laragon\bin\php\php-*") do if exist "%%D\php.exe" set "PATH=%%D;%PATH%"
+for %%D in (C D E F) do (
+    if exist "%%D:\laragon\bin\php" (
+        for /d %%F in ("%%D:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
+    )
+    if exist "%%D:\xampp\php\php.exe" set "PATH=%%D:\xampp\php;%PATH%"
+    if exist "%%D:\php\php.exe" set "PATH=%%D:\php;%PATH%"
 )
-if exist "D:\laragon\bin\php" (
-    for /d %%D in ("D:\laragon\bin\php\php-*") do if exist "%%D\php.exe" set "PATH=%%D;%PATH%"
-)
-if exist "C:\xampp\php\php.exe" set "PATH=C:\xampp\php;%PATH%"
-if exist "D:\xampp\php\php.exe" set "PATH=D:\xampp\php;%PATH%"
-if exist "C:\php\php.exe" set "PATH=C:\php;%PATH%"
-if exist "D:\php\php.exe" set "PATH=D:\php;%PATH%"
 goto :eof
 
 :detect_node
-if exist "C:\laragon\bin\nodejs" (
-    for /d %%D in ("C:\laragon\bin\nodejs\node-*") do if exist "%%D\node.exe" set "PATH=%%D;%PATH%"
+for %%D in (C D E F) do (
+    if exist "%%D:\laragon\bin\nodejs" (
+        for /d %%F in ("%%D:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
+    )
+    if exist "%%D:\Program Files\nodejs\node.exe" set "PATH=%%D:\Program Files\nodejs;%PATH%"
 )
-if exist "D:\laragon\bin\nodejs" (
-    for /d %%D in ("D:\laragon\bin\nodejs\node-*") do if exist "%%D\node.exe" set "PATH=%%D;%PATH%"
-)
-if exist "C:\Program Files\nodejs\node.exe" set "PATH=C:\Program Files\nodejs;%PATH%"
-if exist "D:\Program Files\nodejs\node.exe" set "PATH=D:\Program Files\nodejs;%PATH%"
 goto :eof
 
 :err_no_php
