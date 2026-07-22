@@ -8,7 +8,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
             @php
-                $portalToken = $submission->getSafeAuthorToken() ?: $submission->id;
+                $portalToken = $submission->ensureValidAuthorToken();
             @endphp
             <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs inline-flex items-center gap-1.5 shadow-sm hover:border-orange hover:text-orange" title="Tinjau tampilan portal seperti yang dilihat oleh Author">
                 <span>👁️</span> Buka Portal Author ↗
@@ -173,7 +173,7 @@
 
             @can('editorialReview', $submission)
                 <!-- 1. Catatan Internal (Accordion) -->
-                <details class="card overflow-hidden border-l-4 border-l-navy bg-slate-50/50 max-w-full min-w-0" open>
+                <details class="card overflow-hidden border-l-4 border-l-navy bg-slate-50/50 max-w-full min-w-0">
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-100/70 hover:bg-slate-200/60 transition select-none">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="text-base sm:text-lg">🔒</span>
@@ -218,7 +218,7 @@
                 </details>
 
                 <!-- 2. Komunikasi & Feedback untuk Author (Accordion) -->
-                <details class="card overflow-hidden border-l-4 border-l-orange bg-amber-50/20 max-w-full min-w-0" open>
+                <details class="card overflow-hidden border-l-4 border-l-orange bg-amber-50/20 max-w-full min-w-0">
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-amber-100/50 hover:bg-amber-100/80 transition select-none">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="text-base sm:text-lg">📩</span>
@@ -314,7 +314,7 @@
             @endcan
 
             <!-- 3. File Versioning Section (Accordion) -->
-            <details class="card overflow-hidden max-w-full min-w-0" open>
+            <details class="card overflow-hidden max-w-full min-w-0">
                 <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
                     <div class="flex items-center gap-2 min-w-0">
                         <span class="text-base sm:text-lg">📁</span>

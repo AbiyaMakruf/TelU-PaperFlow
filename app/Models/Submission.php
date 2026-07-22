@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Submission extends Model
 {
@@ -67,6 +68,29 @@ class Submission extends Model
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    public function ensureValidAuthorToken(): string
+    {
+        try {
+            $existing = $this->author_token_encrypted;
+            if (is_string($existing)
+                && $this->author_token_expires_at?->isFuture()
+                && hash_equals((string) $this->author_token_hash, hash('sha256', $existing))) {
+                return $existing;
+            }
+        } catch (\Throwable) {
+            // Token from an old APP_KEY or invalid MAC is safely regenerated below.
+        }
+
+        $token = Str::random(64);
+        $this->update([
+            'author_token_hash' => hash('sha256', $token),
+            'author_token_encrypted' => $token,
+            'author_token_expires_at' => now()->addYear(),
+        ]);
+
+        return $token;
     }
 
     public function authors(): HasMany
