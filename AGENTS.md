@@ -112,11 +112,11 @@ Never make the Supabase bucket public. Never expose `SUPABASE_SECRET_KEY`, datab
 
 The public form uses:
 
-- A built-in arithmetic CAPTCHA stored in the session
+- Cloudflare Turnstile checkbox CAPTCHA with mandatory server-side Siteverify validation when configured
 - Named rate limiter `public-submission`: 5/minute and 40/day per IP
 - File MIME/extension and size validation from conference settings
 
-Other named limiters protect author revision, staff email actions, and file downloads. CAPTCHA can be controlled with `PAPERFLOW_CAPTCHA_ENABLED`; tests disable it explicitly.
+Other named limiters protect author revision, staff email actions, and file downloads. Turnstile uses `TURNSTILE_ENABLED`, `TURNSTILE_SITE_KEY`, and `TURNSTILE_SECRET_KEY`; when credentials are absent it is disabled so local development remains usable.
 
 ## Email design and queue
 
@@ -126,6 +126,10 @@ Conference email is created by `ConferenceMailer`, logged in `email_logs`, queue
 - `resources/views/emails/paperflow-text.blade.php`
 
 Email is HTML-first with a plain-text fallback. It uses the conference sender name, primary/accent colors, and optional logo. Password-reset and SMTP diagnostic messages use the same Paperflow design.
+
+Conference Admin can preview edited templates live and queue a test-send before saving. Conference-level and template-level default CC recipients appear in the editorial composer but remain removable. Email logs persist the rendered body and sender user: Conference Admin sees conference email, superadmin sees all email, and Editorial sees only email they sent. Failed email with a stored body can be re-sent from monitoring or the paper history.
+
+Audit logs are restricted to superadmin and active Conference Admin memberships. Staff profiles store editable name, email, WhatsApp country code/number, committee role, and affiliation. These fields populate email signatures and WhatsApp contact links. The paper page provides an Editorial WhatsApp action whose message is prefilled from outstanding checklist items. Author and staff phone numbers are normalized from an international country-code selector.
 
 The sender address remains the global Gmail address; Conference Admin changes only the display name. Queue workers must be restarted after mail code/config changes:
 
@@ -156,6 +160,7 @@ Laravel migrations in `database/migrations` are the source of truth. Latest appl
 - `2026_07_21_001200_add_duplicate_check_and_bulk_reassignment_fields.php`
 - `2026_07_21_001300_update_editorial_checklist_items_to_ieee.php`
 - `2026_07_21_001400_add_pdf_express_and_revision_guidance_fields.php`
+- `2026_07_22_000100_add_staff_profiles_and_email_ownership.php`
 
 Application tables are server-only. RLS is enabled without anon/authenticated policies because the browser does not use Supabase Data API for these tables. Laravel connects with the server database role.
 
@@ -196,10 +201,10 @@ php artisan migrate --force
 
 Current baseline:
 
-- **47 tests**
-- **227 assertions**
+- **52 tests**
+- **252 assertions**
 - Production Vite build passes
-- Supabase migration `001400` is applied
+- Supabase migration `2026_07_22_000100_add_staff_profiles_and_email_ownership` is batch 11 / Ran
 
 ## Git workflow
 

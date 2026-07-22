@@ -112,7 +112,7 @@
                         <!-- Interactive CC Tag Input -->
                         <div x-data="{
                             ccInput: '',
-                            tags: {{ json_encode(array_values(array_filter(explode(',', old('cc', ''))))) }},
+                            tags: @js(old('cc') ? array_values(array_filter(preg_split('/[,;\s]+/', old('cc')))) : $defaultCc),
                             addTag() {
                                 let val = this.ccInput.trim().replace(/,$/, '');
                                 if (val && !this.tags.includes(val)) {
@@ -145,6 +145,7 @@
                         <label class="check-row sm:col-span-2"><input type="checkbox" name="send_email" value="1"><span>Kirim email ke author (hanya untuk feedback author)</span></label>
                         <button class="btn btn-secondary sm:col-span-2">Simpan feedback</button>
                     </form>
+                    @if($whatsappUrl)<a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn mt-4 w-full bg-[#25D366] text-white hover:bg-[#1faa52]">Hubungi author via WhatsApp</a><p class="mt-2 text-xs text-muted">Pesan WhatsApp otomatis memuat item checklist yang belum sesuai. Periksa kembali sebelum mengirim.</p>@endif
                 </section>
             @endcan
 
@@ -271,7 +272,36 @@
                 @can('assign',$submission)<div class="mt-5 border-t border-navy/10 pt-5"><form method="POST" action="{{ route('submissions.advance',$submission) }}" class="space-y-2">@csrf<input type="hidden" name="action" value="reject"><input class="form-input" name="note" placeholder="Alasan reject" required><button class="btn btn-secondary w-full">Reject paper</button></form><form method="POST" action="{{ route('submissions.advance',$submission) }}" class="mt-3 space-y-2">@csrf<input type="hidden" name="action" value="withdraw"><input class="form-input" name="note" placeholder="Alasan withdraw" required><button class="btn btn-secondary w-full">Withdraw paper</button></form></div>@endcan
             </div></section>
 
-            <section class="card p-6"><h2 class="font-black text-navy">Riwayat email</h2><div class="mt-4 space-y-3">@forelse($submission->emailLogs as $email)<div class="rounded-xl bg-warm p-4"><div class="flex justify-between"><strong>{{ $email->subject }}</strong><span class="badge {{ $email->status==='sent'?'badge-success':($email->status==='failed'?'badge-danger':'badge-warning') }}">{{ $email->status }}</span></div><p class="mt-1 text-xs text-muted">Ke {{ $email->recipient }} &middot; {{ $email->created_at->format('d M H:i') }}</p>@if($email->error)<p class="mt-2 text-xs text-danger">{{ Str::limit($email->error,180) }}</p>@endif</div>@empty<p class="text-sm text-muted">Belum ada email.</p>@endforelse</div></section>
+            @if($emailLogs->isNotEmpty() || app(\App\Services\VisibleEmailLogs::class)->canAccess(auth()->user()))
+                <section class="card p-6">
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="font-black text-navy">Riwayat email</h2>
+                        <a class="text-xs font-bold text-orange" href="{{ route('emails.index') }}">Monitoring</a>
+                    </div>
+                    <div class="mt-4 space-y-3">
+                        @forelse($emailLogs as $email)
+                            <div class="rounded-xl bg-warm p-4">
+                                <div class="flex justify-between gap-3">
+                                    <strong>{{ $email->subject }}</strong>
+                                    <span class="badge {{ $email->status === 'sent' ? 'badge-success' : ($email->status === 'failed' ? 'badge-danger' : 'badge-warning') }}">{{ $email->status }}</span>
+                                </div>
+                                <p class="mt-1 text-xs text-muted">Ke {{ $email->recipient }} &middot; {{ $email->created_at->format('d M H:i') }}</p>
+                                @if($email->error)
+                                    <p class="mt-2 text-xs text-danger">{{ Str::limit($email->error, 180) }}</p>
+                                @endif
+                                @if($email->status === 'failed' && $email->body)
+                                    <form class="mt-3" method="POST" action="{{ route('emails.resend', $email) }}">
+                                        @csrf
+                                        <button class="btn btn-secondary px-3 py-2 text-xs">Re-send</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @empty
+                            <p class="text-sm text-muted">Belum ada email yang dapat Anda lihat.</p>
+                        @endforelse
+                    </div>
+                </section>
+            @endif
 
             <section class="card p-6"><h2 class="font-black text-navy">Timeline status</h2><ol class="mt-5 space-y-5 border-l-2 border-navy/10 pl-5">@foreach($submission->statusHistory as $history)<li><span class="-ml-[27px] mr-3 inline-block size-3 rounded-full bg-orange ring-4 ring-warm"></span><span class="text-sm font-bold text-navy">{{ $history->to_status->label() }}</span><p class="mt-1 text-xs text-muted">{{ $history->actor?->name ?? 'Sistem' }} &middot; {{ $history->created_at->format('d M H:i') }}</p>@if($history->note)<p class="mt-1 text-xs">{{ Str::limit($history->note, 100) }}</p>@endif</li>@endforeach</ol></section>
         </aside>

@@ -30,6 +30,7 @@ class PublicSubmissionTest extends TestCase
             'title' => 'A Reliable Paper Workflow',
             'author_name' => 'Rani Author',
             'author_email' => 'rani@example.com',
+            'author_phone_country_code' => '+62',
             'author_phone' => '08123456789',
             'answers' => ['affiliation' => 'Telkom University'],
             'co_authors' => [['name' => 'Co Author', 'email' => 'co@example.com', 'affiliation' => 'Telkom University']],
@@ -61,6 +62,37 @@ class PublicSubmissionTest extends TestCase
         $this->get(route('public.submission.show', $conference->slug))->assertNotFound();
     }
 
+    public function test_enabled_turnstile_is_verified_on_cloudflare_before_submission(): void
+    {
+        Storage::fake('local');
+        [$conference] = $this->openConference();
+        config([
+            'paperflow.turnstile.enabled' => true,
+            'paperflow.turnstile.site_key' => 'site-key',
+            'paperflow.turnstile.secret_key' => 'secret-key',
+        ]);
+        Http::fake([
+            'challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response(['success' => false, 'error-codes' => ['invalid-input-response']]),
+        ]);
+
+        $this->from(route('public.submission.show', $conference))->post(route('public.submission.store', $conference), [
+            'paper_id' => '15700009',
+            'title' => 'Protected Paper',
+            'author_name' => 'International Author',
+            'author_email' => 'author@example.com',
+            'author_phone_country_code' => '+63',
+            'author_phone' => '09171234567',
+            'answers' => ['affiliation' => 'University'],
+            'cf-turnstile-response' => 'invalid-token',
+            'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        ])->assertRedirect(route('public.submission.show', $conference))->assertSessionHasErrors('turnstile');
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+            && $request['secret'] === 'secret-key'
+            && $request['response'] === 'invalid-token');
+        $this->assertDatabaseCount('submissions', 0);
+    }
+
     public function test_conference_slug_is_landing_page_and_submit_has_its_own_url(): void
     {
         [$conference] = $this->openConference();
@@ -78,7 +110,7 @@ class PublicSubmissionTest extends TestCase
         $this->fakeGoogleDrive($conference);
 
         $this->post(route('public.submission.store', $conference), [
-            'paper_id' => '15700002', 'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com', 'author_phone' => '08123456789',
+            'paper_id' => '15700002', 'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com', 'author_phone_country_code' => '+62', 'author_phone' => '08123456789',
             'answers' => ['affiliation' => 'Telkom University'],
             'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         ])->assertRedirect();
@@ -95,7 +127,7 @@ class PublicSubmissionTest extends TestCase
         $this->fakeGoogleDrive($conference, false);
 
         $this->from(route('public.submission.show', $conference))->post(route('public.submission.store', $conference), [
-            'paper_id' => '15700003', 'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com', 'author_phone' => '08123456789',
+            'paper_id' => '15700003', 'title' => 'Drive Paper', 'author_name' => 'Rani', 'author_email' => 'rani@example.com', 'author_phone_country_code' => '+62', 'author_phone' => '08123456789',
             'answers' => ['affiliation' => 'Telkom University'],
             'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         ])->assertRedirect(route('public.submission.show', $conference))->assertSessionHasErrors('paper_file');

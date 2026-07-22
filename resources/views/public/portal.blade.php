@@ -58,9 +58,13 @@
                                 <input class="form-input" type="email" name="author_email" value="{{ old('author_email', $submission->corresponding_author_email) }}" required>
                             </div>
                         </div>
+                        @php
+                            $selectedPhoneCode = collect(array_keys($countryCodes))->sortByDesc(fn($code)=>strlen($code))->first(fn($code)=>str_starts_with($submission->corresponding_author_phone ?? '',$code)) ?? '+62';
+                            $nationalPhone = ltrim(substr($submission->corresponding_author_phone ?? '',strlen($selectedPhoneCode)),'0');
+                        @endphp
                         <div>
                             <label class="form-label">Nomor Telepon/WA *</label>
-                            <input class="form-input" name="author_phone" value="{{ old('author_phone', $submission->corresponding_author_phone) }}" required>
+                            <div class="grid grid-cols-[minmax(0,1.25fr)_minmax(0,1.75fr)] gap-2"><select class="form-input px-2" name="author_phone_country_code" required>@foreach($countryCodes as $code=>$label)<option value="{{ $code }}" @selected(old('author_phone_country_code',$selectedPhoneCode)===$code)>{{ $label }}</option>@endforeach</select><input class="form-input" name="author_phone" value="{{ old('author_phone',$nationalPhone) }}" required></div>
                         </div>
 
                         <!-- Co-authors list editor -->

@@ -7,12 +7,14 @@ use App\Models\FileVersion;
 use App\Models\Submission;
 use App\Models\UploadAttempt;
 use App\Services\ConferenceFileStorage;
+use App\Services\PhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -34,7 +36,7 @@ class AuthorPortalController extends Controller
         $latestCycle = $submission->reviewCycles->first();
         $checklistResults = $latestCycle?->results->keyBy('checklist_item_id') ?? collect();
 
-        return view('public.portal', compact('submission', 'token', 'checklistResults'));
+        return view('public.portal', ['submission' => $submission, 'token' => $token, 'checklistResults' => $checklistResults, 'countryCodes' => config('country-codes')]);
     }
 
     public function uploadRevision(Request $request, string $token, ConferenceFileStorage $storage): RedirectResponse
@@ -158,7 +160,8 @@ class AuthorPortalController extends Controller
             'title' => ['required', 'string', 'max:500'],
             'author_name' => ['required', 'string', 'max:255'],
             'author_email' => ['required', 'email:rfc', 'max:255'],
-            'author_phone' => ['required', 'string', 'max:50'],
+            'author_phone_country_code' => ['required', Rule::in(array_keys(config('country-codes')))],
+            'author_phone' => ['required', 'string', 'max:32', 'regex:/^[0-9\s().-]+$/'],
             'co_authors' => ['nullable', 'array', 'max:30'],
             'co_authors.*.name' => ['required', 'string', 'max:255'],
             'co_authors.*.email' => ['nullable', 'email:rfc', 'max:255'],
@@ -170,7 +173,7 @@ class AuthorPortalController extends Controller
                 'title' => $validated['title'],
                 'corresponding_author_name' => $validated['author_name'],
                 'corresponding_author_email' => Str::lower($validated['author_email']),
-                'corresponding_author_phone' => $validated['author_phone'],
+                'corresponding_author_phone' => PhoneNumber::normalize($validated['author_phone_country_code'], $validated['author_phone']),
             ]);
 
             $submission->authors()->delete();

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conference;
+use App\Models\EmailTemplate;
 use App\Services\AuditLogger;
+use App\Services\ConferenceMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -23,6 +25,7 @@ class EmailTemplateController extends Controller
         $this->authorize('update', $conference);
         $validated = $request->validate([
             'email_sender_name' => ['nullable', 'string', 'max:255'],
+            'conference_default_cc' => ['nullable', 'string', 'max:2000'],
             'templates' => ['required', 'array'],
             'templates.*.subject' => ['required', 'string', 'max:500'],
             'templates.*.body' => ['required', 'string', 'max:20000'],
@@ -30,10 +33,13 @@ class EmailTemplateController extends Controller
             'templates.*.is_enabled' => ['nullable', 'boolean'],
         ]);
 
+        $settings = $conference->settings ?? [];
+        $settings['default_cc'] = $this->emails($validated['conference_default_cc'] ?? '');
         $conference->update([
             'email_sender_name' => filled($validated['email_sender_name'] ?? null)
                 ? trim($validated['email_sender_name'])
                 : null,
+            'settings' => $settings,
         ]);
 
         foreach ($conference->emailTemplates as $template) {
@@ -41,8 +47,7 @@ class EmailTemplateController extends Controller
             if (! $input) {
                 continue;
             }
-            $cc = collect(preg_split('/[,;\s]+/', $input['default_cc'] ?? ''))
-                ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))->values()->all();
+            $cc = $this->emails($input['default_cc'] ?? '');
             $template->update([
                 'subject' => $input['subject'],
                 'body' => $input['body'],
@@ -53,5 +58,30 @@ class EmailTemplateController extends Controller
         $audit->record('conference.email_templates_updated', $conference, $conference);
 
         return back()->with('success', 'Template email berhasil diperbarui.');
+    }
+
+    public function testSend(Request $request, Conference $conference, ConferenceMailer $mailer): RedirectResponse
+    {
+        $this->authorize('update', $conference);
+        $validated = $request->validate([
+            'test_template_id' => ['required', 'string'], 'test_recipients' => ['required', 'array'],
+            'test_recipients.*' => ['nullable', 'email:rfc'],
+            'templates' => ['required', 'array'], 'templates.*.subject' => ['required', 'string', 'max:500'],
+            'templates.*.body' => ['required', 'string', 'max:20000'], 'templates.*.default_cc' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $template = EmailTemplate::where('conference_id', $conference->id)->findOrFail($validated['test_template_id']);
+        $recipient = $request->validate([
+            "test_recipients.{$template->id}" => ['required', 'email:rfc'],
+        ])['test_recipients'][$template->id];
+        $input = $validated['templates'][$template->id] ?? abort(422);
+        $mailer->queueTest($template, $recipient, $request->user(), $input['subject'], $input['body'], $this->emails($input['default_cc'] ?? ''));
+
+        return back()->with('success', 'Test email dimasukkan ke antrean. Pantau statusnya di Monitoring Email.');
+    }
+
+    /** @return list<string> */
+    private function emails(string $value): array
+    {
+        return collect(preg_split('/[,;\s]+/', $value))->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))->unique()->values()->all();
     }
 }

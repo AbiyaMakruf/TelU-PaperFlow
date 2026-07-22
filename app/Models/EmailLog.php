@@ -12,7 +12,7 @@ class EmailLog extends Model
 
     protected $fillable = [
         'conference_id', 'submission_id', 'template_key', 'recipient', 'cc', 'subject',
-        'status', 'attempts', 'error', 'sent_at', 'sender_name',
+        'status', 'attempts', 'error', 'sent_at', 'sender_name', 'sender_user_id', 'body',
     ];
 
     protected function casts(): array
@@ -28,5 +28,10 @@ class EmailLog extends Model
     public function submission(): BelongsTo
     {
         return $this->belongsTo(Submission::class);
+    }
+
+    public function sender(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sender_user_id');
     }
 }

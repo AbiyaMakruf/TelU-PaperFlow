@@ -124,4 +124,10 @@ class Conference extends Model
     {
         return isset($this->settings['brand_logo']) ? asset('storage/'.$this->settings['brand_logo']) : null;
     }
+
+    /** @return list<string> */
+    public function defaultCc(): array
+    {
+        return array_values(array_filter($this->settings['default_cc'] ?? [], fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL)));
+    }
 }

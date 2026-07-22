@@ -14,7 +14,9 @@ use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceMailer;
+use App\Services\PhoneNumber;
 use App\Services\SubmissionWorkflow;
+use App\Services\VisibleEmailLogs;
 use App\Services\VisibleSubmissions;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
@@ -78,17 +80,30 @@ class SubmissionController extends Controller
         return view('submissions.index', compact('submissions', 'conferences', 'staff'));
     }
 
-    public function show(Submission $submission): View
+    public function show(Submission $submission, VisibleEmailLogs $visibleEmailLogs): View
     {
         $this->authorize('view', $submission);
         $submission->load([
             'conference', 'authors', 'editor', 'reviewer', 'files.uploader', 'feedback.author',
-            'statusHistory.actor', 'reviewCycles.template.items', 'reviewCycles.results', 'emailLogs', 'uploadAttempts.user',
+            'statusHistory.actor', 'reviewCycles.template.items', 'reviewCycles.results', 'uploadAttempts.user',
         ]);
         $editors = $submission->conference->memberships()->with('user')->where('role', ConferenceRole::Editorial)->where('is_active', true)->get();
         $reviewers = $submission->conference->memberships()->with('user')->where('role', ConferenceRole::Reviewer)->where('is_active', true)->get();
+        $emailLogs = $visibleEmailLogs->canAccess(request()->user())
+            ? $visibleEmailLogs->for(request()->user())->where('submission_id', $submission->id)->latest()->get()
+            : collect();
+        $revisionTemplate = $submission->conference->emailTemplates()->where('key', 'revision_requested')->first();
+        $defaultCc = array_values(array_unique([...$submission->conference->defaultCc(), ...($revisionTemplate?->default_cc ?? [])]));
+        $editorialCycle = $submission->reviewCycles->where('stage', ReviewStage::Editorial)->sortByDesc('cycle_number')->first();
+        $unchecked = $editorialCycle?->template?->items?->filter(function ($item) use ($editorialCycle) {
+            return ! $editorialCycle->results->firstWhere('checklist_item_id', $item->id)?->is_checked;
+        })->map(fn ($item) => '• '.$item->title.($item->description ? ': '.$item->description : ''))->values() ?? collect();
+        $whatsappText = "Dear {$submission->corresponding_author_name},\n\nThis is {$submission->editor?->name} from the {$submission->conference->name} Publication Committee. Please address the following manuscript revisions:\n\n".($unchecked->isNotEmpty() ? $unchecked->implode("\n\n") : 'Please review the feedback available in your Paperflow author portal.')."\n\nPaper: {$submission->paper_id} - {$submission->title}\nThank you.";
+        $whatsappUrl = PhoneNumber::whatsappDigits($submission->corresponding_author_phone)
+            ? 'https://wa.me/'.PhoneNumber::whatsappDigits($submission->corresponding_author_phone).'?text='.rawurlencode($whatsappText)
+            : null;
 
-        return view('submissions.show', compact('submission', 'editors', 'reviewers'));
+        return view('submissions.show', compact('submission', 'editors', 'reviewers', 'emailLogs', 'defaultCc', 'whatsappUrl'));
     }
 
     public function accept(Request $request, Submission $submission, SubmissionWorkflow $workflow): RedirectResponse
@@ -370,7 +385,7 @@ class SubmissionController extends Controller
             $mailer->queue($submission->load('conference'), 'revision_requested', [
                 'feedback' => $feedback->body,
                 'portal_url' => route('author.portal', $this->authorToken($submission)),
-            ], $cc);
+            ], $cc, $request->user(), true);
         }
 
         return back()->with('success', 'Feedback tersimpan.');

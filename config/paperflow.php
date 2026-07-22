@@ -2,5 +2,9 @@
 
 return [
     'demo_password' => env('PAPERFLOW_DEMO_PASSWORD'),
-    'captcha_enabled' => env('PAPERFLOW_CAPTCHA_ENABLED', true),
+    'turnstile' => [
+        'enabled' => env('TURNSTILE_ENABLED', false),
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+    ],
 ];

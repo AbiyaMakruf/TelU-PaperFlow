@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\ConferenceRole;
 use App\Notifications\PaperflowResetPassword;
+use App\Services\PhoneNumber;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -32,6 +33,10 @@ class User extends Authenticatable
         'is_active',
         'must_change_password',
         'locale',
+        'whatsapp_country_code',
+        'whatsapp_number',
+        'job_title',
+        'affiliation',
     ];
 
     /**
@@ -97,5 +102,14 @@ class User extends Authenticatable
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new PaperflowResetPassword($token));
+    }
+
+    public function whatsapp(): ?string
+    {
+        if (! $this->whatsapp_country_code || ! $this->whatsapp_number) {
+            return null;
+        }
+
+        return PhoneNumber::normalize($this->whatsapp_country_code, $this->whatsapp_number);
     }
 }

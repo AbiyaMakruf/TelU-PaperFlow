@@ -1,4 +1,5 @@
 <x-layouts.public :title="$conference->name">
+    @if($turnstileEnabled)<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>@endif
     <div class="mx-auto max-w-4xl" style="--brand-primary:{{ $conference->brandPrimary() }};--brand-accent:{{ $conference->brandAccent() }}">
         <div class="mb-8">
             @if($conference->brandLogoUrl())<img class="mb-5 max-h-20 max-w-56" src="{{ $conference->brandLogoUrl() }}" alt="Logo {{ $conference->name }}">@endif
@@ -26,7 +27,7 @@
                 <label class="sm:col-span-2"><span class="form-label">Judul paper *</span><input class="form-input" name="title" value="{{ old('title') }}" required></label>
                 <label><span class="form-label">Corresponding author *</span><input class="form-input" name="author_name" value="{{ old('author_name') }}" required></label>
                 <label><span class="form-label">Email author *</span><input class="form-input" type="email" name="author_email" value="{{ old('author_email') }}" required></label>
-                <label><span class="form-label">Nomor handphone *</span><input class="form-input" type="tel" name="author_phone" value="{{ old('author_phone') }}" required></label>
+                <div><span class="form-label">Nomor handphone / WhatsApp *</span><div class="grid grid-cols-[minmax(0,1.25fr)_minmax(0,1.75fr)] gap-2"><select class="form-input px-2" name="author_phone_country_code" required>@foreach($countryCodes as $code=>$label)<option value="{{ $code }}" @selected(old('author_phone_country_code','+62')===$code)>{{ $label }}</option>@endforeach</select><input class="form-input" type="tel" name="author_phone" value="{{ old('author_phone') }}" placeholder="81234567890" required></div></div>
             </div>
 
             <div class="my-8 border-t border-navy/10"></div>
@@ -76,7 +77,7 @@
             @endif
 
             <div class="my-8 border-t border-navy/10"></div>
-            @if($captchaQuestion)<label class="mb-5 block"><span class="form-label">Verifikasi keamanan: berapa {{ $captchaQuestion }}? *</span><input class="form-input" type="number" name="captcha_answer" required></label>@endif
+            @if($turnstileEnabled)<div class="mb-5"><span class="form-label">Verifikasi keamanan *</span><div class="cf-turnstile" data-sitekey="{{ config('paperflow.turnstile.site_key') }}" data-action="paper_submission" data-appearance="always" data-theme="light"></div></div>@endif
             <label><span class="form-label">File editable paper *</span><input class="form-input py-3" type="file" name="paper_file" accept=".docx,.zip" required><span class="mt-2 block text-xs leading-5 text-muted">Upload file yang masih dapat diedit: <strong>.docx</strong> untuk Microsoft Word atau <strong>.zip</strong> yang berisi seluruh source LaTeX beserta gambar/bibliography. Jangan upload PDF saja. Maksimal {{ $conference->maxFileSizeMb() }} MB.</span></label>
             <div class="mt-8 flex flex-col gap-4 border-t border-navy/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs text-muted">File disimpan privat dan hanya dapat diakses pihak berwenang.</p>

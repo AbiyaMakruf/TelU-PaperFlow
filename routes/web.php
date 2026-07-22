@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ConferenceStatus;
+use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -14,11 +15,13 @@ use App\Http\Controllers\ConferenceLandingController;
 use App\Http\Controllers\ConferenceMemberController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EditorPerformanceController;
+use App\Http\Controllers\EmailMonitoringController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\FormBuilderController;
 use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicSubmissionController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SubmissionExportController;
@@ -49,6 +52,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/change-password', [PasswordChangeController::class, 'edit'])->name('password.change.edit');
     Route::put('/change-password', [PasswordChangeController::class, 'update'])->name('password.change.update');
     Route::post('/workspace/switch', [WorkspaceController::class, 'switch'])->name('workspace.switch');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -56,6 +61,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::get('/notifications/{notification}', [NotificationController::class, 'read'])->name('notifications.read');
         Route::get('/audit-logs', AuditLogController::class)->name('audit.index');
+        Route::get('/email-monitoring', [EmailMonitoringController::class, 'index'])->name('emails.index');
+        Route::post('/email-monitoring/{emailLog}/resend', [EmailMonitoringController::class, 'resend'])->name('emails.resend');
         Route::get('/editor-performance', EditorPerformanceController::class)->name('editor-performance.index');
 
         Route::get('/papers', [SubmissionController::class, 'index'])->name('submissions.index');
@@ -87,6 +94,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/conferences/{conference}/checklists', [ChecklistController::class, 'update'])->name('conferences.checklists.update');
         Route::get('/conferences/{conference}/email-templates', [EmailTemplateController::class, 'edit'])->name('conferences.email-templates.edit');
         Route::put('/conferences/{conference}/email-templates', [EmailTemplateController::class, 'update'])->name('conferences.email-templates.update');
+        Route::put('/conferences/{conference}/email-templates/test', [EmailTemplateController::class, 'testSend'])->name('conferences.email-templates.test');
         Route::get('/conferences/{conference}/drive', [GoogleDriveController::class, 'show'])->name('conferences.drive.show');
         Route::put('/conferences/{conference}/storage-provider', [GoogleDriveController::class, 'updateProvider'])->name('conferences.storage-provider.update');
         Route::post('/conferences/{conference}/storage-provider/migrate', [GoogleDriveController::class, 'migrateStorage'])->name('conferences.storage-provider.migrate');
@@ -94,14 +102,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/conferences/{conference}/drive', [GoogleDriveController::class, 'disconnect'])->name('conferences.drive.disconnect');
         Route::get('/google-drive/callback', [GoogleDriveController::class, 'callback'])->name('google-drive.callback');
 
-        Route::post('/impersonate/leave', [\App\Http\Controllers\Admin\ImpersonationController::class, 'leave'])->name('impersonate.leave');
+        Route::post('/impersonate/leave', [ImpersonationController::class, 'leave'])->name('impersonate.leave');
 
         Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
             Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');
             Route::post('/monitoring/failed-jobs/{uuid}/retry', [MonitoringController::class, 'retry'])->name('monitoring.retry');
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
             Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
-            Route::post('/users/{user}/impersonate', [\App\Http\Controllers\Admin\ImpersonationController::class, 'impersonate'])->name('users.impersonate');
+            Route::post('/users/{user}/impersonate', [ImpersonationController::class, 'impersonate'])->name('users.impersonate');
         });
     });
 });

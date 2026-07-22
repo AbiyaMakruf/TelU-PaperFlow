@@ -47,7 +47,9 @@
                 <a href="{{ route('submissions.index') }}" class="nav-link {{ request()->routeIs('submissions.*') ? 'nav-link-active' : '' }}">Paper</a>
                 <a href="{{ route('conferences.index') }}" class="nav-link {{ request()->routeIs('conferences.*') ? 'nav-link-active' : '' }}">Conference</a>
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}">Performa editor</a>
-                <a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}">Audit log</a>
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())<a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}">Audit log</a>@endif
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->whereIn('role',[\App\Enums\ConferenceRole::Admin,\App\Enums\ConferenceRole::Editorial])->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}">Monitoring email</a>@endif
+                <a href="{{ route('profile.edit') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'nav-link-active' : '' }}">Profil saya</a>
                 @if(auth()->user()->isSuperAdmin())
                     <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}">Pengguna</a>
                     <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') ? 'nav-link-active' : '' }}">Monitoring</a>
@@ -62,7 +64,9 @@
                 <a href="{{ route('submissions.index') }}" class="nav-link {{ request()->routeIs('submissions.*') ? 'nav-link-active' : '' }}"><span class="text-xs">PF</span><span>Paper</span></a>
                 <a href="{{ route('conferences.index') }}" class="nav-link {{ request()->routeIs('conferences.*') ? 'nav-link-active' : '' }}"><span class="text-xs">CF</span><span>Conference</span></a>
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}"><span class="text-xs">ST</span><span>Performa editor</span></a>
-                <a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}"><span class="text-xs">AU</span><span>Audit log</span></a>
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())<a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}"><span class="text-xs">AU</span><span>Audit log</span></a>@endif
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->whereIn('role',[\App\Enums\ConferenceRole::Admin,\App\Enums\ConferenceRole::Editorial])->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}"><span class="text-xs">EM</span><span>Monitoring email</span></a>@endif
+                <a href="{{ route('profile.edit') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'nav-link-active' : '' }}"><span class="text-xs">PR</span><span>Profil saya</span></a>
                 @if(auth()->user()->isSuperAdmin())
                     <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}"><span class="text-xs">US</span><span>Pengguna</span></a>
                     <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') ? 'nav-link-active' : '' }}"><span class="text-xs">MO</span><span>Monitoring</span></a>

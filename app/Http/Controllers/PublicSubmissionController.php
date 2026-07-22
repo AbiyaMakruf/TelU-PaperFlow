@@ -7,6 +7,9 @@ use App\Models\Conference;
 use App\Models\Submission;
 use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceMailer;
+use App\Services\DuplicateSubmissionDetector;
+use App\Services\PhoneNumber;
+use App\Services\TurnstileVerifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,22 +21,16 @@ use Throwable;
 
 class PublicSubmissionController extends Controller
 {
-    public function show(Conference $conference, ConferenceFileStorage $storage): View
+    public function show(Conference $conference, ConferenceFileStorage $storage, TurnstileVerifier $turnstile): View
     {
         abort_unless($conference->isSubmissionOpen(), 404);
         $form = $conference->publishedForm();
         abort_unless($form, 404);
 
-        if (config('paperflow.captcha_enabled')) {
-            $a = random_int(2, 9);
-            $b = random_int(1, 9);
-            session(['submission_captcha' => $a + $b]);
-        }
-
-        return view('public.submit', ['conference' => $conference, 'form' => $form, 'storageReady' => $storage->ready($conference), 'captchaQuestion' => isset($a) ? "{$a} + {$b}" : null]);
+        return view('public.submit', ['conference' => $conference, 'form' => $form, 'storageReady' => $storage->ready($conference), 'turnstileEnabled' => $turnstile->enabled(), 'countryCodes' => config('country-codes')]);
     }
 
-    public function store(Request $request, Conference $conference, ConferenceFileStorage $storage, ConferenceMailer $mailer): RedirectResponse
+    public function store(Request $request, Conference $conference, ConferenceFileStorage $storage, ConferenceMailer $mailer, TurnstileVerifier $turnstile): RedirectResponse
     {
         abort_unless($conference->isSubmissionOpen(), 404);
         $form = $conference->publishedForm();
@@ -44,24 +41,24 @@ class PublicSubmissionController extends Controller
             'title' => ['required', 'string', 'max:500'],
             'author_name' => ['required', 'string', 'max:255'],
             'author_email' => ['required', 'email:rfc', 'max:255'],
-            'author_phone' => ['required', 'string', 'max:50'],
+            'author_phone_country_code' => ['required', Rule::in(array_keys(config('country-codes')))],
+            'author_phone' => ['required', 'string', 'max:32', 'regex:/^[0-9\s().-]+$/'],
             'co_authors' => ['nullable', 'array', 'max:30'],
             'co_authors.*.name' => ['required', 'string', 'max:255'],
             'co_authors.*.email' => ['nullable', 'email:rfc', 'max:255'],
             'co_authors.*.affiliation' => ['nullable', 'string', 'max:255'],
             'paper_file' => ['required', File::types(['docx', 'zip'])->max($conference->maxFileSizeMb().'mb')],
         ];
-        if (config('paperflow.captcha_enabled')) {
-            $rules['captcha_answer'] = ['required', 'integer', function ($attribute, $value, $fail) {
-                if ((int) $value !== (int) session()->pull('submission_captcha')) {
-                    $fail('Jawaban CAPTCHA tidak benar.');
-                }
-            }];
+        if ($turnstile->enabled()) {
+            $rules['cf-turnstile-response'] = ['required', 'string', 'max:2048'];
         }
         foreach (collect($form->schema)->reject(fn ($field) => $field['key'] === 'co_authors') as $field) {
             $rules['answers.'.$field['key']] = [($field['required'] ?? false) ? 'required' : 'nullable', 'string', 'max:5000'];
         }
         $validated = $request->validate($rules);
+        if (! $turnstile->verify($request, $validated['cf-turnstile-response'] ?? null)) {
+            return back()->withInput()->withErrors(['turnstile' => 'Verifikasi keamanan gagal atau kedaluwarsa. Silakan centang kembali.']);
+        }
 
         $id = (string) Str::ulid();
         $token = Str::random(64);
@@ -80,7 +77,7 @@ class PublicSubmissionController extends Controller
         }
 
         $fileHash = hash_file('sha256', $file->getRealPath());
-        $detector = app(\App\Services\DuplicateSubmissionDetector::class);
+        $detector = app(DuplicateSubmissionDetector::class);
         $duplicateWarning = $detector->check($conference, $validated['title'], $validated['author_email'], $fileHash);
 
         $submission = DB::transaction(function () use ($conference, $form, $validated, $file, $id, $token, $paperCode, $storedFile, $fileHash, $duplicateWarning) {
@@ -93,7 +90,7 @@ class PublicSubmissionController extends Controller
                 'title' => $validated['title'],
                 'corresponding_author_name' => $validated['author_name'],
                 'corresponding_author_email' => Str::lower($validated['author_email']),
-                'corresponding_author_phone' => $validated['author_phone'] ?? null,
+                'corresponding_author_phone' => PhoneNumber::normalize($validated['author_phone_country_code'], $validated['author_phone']),
                 'answers' => $validated['answers'] ?? [],
                 'status' => SubmissionStatus::Submitted,
                 'is_flagged_duplicate' => $duplicateWarning !== null,
