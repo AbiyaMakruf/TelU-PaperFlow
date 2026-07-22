@@ -2,8 +2,34 @@
 title Paperflow Ngrok Server (Mobile dan HP Compatible)
 cls
 
-:: Tambahkan path PHP dan Node.js Laragon ke PATH Windows
-set "PATH=C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64;C:\laragon\bin\nodejs\node-v22;%PATH%"
+:: Auto-detect PHP dan Node.js di Windows (Laragon, XAMPP, atau System PATH)
+where php >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    for /d %%D in ("C:\laragon\bin\php\php-*") do (
+        if exist "%%D\php.exe" set "PATH=%%D;%PATH%"
+    )
+)
+where php >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    if exist "C:\xampp\php\php.exe" set "PATH=C:\xampp\php;%PATH%"
+    if exist "C:\php\php.exe" set "PATH=C:\php;%PATH%"
+)
+
+where node >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    for /d %%D in ("C:\laragon\bin\nodejs\node-*") do (
+        if exist "%%D\node.exe" set "PATH=%%D;%PATH%"
+    )
+    if exist "C:\Program Files\nodejs\node.exe" set "PATH=C:\Program Files\nodejs;%PATH%"
+)
+
+where php >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] PHP (php.exe) tidak ditemukan di PATH sistem, Laragon, atau XAMPP.
+    echo Mohon pastikan PHP sudah terinstall atau tambahkan folder PHP ke Environment Variables.
+    pause
+    exit /b 1
+)
 
 echo ========================================================
 echo        PAPERFLOW NGROK LAUNCHER (UNTUK HP DAN LAPTOP LAIN)
