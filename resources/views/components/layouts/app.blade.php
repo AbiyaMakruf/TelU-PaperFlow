@@ -29,17 +29,52 @@
         <div x-cloak x-show="mobileMenu" x-transition.opacity class="fixed inset-0 z-40 bg-navy/55 backdrop-blur-sm lg:hidden" x-on:click="mobileMenu = false"></div>
         <aside x-cloak x-show="mobileMenu" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="fixed inset-y-0 left-0 z-50 flex w-[min(84vw,320px)] flex-col overflow-y-auto bg-navy px-5 py-6 text-white shadow-2xl lg:hidden">
             <div class="flex items-center justify-between"><x-brand class="px-2 text-white" /><button type="button" class="grid size-11 place-items-center rounded-xl bg-white/10 text-xl" x-on:click="mobileMenu = false" aria-label="Tutup menu">&times;</button></div>
-            <div class="mt-6 border-y border-white/10 py-3">
-                <span class="text-[10px] font-black uppercase tracking-wider text-white/50 block mb-1">Active Workspace</span>
-                <form method="POST" action="{{ route('workspace.switch') }}">
-                    @csrf
-                    <select name="conference_id" onchange="this.form.submit()" class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold text-white cursor-pointer">
-                        <option value="all" class="text-slate-900" @selected(!$activeConf)>🌐 Semua Conference</option>
+            <div x-data="{ openWsMobile: false }" @click.away="openWsMobile = false" class="mt-6 border-y border-white/10 py-3 relative">
+                <span class="text-[10px] font-black uppercase tracking-wider text-white/50 block mb-1.5">Active Workspace</span>
+                <button type="button" @click="openWsMobile = !openWsMobile" class="w-full flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15 transition cursor-pointer">
+                    <span class="flex items-center gap-2 truncate">
+                        <span class="size-2 rounded-full bg-orange shrink-0"></span>
+                        <span class="truncate">{{ $activeConf ? '📌 ' . $activeConf->name : '🌐 Semua Conference' }}</span>
+                    </span>
+                    <svg class="size-3.5 text-white/70 transition-transform duration-200 shrink-0" :class="{ 'rotate-180': openWsMobile }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <div x-show="openWsMobile" x-cloak
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="transform opacity-0 scale-95"
+                     x-transition:enter-end="transform opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="transform opacity-100 scale-100"
+                     x-transition:leave-end="transform opacity-0 scale-95"
+                     class="mt-2 w-full rounded-xl bg-slate-900 border border-white/15 p-1.5 shadow-2xl text-white divide-y divide-white/10 z-50">
+                    <div class="py-1 space-y-1 max-h-56 overflow-y-auto">
+                        <form method="POST" action="{{ route('workspace.switch') }}">
+                            @csrf
+                            <input type="hidden" name="conference_id" value="all">
+                            <button type="submit" class="w-full text-left flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-bold transition {{ !$activeConf ? 'bg-orange text-white font-black' : 'text-slate-200 hover:bg-white/10' }}">
+                                <span class="truncate">🌐 Semua Conference</span>
+                                @if(!$activeConf)
+                                    <span class="text-xs font-black">✓</span>
+                                @endif
+                            </button>
+                        </form>
+
                         @foreach($userConferences as $conf)
-                            <option value="{{ $conf->id }}" class="text-slate-900" @selected($activeConf?->id === $conf->id)>📌 {{ $conf->name }}</option>
+                            <form method="POST" action="{{ route('workspace.switch') }}">
+                                @csrf
+                                <input type="hidden" name="conference_id" value="{{ $conf->id }}">
+                                <button type="submit" class="w-full text-left flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-bold transition {{ $activeConf?->id === $conf->id ? 'bg-orange text-white font-black' : 'text-slate-200 hover:bg-white/10' }}">
+                                    <span class="truncate" title="{{ $conf->name }}">📌 {{ $conf->name }}</span>
+                                    @if($activeConf?->id === $conf->id)
+                                        <span class="text-xs font-black">✓</span>
+                                    @endif
+                                </button>
+                            </form>
                         @endforeach
-                    </select>
-                </form>
+                    </div>
+                </div>
             </div>
 
             <nav class="mt-4 space-y-2 text-sm font-semibold">
@@ -107,16 +142,68 @@
                 <div class="hidden lg:block"><p class="text-xs font-bold uppercase tracking-[.18em] text-muted">Paperflow workspace</p><p class="font-bold text-navy">{{ $heading ?? 'Dashboard' }}</p></div>
                 <!-- GCP-style Workspace Selector & Profile Icon in Header -->
                 <div class="ml-auto flex items-center gap-1.5 sm:gap-4 shrink-0">
-                    <form method="POST" action="{{ route('workspace.switch') }}" class="flex items-center gap-1">
-                        @csrf
-                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 hidden md:inline">Workspace:</span>
-                        <select name="conference_id" onchange="this.form.submit()" class="max-w-[100px] xs:max-w-[130px] sm:max-w-xs truncate rounded-xl border border-navy/20 bg-slate-100 px-2.5 sm:px-3 py-1.5 text-xs font-extrabold text-navy hover:bg-slate-200 transition focus:ring-2 focus:ring-orange cursor-pointer">
-                            <option value="all" @selected(!$activeConf)>🌐 Semua Conference</option>
-                            @foreach($userConferences as $conf)
-                                <option value="{{ $conf->id }}" @selected($activeConf?->id === $conf->id)>📌 {{ $conf->name }}</option>
-                            @endforeach
-                        </select>
-                    </form>
+                    <!-- Custom Styled Workspace Selector Dropdown -->
+                    <div x-data="{ openWs: false }" @click.away="openWs = false" class="relative inline-block text-left">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 hidden md:inline">Workspace:</span>
+                            <button type="button" @click="openWs = !openWs" class="inline-flex items-center gap-1.5 rounded-xl border border-navy/20 bg-slate-100 px-2.5 sm:px-3 py-1.5 text-xs font-extrabold text-navy hover:bg-slate-200 transition focus:ring-2 focus:ring-orange cursor-pointer max-w-[120px] xs:max-w-[150px] sm:max-w-xs shadow-sm">
+                                <span class="size-2 rounded-full bg-orange shrink-0"></span>
+                                <span class="truncate text-navy">
+                                    {{ $activeConf ? '📌 ' . $activeConf->name : '🌐 Semua Conference' }}
+                                </span>
+                                <svg class="size-3.5 text-slate-500 transition-transform duration-200 shrink-0" :class="{ 'rotate-180': openWs }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Dropdown Menu Popover -->
+                        <div x-show="openWs" x-cloak
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="transform opacity-0 scale-95"
+                             x-transition:enter-end="transform opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-75"
+                             x-transition:leave-start="transform opacity-100 scale-100"
+                             x-transition:leave-end="transform opacity-0 scale-95"
+                             class="absolute right-0 mt-2 w-64 sm:w-72 origin-top-right rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-navy/10 border border-navy/15 z-50 divide-y divide-slate-100">
+                             
+                            <div class="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                Pilih Active Workspace
+                            </div>
+
+                            <div class="py-1 space-y-1 max-h-64 overflow-y-auto">
+                                <form method="POST" action="{{ route('workspace.switch') }}">
+                                    @csrf
+                                    <input type="hidden" name="conference_id" value="all">
+                                    <button type="submit" class="w-full text-left flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold transition {{ !$activeConf ? 'bg-orange/10 text-orange font-black' : 'text-navy hover:bg-slate-100' }}">
+                                        <span class="flex items-center gap-2 truncate">
+                                            <span class="text-sm">🌐</span>
+                                            <span class="truncate">Semua Conference</span>
+                                        </span>
+                                        @if(!$activeConf)
+                                            <span class="text-orange text-xs font-black">✓</span>
+                                        @endif
+                                    </button>
+                                </form>
+
+                                @foreach($userConferences as $conf)
+                                    <form method="POST" action="{{ route('workspace.switch') }}">
+                                        @csrf
+                                        <input type="hidden" name="conference_id" value="{{ $conf->id }}">
+                                        <button type="submit" class="w-full text-left flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold transition {{ $activeConf?->id === $conf->id ? 'bg-orange/10 text-orange font-black' : 'text-navy hover:bg-slate-100' }}">
+                                            <span class="flex items-center gap-2 truncate">
+                                                <span class="text-sm">📌</span>
+                                                <span class="truncate" title="{{ $conf->name }}">{{ $conf->name }}</span>
+                                            </span>
+                                            @if($activeConf?->id === $conf->id)
+                                                <span class="text-orange text-xs font-black">✓</span>
+                                            @endif
+                                        </button>
+                                    </form>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
                     <!-- Notification Button with Bell Icon & Label -->
                     <a href="{{ route('notifications.index') }}" class="relative inline-flex items-center justify-center gap-1.5 rounded-xl border border-navy/20 bg-slate-100 p-2 sm:px-3 sm:py-1.5 text-xs font-extrabold text-navy hover:bg-slate-200 transition focus:ring-2 focus:ring-orange shrink-0" title="Notifikasi">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-4 text-navy">
