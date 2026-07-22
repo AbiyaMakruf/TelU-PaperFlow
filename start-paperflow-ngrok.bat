@@ -1,32 +1,34 @@
 @echo off
+setlocal enabledelayedexpansion
 title Paperflow Ngrok Server (Mobile dan HP Compatible)
 cls
 
-:: Auto-detect PHP dan Node.js di Windows (Laragon, XAMPP, atau System PATH)
+:: Auto-detect PHP dan Node.js
+where php >nul 2>nul
+if %ERRORLEVEL% NEQ 0 call :detect_php
+
+where node >nul 2>nul
+if %ERRORLEVEL% NEQ 0 call :detect_node
+
 where php >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    for /d %%D in ("C:\laragon\bin\php\php-*") do (
-        if exist "%%D\php.exe" set "PATH=%%D;%PATH%"
-    )
-)
-where php >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
-    if exist "C:\xampp\php\php.exe" set "PATH=C:\xampp\php;%PATH%"
-    if exist "C:\php\php.exe" set "PATH=C:\php;%PATH%"
+    echo ========================================================
+    echo [ERROR] PHP (php.exe) tidak ditemukan!
+    echo ========================================================
+    echo Sistem tidak menemukan php.exe di Laragon, XAMPP, atau PATH.
+    echo Pastikan Laragon/XAMPP sudah berjalan atau tambahkan folder PHP ke PATH.
+    echo.
+    pause
+    exit /b 1
 )
 
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    for /d %%D in ("C:\laragon\bin\nodejs\node-*") do (
-        if exist "%%D\node.exe" set "PATH=%%D;%PATH%"
-    )
-    if exist "C:\Program Files\nodejs\node.exe" set "PATH=C:\Program Files\nodejs;%PATH%"
-)
-
-where php >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] PHP (php.exe) tidak ditemukan di PATH sistem, Laragon, atau XAMPP.
-    echo Mohon pastikan PHP sudah terinstall atau tambahkan folder PHP ke Environment Variables.
+    echo ========================================================
+    echo [ERROR] Node.js (node.exe) tidak ditemukan!
+    echo ========================================================
+    echo Sistem tidak menemukan node.exe di Laragon atau Program Files.
+    echo.
     pause
     exit /b 1
 )
@@ -62,3 +64,27 @@ if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Terjadi kesalahan saat menjalankan service.
     pause
 )
+
+pause
+exit /b 0
+
+:detect_php
+for /d %%D in ("C:\laragon\bin\php\php-*") do (
+    if exist "%%D\php.exe" (
+        set "PATH=%%D;!PATH!"
+        goto :eof
+    )
+)
+if exist "C:\xampp\php\php.exe" set "PATH=C:\xampp\php;!PATH!"
+if exist "C:\php\php.exe" set "PATH=C:\php;!PATH!"
+goto :eof
+
+:detect_node
+for /d %%D in ("C:\laragon\bin\nodejs\node-*") do (
+    if exist "%%D\node.exe" (
+        set "PATH=%%D;!PATH!"
+        goto :eof
+    )
+)
+if exist "C:\Program Files\nodejs\node.exe" set "PATH=C:\Program Files\nodejs;!PATH!"
+goto :eof
