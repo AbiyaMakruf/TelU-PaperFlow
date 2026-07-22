@@ -40,14 +40,31 @@ class DashboardController extends Controller
             ->pluck('total', 'status')
             ->all();
 
-        // Submissions trend by day (last 14 days)
-        $submissionsTrend = (clone $query)
-            ->where('submitted_at', '>=', now()->subDays(14))
+        // Submissions trend by day (last 14 days filled continuously)
+        $rawTrend = (clone $query)
+            ->where('submitted_at', '>=', now()->subDays(13)->startOfDay())
             ->selectRaw('DATE(submitted_at) as date, count(*) as count')
             ->groupBy('date')
             ->orderBy('date')
             ->pluck('count', 'date')
             ->all();
+
+        $trendLabels = [];
+        $trendValues = [];
+        for ($i = 13; $i >= 0; $i--) {
+            $dateKey = now()->subDays($i)->format('Y-m-d');
+            $trendLabels[] = now()->subDays($i)->format('d M');
+            $trendValues[] = (int) ($rawTrend[$dateKey] ?? 0);
+        }
+
+        // Status ratio chart data
+        $rejectedOrWithdrawnCount = (clone $query)->whereIn('status', [SubmissionStatus::Rejected, SubmissionStatus::Withdrawn])->count();
+        $inProgressCount = max(0, $stats['active'] - $stats['waiting']);
+
+        $statusChartData = [
+            'labels' => ['Selesai (Done)', 'Dalam Proses', 'Revisi Author', 'Ditolak / Ditarik'],
+            'data' => [$stats['done'], $inProgressCount, $stats['waiting'], $rejectedOrWithdrawnCount],
+        ];
 
         // Workload & Granular Status Matrix per PIC
         $allVisible = (clone $query)->with(['editor', 'reviewer'])->get();
@@ -108,6 +125,13 @@ class DashboardController extends Controller
             }
         }
 
+        // Formatted PIC chart data
+        $picChartData = [
+            'labels' => array_keys($picMatrix),
+            'active' => array_map(fn ($p) => $p['In Progress'] + $p['Belum'] + $p['Menunggu Jawaban'], array_values($picMatrix)),
+            'done' => array_map(fn ($p) => $p['Selesai'], array_values($picMatrix)),
+        ];
+
         // Average turnaround time (days between submitted_at and completed_at)
         $completedSubmissions = (clone $query)->whereNotNull('completed_at')->get();
         $turnaroundDays = $completedSubmissions->count() > 0
@@ -116,6 +140,19 @@ class DashboardController extends Controller
 
         $recentSubmissions = $query->with(['conference', 'editor', 'reviewer'])->latest('submitted_at')->limit(8)->get();
 
-        return view('dashboard', compact('conferences', 'stats', 'statusDistribution', 'submissionsTrend', 'picWorkload', 'picMatrix', 'formatStats', 'turnaroundDays', 'recentSubmissions'));
+        return view('dashboard', compact(
+            'conferences',
+            'stats',
+            'statusDistribution',
+            'trendLabels',
+            'trendValues',
+            'statusChartData',
+            'picChartData',
+            'picWorkload',
+            'picMatrix',
+            'formatStats',
+            'turnaroundDays',
+            'recentSubmissions'
+        ));
     }
 }

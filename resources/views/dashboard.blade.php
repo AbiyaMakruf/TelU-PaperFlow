@@ -12,50 +12,54 @@
         @endforeach
     </div>
 
-    <!-- Deep Analytics Section -->
-    <div class="mt-8 grid gap-6 md:grid-cols-2">
-        <!-- Status Distribution Chart/List -->
-        <div class="card p-6">
-            <h2 class="font-extrabold text-navy text-lg">Distribusi Status Paper</h2>
-            <p class="text-xs text-muted mt-1">Penyebaran status pada seluruh paper di workspace Anda</p>
-            <div class="mt-4 space-y-3">
-                @php $totalSub = max(1, array_sum($statusDistribution ?? [])); @endphp
-                @foreach(\App\Enums\SubmissionStatus::cases() as $st)
-                    @php
-                        $count = $statusDistribution[$st->value] ?? 0;
-                        $pct = round(($count / $totalSub) * 100);
-                    @endphp
-                    @if($count > 0)
-                        <div>
-                            <div class="flex items-center justify-between text-xs font-semibold mb-1">
-                                <span class="text-slate-800">{{ $st->label() }}</span>
-                                <span class="text-slate-500">{{ $count }} paper ({{ $pct }}%)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                <div class="bg-orange h-2 rounded-full" style="width: {{ $pct }}%"></div>
-                            </div>
-                        </div>
-                    @endif
-                @endforeach
+    <!-- Interactive Visual Analytics Section -->
+    <div class="mt-8 grid gap-6 lg:grid-cols-3">
+        <!-- Chart 1: Tren Submisi Harian (Line Chart) -->
+        <div class="card p-6 lg:col-span-2 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="font-extrabold text-navy text-lg flex items-center gap-2">
+                        <span>📈</span> Tren Submisi Harian (14 Hari Terakhir)
+                    </h2>
+                    <p class="text-xs text-muted mt-0.5">Grafik volume pendaftaran paper harian di workspace Anda</p>
+                </div>
+                <span class="badge badge-warning text-xs font-bold">{{ array_sum($trendValues ?? []) }} Submisi</span>
+            </div>
+            <div class="h-64 w-full relative">
+                <canvas id="submissionsTrendChart"></canvas>
             </div>
         </div>
 
-        <!-- PIC Workload Breakdown -->
-        <div class="card p-6">
-            <h2 class="font-extrabold text-navy text-lg">Beban Kerja PIC (Editor/Reviewer)</h2>
-            <p class="text-xs text-muted mt-1">Jumlah paper aktif dan total penugasan per staf</p>
-            <div class="mt-4 space-y-3">
-                @forelse($picWorkload ?? [] as $name => $wl)
-                    <div class="flex items-center justify-between p-3 bg-warm/60 rounded-xl">
-                        <div>
-                            <p class="text-sm font-bold text-navy">{{ $name }}</p>
-                            <p class="text-xs text-muted">{{ $wl['active'] ?? 0 }} paper aktif</p>
-                        </div>
-                        <span class="badge badge-primary">{{ $wl['total'] ?? 0 }} total</span>
-                    </div>
-                @empty
-                    <p class="text-sm text-muted italic">Belum ada data penugasan PIC.</p>
-                @endforelse
+        <!-- Chart 2: Rasio Status Paper (Doughnut Chart) -->
+        <div class="card p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="font-extrabold text-navy text-lg flex items-center gap-2">
+                        <span>📊</span> Rasio Status Paper
+                    </h2>
+                    <p class="text-xs text-muted mt-0.5">Proporsi status paper di workspace</p>
+                </div>
+            </div>
+            <div class="h-64 w-full relative flex items-center justify-center">
+                <canvas id="statusRatioChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 3: Kecepatan & Beban Kerja Staf PIC (Bar Chart) -->
+    <div class="mt-6">
+        <div class="card p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="font-extrabold text-navy text-lg flex items-center gap-2">
+                        <span>⚡</span> Kecepatan Pengerjaan &amp; Beban Kerja Staf PIC
+                    </h2>
+                    <p class="text-xs text-muted mt-0.5">Perbandingan paper aktif (dalam proses) vs paper selesai per staf PIC</p>
+                </div>
+                <span class="badge badge-info text-xs">Rata-rata Turnaround: {{ $turnaroundDays ?? 0 }} Hari</span>
+            </div>
+            <div class="h-72 w-full relative">
+                <canvas id="picPerformanceChart"></canvas>
             </div>
         </div>
     </div>
@@ -178,4 +182,147 @@
             </div>
         </section>
     </div>
+
+    <!-- Chart.js Engine & Initialization Script -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. Line Chart: Submissions Trend
+        const ctxTrend = document.getElementById('submissionsTrendChart')?.getContext('2d');
+        if (ctxTrend) {
+            const gradient = ctxTrend.createLinearGradient(0, 0, 0, 240);
+            gradient.addColorStop(0, 'rgba(249, 115, 22, 0.35)');
+            gradient.addColorStop(1, 'rgba(249, 115, 22, 0.0)');
+
+            new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: @json($trendLabels ?? []),
+                    datasets: [{
+                        label: 'Submisi Paper',
+                        data: @json($trendValues ?? []),
+                        borderColor: '#f97316',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#1e293b',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { weight: 'bold' },
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0, color: '#64748b' },
+                            grid: { color: 'rgba(226, 232, 240, 0.6)' }
+                        },
+                        x: {
+                            ticks: { color: '#64748b', font: { size: 11 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Doughnut Chart: Paper Status Ratio
+        const ctxStatus = document.getElementById('statusRatioChart')?.getContext('2d');
+        if (ctxStatus) {
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: @json($statusChartData['labels'] ?? []),
+                    datasets: [{
+                        data: @json($statusChartData['data'] ?? []),
+                        backgroundColor: ['#10b981', '#1e293b', '#f59e0b', '#ef4444'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, padding: 15, font: { size: 11, weight: 'bold' } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    },
+                    cutout: '68%'
+                }
+            });
+        }
+
+        // 3. Bar Chart: PIC Performance & Workload
+        const ctxPic = document.getElementById('picPerformanceChart')?.getContext('2d');
+        if (ctxPic) {
+            new Chart(ctxPic, {
+                type: 'bar',
+                data: {
+                    labels: @json($picChartData['labels'] ?? []),
+                    datasets: [
+                        {
+                            label: 'Paper Aktif (In Progress)',
+                            data: @json($picChartData['active'] ?? []),
+                            backgroundColor: '#1e293b',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Paper Selesai (Done)',
+                            data: @json($picChartData['done'] ?? []),
+                            backgroundColor: '#10b981',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0, color: '#64748b' },
+                            grid: { color: 'rgba(226, 232, 240, 0.6)' }
+                        },
+                        x: {
+                            ticks: { color: '#64748b', font: { weight: 'bold', size: 11 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    });
+    </script>
 </x-layouts.app>

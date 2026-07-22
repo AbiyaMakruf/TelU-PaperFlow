@@ -245,7 +245,7 @@
                     @endauth
                 </div>
             </header>
-            <main class="min-w-0 w-full max-w-full px-3 py-4 sm:px-8 sm:py-8 lg:px-10 lg:py-10 space-y-6 overflow-x-hidden"><x-flash />{{ $slot }}</main>
+            <main class="min-w-0 w-full max-w-[1600px] mx-auto px-3 py-4 sm:px-8 sm:py-8 lg:px-10 lg:py-10 space-y-6 overflow-x-hidden"><x-flash />{{ $slot }}</main>
         </div>
     </div>
 </body>
