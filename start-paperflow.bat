@@ -1,33 +1,27 @@
 @echo off
-title Paperflow Development Server + Ngrok (hormonal-shari-noncommodiously.ngrok-free.dev)
+title Paperflow Development Server (Local)
 cls
 
 :: Tambahkan path PHP dan Node.js Laragon ke PATH Windows
 set "PATH=C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64;C:\laragon\bin\nodejs\node-v22;%PATH%"
 
 echo ========================================================
-echo             PAPERFLOW DEVELOPMENT LAUNCHER (NGROK)
+echo             PAPERFLOW DEVELOPMENT LAUNCHER (LOCAL)
 echo ========================================================
 echo.
-echo  [1/2] Membangun asset CSS & JS (npm run build)...
-echo.
-
-call npm run build
-
-echo.
-echo  [2/2] Menjalankan layanan Paperflow:
+echo  Menjalankan layanan Paperflow lokal:
 echo   [SERVE] http://127.0.0.1:8000
 echo   [QUEUE] php artisan queue:work --tries=3
-echo   [NGROK] https://hormonal-shari-noncommodiously.ngrok-free.dev
+echo   [VITE]  Vite Dev Server
 echo.
-echo  Membuka browser ke https://hormonal-shari-noncommodiously.ngrok-free.dev dalam 3 detik...
+echo  Membuka browser ke http://127.0.0.1:8000 dalam 3 detik...
 echo  Tekan Ctrl + C di jendela ini untuk menghentikan semua service.
 echo ========================================================
 echo.
 
-start "" powershell -Command "Start-Sleep -Seconds 3; Start-Process 'https://hormonal-shari-noncommodiously.ngrok-free.dev'"
+start "" powershell -Command "Start-Sleep -Seconds 3; Start-Process 'http://127.0.0.1:8000'"
 
-call npm run dev:ngrok
+call npm run dev
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
