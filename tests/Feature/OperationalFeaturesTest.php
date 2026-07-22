@@ -22,7 +22,7 @@ class OperationalFeaturesTest extends TestCase
         AuditLog::create(['user_id' => $admin->id, 'conference_id' => $conference->id, 'event' => 'conference.updated', 'created_at' => now()]);
         $admin->notify(new WorkflowNotification($submission, 'Assignment baru', 'Paper ditugaskan.'));
 
-        $this->actingAs($admin)->get(route('audit.index'))->assertOk()->assertSee('conference.updated');
+        $this->actingAs($admin)->get(route('admin.monitoring.index', ['tab' => 'audit']))->assertOk()->assertSee('conference.updated');
         $this->actingAs($admin)->get(route('notifications.index'))->assertOk()->assertSee('Assignment baru');
         $this->actingAs($admin)->get(route('editor-performance.index'))->assertOk();
     }
@@ -39,7 +39,7 @@ class OperationalFeaturesTest extends TestCase
     public function test_superadmin_can_open_application_monitoring(): void
     {
         $superadmin = User::factory()->create(['is_super_admin' => true, 'must_change_password' => false]);
-        $this->actingAs($superadmin)->get(route('admin.monitoring.index'))->assertOk()->assertSee('Failed jobs');
+        $this->actingAs($superadmin)->get(route('admin.monitoring.index'))->assertOk()->assertSee('Monitoring Database');
     }
 
     public function test_superadmin_can_impersonate_user_and_leave(): void

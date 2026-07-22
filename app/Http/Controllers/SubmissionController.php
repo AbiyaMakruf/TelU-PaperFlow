@@ -293,7 +293,7 @@ class SubmissionController extends Controller
         }
 
         if (! class_exists(ZipArchive::class)) {
-            return back()->withErrors(['bulk' => 'Ekstensi PHP ext-zip belum aktif pada server.']);
+            return back()->withErrors(['bulk' => 'Ekstensi PHP ext-zip belum aktif pada web server. Harap restart terminal `php artisan serve` atau web server Laragon Anda agar konfigurasi php.ini dimuat.']);
         }
 
         $zipDirectory = storage_path('app/private/temp-zip');

@@ -61,6 +61,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::get('/notifications/{notification}', [NotificationController::class, 'read'])->name('notifications.read');
         Route::get('/audit-logs', AuditLogController::class)->name('audit.index');
+        Route::get('/monitoring', [MonitoringController::class, 'index'])->name('admin.monitoring.index');
+        Route::post('/monitoring/failed-jobs/{uuid}/retry', [MonitoringController::class, 'retry'])->middleware('superadmin')->name('admin.monitoring.retry');
         Route::get('/email-monitoring', [EmailMonitoringController::class, 'index'])->name('emails.index');
         Route::post('/email-monitoring/{emailLog}/resend', [EmailMonitoringController::class, 'resend'])->name('emails.resend');
         Route::get('/editor-performance', EditorPerformanceController::class)->name('editor-performance.index');
@@ -106,8 +108,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/impersonate/leave', [ImpersonationController::class, 'leave'])->name('impersonate.leave');
 
         Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
-            Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');
-            Route::post('/monitoring/failed-jobs/{uuid}/retry', [MonitoringController::class, 'retry'])->name('monitoring.retry');
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
             Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
             Route::post('/users/{user}/impersonate', [ImpersonationController::class, 'impersonate'])->name('users.impersonate');

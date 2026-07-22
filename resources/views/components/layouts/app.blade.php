@@ -47,11 +47,12 @@
                 <a href="{{ route('submissions.index') }}" class="nav-link {{ request()->routeIs('submissions.*') ? 'nav-link-active' : '' }}">Paper</a>
                 <a href="{{ route('conferences.index') }}" class="nav-link {{ request()->routeIs('conferences.*') ? 'nav-link-active' : '' }}">Conference</a>
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}">Performa editor</a>
-                @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())<a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}">Audit log</a>@endif
                 @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->whereIn('role',[\App\Enums\ConferenceRole::Admin,\App\Enums\ConferenceRole::Editorial])->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}">Monitoring email</a>@endif
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())
+                    <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') || request()->routeIs('audit.*') ? 'nav-link-active' : '' }}">Monitoring &amp; Audit</a>
+                @endif
                 @if(auth()->user()->isSuperAdmin())
                     <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}">Pengguna</a>
-                    <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') ? 'nav-link-active' : '' }}">Monitoring</a>
                 @endif
             </nav>
             <div class="mt-auto border-t border-white/10 pt-5">
@@ -75,11 +76,12 @@
                 <a href="{{ route('submissions.index') }}" class="nav-link {{ request()->routeIs('submissions.*') ? 'nav-link-active' : '' }}"><span class="text-xs">PF</span><span>Paper</span></a>
                 <a href="{{ route('conferences.index') }}" class="nav-link {{ request()->routeIs('conferences.*') ? 'nav-link-active' : '' }}"><span class="text-xs">CF</span><span>Conference</span></a>
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}"><span class="text-xs">ST</span><span>Performa editor</span></a>
-                @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())<a href="{{ route('audit.index') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'nav-link-active' : '' }}"><span class="text-xs">AU</span><span>Audit log</span></a>@endif
                 @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->whereIn('role',[\App\Enums\ConferenceRole::Admin,\App\Enums\ConferenceRole::Editorial])->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}"><span class="text-xs">EM</span><span>Monitoring email</span></a>@endif
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())
+                    <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') || request()->routeIs('audit.*') ? 'nav-link-active' : '' }}"><span class="text-xs">MO</span><span>Monitoring &amp; Audit</span></a>
+                @endif
                 @if(auth()->user()->isSuperAdmin())
                     <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}"><span class="text-xs">US</span><span>Pengguna</span></a>
-                    <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') ? 'nav-link-active' : '' }}"><span class="text-xs">MO</span><span>Monitoring</span></a>
                 @endif
             </nav>
             <div class="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">

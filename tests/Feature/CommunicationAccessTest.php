@@ -23,9 +23,10 @@ class CommunicationAccessTest extends TestCase
         $superadmin = User::factory()->create(['is_super_admin' => true, 'must_change_password' => false]);
         AuditLog::create(['user_id' => $admin->id, 'conference_id' => $conference->id, 'event' => 'conference.updated', 'created_at' => now()]);
 
-        $this->actingAs($admin)->get(route('audit.index'))->assertOk()->assertSee('conference.updated');
-        $this->actingAs($superadmin)->get(route('audit.index'))->assertOk()->assertSee('conference.updated');
-        $this->actingAs($editor)->get(route('audit.index'))->assertForbidden();
+        $this->actingAs($admin)->get(route('audit.index'))->assertRedirect(route('admin.monitoring.index', ['tab' => 'audit']));
+        $this->actingAs($admin)->get(route('admin.monitoring.index', ['tab' => 'audit']))->assertOk()->assertSee('conference.updated');
+        $this->actingAs($superadmin)->get(route('admin.monitoring.index', ['tab' => 'audit']))->assertOk()->assertSee('conference.updated');
+        $this->actingAs($editor)->get(route('admin.monitoring.index', ['tab' => 'audit']))->assertForbidden();
     }
 
     public function test_editor_sees_only_own_email_while_admin_sees_conference_email(): void

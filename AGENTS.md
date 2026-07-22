@@ -48,12 +48,8 @@ Authorization is implemented with policies and conference membership checks. Nev
 - `/{conference-slug}/submit`: public author submission form
 - `/submission/access/{token}`: private tokenized author portal (live checklist monitoring, detail updates, optional PDF Petunjuk Revisi upload)
 - `/conferences/{conference}`: conference administration
-- `/audit-logs`: scoped audit log
-- `/editor-performance`: editor performance report
-- `/notifications`: current staff notifications
-- `/profile`: profile identity used in editorial email and WhatsApp communication
-- `/email-monitoring`: scoped queued/sending/sent/failed email log and failed-email resend
-- `/admin/monitoring`: superadmin failed-job and error monitoring
+- `/monitoring`: unified operational monitoring (Database, File Storage, Failed Jobs, Laravel Log Errors, and Audit Log)
+- `/audit-logs`: redirect to unified Monitoring & Audit Log tab
 - `/admin/users/{user}/impersonate`: superadmin user impersonation
 
 Keep fixed routes above the final `/{conference:slug}` catch-all route in `routes/web.php`.
@@ -277,7 +273,7 @@ php artisan migrate --force
 Current baseline:
 
 - **53 tests**
-- **255 assertions**
+- **257 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
