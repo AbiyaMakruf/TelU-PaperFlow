@@ -47,7 +47,8 @@ Authorization is implemented with policies and conference membership checks. Nev
 - `/{conference-slug}`: public conference landing page (search modal enabled, hidden default list)
 - `/{conference-slug}/submit`: public author submission form
 - `/submission/access/{token}`: private tokenized author portal (live checklist monitoring, detail updates, optional PDF Petunjuk Revisi upload)
-- `/conferences/{conference}`: conference administration
+- `/user-manual/author`: public standalone author user manual page (no staff sidebar)
+- `/user-manual`: role-scoped authenticated staff documentation hub & role manuals (`/user-manual/{role}`)
 - `/monitoring`: unified operational monitoring (Database, File Storage, Failed Jobs, Laravel Log Errors, and Audit Log)
 - `/audit-logs`: redirect to unified Monitoring & Audit Log tab
 - `/admin/users/{user}/impersonate`: superadmin user impersonation
@@ -91,6 +92,7 @@ Do not update `submissions.status` directly when a transition should be validate
 - **International Phone and WhatsApp**: public/author profile forms use country-code selectors and normalized numbers; Editorial gets a `wa.me` action with checklist-derived draft text.
 - **Staff Communication Profiles**: every authenticated role can update name, email, WhatsApp, committee title, and affiliation. These fields populate dynamic email signatures.
 - **Conference Default CC**: Conference Admin configures conference and per-template defaults; Editorial receives them as removable CC chips before sending.
+- **Role-Scoped User Manuals & Public Author Guide**: Dedicated public standalone author user manual (`/user-manual/author`) without staff sidebar, and authenticated role-scoped staff documentation hub (`/user-manual/{role}`) covering Superadmin, Conference Admin, Editorial, Reviewer, and Viewer roles with role ecosystem matrix.
 
 ## File storage design
 
@@ -249,6 +251,7 @@ This section describes capabilities that are **not implemented** or still requir
 - `TurnstileVerifier`: mandatory server-side Cloudflare Siteverify integration when configured
 - `PhoneNumber`: international number normalization and `wa.me` digits
 - `AuditLogger`: audit persistence with `newValues` parameter
+- `UserManualController`: role-scoped user manual routing and authorization control
 
 Prefer extending these services over duplicating workflow, storage, visibility, or email logic inside controllers.
 
@@ -272,8 +275,8 @@ php artisan migrate --force
 
 Current baseline:
 
-- **53 tests**
-- **257 assertions**
+- **57 tests**
+- **275 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
