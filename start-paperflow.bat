@@ -22,28 +22,10 @@ where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 call :detect_node
 
 where php >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo ========================================================
-    echo [ERROR] PHP (php.exe) tidak ditemukan di komputer ini!
-    echo ========================================================
-    echo Lokasi pencarian: Laragon (C:\, D:\), XAMPP, C:\php, D:\php, PATH.
-    echo Pastikan PHP sudah terinstall atau tambahkan folder php.exe
-    echo ke Environment Variables Windows (System PATH).
-    echo.
-    goto :END
-)
+if %ERRORLEVEL% NEQ 0 goto :err_no_php
 
 where node >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo ========================================================
-    echo [ERROR] Node.js (node.exe) tidak ditemukan di komputer ini!
-    echo ========================================================
-    echo Mohon install Node.js dari https://nodejs.org/
-    echo.
-    goto :END
-)
+if %ERRORLEVEL% NEQ 0 goto :err_no_node
 
 echo  PHP    : OK
 echo  Node.js: OK
@@ -100,3 +82,23 @@ if exist "D:\laragon\bin\nodejs" (
 if exist "C:\Program Files\nodejs\node.exe" set "PATH=C:\Program Files\nodejs;%PATH%"
 if exist "D:\Program Files\nodejs\node.exe" set "PATH=D:\Program Files\nodejs;%PATH%"
 goto :eof
+
+:err_no_php
+echo.
+echo ========================================================
+echo [ERROR] PHP (php.exe) tidak ditemukan di komputer ini!
+echo ========================================================
+echo Lokasi pencarian: Laragon, XAMPP, C:\php, D:\php, PATH.
+echo Pastikan PHP sudah terinstall atau tambahkan folder php.exe
+echo ke Environment Variables Windows (System PATH).
+echo.
+goto :END
+
+:err_no_node
+echo.
+echo ========================================================
+echo [ERROR] Node.js (node.exe) tidak ditemukan di komputer ini!
+echo ========================================================
+echo Mohon install Node.js dari https://nodejs.org/
+echo.
+goto :END
