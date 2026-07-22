@@ -17,54 +17,6 @@
             </div>
         </div>
 
-        <!-- Role Ecosystem Explanation Matrix for Authors -->
-        <details class="card overflow-hidden border-2 border-orange/30 bg-amber-50/20 max-w-full" open>
-            <summary class="cursor-pointer p-4 sm:p-5 font-black text-navy text-sm sm:text-base flex items-center justify-between select-none">
-                <span class="flex items-center gap-2">
-                    <span>🗺️</span> <span>Bagaimana Paper Anda Diproses dalam Ekosistem Paperflow?</span>
-                </span>
-                <span class="text-orange font-bold text-lg">+</span>
-            </summary>
-            <div class="border-t border-navy/10 p-4 sm:p-6 bg-white space-y-4 text-xs sm:text-sm text-slate-800">
-                <p class="leading-relaxed text-muted">
-                    Paperflow mengelola alur karya ilmiah dari pengajuan awal hingga siap diunggah ke publikasi akhir (seperti EDAS/IEEE). Berikut adalah peranan setiap tim yang menangani paper Anda:
-                </p>
-                <div class="overflow-x-auto min-w-0 max-w-full">
-                    <table class="data-table min-w-[640px] text-xs">
-                        <thead>
-                            <tr>
-                                <th class="w-36">Role / Tim</th>
-                                <th class="w-32">Status Akses</th>
-                                <th>Peran &amp; Tindakan Terhadap Paper Anda</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="bg-orange/10 font-bold">
-                                <td class="font-extrabold text-navy">👤 Author (Anda)</td>
-                                <td><span class="badge badge-success text-[10px]">Publik</span></td>
-                                <td class="leading-relaxed">Mengunggah naskah (`.docx`/`.zip`), memantau *Live Checklist Results*, mengedit detail pendaftaran, serta mengirim file revisi.</td>
-                            </tr>
-                            <tr>
-                                <td class="font-extrabold text-navy">✍️ Editorial (Editor PIC)</td>
-                                <td><span class="badge badge-primary text-[10px]">Staf Conference</span></td>
-                                <td class="leading-relaxed">Memeriksa kelayakan 16 format standar IEEE, memberikan petunjuk perbaikan, berkomunikasi via Email &amp; WhatsApp, serta mengonfirmasi revisi.</td>
-                            </tr>
-                            <tr>
-                                <td class="font-extrabold text-navy">🔍 Reviewer (Reviewer PIC)</td>
-                                <td><span class="badge badge-primary text-[10px]">Staf Conference</span></td>
-                                <td class="leading-relaxed">Memeriksa sertifikasi IEEE PDF eXpress, mencatat kendala EDAS, dan memberikan persetujuan akhir publikasi.</td>
-                            </tr>
-                            <tr>
-                                <td class="font-extrabold text-navy">🏛️ Admin &amp; Superadmin</td>
-                                <td><span class="badge badge-warning text-[10px]">Pengelola Sistem</span></td>
-                                <td class="leading-relaxed">Menyiapkan form conference, mengelola storage penyimpanan naskah, dan mengawasi jalannya kegiatan conference.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </details>
-
         <!-- Main Step by Step Manual Sections -->
         <section class="space-y-6">
             <!-- Summary Step Cards -->
