@@ -9,10 +9,15 @@ echo ========================================================
 echo             PAPERFLOW DEVELOPMENT LAUNCHER (NGROK)
 echo ========================================================
 echo.
-echo  Menjalankan layanan Paperflow:
+echo  [1/2] Membangun asset CSS & JS (npm run build)...
+echo.
+
+call npm run build
+
+echo.
+echo  [2/2] Menjalankan layanan Paperflow:
 echo   [SERVE] http://127.0.0.1:8000
 echo   [QUEUE] php artisan queue:work --tries=3
-echo   [VITE]  Vite Dev Server
 echo   [NGROK] https://hormonal-shari-noncommodiously.ngrok-free.dev
 echo.
 echo  Membuka browser ke https://hormonal-shari-noncommodiously.ngrok-free.dev dalam 3 detik...
