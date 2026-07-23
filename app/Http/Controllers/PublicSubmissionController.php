@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ConferenceRole;
 use App\Enums\SubmissionStatus;
 use App\Models\Conference;
 use App\Models\Submission;
+use App\Models\User;
+use App\Notifications\WorkflowNotification;
 use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceMailer;
 use App\Services\DuplicateSubmissionDetector;
@@ -139,6 +142,24 @@ class PublicSubmissionController extends Controller
 
         $portalUrl = route('author.portal', $token);
         $mailer->queue($submission->load('conference'), 'submission_received', ['portal_url' => $portalUrl]);
+
+        // Send in-app notification to Superadmins & Conference Admins
+        $superadmins = User::where('is_super_admin', true)->where('is_active', true)->get();
+        $conferenceAdmins = $conference->members()
+            ->wherePivot('role', ConferenceRole::Admin->value)
+            ->wherePivot('is_active', true)
+            ->get();
+
+        $recipients = $superadmins->concat($conferenceAdmins)->unique('id');
+        $notification = new WorkflowNotification(
+            $submission,
+            "Submission Baru ({$submission->paper_code})",
+            "Paper '{$submission->title}' telah diajukan oleh {$submission->corresponding_author_name} pada conference {$conference->name}."
+        );
+
+        foreach ($recipients as $recipient) {
+            $recipient->notify($notification);
+        }
 
         return redirect()->route('author.portal', $token)->with('success', 'Submission berhasil diterima. Simpan tautan portal ini untuk memantau progres.');
     }

@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ConferenceRole;
 use App\Enums\SubmissionStatus;
 use App\Models\Conference;
 use App\Models\EmailTemplate;
 use App\Models\FormVersion;
 use App\Models\Submission;
+use App\Models\User;
 use App\Services\GoogleDriveStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -53,6 +55,45 @@ class PublicSubmissionTest extends TestCase
 
         $token = basename($response->headers->get('Location'));
         $this->get(route('author.portal', $token))->assertOk()->assertSee($submission->paper_code);
+    }
+
+    public function test_public_submission_sends_in_app_notifications_to_superadmin_and_conference_admin(): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+        [$conference] = $this->openConference();
+
+        $superadmin = User::factory()->create(['is_super_admin' => true, 'is_active' => true]);
+        $confAdmin = User::factory()->create(['is_active' => true]);
+        $conference->memberships()->create(['user_id' => $confAdmin->id, 'role' => ConferenceRole::Admin, 'is_active' => true]);
+
+        $otherUser = User::factory()->create(['is_active' => true]);
+
+        $this->post(route('public.submission.store', $conference->slug), [
+            'paper_id' => 'NOTIF-101',
+            'title' => 'Notified Paper Title',
+            'author_name' => 'Notification Author',
+            'author_email' => 'notif@example.com',
+            'author_phone_country_code' => '+62',
+            'author_phone' => '08123456789',
+            'answers' => ['affiliation' => 'Telkom University'],
+            'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        ]);
+
+        $this->assertCount(1, $superadmin->unreadNotifications);
+        $this->assertCount(1, $confAdmin->unreadNotifications);
+        $this->assertCount(0, $otherUser->unreadNotifications);
+
+        $superadminNotif = $superadmin->unreadNotifications->first();
+        $this->assertStringContainsString('Submission Baru', $superadminNotif->data['title']);
+        $this->assertStringContainsString('Notified Paper Title', $superadminNotif->data['message']);
+
+        // Verify notification is accessible via /notifications page
+        $this->actingAs($superadmin)
+            ->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('Submission Baru')
+            ->assertSee('Notified Paper Title');
     }
 
     public function test_submission_requires_published_form_and_open_conference(): void
