@@ -1,40 +1,50 @@
 <x-layouts.public :title="$submission->paper_code">
     <div class="mx-auto max-w-5xl">
-        <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-            <div>
-                <p class="eyebrow">Author portal &middot; {{ $submission->conference->name }}</p>
-                <h1 class="page-title">{{ $submission->paper_code }}</h1>
-                <p class="page-subtitle">{{ $submission->title }}</p>
+        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div class="min-w-0">
+                <p class="eyebrow truncate">Author portal &middot; {{ $submission->conference->name }}</p>
+                <h1 class="page-title break-words">{{ $submission->paper_code }}</h1>
+                <p class="page-subtitle break-words">{{ $submission->title }}</p>
             </div>
-            <span class="badge badge-{{ $submission->status->color() }}">{{ $submission->status->label() }}</span>
+            <span class="badge badge-{{ $submission->status->color() }} self-start shrink-0 sm:self-auto">{{ $submission->status->label() }}</span>
         </div>
 
-        <div class="mt-8 grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
-            <section class="space-y-6">
+        <div class="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1.4fr_.6fr]">
+            <section class="min-w-0 space-y-6">
                 <!-- Edit Detail Submission Card -->
-                <div class="card p-6" x-data="{ openEdit: false }">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
+                <div class="card p-4 sm:p-6" x-data="{ openEdit: false }">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="min-w-0">
                             <h2 class="text-lg font-black text-navy">Detail Submission</h2>
                             <p class="text-xs text-muted">Judul, data corresponding author, dan daftar co-authors.</p>
                         </div>
-                        <button type="button" @click="openEdit = !openEdit" class="btn btn-secondary text-xs">
+                        <button type="button" @click="openEdit = !openEdit" class="btn btn-secondary text-xs shrink-0 self-start sm:self-auto">
                             <span x-text="openEdit ? 'Batal Edit' : 'Edit Detail Submission'"></span>
                         </button>
                     </div>
 
                     <div x-show="!openEdit" class="mt-5 space-y-3 text-sm">
-                        <div><span class="text-xs font-bold text-muted">Judul Paper:</span><p class="font-bold text-navy mt-0.5">{{ $submission->title }}</p></div>
-                        <div class="grid grid-cols-2 gap-4 pt-2">
-                            <div><span class="text-xs font-bold text-muted">Corresponding Author:</span><p class="font-semibold text-navy mt-0.5">{{ $submission->corresponding_author_name }}</p><p class="text-xs text-muted">{{ $submission->corresponding_author_email }}</p></div>
-                            <div><span class="text-xs font-bold text-muted">Nomor Telepon/WA:</span><p class="font-semibold text-navy mt-0.5">{{ $submission->corresponding_author_phone ?: '-' }}</p></div>
+                        <div class="min-w-0">
+                            <span class="text-xs font-bold text-muted">Judul Paper:</span>
+                            <p class="mt-0.5 font-bold text-navy break-words">{{ $submission->title }}</p>
+                        </div>
+                        <div class="grid gap-3 pt-2 sm:grid-cols-2">
+                            <div class="min-w-0">
+                                <span class="text-xs font-bold text-muted">Corresponding Author:</span>
+                                <p class="mt-0.5 font-semibold text-navy break-words">{{ $submission->corresponding_author_name }}</p>
+                                <p class="text-xs text-muted break-all">{{ $submission->corresponding_author_email }}</p>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-xs font-bold text-muted">Nomor Telepon/WA:</span>
+                                <p class="mt-0.5 font-semibold text-navy break-all">{{ $submission->corresponding_author_phone ?: '-' }}</p>
+                            </div>
                         </div>
                         @if($submission->authors->where('is_corresponding', false)->isNotEmpty())
-                            <div class="pt-2">
+                            <div class="min-w-0 pt-2">
                                 <span class="text-xs font-bold text-muted">Co-Authors:</span>
-                                <ul class="mt-1 list-disc list-inside text-xs text-slate-700 space-y-1">
+                                <ul class="mt-1 space-y-1.5 list-disc list-inside text-xs text-slate-700">
                                     @foreach($submission->authors->where('is_corresponding', false) as $co)
-                                        <li>{{ $co->name }} ({{ $co->email ?: 'Tanpa email' }}) - {{ $co->affiliation ?: '-' }}</li>
+                                        <li class="break-words">{{ $co->name }} ({{ $co->email ?: 'Tanpa email' }}) - {{ $co->affiliation ?: '-' }}</li>
                                     @endforeach
                                 </ul>
                             </div>
@@ -44,77 +54,84 @@
                     <form x-show="openEdit" x-cloak method="POST" action="{{ route('author.details.update', $token) }}" class="mt-5 space-y-4">
                         @csrf
                         @method('PUT')
-                        <div>
+                        <div class="min-w-0">
                             <label class="form-label">Judul Paper *</label>
-                            <input class="form-input" name="title" value="{{ old('title', $submission->title) }}" required>
+                            <input class="form-input min-w-0" name="title" value="{{ old('title', $submission->title) }}" required>
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
-                            <div>
+                            <div class="min-w-0">
                                 <label class="form-label">Nama Corresponding Author *</label>
-                                <input class="form-input" name="author_name" value="{{ old('author_name', $submission->corresponding_author_name) }}" required>
+                                <input class="form-input min-w-0" name="author_name" value="{{ old('author_name', $submission->corresponding_author_name) }}" required>
                             </div>
-                            <div>
+                            <div class="min-w-0">
                                 <label class="form-label">Email Corresponding Author *</label>
-                                <input class="form-input" type="email" name="author_email" value="{{ old('author_email', $submission->corresponding_author_email) }}" required>
+                                <input class="form-input min-w-0" type="email" name="author_email" value="{{ old('author_email', $submission->corresponding_author_email) }}" required>
                             </div>
                         </div>
                         @php
                             $selectedPhoneCode = collect(array_keys($countryCodes))->sortByDesc(fn($code)=>strlen($code))->first(fn($code)=>str_starts_with($submission->corresponding_author_phone ?? '',$code)) ?? '+62';
                             $nationalPhone = ltrim(substr($submission->corresponding_author_phone ?? '',strlen($selectedPhoneCode)),'0');
                         @endphp
-                        <div>
+                        <div class="min-w-0">
                             <label class="form-label">Nomor Telepon/WA *</label>
-                            <div class="grid grid-cols-[minmax(0,1.25fr)_minmax(0,1.75fr)] gap-2"><select class="form-input px-2" name="author_phone_country_code" required>@foreach($countryCodes as $code=>$label)<option value="{{ $code }}" @selected(old('author_phone_country_code',$selectedPhoneCode)===$code)>{{ $label }}</option>@endforeach</select><input class="form-input" name="author_phone" value="{{ old('author_phone',$nationalPhone) }}" required></div>
+                            <div class="grid gap-2 grid-cols-1 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1.75fr)]">
+                                <select class="form-input px-2 min-w-0" name="author_phone_country_code" required>
+                                    @foreach($countryCodes as $code=>$label)
+                                        <option value="{{ $code }}" @selected(old('author_phone_country_code',$selectedPhoneCode)===$code)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <input class="form-input min-w-0" name="author_phone" value="{{ old('author_phone',$nationalPhone) }}" required>
+                            </div>
                         </div>
 
                         <!-- Co-authors list editor -->
-                        <div class="pt-2" x-data="{
+                        <div class="min-w-0 pt-2" x-data="{
                             coAuthors: {{ Js::from($submission->authors->where('is_corresponding', false)->values()->map(fn($a) => ['name' => $a->name, 'email' => $a->email, 'affiliation' => $a->affiliation])) }}
                         }">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="form-label">Daftar Co-Authors</span>
-                                <button type="button" @click="coAuthors.push({name: '', email: '', affiliation: ''})" class="text-xs font-bold text-orange hover:underline">+ Tambah Co-author</button>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <span class="form-label mb-0">Daftar Co-Authors</span>
+                                <button type="button" @click="coAuthors.push({name: '', email: '', affiliation: ''})" class="text-xs font-bold text-orange hover:underline shrink-0">+ Tambah Co-author</button>
                             </div>
                             <template x-for="(co, index) in coAuthors" :key="index">
-                                <div class="grid gap-2 sm:grid-cols-3 items-center mb-2 p-3 bg-warm/50 rounded-xl">
-                                    <input class="form-input text-xs" :name="`co_authors[${index}][name]`" x-model="co.name" placeholder="Nama lengkap *" required>
-                                    <input class="form-input text-xs" type="email" :name="`co_authors[${index}][email]`" x-model="co.email" placeholder="Email (opsional)">
-                                    <div class="flex items-center gap-2">
-                                        <input class="form-input text-xs flex-1" :name="`co_authors[${index}][affiliation]`" x-model="co.affiliation" placeholder="Afiliasi (opsional)">
-                                        <button type="button" @click="coAuthors.splice(index, 1)" class="text-rose-600 font-bold px-2">✕</button>
+                                <div class="space-y-2 mb-3 p-3 bg-warm/50 rounded-xl sm:grid sm:grid-cols-3 sm:gap-2 sm:space-y-0 sm:items-center">
+                                    <input class="form-input text-xs w-full min-w-0" :name="`co_authors[${index}][name]`" x-model="co.name" placeholder="Nama lengkap *" required>
+                                    <input class="form-input text-xs w-full min-w-0" type="email" :name="`co_authors[${index}][email]`" x-model="co.email" placeholder="Email (opsional)">
+                                    <div class="flex items-center gap-2 w-full min-w-0">
+                                        <input class="form-input text-xs flex-1 min-w-0" :name="`co_authors[${index}][affiliation]`" x-model="co.affiliation" placeholder="Afiliasi (opsional)">
+                                        <button type="button" @click="coAuthors.splice(index, 1)" class="text-rose-600 font-bold px-2 py-1 hover:bg-rose-100 rounded-lg shrink-0" title="Hapus">✕</button>
                                     </div>
                                 </div>
                             </template>
                         </div>
 
-                        <div class="flex justify-end gap-3 pt-3">
-                            <button type="button" @click="openEdit = false" class="btn btn-ghost">Batal</button>
-                            <button class="btn btn-primary">Simpan Perubahan</button>
+                        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 pt-3">
+                            <button type="button" @click="openEdit = false" class="btn btn-ghost w-full sm:w-auto">Batal</button>
+                            <button class="btn btn-primary w-full sm:w-auto">Simpan Perubahan</button>
                         </div>
                     </form>
                 </div>
 
-                <!-- Live Editorial Checklist Monitoring (Only visible after editor requests revision / sends feedback) -->
+                <!-- Live Editorial Checklist Monitoring -->
                 @if(in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true) || $submission->feedback->isNotEmpty())
                     @if($submission->conference->checklistTemplates->isNotEmpty())
-                        <div class="card p-6">
+                        <div class="card p-4 sm:p-6">
                             <h2 class="text-lg font-black text-navy">Monitoring Checklist Editorial (Live)</h2>
-                            <p class="text-xs text-muted mt-1">Status kelengkapan format paper berdasarkan pemeriksaan tim editorial.</p>
+                            <p class="mt-1 text-xs text-muted">Status kelengkapan format paper berdasarkan pemeriksaan tim editorial.</p>
                             <div class="mt-4 space-y-2">
                                 @foreach($submission->conference->checklistTemplates as $tmpl)
                                     @foreach($tmpl->items as $item)
                                         @php $res = isset($checklistResults) ? $checklistResults->get($item->id) : null; @endphp
-                                        <div class="flex items-start justify-between gap-3 p-3 rounded-xl border {{ $res?->is_checked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200' }}">
-                                            <div>
-                                                <p class="text-xs font-extrabold {{ $res?->is_checked ? 'text-emerald-900' : 'text-rose-900' }}">{{ $item->title }}</p>
+                                        <div class="flex flex-col gap-2.5 p-3.5 rounded-xl border sm:flex-row sm:items-start sm:justify-between {{ $res?->is_checked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200' }}">
+                                            <div class="min-w-0">
+                                                <p class="text-xs font-extrabold break-words {{ $res?->is_checked ? 'text-emerald-900' : 'text-rose-900' }}">{{ $item->title }}</p>
                                                 @if($item->description)
-                                                    <p class="text-[11px] text-slate-600 mt-0.5">{{ $item->description }}</p>
+                                                    <p class="mt-0.5 text-[11px] text-slate-600 break-words">{{ $item->description }}</p>
                                                 @endif
                                                 @if($res?->note)
-                                                    <p class="text-[11px] font-semibold text-slate-800 mt-1">Catatan: {{ $res->note }}</p>
+                                                    <p class="mt-1 text-[11px] font-semibold text-slate-800 break-words">Catatan: {{ $res->note }}</p>
                                                 @endif
                                             </div>
-                                            <span class="badge {{ $res?->is_checked ? 'badge-success' : 'badge-danger' }} shrink-0">
+                                            <span class="badge {{ $res?->is_checked ? 'badge-success' : 'badge-danger' }} shrink-0 self-start sm:self-auto">
                                                 {{ $res?->is_checked ? '✓ OK' : '✕ Perlu Perbaikan' }}
                                             </span>
                                         </div>
@@ -126,36 +143,103 @@
                 @endif
 
                 @if ($submission->feedback->isNotEmpty())
-                    <div class="card p-6">
+                    <div class="card p-4 sm:p-6">
                         <h2 class="text-lg font-black text-navy">Catatan dari tim</h2>
                         <div class="mt-4 space-y-3">
                             @foreach ($submission->feedback as $item)
-                                <div class="rounded-xl bg-warm p-4 text-sm leading-6">{!! nl2br(e($item->body)) !!}<p class="mt-2 text-xs text-muted">{{ $item->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p></div>
+                                <div class="rounded-xl bg-warm p-4 text-sm leading-6 break-words">
+                                    {!! nl2br(e($item->body)) !!}
+                                    <p class="mt-2 text-xs text-muted">{{ $item->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
+                                </div>
                             @endforeach
                         </div>
                     </div>
                 @endif
-                @foreach($submission->uploadAttempts->where('source','author')->where('status','failed') as $attempt)<div class="card border-danger/20 p-5"><p class="font-bold text-danger">Upload {{ $attempt->original_name }} gagal</p><p class="mt-1 text-xs text-muted">{{ Str::limit($attempt->error,160) }}</p><form class="mt-3" method="POST" action="{{ route('author.uploads.retry',[$token,$attempt]) }}">@csrf<button class="btn btn-secondary">Coba lagi tanpa pilih file</button></form></div>@endforeach
+
+                @foreach($submission->uploadAttempts->where('source','author')->where('status','failed') as $attempt)
+                    <div class="card border-danger/20 p-4 sm:p-5">
+                        <p class="font-bold text-danger break-words">Upload {{ $attempt->original_name }} gagal</p>
+                        <p class="mt-1 text-xs text-muted break-words">{{ Str::limit($attempt->error,160) }}</p>
+                        <form class="mt-3" method="POST" action="{{ route('author.uploads.retry',[$token,$attempt]) }}">
+                            @csrf
+                            <button class="btn btn-secondary text-xs w-full sm:w-auto">Coba lagi tanpa pilih file</button>
+                        </form>
+                    </div>
+                @endforeach
 
                 @if (in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true))
-                    <form method="POST" action="{{ route('author.revision', $token) }}" enctype="multipart/form-data" class="card p-6">
+                    <form method="POST" action="{{ route('author.revision', $token) }}" enctype="multipart/form-data" class="card p-4 sm:p-6">
                         @csrf
                         <h2 class="text-lg font-black text-navy">Unggah revisi</h2>
-                        <label class="mt-5 block"><span class="form-label">File editable baru *</span><input class="form-input py-3" type="file" name="paper_file" accept=".docx,.zip" required><span class="mt-2 block text-xs text-muted">Gunakan DOCX atau ZIP yang berisi seluruh source LaTeX.</span></label>
-                        <label class="mt-4 block"><span class="form-label">PDF Petunjuk Revisi / Response Form (Opsional)</span><input class="form-input py-2 text-xs" type="file" name="guidance_pdf" accept=".pdf"><span class="mt-1 block text-xs text-muted">Upload berkas PDF penjelasan revisi/response form dari author jika ada.</span></label>
-                        <label class="mt-5 block"><span class="form-label">Catatan perubahan</span><textarea class="form-input min-h-24 py-3" name="notes"></textarea></label>
-                        <button class="btn btn-primary mt-5">Kirim revisi</button>
+                        <label class="mt-5 block min-w-0">
+                            <span class="form-label">File editable baru *</span>
+                            <input class="form-input min-w-0 py-3" type="file" name="paper_file" accept=".docx,.zip" required>
+                            <span class="mt-2 block text-xs text-muted">Gunakan DOCX atau ZIP yang berisi seluruh source LaTeX.</span>
+                        </label>
+                        <label class="mt-4 block min-w-0">
+                            <span class="form-label">PDF Petunjuk Revisi / Response Form (Opsional)</span>
+                            <input class="form-input min-w-0 py-2 text-xs" type="file" name="guidance_pdf" accept=".pdf">
+                            <span class="mt-1 block text-xs text-muted">Upload berkas PDF penjelasan revisi/response form dari author jika ada.</span>
+                        </label>
+                        <label class="mt-5 block min-w-0">
+                            <span class="form-label">Catatan perubahan</span>
+                            <textarea class="form-input min-w-0 min-h-24 py-3" name="notes"></textarea>
+                        </label>
+                        <button class="btn btn-primary mt-5 w-full sm:w-auto">Kirim revisi</button>
                     </form>
                 @endif
 
+                <!-- Card Riwayat File (100% Mobile Responsive) -->
                 <div class="card overflow-hidden">
-                    <div class="p-6"><h2 class="text-lg font-black text-navy">Riwayat file</h2></div>
-                    <div class="overflow-x-auto">
+                    <div class="p-4 sm:p-6 border-b border-navy/5">
+                        <h2 class="text-lg font-black text-navy">Riwayat file</h2>
+                    </div>
+
+                    <!-- Mobile Card View (sm:hidden) -->
+                    <div class="divide-y divide-navy/8 sm:hidden">
+                        @foreach ($submission->files as $file)
+                            <div class="p-4 space-y-2.5">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="badge badge-primary font-mono">v{{ $file->version_number }}</span>
+                                    <span class="text-xs font-bold text-muted uppercase tracking-wider">{{ ucfirst($file->source) }}</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-navy break-words">{{ $file->label }}</p>
+                                    <p class="text-xs text-muted break-all mt-0.5">{{ $file->original_name }}</p>
+                                </div>
+                                <div class="pt-1">
+                                    <a class="btn btn-secondary text-xs w-full py-2.5 flex items-center justify-center gap-2" href="{{ route('author.files.download', [$token, $file]) }}">
+                                        <span>📥 Download File</span>
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Desktop Table View (sm:block) -->
+                    <div class="hidden sm:block overflow-x-auto">
                         <table class="data-table">
-                            <thead><tr><th>Versi</th><th>File</th><th>Sumber</th><th></th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>Versi</th>
+                                    <th>File</th>
+                                    <th>Sumber</th>
+                                    <th class="text-right">Aksi</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 @foreach ($submission->files as $file)
-                                    <tr><td>v{{ $file->version_number }}</td><td><p class="font-bold text-navy">{{ $file->label }}</p><p class="text-xs text-muted">{{ $file->original_name }}</p></td><td>{{ ucfirst($file->source) }}</td><td><a class="font-bold text-orange" href="{{ route('author.files.download', [$token, $file]) }}">Download</a></td></tr>
+                                    <tr>
+                                        <td class="whitespace-nowrap font-mono font-bold">v{{ $file->version_number }}</td>
+                                        <td class="min-w-[200px]">
+                                            <p class="font-bold text-navy break-words">{{ $file->label }}</p>
+                                            <p class="text-xs text-muted break-all">{{ $file->original_name }}</p>
+                                        </td>
+                                        <td class="whitespace-nowrap">{{ ucfirst($file->source) }}</td>
+                                        <td class="whitespace-nowrap text-right">
+                                            <a class="font-bold text-orange hover:underline" href="{{ route('author.files.download', [$token, $file]) }}">Download</a>
+                                        </td>
+                                    </tr>
                                 @endforeach
                             </tbody>
                         </table>
@@ -163,11 +247,15 @@
                 </div>
             </section>
 
-            <aside class="card h-fit p-6">
+            <aside class="card h-fit p-4 sm:p-6 min-w-0">
                 <h2 class="text-lg font-black text-navy">Timeline</h2>
                 <ol class="mt-5 space-y-5 border-l-2 border-navy/10 pl-5">
                     @foreach ($submission->statusHistory as $history)
-                        <li><span class="-ml-[27px] mr-3 inline-block size-3 rounded-full bg-orange ring-4 ring-warm"></span><span class="text-sm font-bold text-navy">{{ $history->to_status->label() }}</span><p class="mt-1 text-xs text-muted">{{ $history->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p></li>
+                        <li class="min-w-0">
+                            <span class="-ml-[23px] sm:-ml-[27px] mr-3 inline-block size-3 rounded-full bg-orange ring-4 ring-warm"></span>
+                            <span class="text-sm font-bold text-navy break-words">{{ $history->to_status->label() }}</span>
+                            <p class="mt-1 text-xs text-muted">{{ $history->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
+                        </li>
                     @endforeach
                 </ol>
             </aside>
