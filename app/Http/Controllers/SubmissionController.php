@@ -477,6 +477,10 @@ class SubmissionController extends Controller
         }
 
         try {
+            if (in_array($action, ['revert_done_to_editorial', 'revert_done_to_reviewer', 'revert_done_to_edas'], true) && $submission->status !== SubmissionStatus::Done) {
+                throw new DomainException('Aksi pengembalian status hanya dapat dilakukan jika status paper sudah Completed / Done.');
+            }
+
             match ($action) {
                 'request_author_revision' => $this->requestRevision($request, $submission, $workflow, $mailer, $validated['note'] ?? ''),
                 'send_reviewer' => $this->sendReviewer($request, $submission, $workflow, $validated['note'] ?? null),

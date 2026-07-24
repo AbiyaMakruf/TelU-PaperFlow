@@ -237,6 +237,23 @@ class EditorialWorkflowTest extends TestCase
         $this->assertNull($submission->fresh()->completed_at);
     }
 
+    public function test_revert_completed_feature_is_hidden_and_rejected_when_paper_is_not_done(): void
+    {
+        [$conference, $admin, , , $submission] = $this->workflowFixture();
+        $submission->update(['status' => SubmissionStatus::EditorialReview]);
+
+        // UI element must NOT be present for non-Done paper
+        $this->actingAs($admin)->get(route('submissions.show', $submission))
+            ->assertOk()
+            ->assertDontSee('Revert Completed Paper (Admin Only)');
+
+        // Post request to revert non-Done paper must fail transition
+        $this->actingAs($admin)->post(route('submissions.advance', $submission), [
+            'action' => 'revert_done_to_reviewer',
+            'note' => 'Invalid revert attempt',
+        ])->assertSessionHasErrors('workflow');
+    }
+
     private function workflowFixture(): array
     {
         $admin = User::factory()->create();
