@@ -66,11 +66,11 @@
                 <div class="mt-5 border-t border-navy/10 pt-4 flex flex-wrap items-center gap-3">
                     @if($latestFile)
                         <a href="{{ route('submissions.files.download', [$submission, $latestFile]) }}" class="btn text-xs py-2 px-4 inline-flex items-center gap-1.5 font-black shadow-xs bg-orange hover:bg-orange-dark text-white rounded-xl transition" title="Download latest manuscript version (v{{ $latestFile->version_number }} - {{ $latestFile->original_name }})">
-                            <span>⬇️</span> Download Latest File (v{{ $latestFile->version_number }})
+                            Download Latest File (v{{ $latestFile->version_number }})
                         </a>
                     @endif
                     <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-orange hover:text-orange rounded-xl transition" title="Inspect author portal view exactly as seen by the author">
-                        <span>👁️</span> Buka Portal Author ↗
+                        Buka Portal Author ↗
                     </a>
                 </div>
 
@@ -260,14 +260,11 @@
 
             @can('editorialReview', $submission)
                 <!-- 1. Confidential Internal Notes (Accordion) -->
-                <details class="card overflow-hidden border-l-4 border-l-navy bg-slate-50/50 max-w-full min-w-0">
-                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-100/70 hover:bg-slate-200/60 transition select-none">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-base sm:text-lg">🔒</span>
-                            <div class="min-w-0">
-                                <h2 class="text-sm sm:text-base font-black text-navy">Internal Notes (Team Only)</h2>
-                                <p class="text-[11px] text-muted font-normal truncate">Confidential notes for editorial team &amp; reviewers (hidden from author).</p>
-                            </div>
+                <details class="card overflow-hidden max-w-full min-w-0" id="internal-notes-accordion">
+                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
+                        <div class="min-w-0">
+                            <h2 class="text-sm sm:text-base font-black text-navy">Internal Notes (Team Only)</h2>
+                            <p class="text-[11px] text-muted font-normal truncate">Confidential notes for editorial team &amp; reviewers (hidden from author).</p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <span class="badge badge-primary text-[10px]">Confidential</span>
@@ -280,7 +277,7 @@
                             @forelse($submission->feedback->where('visibility', 'internal') as $feedback)
                                 <div class="rounded-xl bg-slate-50 p-3.5 border border-navy/10 shadow-sm text-xs min-w-0">
                                     <div class="flex items-center justify-between gap-2 text-muted min-w-0">
-                                        <span class="font-bold text-navy truncate">👤 {{ $feedback->author?->name ?? 'Staff Member' }}</span>
+                                        <span class="font-bold text-navy truncate">{{ $feedback->author?->name ?? 'Staff Member' }}</span>
                                         <span class="text-[11px] shrink-0">{{ $feedback->created_at->format('d M Y H:i') }}</span>
                                     </div>
                                     <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
@@ -297,7 +294,7 @@
                             <textarea class="form-input min-h-20 py-2.5 text-xs" name="body" placeholder="Write internal note (visible only to editorial team & reviewers)..." required></textarea>
                             <div class="flex justify-end">
                                 <button type="submit" class="btn btn-primary px-4 py-2 text-xs font-extrabold w-full sm:w-auto">
-                                    💾 Save Internal Note
+                                    Save Internal Note
                                 </button>
                             </div>
                         </form>
@@ -305,14 +302,11 @@
                 </details>
 
                 <!-- 2. Author Feedback & Communication (Accordion) -->
-                <details class="card overflow-hidden border-l-4 border-l-orange bg-amber-50/20 max-w-full min-w-0" id="author-feedback-accordion" open>
-                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-amber-100/50 hover:bg-amber-100/80 transition select-none">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-base sm:text-lg">📩</span>
-                            <div class="min-w-0">
-                                <h2 class="text-sm sm:text-base font-black text-navy">Author Feedback &amp; Communication</h2>
-                                <p class="text-[11px] text-muted font-normal truncate">This message will be visible to the author on the portal and can be sent via Email / WhatsApp.</p>
-                            </div>
+                <details class="card overflow-hidden max-w-full min-w-0" id="author-feedback-accordion" open>
+                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
+                        <div class="min-w-0">
+                            <h2 class="text-sm sm:text-base font-black text-navy">Author Feedback &amp; Communication</h2>
+                            <p class="text-[11px] text-muted font-normal truncate">This message will be visible to the author on the portal and can be sent via Email / WhatsApp.</p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <span class="badge badge-warning text-[10px]">Visible to Author</span>
@@ -326,7 +320,7 @@
                                 <div class="rounded-xl bg-amber-50/40 p-3.5 border border-orange/20 shadow-sm text-xs min-w-0">
                                     <div class="flex flex-wrap items-center justify-between gap-2 text-muted">
                                         <div class="flex items-center gap-2 min-w-0">
-                                            <span class="font-bold text-navy truncate">✉️ {{ $feedback->author?->name ?? 'Editorial' }}</span>
+                                            <span class="font-bold text-navy truncate">{{ $feedback->author?->name ?? 'Editorial' }}</span>
                                             @if($feedback->emailed_at)
                                                 <span class="badge badge-success text-[9px] shrink-0">Sent via Email</span>
                                             @endif
@@ -443,11 +437,11 @@
                             <!-- Action Buttons -->
                             <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
                                 <button type="submit" name="send_email" value="1" class="btn btn-primary px-4 py-2 text-xs font-extrabold w-full sm:w-auto">
-                                    📧 Save &amp; Send Email Notification
+                                    Save &amp; Send Email Notification
                                 </button>
                                 @if($whatsappUrl)
                                     <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center">
-                                        📱 Send via WhatsApp ↗
+                                        Send via WhatsApp ↗
                                     </a>
                                 @endif
                             </div>
@@ -457,27 +451,24 @@
             @endcan
 
             <!-- IEEE PDF eXpress & EDAS Section (Accordion) -->
-            <details class="card overflow-hidden max-w-full min-w-0 border-2 border-orange/30" id="pdfexpress-edas-accordion" open>
-                <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-amber-50/60 hover:bg-amber-100/60 transition select-none border-b border-navy/8">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-base sm:text-lg">📄</span>
-                        <div class="min-w-0">
-                            <h2 class="text-sm sm:text-base font-black text-navy">IEEE PDF eXpress &amp; EDAS Management</h2>
-                            <p class="text-[11px] text-muted font-normal truncate">Reviewer PDF compliance status and EDAS upload error details.</p>
-                        </div>
+            <details class="card overflow-hidden max-w-full min-w-0" id="pdfexpress-edas-accordion" open>
+                <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
+                    <div class="min-w-0">
+                        <h2 class="text-sm sm:text-base font-black text-navy">IEEE PDF eXpress &amp; EDAS Management</h2>
+                        <p class="text-[11px] text-muted font-normal truncate">Reviewer PDF compliance status and EDAS upload error details.</p>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
                         @if(($submission->pdf_express_status ?? '') === 'passed')
                             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-800 border border-emerald-300">
-                                🟢 PDF eXpress: Passed
+                                PDF eXpress: Passed
                             </span>
                         @elseif(($submission->pdf_express_status ?? '') === 'failed')
                             <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-black text-rose-800 border border-rose-300">
-                                🔴 PDF eXpress: Failed
+                                PDF eXpress: Failed
                             </span>
                         @else
                             <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-800 border border-amber-300">
-                                🟡 PDF eXpress: Pending
+                                PDF eXpress: Pending
                             </span>
                         @endif
                         <span class="text-xs text-muted">▼</span>
@@ -521,7 +512,7 @@
                             </div>
                             <div class="flex justify-end pt-1">
                                 <button class="btn btn-primary px-5 py-2 text-xs font-black w-full sm:w-auto">
-                                    💾 Save Reviewer Status &amp; EDAS Notes
+                                    Save Reviewer Status &amp; EDAS Notes
                                 </button>
                             </div>
                         </form>
@@ -542,12 +533,9 @@
             <!-- 3. File Versioning Section (Accordion) -->
             <details class="card overflow-hidden max-w-full min-w-0">
                 <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-base sm:text-lg">📁</span>
-                        <div class="min-w-0">
-                            <h2 class="text-sm sm:text-base font-black text-navy">File Versioning &amp; Attachments</h2>
-                            <p class="text-[11px] text-muted font-normal truncate">Manuscript history (.docx/.zip) and Revision Guidance PDF.</p>
-                        </div>
+                    <div class="min-w-0">
+                        <h2 class="text-sm sm:text-base font-black text-navy">File Versioning &amp; Attachments</h2>
+                        <p class="text-[11px] text-muted font-normal truncate">Manuscript history (.docx/.zip) and Revision Guidance PDF.</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <span class="badge badge-primary text-[10px]">{{ $submission->files->count() }} {{ Str::plural('file', $submission->files->count()) }}</span>
@@ -651,12 +639,9 @@
             @if($emailLogs->isNotEmpty() || app(\App\Services\VisibleEmailLogs::class)->canAccess(auth()->user()))
                 <details class="card overflow-hidden max-w-full min-w-0" id="email-history-accordion" open>
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-base sm:text-lg">✉️</span>
-                            <div class="min-w-0">
-                                <h2 class="text-sm sm:text-base font-black text-navy">Email &amp; Communication History</h2>
-                                <p class="text-[11px] text-muted font-normal truncate">Logs of automated &amp; manual email notifications dispatched for this manuscript.</p>
-                            </div>
+                        <div class="min-w-0">
+                            <h2 class="text-sm sm:text-base font-black text-navy">Email &amp; Communication History</h2>
+                            <p class="text-[11px] text-muted font-normal truncate">Logs of automated &amp; manual email notifications dispatched for this manuscript.</p>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
                             <span class="badge badge-primary text-[10px]">{{ $emailLogs->count() }} {{ Str::plural('email', $emailLogs->count()) }}</span>
@@ -667,7 +652,7 @@
                         <div class="flex items-center justify-between gap-3 pb-2 border-b border-navy/8">
                             <p class="text-xs text-slate-500 font-semibold">Dispatched email logs &amp; delivery status</p>
                             <a class="text-xs font-bold text-orange hover:underline flex items-center gap-1" href="{{ route('emails.index') }}">
-                                <span>📊</span> View Full Email Monitoring ↗
+                                View Full Email Monitoring ↗
                             </a>
                         </div>
                         <div class="space-y-3">
@@ -842,8 +827,8 @@
                     @can('revertCompleted', $submission)
                         @if($submission->status === \App\Enums\SubmissionStatus::Done)
                             <div class="rounded-xl border border-amber-300 bg-amber-50/80 p-4 space-y-3 shadow-sm">
-                                <h3 class="text-xs font-black text-amber-900 flex items-center gap-1.5">
-                                    <span>🔄</span> Revert Completed Paper (Admin Only)
+                                <h3 class="font-extrabold text-xs text-amber-900 flex items-center gap-1.5">
+                                    Revert Completed Paper (Admin Only)
                                 </h3>
                                 <p class="text-[11px] text-amber-800 leading-snug">
                                     If completed by mistake or requiring further inspection, Conference Admin can revert this paper back to an active state.
