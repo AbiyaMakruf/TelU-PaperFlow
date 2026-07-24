@@ -458,12 +458,17 @@ class SubmissionController extends Controller
     public function advance(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse
     {
         $validated = $request->validate([
-            'action' => ['required', Rule::in(['request_author_revision', 'send_reviewer', 'reviewer_changes', 'reviewer_approve', 'edas_fix', 'record_edas', 'approve_edas', 'reject', 'withdraw'])],
+            'action' => ['required', Rule::in([
+                'request_author_revision', 'send_reviewer', 'reviewer_changes',
+                'reviewer_approve', 'edas_fix', 'record_edas', 'approve_edas',
+                'revert_done_to_editorial', 'revert_done_to_reviewer', 'revert_done_to_edas',
+                'reject', 'withdraw',
+            ])],
             'note' => ['nullable', 'string', 'max:10000'],
             'edas_reference' => ['nullable', 'string', 'max:255'],
         ]);
         $action = $validated['action'];
-        if (in_array($action, ['reject', 'withdraw'], true)) {
+        if (in_array($action, ['reject', 'withdraw', 'revert_done_to_editorial', 'revert_done_to_reviewer', 'revert_done_to_edas'], true)) {
             $this->authorize('assign', $submission);
         } else {
             $this->authorize(in_array($action, ['request_author_revision', 'send_reviewer', 'edas_fix', 'record_edas'], true) ? 'editorialReview' : 'reviewerReview', $submission);
@@ -478,6 +483,9 @@ class SubmissionController extends Controller
                 'edas_fix' => $this->edasFix($request, $submission, $workflow, $validated['note'] ?? null),
                 'record_edas' => $this->recordEdas($request, $submission, $validated),
                 'approve_edas' => $this->approveEdas($request, $submission, $workflow, $mailer, $validated),
+                'revert_done_to_editorial' => $workflow->transition($submission, SubmissionStatus::EditorialReview, $request->user(), $validated['note'] ?? 'Dibalikkan dari Selesai oleh Admin Conference'),
+                'revert_done_to_reviewer' => $workflow->transition($submission, SubmissionStatus::ReviewerReview, $request->user(), $validated['note'] ?? 'Dibalikkan dari Selesai oleh Admin Conference'),
+                'revert_done_to_edas' => $workflow->transition($submission, SubmissionStatus::ReadyForEdas, $request->user(), $validated['note'] ?? 'Dibalikkan dari Selesai oleh Admin Conference'),
                 'reject' => $workflow->transition($submission, SubmissionStatus::Rejected, $request->user(), $validated['note'] ?? null),
                 'withdraw' => $workflow->transition($submission, SubmissionStatus::Withdrawn, $request->user(), $validated['note'] ?? null),
             };

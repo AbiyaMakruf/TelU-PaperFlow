@@ -650,6 +650,36 @@
                         @endif
                     @endcan
                     @can('assign', $submission)
+                        @if($submission->status === \App\Enums\SubmissionStatus::Done)
+                            <div class="rounded-xl border border-amber-300 bg-amber-50/80 p-4 space-y-3 shadow-sm">
+                                <h3 class="text-xs font-black text-amber-900 flex items-center gap-1.5">
+                                    <span>🔄</span> Revert Completed Paper (Admin Only)
+                                </h3>
+                                <p class="text-[11px] text-amber-800 leading-snug">
+                                    If completed by mistake or requiring further inspection, Conference Admin can revert this paper back to an active state.
+                                </p>
+                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3">
+                                    @csrf
+                                    <div>
+                                        <label class="form-label text-xs">Revert Target Stage *</label>
+                                        <select class="form-input text-xs" name="action" required>
+                                            <option value="">Select target stage...</option>
+                                            <option value="revert_done_to_editorial">🔙 Return to Editorial Compliance Check</option>
+                                            <option value="revert_done_to_reviewer">🔙 Return to Peer &amp; Technical Review</option>
+                                            <option value="revert_done_to_edas">🔙 Return to Ready for EDAS Upload</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="form-label text-xs">Revert Reason / Note *</label>
+                                        <textarea class="form-input min-h-16 py-2 text-xs" name="note" placeholder="State reason for reverting completed paper..." required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn text-xs font-extrabold w-full py-2 bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition">
+                                        🔄 Revert Paper Status
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
+
                         <div class="mt-5 border-t border-navy/10 pt-5">
                             <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
                                 @csrf

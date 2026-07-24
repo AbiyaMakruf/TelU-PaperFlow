@@ -25,6 +25,7 @@ class SubmissionWorkflow
         'reviewer_changes_requested' => [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview],
         'ready_for_edas' => [SubmissionStatus::EdasFixRequired, SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn],
         'edas_fix_required' => [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview, SubmissionStatus::ReadyForEdas],
+        'done' => [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview, SubmissionStatus::ReadyForEdas],
     ];
 
     public function canTransition(SubmissionStatus $from, SubmissionStatus $to): bool
@@ -54,6 +55,9 @@ class SubmissionWorkflow
             }
             if ($to === SubmissionStatus::Done) {
                 $changes['completed_at'] = now();
+            }
+            if ($from === SubmissionStatus::Done) {
+                $changes['completed_at'] = null;
             }
 
             $locked->update($changes);

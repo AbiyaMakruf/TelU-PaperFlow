@@ -214,6 +214,29 @@ class EditorialWorkflowTest extends TestCase
         $this->assertStringContainsString('Paperflow_Author_Files', (string) $response->headers->get('content-disposition'));
     }
 
+    public function test_conference_admin_can_revert_completed_paper_to_previous_stages(): void
+    {
+        [$conference, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+        $submission->update([
+            'status' => SubmissionStatus::Done,
+            'completed_at' => now(),
+            'editor_id' => $editor->id,
+            'reviewer_id' => $reviewer->id,
+        ]);
+
+        $this->actingAs($admin)->get(route('submissions.show', $submission))
+            ->assertOk()
+            ->assertSee('Revert Completed Paper (Admin Only)');
+
+        $this->actingAs($admin)->post(route('submissions.advance', $submission), [
+            'action' => 'revert_done_to_reviewer',
+            'note' => 'Perlu peninjauan ulang oleh Reviewer.',
+        ])->assertRedirect();
+
+        $this->assertSame(SubmissionStatus::ReviewerReview, $submission->fresh()->status);
+        $this->assertNull($submission->fresh()->completed_at);
+    }
+
     private function workflowFixture(): array
     {
         $admin = User::factory()->create();
