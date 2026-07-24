@@ -21,6 +21,10 @@ return new class extends Migration
                     $field['help'] = 'Optional notes or instructions for the editorial team';
                     $updated = true;
                 }
+                if (in_array($field['key'] ?? '', ['affiliation', 'country'], true)) {
+                    $field['required'] = false;
+                    $updated = true;
+                }
             }
             unset($field);
 

@@ -55,10 +55,26 @@ class PublicSubmissionController extends Controller
         if ($turnstile->enabled()) {
             $rules['cf-turnstile-response'] = ['required', 'string', 'max:2048'];
         }
+
+        $attributes = [
+            'paper_id' => 'Paper ID',
+            'title' => 'Title',
+            'author_name' => 'Author Name',
+            'author_email' => 'Author Email',
+            'author_phone' => 'Author Phone',
+        ];
+
         foreach (collect($form->schema)->reject(fn ($field) => $field['key'] === 'co_authors') as $field) {
-            $rules['answers.'.$field['key']] = [($field['required'] ?? false) ? 'required' : 'nullable', 'string', 'max:5000'];
+            $isRequired = ($field['required'] ?? false) && ! in_array($field['key'], ['affiliation', 'country'], true);
+            $rules['answers.'.$field['key']] = [$isRequired ? 'required' : 'nullable', 'string', 'max:5000'];
+            $attributes['answers.'.$field['key']] = $field['label'] ?? $field['key'];
         }
-        $validated = $request->validate($rules);
+
+        $messages = [
+            'paper_id.unique' => 'Paper ID ini sudah terdaftar. Anda tidak perlu melakukan submission ulang, silakan gunakan link portal author yang telah dikirimkan ke email Anda.',
+        ];
+
+        $validated = $request->validate($rules, $messages, $attributes);
         if (! $turnstile->verify($request, $validated['cf-turnstile-response'] ?? null)) {
             return back()->withInput()->withErrors(['turnstile' => 'Verifikasi keamanan gagal atau kedaluwarsa. Silakan centang kembali.']);
         }
