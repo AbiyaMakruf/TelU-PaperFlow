@@ -16,11 +16,17 @@
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="min-w-0">
                             <h2 class="text-lg font-black text-navy">Submission Details</h2>
-                            <p class="text-xs text-muted">Paper title, corresponding author information, and co-authors list.</p>
+                            <p class="text-xs text-muted">Paper title, primary author contact information, and co-authors list.</p>
                         </div>
-                        <button type="button" @click="openEdit = !openEdit" class="btn btn-secondary text-xs shrink-0 self-start sm:self-auto">
-                            <span x-text="openEdit ? 'Cancel Edit' : 'Edit Submission Details'"></span>
-                        </button>
+                        @if(in_array($submission->status, [\App\Enums\SubmissionStatus::Done, \App\Enums\SubmissionStatus::Withdrawn, \App\Enums\SubmissionStatus::Rejected], true))
+                            <button type="button" disabled class="btn text-xs bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shrink-0 self-start sm:self-auto" title="Submission details cannot be edited after completion">
+                                Edit Submission Details
+                            </button>
+                        @else
+                            <button type="button" @click="openEdit = !openEdit" class="btn btn-secondary text-xs shrink-0 self-start sm:self-auto">
+                                <span x-text="openEdit ? 'Cancel Edit' : 'Edit Submission Details'"></span>
+                            </button>
+                        @endif
                     </div>
 
                     <div x-show="!openEdit" class="mt-5 space-y-3 text-sm">
@@ -110,35 +116,48 @@
                     </form>
                 </div>
 
-                <!-- Live Editorial Checklist Monitoring -->
-                @if(in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true) || $submission->feedback->isNotEmpty())
-                    @if($submission->conference->checklistTemplates->isNotEmpty())
-                        <div class="card p-4 sm:p-6">
-                            <h2 class="text-lg font-black text-navy">Editorial Compliance Checklist Monitoring (Live)</h2>
-                            <p class="mt-1 text-xs text-muted">Paper format compliance status based on editorial team checks.</p>
-                            <div class="mt-4 space-y-2">
-                                @foreach($submission->conference->checklistTemplates as $tmpl)
-                                    @foreach($tmpl->items as $item)
-                                        @php $res = isset($checklistResults) ? $checklistResults->get($item->id) : null; @endphp
-                                        <div class="flex flex-col gap-2.5 p-3.5 rounded-xl border sm:flex-row sm:items-start sm:justify-between {{ $res?->is_checked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200' }}">
-                                            <div class="min-w-0">
-                                                <p class="text-xs font-extrabold break-words {{ $res?->is_checked ? 'text-emerald-900' : 'text-rose-900' }}">{{ $item->title }}</p>
-                                                @if($item->description)
-                                                    <p class="mt-0.5 text-[11px] text-slate-600 break-words">{{ $item->description }}</p>
-                                                @endif
-                                                @if($res?->note)
-                                                    <p class="mt-1 text-[11px] font-semibold text-slate-800 break-words">Note: {{ $res->note }}</p>
-                                                @endif
-                                            </div>
-                                            <span class="badge {{ $res?->is_checked ? 'badge-success' : 'badge-danger' }} shrink-0 self-start sm:self-auto">
-                                                {{ $res?->is_checked ? '✓ Passed' : '✕ Revision Needed' }}
-                                            </span>
-                                        </div>
-                                    @endforeach
-                                @endforeach
+                {{-- Live Editorial Compliance Checklist Monitoring (Accordion) --}}
+                @php
+                    $editorialTemplates = $submission->conference->checklistTemplates->filter(fn ($t) => strtolower($t->stage->value ?? $t->stage) === 'editorial');
+                @endphp
+                @if($submission->editor_id !== null && $editorialTemplates->isNotEmpty())
+                    <details class="card group p-4 sm:p-6 transition" @if(in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true)) open @endif>
+                        <summary class="flex cursor-pointer items-center justify-between gap-3 list-none font-black text-navy focus:outline-none select-none">
+                            <div class="min-w-0">
+                                <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
+                                    <span>Editorial Compliance Checklist Monitoring (Live)</span>
+                                </h2>
+                                <p class="mt-0.5 text-xs text-muted font-normal">Paper format compliance status based on editorial team checks. Click to expand/collapse.</p>
                             </div>
+                            <span class="rounded-full bg-slate-100 p-2 text-slate-500 group-open:rotate-180 transition-transform shrink-0">
+                                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </summary>
+
+                        <div class="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                            @foreach($editorialTemplates as $tmpl)
+                                @foreach($tmpl->items as $item)
+                                    @php $res = isset($checklistResults) ? $checklistResults->get($item->id) : null; @endphp
+                                    <div class="flex flex-col gap-2.5 p-3.5 rounded-xl border sm:flex-row sm:items-start sm:justify-between {{ $res?->is_checked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200' }}">
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-extrabold break-words {{ $res?->is_checked ? 'text-emerald-900' : 'text-rose-900' }}">{{ $item->title }}</p>
+                                            @if($item->description)
+                                                <p class="mt-0.5 text-[11px] text-slate-600 break-words">{{ $item->description }}</p>
+                                            @endif
+                                            @if($res?->note)
+                                                <p class="mt-1 text-[11px] font-semibold text-slate-800 break-words">Note: {{ $res->note }}</p>
+                                            @endif
+                                        </div>
+                                        <span class="badge {{ $res?->is_checked ? 'badge-success' : 'badge-danger' }} shrink-0 self-start sm:self-auto">
+                                            {{ $res?->is_checked ? '✓ Passed' : '✕ Revision Needed' }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            @endforeach
                         </div>
-                    @endif
+                    </details>
                 @endif
 
                 @if ($submission->feedback->isNotEmpty())
@@ -248,10 +267,29 @@
 
             <aside class="card h-fit p-4 sm:p-6 min-w-0">
                 <h2 class="text-lg font-black text-navy">Timeline</h2>
+                <p class="text-xs text-muted mt-0.5">Submission status and milestone progress.</p>
+
+                @php
+                    $authorStatusHistory = $submission->statusHistory->reject(function ($history) {
+                        return in_array($history->to_status, [
+                            \App\Enums\SubmissionStatus::ReviewerReview,
+                            \App\Enums\SubmissionStatus::ReviewerChangesRequested,
+                        ], true);
+                    });
+                @endphp
+
                 <ol class="mt-5 space-y-5 border-l-2 border-navy/10 pl-5">
-                    @foreach ($submission->statusHistory as $history)
+                    @foreach ($authorStatusHistory as $history)
                         <li class="min-w-0">
-                            <span class="-ml-[23px] sm:-ml-[27px] mr-3 inline-block size-3 rounded-full bg-orange ring-4 ring-warm"></span>
+                            @php
+                                $circleColor = match($history->to_status) {
+                                    \App\Enums\SubmissionStatus::Done => 'bg-emerald-500 ring-4 ring-emerald-100',
+                                    \App\Enums\SubmissionStatus::Withdrawn, \App\Enums\SubmissionStatus::Rejected => 'bg-rose-500 ring-4 ring-rose-100',
+                                    \App\Enums\SubmissionStatus::ReadyForEdas => 'bg-sky-500 ring-4 ring-sky-100',
+                                    default => 'bg-orange ring-4 ring-warm',
+                                };
+                            @endphp
+                            <span class="-ml-[23px] sm:-ml-[27px] mr-3 inline-block size-3 rounded-full {{ $circleColor }}"></span>
                             <span class="text-sm font-bold text-navy break-words">{{ $history->to_status->label() }}</span>
                             <p class="mt-1 text-xs text-muted">{{ $history->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
                         </li>

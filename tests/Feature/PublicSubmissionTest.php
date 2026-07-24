@@ -303,4 +303,35 @@ class PublicSubmissionTest extends TestCase
         $this->assertContains('coauthor1@example.com', $log->cc);
         $this->assertContains('coauthor2@example.com', $log->cc);
     }
+
+    public function test_author_portal_hides_reviewer_checklist_and_disables_edit_when_done(): void
+    {
+        [$conference] = $this->openConference();
+        $token = 'test-author-portal-token';
+        $submission = Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => '15708888',
+            'title' => 'Test Paper Done',
+            'corresponding_author_name' => 'Author One',
+            'corresponding_author_email' => 'author@example.com',
+            'corresponding_author_phone' => '+628123456789',
+            'status' => SubmissionStatus::Done,
+            'editor_id' => null,
+            'author_token_hash' => hash('sha256', $token),
+            'author_token_encrypted' => $token,
+            'author_token_expires_at' => now()->addMonth(),
+        ]);
+        $submission->statusHistory()->create([
+            'from_status' => SubmissionStatus::Submitted,
+            'to_status' => SubmissionStatus::Done,
+            'user_id' => null,
+        ]);
+
+        $response = $this->get(route('author.portal', $token));
+        $response->assertOk();
+        $response->assertSee('Completed / Done');
+        $response->assertSee('Edit Submission Details');
+        $response->assertSee('disabled');
+        $response->assertDontSee('Editorial Compliance Checklist Monitoring');
+    }
 }

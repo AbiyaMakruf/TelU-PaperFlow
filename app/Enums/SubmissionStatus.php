@@ -20,18 +20,18 @@ enum SubmissionStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Submitted => 'Submission baru',
-            self::NeedsAuthorCorrection => 'Perlu koreksi author',
-            self::ReadyForAssignment => 'Siap di-assign',
-            self::EditorialReview => 'Pemeriksaan editorial',
-            self::WaitingAuthorRevision => 'Menunggu revisi author',
-            self::ReviewerReview => 'Pemeriksaan reviewer',
-            self::ReviewerChangesRequested => 'Dikembalikan reviewer',
-            self::ReadyForEdas => 'Ready for EDAS',
-            self::EdasFixRequired => 'Perbaikan EDAS',
-            self::Done => 'Selesai',
-            self::Withdrawn => 'Ditarik',
-            self::Rejected => 'Ditolak',
+            self::Submitted => 'Submission Received',
+            self::NeedsAuthorCorrection => 'Author Correction Required',
+            self::ReadyForAssignment => 'Pending Staff Assignment',
+            self::EditorialReview => 'Editorial Compliance Check',
+            self::WaitingAuthorRevision => 'Waiting for Author Revision',
+            self::ReviewerReview => 'Peer & Technical Review',
+            self::ReviewerChangesRequested => 'Reviewer Revision Requested',
+            self::ReadyForEdas => 'Ready for EDAS Upload',
+            self::EdasFixRequired => 'EDAS Correction Required',
+            self::Done => 'Completed / Done',
+            self::Withdrawn => 'Withdrawn',
+            self::Rejected => 'Rejected',
         };
     }
 
