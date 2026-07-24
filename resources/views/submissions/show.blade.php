@@ -342,31 +342,22 @@
                                                                 <span>✕</span>
                                                             </label>
                                                             <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
-                                                                <div x-show="openGuidance" x-collapse x-cloak class="rounded-lg bg-warm/90 p-2.5 text-[11px] text-navy border border-orange/20 leading-relaxed font-normal">
-                                                                    {{ $item->guidance }}
-                                                                </div>
-                                                            </div>
-                                                        @else
-                                                            <span class="text-slate-400 font-normal italic">-</span>
-                                                        @endif
+                                                                :class="checked ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-emerald-100 hover:text-emerald-600'"
+                                                                title="Checked / Complete">
+                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" :disabled="!isEditorialActive" @if(!$isEditorialActive) disabled @endif @change="checked = true; updateCheckedState()" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description ?? $item->guidance) }}">
+                                                                <span>✓</span>
+                                                            </label>
+                                                        </div>
                                                     </td>
-                                                    <td>
-                                                        <input class="item-note-input form-input text-xs py-1 px-2 text-slate-700 bg-slate-50 focus:bg-white"
-                                                               name="items[{{ $item->id }}][note]"
-                                                               value="{{ old("items.{$item->id}.note", $result?->note) }}"
-                                                               placeholder="Add note if needed..."
-                                                               @if(!$isEditorialActive) disabled @endif
-                                                               @blur="autoSaveChecklist()">
-                                                    </td>
-                                                    @if($submission->reviewCycles()->where('stage', \App\Enums\ReviewStage::Editorial)->count() > 1)
-                                                        <td class="text-center">
-                                                            @if($prevResult)
+                                                    @if($hasBeforeColumn)
+                                                        <td class="p-3.5 sm:p-4 align-top text-center bg-slate-50/50 border-l border-navy/10">
+                                                            @if($prevResult !== null)
                                                                 @if($prevResult->is_checked)
-                                                                    <span class="inline-flex items-center justify-center size-5 rounded-full bg-emerald-100 text-emerald-700 font-black text-xs" title="Passed in previous cycle">
+                                                                    <span class="inline-flex items-center justify-center size-8 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 font-black text-xs shadow-xs" title="Passed in previous cycle before revision">
                                                                         ✓
                                                                     </span>
                                                                 @else
-                                                                    <span class="inline-flex items-center justify-center size-5 rounded-full bg-rose-100 text-rose-700 font-black text-xs" title="Needs revision in previous cycle">
+                                                                    <span class="inline-flex items-center justify-center size-8 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 font-black text-xs shadow-xs" title="Unchecked / Rejected in previous cycle before revision">
                                                                         ✕
                                                                     </span>
                                                                 @endif
