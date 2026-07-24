@@ -554,6 +554,63 @@
                     </div>
                 @endcan
             </details>
+
+            <!-- 4. Email & Communication History Section (Accordion) -->
+            @if($emailLogs->isNotEmpty() || app(\App\Services\VisibleEmailLogs::class)->canAccess(auth()->user()))
+                <details class="card overflow-hidden max-w-full min-w-0" id="email-history-accordion" open>
+                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-base sm:text-lg">✉️</span>
+                            <div class="min-w-0">
+                                <h2 class="text-sm sm:text-base font-black text-navy">Email &amp; Communication History</h2>
+                                <p class="text-[11px] text-muted font-normal truncate">Logs of automated &amp; manual email notifications dispatched for this manuscript.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="badge badge-primary text-[10px]">{{ $emailLogs->count() }} {{ Str::plural('email', $emailLogs->count()) }}</span>
+                            <span class="text-xs text-muted">▼</span>
+                        </div>
+                    </summary>
+                    <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
+                        <div class="flex items-center justify-between gap-3 pb-2 border-b border-navy/8">
+                            <p class="text-xs text-slate-500 font-semibold">Dispatched email logs &amp; delivery status</p>
+                            <a class="text-xs font-bold text-orange hover:underline flex items-center gap-1" href="{{ route('emails.index') }}">
+                                <span>📊</span> View Full Email Monitoring ↗
+                            </a>
+                        </div>
+                        <div class="space-y-3">
+                            @forelse($emailLogs as $email)
+                                <div class="rounded-xl bg-slate-50/80 p-3.5 border border-navy/10 text-xs min-w-0 shadow-xs">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="badge {{ $email->status === 'sent' ? 'badge-success' : ($email->status === 'failed' ? 'badge-danger' : 'badge-warning') }} text-[10px] uppercase font-black shrink-0">
+                                                {{ $email->status }}
+                                            </span>
+                                            <span class="font-bold text-navy text-xs truncate">To: {{ $email->recipient }}</span>
+                                            @if($email->cc && count($email->cc) > 0)
+                                                <span class="text-[10px] text-slate-400 font-medium truncate">CC: {{ implode(', ', $email->cc) }}</span>
+                                            @endif
+                                        </div>
+                                        <span class="text-[11px] text-slate-500 shrink-0 font-medium">{{ $email->created_at->format('d M Y H:i:s') }}</span>
+                                    </div>
+                                    <p class="font-bold text-navy leading-snug break-words text-xs sm:text-sm">{{ $email->subject }}</p>
+                                    @if($email->error)
+                                        <p class="mt-2 text-[11px] text-rose-700 bg-rose-50 p-2.5 rounded-lg border border-rose-200 leading-relaxed break-words font-medium">{{ Str::limit($email->error, 250) }}</p>
+                                    @endif
+                                    @if($email->status === 'failed' && $email->body)
+                                        <form class="mt-3 flex justify-end" method="POST" action="{{ route('emails.resend', $email) }}">
+                                            @csrf
+                                            <button class="btn btn-secondary px-3 py-1.5 text-xs font-black">🔁 Re-send Email</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            @empty
+                                <p class="text-xs text-muted italic text-center py-4">No email history recorded for this manuscript.</p>
+                            @endforelse
+                        </div>
+                    </div>
+                </details>
+            @endif
         </div>
 
         <!-- Sidebar Actions & Status -->
@@ -811,43 +868,6 @@
                     @endcan
                 </div>
             </section>
-
-            <!-- Email History Card -->
-            @if($emailLogs->isNotEmpty() || app(\App\Services\VisibleEmailLogs::class)->canAccess(auth()->user()))
-                <section class="card p-4 sm:p-6 max-w-full min-w-0">
-                    <div class="flex items-center justify-between gap-3 border-b border-navy/8 pb-3">
-                        <h2 class="font-black text-navy text-base">Email History</h2>
-                        <a class="text-xs font-bold text-orange hover:underline" href="{{ route('emails.index') }}">Monitoring</a>
-                    </div>
-                    <div class="mt-4 space-y-3">
-                        @forelse($emailLogs as $email)
-                            <div class="rounded-xl bg-warm/80 p-3.5 border border-navy/10 text-xs min-w-0">
-                                <div class="flex items-center justify-between gap-2 mb-2">
-                                    <div class="flex items-center gap-2 min-w-0">
-                                        <span class="badge {{ $email->status === 'sent' ? 'badge-success' : ($email->status === 'failed' ? 'badge-danger' : 'badge-warning') }} text-[10px] uppercase font-black shrink-0">
-                                            {{ $email->status }}
-                                        </span>
-                                        <span class="text-muted text-[11px] truncate">To: {{ $email->recipient }}</span>
-                                    </div>
-                                    <span class="text-[11px] text-muted shrink-0">{{ $email->created_at->format('d M H:i') }}</span>
-                                </div>
-                                <p class="font-bold text-navy leading-snug break-words">{{ $email->subject }}</p>
-                                @if($email->error)
-                                    <p class="mt-2 text-[11px] text-danger bg-danger/5 p-2 rounded-lg leading-relaxed break-words">{{ Str::limit($email->error, 180) }}</p>
-                                @endif
-                                @if($email->status === 'failed' && $email->body)
-                                    <form class="mt-3 flex justify-end" method="POST" action="{{ route('emails.resend', $email) }}">
-                                        @csrf
-                                        <button class="btn btn-secondary px-3 py-1.5 text-xs font-bold">🔁 Re-send Email</button>
-                                    </form>
-                                @endif
-                            </div>
-                        @empty
-                            <p class="text-xs text-muted italic">No email history recorded.</p>
-                        @endforelse
-                    </div>
-                </section>
-            @endif
 
             <!-- Timeline Status Card -->
             <section class="card p-4 sm:p-6 max-w-full min-w-0">
