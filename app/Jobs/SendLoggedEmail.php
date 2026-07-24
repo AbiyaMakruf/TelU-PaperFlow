@@ -39,6 +39,7 @@ class SendLoggedEmail implements ShouldQueue
                 'revision_requested' => 'Upload Revision',
                 'submission_received' => 'Track Submission',
                 'paper_completed' => 'View Paper Portal',
+                'new_submission_admin' => 'Open Paper & Assign PIC',
                 default => 'Open Paperflow',
             };
             $mail = new PaperflowMail(

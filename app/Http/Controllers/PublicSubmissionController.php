@@ -159,13 +159,33 @@ class PublicSubmissionController extends Controller
         $portalUrl = route('author.portal', $token);
         $mailer->queue($submission->load('conference'), 'submission_received', ['portal_url' => $portalUrl]);
 
+        // Send email notification to active Conference Admins
+        $conferenceAdmins = $conference->memberships()
+            ->where('role', ConferenceRole::Admin)
+            ->where('is_active', true)
+            ->with('user')
+            ->get()
+            ->pluck('user')
+            ->filter(fn ($u) => $u && $u->email && $u->is_active);
+
+        $paperUrl = route('submissions.show', $submission);
+        $submittedAtFormatted = now($conference->timezone)->format('F j, Y \a\t H:i T');
+
+        foreach ($conferenceAdmins as $admin) {
+            $adminSubject = "[{$conference->name}] New Submission: {$submission->paper_code} - {$submission->title}";
+            $adminBody = "Dear {$admin->name},\n\nA new manuscript has been submitted to {$conference->name} and requires your review and PIC assignment.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nCorresponding Author: {$submission->corresponding_author_name} ({$submission->corresponding_author_email})\nSubmitted At: {$submittedAtFormatted}\n\nPlease log in to Paperflow to inspect the manuscript, validate the submission, and assign the Editorial and Reviewer PICs:\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$conference->name}";
+
+            $mailer->sendNotification(
+                submission: $submission,
+                recipientEmail: $admin->email,
+                subject: $adminSubject,
+                body: $adminBody,
+                templateKey: 'new_submission_admin'
+            );
+        }
+
         // Send in-app notification to Superadmins & Conference Admins
         $superadmins = User::where('is_super_admin', true)->where('is_active', true)->get();
-        $conferenceAdmins = $conference->members()
-            ->wherePivot('role', ConferenceRole::Admin->value)
-            ->wherePivot('is_active', true)
-            ->get();
-
         $recipients = $superadmins->concat($conferenceAdmins)->unique('id');
         $notification = new WorkflowNotification(
             $submission,

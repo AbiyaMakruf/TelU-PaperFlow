@@ -85,6 +85,11 @@ class PublicSubmissionTest extends TestCase
         $this->assertCount(1, $confAdmin->unreadNotifications);
         $this->assertCount(0, $otherUser->unreadNotifications);
 
+        $this->assertDatabaseHas('email_logs', [
+            'recipient' => $confAdmin->email,
+            'template_key' => 'new_submission_admin',
+        ]);
+
         $superadminNotif = $superadmin->unreadNotifications->first();
         $this->assertStringContainsString('Submission Baru', $superadminNotif->data['title']);
         $this->assertStringContainsString('Notified Paper Title', $superadminNotif->data['message']);
