@@ -39,14 +39,14 @@ class SendLoggedEmail implements ShouldQueue
             $cleanKey = str_replace('test:', '', $this->emailLog->template_key);
             $actionLabel = match ($cleanKey) {
                 'revision_requested' => 'Open Portal & Upload Revision',
-                'submission_received' => 'Open Author Portal',
+                'submission_received' => 'Track Submission',
                 'paper_completed' => 'Open Author Portal',
                 'deadline_reminder' => 'Open Author Portal',
                 'new_submission_admin' => 'Open Paper & Assign PIC',
                 'assigned_editor' => 'Open Paper & Complete Checklist',
                 'assigned_reviewer' => 'Open Paper & Review',
                 'author_revision_uploaded' => 'Inspect Updated Paper',
-                default => 'Open Portal & Upload Revision',
+                default => 'Track Submission',
             };
             $mail = new PaperflowMail(
                 mailSubject: $this->emailLog->subject,
