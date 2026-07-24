@@ -456,6 +456,89 @@
                 </details>
             @endcan
 
+            <!-- IEEE PDF eXpress & EDAS Section (Accordion) -->
+            <details class="card overflow-hidden max-w-full min-w-0 border-2 border-orange/30" id="pdfexpress-edas-accordion" open>
+                <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-amber-50/60 hover:bg-amber-100/60 transition select-none border-b border-navy/8">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-base sm:text-lg">📄</span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm sm:text-base font-black text-navy">IEEE PDF eXpress &amp; EDAS Management</h2>
+                            <p class="text-[11px] text-muted font-normal truncate">Reviewer PDF compliance status and EDAS upload error details.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        @if(($submission->pdf_express_status ?? '') === 'passed')
+                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-800 border border-emerald-300">
+                                🟢 PDF eXpress: Passed
+                            </span>
+                        @elseif(($submission->pdf_express_status ?? '') === 'failed')
+                            <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-black text-rose-800 border border-rose-300">
+                                🔴 PDF eXpress: Failed
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-800 border border-amber-300">
+                                🟡 PDF eXpress: Pending
+                            </span>
+                        @endif
+                        <span class="text-xs text-muted">▼</span>
+                    </div>
+                </summary>
+
+                <div class="p-4 sm:p-6 bg-white space-y-4">
+                    @can('reviewerReview', $submission)
+                        <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" class="space-y-4 min-w-0" x-data="{
+                            setError(msg) {
+                                let current = $refs.noteInput.value;
+                                $refs.noteInput.value = current ? current + '\n' + msg : msg;
+                            }
+                        }">
+                            @csrf
+                            <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                                <div>
+                                    <label class="form-label text-xs">IEEE PDF eXpress Status *</label>
+                                    <select class="form-input text-xs" name="pdf_express_status">
+                                        <option value="pending" @selected(($submission->pdf_express_status ?? 'pending') === 'pending')>Pending</option>
+                                        <option value="passed" @selected(($submission->pdf_express_status ?? '') === 'passed')>✓ Passed</option>
+                                        <option value="failed" @selected(($submission->pdf_express_status ?? '') === 'failed')>✕ Failed / Error</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label text-xs">EDAS Link / Reference</label>
+                                    <input class="form-input text-xs" name="edas_reference" value="{{ old('edas_reference', $submission->edas_reference) }}" placeholder="https://edas.info/manuscript/...">
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="form-label text-xs">EDAS Error Notes (Reviewer Only)</label>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5 mb-2">
+                                    <button type="button" @click="setError('pagesize: The page size is US letter size (8.5 by 11 inches), but only A4 size (210 x 297 mm) is allowed.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 font-medium text-left leading-snug break-words shadow-2xs">+ Page Size US Letter</button>
+                                    <button type="button" @click="setError('The final manuscript must have at least 5 filled pages, not just 4.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 font-medium text-left leading-snug break-words shadow-2xs">+ Min 5 Pages</button>
+                                    <button type="button" @click="setError('authorname: Doubleblind conference, but author names are visible on the first page.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 font-medium text-left leading-snug break-words shadow-2xs">+ Doubleblind Author Visible</button>
+                                    <button type="button" @click="setError('Authors must first upload or fill out the IEEE copyright form.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 font-medium text-left leading-snug break-words shadow-2xs">+ IEEE Copyright Missing</button>
+                                </div>
+                                <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Write EDAS error details or click preset buttons above...">{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
+                            </div>
+                            <div class="flex justify-end pt-1">
+                                <button class="btn btn-primary px-5 py-2 text-xs font-black w-full sm:w-auto">
+                                    💾 Save Reviewer Status &amp; EDAS Notes
+                                </button>
+                            </div>
+                        </form>
+                    @else
+                        <div class="space-y-3 text-xs min-w-0">
+                            <p class="font-semibold text-navy break-all"><strong>EDAS Reference:</strong> {{ $submission->edas_reference ?: '-' }}</p>
+                            @if($submission->edas_error_note)
+                                <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 break-words">
+                                    <p class="font-extrabold text-xs">EDAS Error Notes:</p>
+                                    <p class="mt-1 whitespace-pre-line leading-relaxed text-xs">{{ $submission->edas_error_note }}</p>
+                                </div>
+                            @endif
+                        </div>
+                    @endcan
+                </div>
+            </details>
+
             <!-- 3. File Versioning Section (Accordion) -->
             <details class="card overflow-hidden max-w-full min-w-0">
                 <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
@@ -694,76 +777,6 @@
                     </form>
                 </section>
             @endcan
-
-            <section class="card p-4 sm:p-6 border-2 border-orange/30 bg-amber-50/20 space-y-4 max-w-full min-w-0">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-navy/10 pb-3 min-w-0">
-                    <div class="min-w-0">
-                        <h2 class="font-black text-navy text-sm sm:text-base">IEEE PDF eXpress &amp; EDAS</h2>
-                        <p class="text-[11px] text-muted">Reviewer status control panel</p>
-                    </div>
-                    <div class="shrink-0">
-                        @if(($submission->pdf_express_status ?? '') === 'passed')
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 border border-emerald-300 shadow-sm">
-                                🟢 PDF eXpress: Passed
-                            </span>
-                        @elseif(($submission->pdf_express_status ?? '') === 'failed')
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-black text-rose-800 border border-rose-300 shadow-sm">
-                                🔴 PDF eXpress: Failed
-                            </span>
-                        @else
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800 border border-amber-300 shadow-sm">
-                                🟡 PDF eXpress: Pending
-                            </span>
-                        @endif
-                    </div>
-                </div>
-
-                @can('reviewerReview', $submission)
-                    <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" class="space-y-3 min-w-0" x-data="{
-                        setError(msg) {
-                            let current = $refs.noteInput.value;
-                            $refs.noteInput.value = current ? current + '\n' + msg : msg;
-                        }
-                    }">
-                        @csrf
-                        <div>
-                            <label class="form-label text-xs">IEEE PDF eXpress Status *</label>
-                            <select class="form-input text-xs" name="pdf_express_status">
-                                <option value="pending" @selected(($submission->pdf_express_status ?? 'pending') === 'pending')>Pending</option>
-                                <option value="passed" @selected(($submission->pdf_express_status ?? '') === 'passed')>✓ Passed</option>
-                                <option value="failed" @selected(($submission->pdf_express_status ?? '') === 'failed')>✕ Failed / Error</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="form-label text-xs">EDAS Link / Reference</label>
-                            <input class="form-input text-xs" name="edas_reference" value="{{ old('edas_reference', $submission->edas_reference) }}" placeholder="https://edas.info/manuscript/...">
-                        </div>
-                        <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="form-label text-xs">EDAS Error Notes (Reviewer Only)</label>
-                            </div>
-                            <div class="flex flex-wrap gap-1.5 mb-2">
-                                <button type="button" @click="setError('pagesize: The page size is US letter size (8.5 by 11 inches), but only A4 size (210 x 297 mm) is allowed.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded hover:bg-rose-50 font-medium text-left leading-snug break-words">+ Page Size US Letter</button>
-                                <button type="button" @click="setError('The final manuscript must have at least 5 filled pages, not just 4.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded hover:bg-rose-50 font-medium text-left leading-snug break-words">+ Min 5 Pages</button>
-                                <button type="button" @click="setError('authorname: Doubleblind conference, but author names are visible on the first page.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded hover:bg-rose-50 font-medium text-left leading-snug break-words">+ Doubleblind Author Visible</button>
-                                <button type="button" @click="setError('Authors must first upload or fill out the IEEE copyright form.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded hover:bg-rose-50 font-medium text-left leading-snug break-words">+ IEEE Copyright Missing</button>
-                            </div>
-                            <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Write EDAS error details or click preset buttons above...">{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
-                        </div>
-                        <button class="btn btn-secondary w-full text-xs font-bold">Save Reviewer Status</button>
-                    </form>
-                @else
-                    <div class="space-y-2 text-xs min-w-0">
-                        <p class="font-semibold text-navy break-all"><strong>EDAS Reference:</strong> {{ $submission->edas_reference ?: '-' }}</p>
-                        @if($submission->edas_error_note)
-                            <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 break-words">
-                                <p class="font-bold">EDAS Error Notes:</p>
-                                <p class="mt-1 whitespace-pre-line leading-relaxed">{{ $submission->edas_error_note }}</p>
-                            </div>
-                        @endif
-                    </div>
-                @endcan
-            </section>
 
             <!-- Workflow Stage Actions Card -->
             <section class="card p-4 sm:p-6 max-w-full min-w-0">
