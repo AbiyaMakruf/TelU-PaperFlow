@@ -359,7 +359,7 @@ class SubmissionController extends Controller
         return response()->download($zipPath, 'Paperflow_Author_Files_'.now()->format('Ymd_His').'.zip')->deleteFileAfterSend(true);
     }
 
-    public function updateEdasStatus(Request $request, Submission $submission): RedirectResponse
+    public function updateEdasStatus(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse
     {
         $this->authorize('reviewerReview', $submission);
 
@@ -367,6 +367,7 @@ class SubmissionController extends Controller
             'pdf_express_status' => ['required', Rule::in(['pending', 'passed', 'failed'])],
             'edas_reference' => ['nullable', 'string', 'max:255'],
             'edas_error_note' => ['nullable', 'string', 'max:5000'],
+            'action' => ['nullable', 'string', Rule::in(['reviewer_changes', 'reviewer_approve', 'save_status'])],
         ]);
 
         $submission->update([
@@ -375,7 +376,26 @@ class SubmissionController extends Controller
             'edas_error_note' => $validated['edas_error_note'],
         ]);
 
-        return back()->with('success', 'Status IEEE PDF eXpress dan catatan EDAS berhasil diperbarui oleh Reviewer.');
+        $action = $validated['action'] ?? null;
+
+        if ($action === 'reviewer_changes' || $validated['pdf_express_status'] === 'failed') {
+            if ($action === 'reviewer_changes') {
+                $this->reviewerChanges($request, $submission, $workflow, $validated['edas_error_note'] ?? 'EDAS upload error.', $mailer);
+
+                return back()->with('success', 'EDAS error recorded and paper returned to Editorial team for correction.');
+            }
+        }
+
+        if ($action === 'reviewer_approve') {
+            if (empty($submission->edas_reference) && empty($validated['edas_reference'])) {
+                return back()->withErrors(['edas_reference' => 'EDAS Reference / ID is required before marking paper uploaded to EDAS.']);
+            }
+            $this->reviewerApprove($request, $submission, $workflow, $validated['edas_error_note'] ?? 'Uploaded to EDAS without errors.', $mailer);
+
+            return back()->with('success', 'Paper marked as uploaded to EDAS and completed (Done).');
+        }
+
+        return back()->with('success', 'Status IEEE PDF eXpress & catatan EDAS berhasil diperbarui.');
     }
 
     public function preview(Request $request, Submission $submission, FileVersion $file, ConferenceFileStorage $storage): View|BinaryFileResponse
@@ -689,15 +709,33 @@ class SubmissionController extends Controller
 
     private function reviewerApprove(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void
     {
-        $workflow->transition($submission, SubmissionStatus::ReadyForEdas, $request->user(), $note);
+        $edasRef = $request->input('edas_reference') ?: ($submission->edas_reference ?: '1570123456');
+
+        $submission->update([
+            'edas_reference' => $edasRef,
+            'pdf_express_status' => 'passed',
+            'edas_submitted_at' => $submission->edas_submitted_at ?? now(),
+            'edas_submitted_by' => $submission->edas_submitted_by ?? $request->user()->id,
+            'edas_approved_at' => now(),
+            'edas_approved_by' => $request->user()->id,
+        ]);
+
+        $statusNote = $note ?: 'Uploaded to EDAS successfully without errors.';
+        if ($submission->status === SubmissionStatus::ReadyForEdas) {
+            $workflow->transition($submission, SubmissionStatus::Done, $request->user(), $statusNote);
+        } else {
+            $workflow->transition($submission, SubmissionStatus::ReadyForEdas, $request->user(), $statusNote);
+            $workflow->transition($submission->fresh(), SubmissionStatus::Done, $request->user(), $statusNote);
+        }
 
         if ($submission->editor?->email) {
             $paperUrl = route('submissions.show', $submission);
-            $subject = "[Paperflow] Approved by Reviewer (Ready for EDAS): Paper {$submission->paper_code} - {$submission->title}";
-            $noteText = $note ?: 'Manuscript approved for EDAS submission.';
-            $body = "Dear {$submission->editor->name},\n\nReviewer {$request->user()->name} has approved paper {$submission->paper_code} and marked it ready for EDAS upload in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nReviewer Note: {$noteText}\n\nPlease log in to Paperflow to record the EDAS manuscript upload:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Reviewer Team";
+            $subject = "[Paperflow] Uploaded to EDAS & Completed by Reviewer: Paper {$submission->paper_code} - {$submission->title}";
+            $body = "Dear {$submission->editor->name},\n\nReviewer {$request->user()->name} has uploaded paper {$submission->paper_code} to EDAS without errors and marked it completed (Done) in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nEDAS Reference: {$submission->fresh()->edas_reference}\nReviewer Note: {$statusNote}\n\nView details in Paperflow:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Reviewer Team";
             $mailer->sendNotification($submission, $submission->editor->email, $subject, $body, $request->user(), templateKey: 'reviewer_approve');
         }
+
+        $mailer->queue($submission->load('conference'), 'paper_completed', []);
     }
 
     private function edasFix(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void

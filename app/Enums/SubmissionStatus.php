@@ -40,9 +40,12 @@ enum SubmissionStatus: string
         return match ($this) {
             self::Done => 'success',
             self::Rejected, self::Withdrawn => 'danger',
-            self::NeedsAuthorCorrection, self::WaitingAuthorRevision => 'warning',
-            self::ReadyForEdas => 'info',
             default => 'primary',
         };
+    }
+
+    public function isTerminal(): bool
+    {
+        return in_array($this, [self::Done, self::Rejected, self::Withdrawn], true);
     }
 }

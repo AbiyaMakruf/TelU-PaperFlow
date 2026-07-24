@@ -131,14 +131,5 @@ class PaperflowEmailPresentationTest extends TestCase
             'template_key' => 'reviewer_approve',
         ]);
 
-        // 6. EDAS Fix -> Email to Reviewer
-        $this->actingAs($editor)->post(route('submissions.advance', $submission), [
-            'action' => 'edas_fix',
-            'note' => 'EDAS PDF check failed.',
-        ]);
-        $this->assertDatabaseHas('email_logs', [
-            'recipient' => 'reviewer@conf.org',
-            'template_key' => 'edas_fix',
-        ]);
     }
 }

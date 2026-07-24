@@ -507,6 +507,7 @@
                 <div class="p-4 sm:p-6 bg-white space-y-4">
                     @can('reviewerReview', $submission)
                         <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" class="space-y-4 min-w-0" x-data="{
+                            statusState: @js(old('pdf_express_status', $submission->pdf_express_status ?? 'pending')),
                             setError(msg) {
                                 let current = $refs.noteInput.value;
                                 $refs.noteInput.value = current ? current + '\n' + msg : msg;
@@ -515,35 +516,48 @@
                             @csrf
                             <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
                                 <div>
-                                    <label class="form-label text-xs">IEEE PDF eXpress Status *</label>
-                                    <select class="form-input text-xs" name="pdf_express_status">
-                                        <option value="pending" @selected(($submission->pdf_express_status ?? 'pending') === 'pending')>Pending</option>
-                                        <option value="passed" @selected(($submission->pdf_express_status ?? '') === 'passed')>✓ Passed</option>
-                                        <option value="failed" @selected(($submission->pdf_express_status ?? '') === 'failed')>✕ Failed / Error</option>
+                                    <label class="form-label text-xs">IEEE PDF eXpress / EDAS Upload Status *</label>
+                                    <select class="form-input text-xs font-bold" name="pdf_express_status" x-model="statusState" @if($submission->status->isTerminal()) disabled @endif>
+                                        <option value="pending">⏳ Pending Verification</option>
+                                        <option value="passed">✓ Passed &amp; EDAS Uploaded Successfully</option>
+                                        <option value="failed">✕ Failed / EDAS Error Encountered</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="form-label text-xs">EDAS Link / Reference</label>
-                                    <input class="form-input text-xs" name="edas_reference" value="{{ old('edas_reference', $submission->edas_reference) }}" placeholder="https://edas.info/manuscript/...">
+                                    <label class="form-label text-xs">EDAS Link / Reference ID</label>
+                                    <input class="form-input text-xs font-mono" name="edas_reference" value="{{ old('edas_reference', $submission->edas_reference) }}" placeholder="e.g. 1570123456 or https://edas.info/..." @if($submission->status->isTerminal()) disabled @endif>
                                 </div>
                             </div>
                             <div>
                                 <div class="flex items-center justify-between mb-1">
                                     <label class="form-label text-xs">EDAS Error Notes (Reviewer Only)</label>
                                 </div>
-                                <div class="flex flex-wrap gap-1.5 mb-2">
-                                    <button type="button" @click="setError('pagesize: The page size is US letter size (8.5 by 11 inches), but only A4 size (210 x 297 mm) is allowed.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 font-medium text-left leading-snug break-words shadow-2xs">+ Page Size US Letter</button>
-                                    <button type="button" @click="setError('The final manuscript must have at least 5 filled pages, not just 4.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 font-medium text-left leading-snug break-words shadow-2xs">+ Min 5 Pages</button>
-                                    <button type="button" @click="setError('authorname: Doubleblind conference, but author names are visible on the first page.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 font-medium text-left leading-snug break-words shadow-2xs">+ Doubleblind Author Visible</button>
-                                    <button type="button" @click="setError('Authors must first upload or fill out the IEEE copyright form.')" class="text-[10px] bg-white border border-rose-200 text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 font-medium text-left leading-snug break-words shadow-2xs">+ IEEE Copyright Missing</button>
+                                @if(!$submission->status->isTerminal())
+                                    <div class="flex flex-wrap gap-1.5 mb-2" x-show="statusState === 'failed'">
+                                        <button type="button" @click="setError('pagesize: The page size is US letter size (8.5 by 11 inches), but only A4 size (210 x 297 mm) is allowed.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Page Size US Letter</button>
+                                        <button type="button" @click="setError('The final manuscript must have at least 5 filled pages, not just 4.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Min 5 Pages</button>
+                                        <button type="button" @click="setError('authorname: Doubleblind conference, but author names are visible on the first page.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Doubleblind Author Visible</button>
+                                        <button type="button" @click="setError('Authors must first upload or fill out the IEEE copyright form.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ IEEE Copyright Missing</button>
+                                    </div>
+                                @endif
+                                <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Write EDAS error details or click preset buttons above..." @if($submission->status->isTerminal()) disabled @endif>{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
+                            </div>
+
+                            @if(!$submission->status->isTerminal())
+                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2 border-t border-navy/10">
+                                    <button type="submit" name="action" value="save_status" class="btn btn-secondary px-4 py-2 text-xs font-bold w-full sm:w-auto" x-show="statusState === 'pending'">
+                                        Save Reviewer Notes
+                                    </button>
+
+                                    <button type="submit" name="action" value="reviewer_changes" class="btn bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition" x-show="statusState === 'failed'">
+                                        ↩️ Save &amp; Return to Editorial (EDAS Error)
+                                    </button>
+
+                                    <button type="submit" name="action" value="reviewer_approve" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition" x-show="statusState === 'passed'">
+                                        🏁 Mark Uploaded to EDAS (Complete Paper)
+                                    </button>
                                 </div>
-                                <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Write EDAS error details or click preset buttons above...">{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
-                            </div>
-                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-1">
-                                <button class="btn btn-primary px-5 py-2 text-xs font-black w-full sm:w-auto">
-                                    Save Reviewer Status &amp; EDAS Notes
-                                </button>
-                            </div>
+                            @endif
                         </form>
                     @else
                         <div class="space-y-3 text-xs min-w-0">
@@ -555,34 +569,6 @@
                                 </div>
                             @endif
                         </div>
-                    @endcan
-
-                    <!-- Reviewer & EDAS Stage Action Controls -->
-                    @can('reviewerReview', $submission)
-                        @if($submission->status === \App\Enums\SubmissionStatus::ReviewerReview)
-                            <div class="pt-4 border-t border-navy/10 flex flex-col sm:flex-row items-center justify-end gap-2.5">
-                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="w-full sm:w-auto">
-                                    @csrf
-                                    <input type="hidden" name="action" value="reviewer_changes">
-                                    <button class="btn btn-secondary text-xs font-bold py-2 px-4 w-full sm:w-auto">Return to Editorial</button>
-                                </form>
-                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="w-full sm:w-auto">
-                                    @csrf
-                                    <input type="hidden" name="action" value="reviewer_approve">
-                                    <button class="btn btn-primary text-xs font-extrabold py-2 px-4 w-full sm:w-auto">Approve &amp; Mark Ready for EDAS</button>
-                                </form>
-                            </div>
-                        @endif
-                        @if($submission->status === \App\Enums\SubmissionStatus::ReadyForEdas && $submission->edas_submitted_at)
-                            <div class="pt-4 border-t border-navy/10 flex justify-end">
-                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3 w-full sm:w-auto">
-                                    @csrf
-                                    <input type="hidden" name="action" value="approve_edas">
-                                    <textarea class="form-input min-h-16 py-2 text-xs" name="note" placeholder="EDAS approval notes"></textarea>
-                                    <button class="btn btn-primary w-full text-xs font-extrabold py-2 px-4">Approve EDAS &amp; Mark Completed</button>
-                                </form>
-                            </div>
-                        @endif
                     @endcan
                     @can('editorialReview', $submission)
                         @if($submission->status === \App\Enums\SubmissionStatus::ReadyForEdas)
@@ -783,7 +769,7 @@
                         <input type="hidden" name="role" value="editorial">
                         <div>
                             <label class="form-label text-xs">Editor PIC *</label>
-                            <select class="form-input text-xs" name="user_id" required>
+                            <select class="form-input text-xs" name="user_id" required @if($submission->status->isTerminal()) disabled @endif>
                                 <option value="">Select editor...</option>
                                 @foreach($editors as $member)
                                     <option value="{{ $member->user_id }}" @selected($submission->editor_id === $member->user_id)>{{ $member->user->name }}</option>
@@ -793,7 +779,7 @@
 
                         <div>
                             <label class="form-label text-xs">Author Document Format *</label>
-                            <select class="form-input text-xs" name="manuscript_format" required>
+                            <select class="form-input text-xs" name="manuscript_format" required @if($submission->status->isTerminal()) disabled @endif>
                                 <option value="">Select format...</option>
                                 <option value="docx" @selected($submission->manuscript_format === 'docx')>Microsoft Word (.docx)</option>
                                 <option value="latex" @selected($submission->manuscript_format === 'latex')>LaTeX (.zip)</option>
@@ -803,16 +789,16 @@
                         @if($submission->editor_id)
                             <div>
                                 <label class="form-label text-xs text-amber-700">Editor Reassignment Reason *</label>
-                                <input class="form-input text-xs border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="e.g. Workload rebalancing" required>
+                                <input class="form-input text-xs border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="e.g. Workload rebalancing" required @if($submission->status->isTerminal()) disabled @endif>
                             </div>
                         @endif
 
                         <div>
                             <label class="form-label text-xs">Assignment Note (Optional)</label>
-                            <input class="form-input text-xs" name="note" placeholder="Optional note for editor...">
+                            <input class="form-input text-xs" name="note" placeholder="Optional note for editor..." @if($submission->status->isTerminal()) disabled @endif>
                         </div>
 
-                        <button class="btn btn-primary w-full py-2.5 text-xs font-extrabold">Save / Assign Editor</button>
+                        <button class="btn btn-primary w-full py-2.5 text-xs font-extrabold" @if($submission->status->isTerminal()) disabled @endif>Save / Assign Editor</button>
                     </form>
 
                     <!-- Reviewer Assignment Form -->
@@ -821,7 +807,7 @@
                         <input type="hidden" name="role" value="reviewer">
                         <div>
                             <label class="form-label text-xs">Reviewer PIC *</label>
-                            <select class="form-input text-xs" name="user_id" required>
+                            <select class="form-input text-xs" name="user_id" required @if($submission->status->isTerminal()) disabled @endif>
                                 <option value="">Select reviewer...</option>
                                 @foreach($reviewers as $member)
                                     <option value="{{ $member->user_id }}" @selected($submission->reviewer_id === $member->user_id)>{{ $member->user->name }}</option>
@@ -832,11 +818,11 @@
                         @if($submission->reviewer_id)
                             <div>
                                 <label class="form-label text-xs text-amber-700">Reviewer Reassignment Reason *</label>
-                                <input class="form-input text-xs border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="e.g. Reviewer availability change" required>
+                                <input class="form-input text-xs border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="e.g. Reviewer availability change" required @if($submission->status->isTerminal()) disabled @endif>
                             </div>
                         @endif
 
-                        <button class="btn btn-secondary w-full py-2.5 text-xs font-extrabold">Save / Assign Reviewer</button>
+                        <button class="btn btn-secondary w-full py-2.5 text-xs font-extrabold" @if($submission->status->isTerminal()) disabled @endif>Save / Assign Reviewer</button>
                     </form>
                     @can('assign', $submission)
                         <div class="mt-5 border-t border-navy/10 pt-5 space-y-3">
@@ -844,14 +830,14 @@
                             <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
                                 @csrf
                                 <input type="hidden" name="action" value="reject">
-                                <input class="form-input text-xs" name="note" placeholder="Rejection reason" required>
-                                <button class="btn btn-secondary w-full text-xs font-bold">Reject Paper</button>
+                                <input class="form-input text-xs" name="note" placeholder="Rejection reason" required @if($submission->status->isTerminal()) disabled @endif>
+                                <button class="btn btn-secondary w-full text-xs font-bold" @if($submission->status->isTerminal()) disabled @endif>Reject Paper</button>
                             </form>
                             <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
                                 @csrf
                                 <input type="hidden" name="action" value="withdraw">
-                                <input class="form-input text-xs" name="note" placeholder="Withdrawal reason" required>
-                                <button class="btn btn-secondary w-full text-xs font-bold">Withdraw Paper</button>
+                                <input class="form-input text-xs" name="note" placeholder="Withdrawal reason" required @if($submission->status->isTerminal()) disabled @endif>
+                                <button class="btn btn-secondary w-full text-xs font-bold" @if($submission->status->isTerminal()) disabled @endif>Withdraw Paper</button>
                             </form>
                         </div>
                     @endcan
