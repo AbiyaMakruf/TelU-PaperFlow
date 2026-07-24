@@ -73,11 +73,19 @@ class ConferenceController extends Controller
         $settings['brand_primary'] = $request->input('brand_primary', '#102a43');
         $settings['brand_accent'] = $request->input('brand_accent', '#f47c20');
         $settings['brand_tagline'] = $request->input('brand_tagline');
+        $settings['form_title'] = $request->input('form_title');
+        $settings['form_description'] = $request->input('form_description');
         if ($request->hasFile('brand_logo')) {
             if (isset($settings['brand_logo'])) {
                 Storage::disk('public')->delete($settings['brand_logo']);
             }
             $settings['brand_logo'] = $request->file('brand_logo')->store('conference-branding', 'public');
+        }
+        if ($request->hasFile('brand_banner')) {
+            if (isset($settings['brand_banner'])) {
+                Storage::disk('public')->delete($settings['brand_banner']);
+            }
+            $settings['brand_banner'] = $request->file('brand_banner')->store('conference-branding', 'public');
         }
         $validated['settings'] = $settings;
         $old = $conference->only(array_keys($validated));
@@ -118,8 +126,11 @@ class ConferenceController extends Controller
             'max_file_mb' => ['nullable', 'integer', 'min:1', 'max:100'],
             'brand_primary' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'], 'brand_accent' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'brand_tagline' => ['nullable', 'string', 'max:255'], 'brand_logo' => ['nullable', 'image', 'max:2048'],
+            'brand_banner' => ['nullable', 'image', 'max:4096'],
+            'form_title' => ['nullable', 'string', 'max:500'],
+            'form_description' => ['nullable', 'string', 'max:5000'],
         ]);
-        unset($validated['allowed_extensions'], $validated['max_file_mb'], $validated['brand_primary'], $validated['brand_accent'], $validated['brand_tagline'], $validated['brand_logo']);
+        unset($validated['allowed_extensions'], $validated['max_file_mb'], $validated['brand_primary'], $validated['brand_accent'], $validated['brand_tagline'], $validated['brand_logo'], $validated['brand_banner'], $validated['form_title'], $validated['form_description']);
         $validated['slug'] = Str::lower($validated['slug']);
 
         return $validated;

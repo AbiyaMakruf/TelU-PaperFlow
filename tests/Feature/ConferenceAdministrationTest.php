@@ -7,6 +7,8 @@ use App\Models\Conference;
 use App\Models\EmailTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ConferenceAdministrationTest extends TestCase
@@ -120,6 +122,27 @@ class ConferenceAdministrationTest extends TestCase
         $user = User::where('username', 'owner')->firstOrFail();
         $this->assertTrue($user->is_super_admin);
         $this->assertTrue($user->must_change_password);
+    }
+
+    public function test_conference_admin_can_update_form_title_description_and_banner_image(): void
+    {
+        Storage::fake('public');
+        [$conference, $admin] = $this->conferenceWithAdmin();
+
+        $this->actingAs($admin)->put(route('conferences.update', $conference), [
+            'name' => $conference->name,
+            'slug' => $conference->slug,
+            'status' => $conference->status->value,
+            'timezone' => 'Asia/Jakarta',
+            'form_title' => 'ICoICT 2026: Final Manuscript & Materials Submission - V2',
+            'form_description' => 'Thank you for your contribution to ICoICT 2026.',
+            'brand_banner' => UploadedFile::fake()->image('banner.jpg', 1200, 300),
+        ])->assertRedirect();
+
+        $conference->refresh();
+        $this->assertSame('ICoICT 2026: Final Manuscript & Materials Submission - V2', $conference->formTitle());
+        $this->assertSame('Thank you for your contribution to ICoICT 2026.', $conference->formDescription());
+        $this->assertNotNull($conference->brandBannerUrl());
     }
 
     /** @return array{Conference, User} */

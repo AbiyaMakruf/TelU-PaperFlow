@@ -63,7 +63,8 @@
             </div>
         </div>
         <div class="md:col-span-2 border-t border-navy/10 pt-5">
-            <h3 class="font-black text-navy">Public Branding</h3>
+            <h3 class="font-black text-navy">Public Branding & Google Form Design</h3>
+            <p class="text-xs text-muted mt-1">Customize your submission page banner image, form header title, description, and colors.</p>
         </div>
         <div>
             <label class="form-label">Primary Color</label>
@@ -80,6 +81,27 @@
         <div>
             <label class="form-label">Logo Image (max 2 MB)</label>
             <input class="form-input py-3" type="file" name="brand_logo" accept="image/*">
+            @if($conference->brandLogoUrl())<img src="{{ $conference->brandLogoUrl() }}" class="mt-2 h-10 object-contain rounded border border-slate-200 p-1">@endif
+        </div>
+        <div class="md:col-span-2">
+            <label class="form-label">Header Banner Image (Google Form Top Banner - Max 4 MB)</label>
+            <input class="form-input py-3" type="file" name="brand_banner" accept="image/*">
+            <span class="mt-1 block text-xs text-muted">Upload a banner image displayed at the very top of the submission form (Recommended aspect ratio 4:1 or 1200x300px).</span>
+            @if($conference->brandBannerUrl())
+                <div class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    <img src="{{ $conference->brandBannerUrl() }}" class="h-28 w-full object-cover">
+                </div>
+            @endif
+        </div>
+        <div class="md:col-span-2">
+            <label class="form-label">Submission Form Header Title</label>
+            <input class="form-input" name="form_title" value="{{ old('form_title', $conference->settings['form_title'] ?? '') }}" placeholder="{{ $conference->formTitle() }}">
+            <span class="mt-1 block text-xs text-muted">Title displayed in the top card of the submission form.</span>
+        </div>
+        <div class="md:col-span-2">
+            <label class="form-label">Submission Form Description & Instructions</label>
+            <textarea class="form-input min-h-24 py-3" name="form_description" placeholder="{{ $conference->formDescription() }}">{{ old('form_description', $conference->settings['form_description'] ?? '') }}</textarea>
+            <span class="mt-1 block text-xs text-muted">Detailed description or instructions displayed before the input fields.</span>
         </div>
     @endif
 </div>

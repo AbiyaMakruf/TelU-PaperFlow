@@ -125,6 +125,25 @@ class Conference extends Model
         return isset($this->settings['brand_logo']) ? asset('storage/'.$this->settings['brand_logo']) : null;
     }
 
+    public function brandBannerUrl(): ?string
+    {
+        return isset($this->settings['brand_banner']) ? asset('storage/'.$this->settings['brand_banner']) : null;
+    }
+
+    public function formTitle(): string
+    {
+        return ! empty($this->settings['form_title'])
+            ? $this->settings['form_title']
+            : ($this->name.': Final Manuscript & Materials Submission');
+    }
+
+    public function formDescription(): string
+    {
+        return ! empty($this->settings['form_description'])
+            ? $this->settings['form_description']
+            : ('Thank you for your contribution to '.$this->name.'. Please use this form to submit your final, camera-ready manuscript and all required supplementary materials. Ensuring your submission strictly adheres to the conference formatting guidelines will facilitate a smooth publication process.');
+    }
+
     /** @return list<string> */
     public function defaultCc(): array
     {
