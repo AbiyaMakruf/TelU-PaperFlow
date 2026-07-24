@@ -161,17 +161,33 @@
                 @endif
 
                 @if ($submission->feedback->isNotEmpty())
-                    <div class="card p-4 sm:p-6">
-                        <h2 class="text-lg font-black text-navy">Editorial Feedback &amp; Notes</h2>
-                        <div class="mt-4 space-y-3">
+                    <details class="card group p-4 sm:p-6 transition" open>
+                        <summary class="flex cursor-pointer items-center justify-between gap-3 list-none font-black text-navy focus:outline-none select-none">
+                            <div class="min-w-0">
+                                <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
+                                    <span>💬 Editorial Feedback &amp; Notes</span>
+                                </h2>
+                                <p class="mt-0.5 text-xs text-muted font-normal">Official evaluation feedback and revision requests sent by the editorial team. Click to expand/collapse.</p>
+                            </div>
+                            <span class="rounded-full bg-slate-100 p-2 text-slate-500 group-open:rotate-180 transition-transform shrink-0">
+                                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
                             @foreach ($submission->feedback as $item)
-                                <div class="rounded-xl bg-warm p-4 text-sm leading-6 break-words">
-                                    <p class="whitespace-pre-line">{{ $item->body }}</p>
-                                    <p class="mt-2 text-xs text-muted">{{ $item->author?->name ?? 'Editorial Team' }} &middot; {{ $item->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
+                                <div class="rounded-xl bg-warm p-4 text-sm leading-6 break-words border border-navy/8">
+                                    @if(str_contains($item->body, '<table') || str_contains($item->body, '<div') || str_contains($item->body, '<p'))
+                                        <div class="prose prose-sm max-w-none text-navy leading-relaxed">{!! $item->body !!}</div>
+                                    @else
+                                        <p class="whitespace-pre-line text-navy">{{ $item->body }}</p>
+                                    @endif
+                                    <p class="mt-3 text-xs font-semibold text-muted border-t border-navy/8 pt-2">{{ $item->author?->name ?? 'Editorial Team' }} &middot; {{ $item->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
                                 </div>
                             @endforeach
                         </div>
-                    </div>
+                    </details>
                 @endif
 
                 @foreach($submission->uploadAttempts->where('source','author')->where('status','failed') as $attempt)
@@ -207,62 +223,77 @@
                     </form>
                 @endif
 
-                <!-- Card File History -->
-                <div class="card overflow-hidden">
-                    <div class="p-4 sm:p-6 border-b border-navy/5">
-                        <h2 class="text-lg font-black text-navy">File Version History</h2>
-                    </div>
+                <!-- Card File History (Accordion) -->
+                <details class="card group overflow-hidden transition" open>
+                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-6 list-none font-black text-navy focus:outline-none select-none bg-slate-50/50 hover:bg-slate-100/50 transition">
+                        <div class="min-w-0">
+                            <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
+                                <span>📁 File Version History</span>
+                            </h2>
+                            <p class="mt-0.5 text-xs text-muted font-normal">History of uploaded manuscript versions (.docx / .zip) and revision response PDFs.</p>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="badge badge-primary text-[10px]">{{ $submission->files->count() }} {{ Str::plural('file', $submission->files->count()) }}</span>
+                            <span class="rounded-full bg-slate-100 p-2 text-slate-500 group-open:rotate-180 transition-transform">
+                                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </div>
+                    </summary>
 
-                    <!-- Mobile Card View (sm:hidden) -->
-                    <div class="divide-y divide-navy/8 sm:hidden">
-                        @foreach ($submission->files as $file)
-                            <div class="p-4 space-y-2.5">
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="badge badge-primary font-mono">v{{ $file->version_number }}</span>
-                                    <span class="text-xs font-bold text-muted uppercase tracking-wider">{{ ucfirst($file->source) }}</span>
+                    <div class="border-t border-navy/8">
+                        <!-- Mobile Card View (sm:hidden) -->
+                        <div class="divide-y divide-navy/8 sm:hidden">
+                            @foreach ($submission->files as $file)
+                                <div class="p-4 space-y-2.5">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="badge badge-primary font-mono">v{{ $file->version_number }}</span>
+                                        <span class="text-xs font-bold text-muted uppercase tracking-wider">{{ ucfirst($file->source) }}</span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold text-navy break-words">{{ $file->label }}</p>
+                                        <p class="text-xs text-muted break-all mt-0.5">{{ $file->original_name }}</p>
+                                    </div>
+                                    <div class="pt-1">
+                                        <a class="btn btn-secondary text-xs w-full py-2.5 flex items-center justify-center gap-2" href="{{ route('author.files.download', [$token, $file]) }}">
+                                            <span>📥 Download File</span>
+                                        </a>
+                                    </div>
                                 </div>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-bold text-navy break-words">{{ $file->label }}</p>
-                                    <p class="text-xs text-muted break-all mt-0.5">{{ $file->original_name }}</p>
-                                </div>
-                                <div class="pt-1">
-                                    <a class="btn btn-secondary text-xs w-full py-2.5 flex items-center justify-center gap-2" href="{{ route('author.files.download', [$token, $file]) }}">
-                                        <span>📥 Download File</span>
-                                    </a>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
+                            @endforeach
+                        </div>
 
-                    <!-- Desktop Table View (sm:block) -->
-                    <div class="hidden sm:block overflow-x-auto">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Version</th>
-                                    <th>File</th>
-                                    <th>Source</th>
-                                    <th class="text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($submission->files as $file)
+                        <!-- Desktop Table View (sm:block) -->
+                        <div class="hidden sm:block overflow-x-auto">
+                            <table class="data-table">
+                                <thead>
                                     <tr>
-                                        <td class="whitespace-nowrap font-mono font-bold">v{{ $file->version_number }}</td>
-                                        <td class="min-w-[200px]">
-                                            <p class="font-bold text-navy break-words">{{ $file->label }}</p>
-                                            <p class="text-xs text-muted break-all">{{ $file->original_name }}</p>
-                                        </td>
-                                        <td class="whitespace-nowrap">{{ ucfirst($file->source) }}</td>
-                                        <td class="whitespace-nowrap text-right">
-                                            <a class="font-bold text-orange hover:underline" href="{{ route('author.files.download', [$token, $file]) }}">Download</a>
-                                        </td>
+                                        <th>Version</th>
+                                        <th>File</th>
+                                        <th>Source</th>
+                                        <th class="text-right">Action</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach ($submission->files as $file)
+                                        <tr>
+                                            <td class="whitespace-nowrap font-mono font-bold">v{{ $file->version_number }}</td>
+                                            <td class="min-w-[200px]">
+                                                <p class="font-bold text-navy break-words">{{ $file->label }}</p>
+                                                <p class="text-xs text-muted break-all">{{ $file->original_name }}</p>
+                                            </td>
+                                            <td class="whitespace-nowrap">{{ ucfirst($file->source) }}</td>
+                                            <td class="whitespace-nowrap text-right">
+                                                <a class="font-bold text-orange hover:underline text-xs" href="{{ route('author.files.download', [$token, $file]) }}">Download</a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                </details>
             </section>
 
             <aside class="card h-fit p-4 sm:p-6 min-w-0">
