@@ -212,10 +212,12 @@ class PublicSubmissionTest extends TestCase
             'author_token_expires_at' => now()->addDay(),
         ]);
 
-        $this->post(route('author.revision', $token), [
+        $response = $this->post(route('author.revision', $token), [
             'paper_file' => UploadedFile::fake()->create('revision.zip', 120, 'application/zip'),
             'notes' => 'References corrected.',
-        ])->assertRedirect();
+        ]);
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Revision file successfully uploaded and returned to the editorial queue.');
 
         $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
         $this->assertCount(1, $submission->files);
