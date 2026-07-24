@@ -547,26 +547,21 @@
                             }
                         }">
                             @csrf
-                            <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                                <div>
-                                    <label class="form-label text-xs">IEEE PDF eXpress / EDAS Upload Status *</label>
-                                    <select class="form-input text-xs font-bold" name="pdf_express_status" x-model="statusState" @if(!$isReviewerActive || $submission->status->isTerminal()) disabled @endif>
-                                        <option value="pending">⏳ Pending Verification</option>
-                                        <option value="passed">✓ Passed &amp; EDAS Uploaded Successfully</option>
-                                        <option value="failed">✕ Failed / EDAS Error Encountered</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label text-xs">EDAS Link / Reference ID</label>
-                                    <input class="form-input text-xs font-mono" name="edas_reference" value="{{ old('edas_reference', $submission->edas_reference) }}" placeholder="e.g. 1570123456 or https://edas.info/..." @if(!$isReviewerActive || $submission->status->isTerminal()) disabled @endif>
-                                </div>
-                            </div>
                             <div>
+                                <label class="form-label text-xs">IEEE PDF eXpress / EDAS Upload Status *</label>
+                                <select class="form-input text-xs font-bold" name="pdf_express_status" x-model="statusState" @if(!$isReviewerActive || $submission->status->isTerminal()) disabled @endif>
+                                    <option value="pending">⏳ Pending Verification</option>
+                                    <option value="passed">✓ Passed &amp; EDAS Uploaded Successfully</option>
+                                    <option value="failed">✕ Failed / EDAS Error Encountered</option>
+                                </select>
+                            </div>
+
+                            <div x-show="statusState === 'failed'" x-cloak style="display: none;">
                                 <div class="flex items-center justify-between mb-1">
-                                    <label class="form-label text-xs">EDAS Error Notes (Reviewer Only)</label>
+                                    <label class="form-label text-xs text-rose-800 font-extrabold">EDAS Error Notes (Reviewer Only) *</label>
                                 </div>
                                 @if($isReviewerActive && !$submission->status->isTerminal())
-                                    <div class="flex flex-wrap gap-1.5 mb-2" x-show="statusState === 'failed'">
+                                    <div class="flex flex-wrap gap-1.5 mb-2">
                                         <button type="button" @click="setError('pagesize: The page size is US letter size (8.5 by 11 inches), but only A4 size (210 x 297 mm) is allowed.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Page Size US Letter</button>
                                         <button type="button" @click="setError('The final manuscript must have at least 5 filled pages, not just 4.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Min 5 Pages</button>
                                         <button type="button" @click="setError('authorname: Doubleblind conference, but author names are visible on the first page.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Doubleblind Author Visible</button>
@@ -594,8 +589,7 @@
                         </form>
                     @else
                         <div class="space-y-3 text-xs min-w-0">
-                            <p class="font-semibold text-navy break-all"><strong>EDAS Reference:</strong> {{ $submission->edas_reference ?: '-' }}</p>
-                            @if($submission->edas_error_note)
+                            @if(($submission->pdf_express_status ?? '') === 'failed' && $submission->edas_error_note)
                                 <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 break-words">
                                     <p class="font-extrabold text-xs">EDAS Error Notes:</p>
                                     <p class="mt-1 whitespace-pre-line leading-relaxed text-xs">{{ $submission->edas_error_note }}</p>
