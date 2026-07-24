@@ -302,7 +302,7 @@
                 </details>
 
                 <!-- 2. Author Feedback & Communication (Accordion) -->
-                <details class="card overflow-hidden max-w-full min-w-0" id="author-feedback-accordion" open>
+                <details class="card overflow-hidden max-w-full min-w-0" id="author-feedback-accordion">
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
                         <div class="min-w-0">
                             <h2 class="text-sm sm:text-base font-black text-navy">Author Feedback &amp; Communication</h2>
@@ -451,7 +451,7 @@
             @endcan
 
             <!-- IEEE PDF eXpress & EDAS Section (Accordion) -->
-            <details class="card overflow-hidden max-w-full min-w-0" id="pdfexpress-edas-accordion" open>
+            <details class="card overflow-hidden max-w-full min-w-0" id="pdfexpress-edas-accordion">
                 <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
                     <div class="min-w-0">
                         <h2 class="text-sm sm:text-base font-black text-navy">IEEE PDF eXpress &amp; EDAS Management</h2>
@@ -637,7 +637,7 @@
 
             <!-- 4. Email & Communication History Section (Accordion) -->
             @if($emailLogs->isNotEmpty() || app(\App\Services\VisibleEmailLogs::class)->canAccess(auth()->user()))
-                <details class="card overflow-hidden max-w-full min-w-0" id="email-history-accordion" open>
+                <details class="card overflow-hidden max-w-full min-w-0" id="email-history-accordion">
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
                         <div class="min-w-0">
                             <h2 class="text-sm sm:text-base font-black text-navy">Email &amp; Communication History</h2>
