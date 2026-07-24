@@ -31,16 +31,22 @@ class SendLoggedEmail implements ShouldQueue
             $actionUrl = isset($matches[0]) ? rtrim($matches[0], '.,);') : null;
             $cleanBody = $this->body;
             if ($actionUrl !== null) {
-                $cleanBody = preg_replace('/\s*https?:\/\/[^\s]+\s*/', "\n\n", $cleanBody);
+                $cleanBody = str_replace($actionUrl, '', $cleanBody);
+                $cleanBody = preg_replace('/(Please submit your revision or update your details through your private portal:\s*|You can track the progress of your paper and manage your submission via your private author portal:\s*|Please visit your author portal to review the requirements:\s*|Please log in to Paperflow to inspect the manuscript and complete the IEEE compliance checklist:\s*|Please log in to Paperflow to inspect the updated manuscript files and checklist:\s*|Please log in to Paperflow to inspect the manuscript, validate the submission, and assign the Editorial and Reviewer PICs:\s*|Please log in to Paperflow to record the EDAS manuscript upload:\s*)/i', '', $cleanBody);
                 $cleanBody = preg_replace("/\n{3,}/", "\n\n", trim((string) $cleanBody));
             }
 
-            $actionLabel = match ($this->emailLog->template_key) {
-                'revision_requested' => 'Upload Revision',
-                'submission_received' => 'Track Submission',
-                'paper_completed' => 'View Paper Portal',
+            $cleanKey = str_replace('test:', '', $this->emailLog->template_key);
+            $actionLabel = match ($cleanKey) {
+                'revision_requested' => 'Open Portal & Upload Revision',
+                'submission_received' => 'Open Author Portal',
+                'paper_completed' => 'Open Author Portal',
+                'deadline_reminder' => 'Open Author Portal',
                 'new_submission_admin' => 'Open Paper & Assign PIC',
-                default => 'Open Paperflow',
+                'assigned_editor' => 'Open Paper & Complete Checklist',
+                'assigned_reviewer' => 'Open Paper & Review',
+                'author_revision_uploaded' => 'Inspect Updated Paper',
+                default => 'Open Portal & Upload Revision',
             };
             $mail = new PaperflowMail(
                 mailSubject: $this->emailLog->subject,

@@ -24,8 +24,7 @@
             </div>
         @endif
         @if($actionUrl)
-            <div style="padding:30px 0 12px"><a href="{{ $actionUrl }}" style="display:inline-block;background:{{ $accentColor ?? '#f47c20' }};color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 24px;border-radius:12px">{{ $actionLabel ?: 'Open Paperflow' }}</a></div>
-            <div style="margin-top:16px;padding:14px 16px;border-radius:10px;background:#f7f3ec;color:#64748b;font-size:11px;line-height:1.6;word-break:break-all">If the button above does not work, copy and paste this link into your browser:<br><a href="{{ $actionUrl }}" style="color:#102a43">{{ $actionUrl }}</a></div>
+            <div style="padding:28px 0 12px;text-align:center"><a href="{{ $actionUrl }}" style="display:inline-block;background:{{ $accentColor ?? '#f47c20' }};color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 28px;border-radius:12px;box-shadow:0 4px 12px rgba(244,124,32,0.25)">{{ $actionLabel ?: 'Open Portal & Upload Revision' }}</a></div>
         @endif
     </td></tr>
     <tr><td style="padding:22px 36px 30px;border-top:1px solid #e8edf2;color:#64748b;font-size:12px;line-height:1.6">This email was sent by <strong style="color:#102a43">{{ $senderName }}</strong> via Paperflow. Please do not share paper access links with unauthorized parties.</td></tr>
