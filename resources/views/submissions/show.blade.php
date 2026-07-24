@@ -228,7 +228,7 @@
                                 <div class="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border border-navy/10">
                                     <div class="flex items-center gap-2">
                                         <span class="text-xs font-bold text-navy">Quick Batch Actions:</span>
-                                        @if($hasBeforeColumn)
+                                        @if($cycle)
                                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
                                                 <span>ℹ️</span> Author Revision (Cycle #{{ $cycle?->cycle_number }})
                                             </span>
@@ -239,11 +239,12 @@
                                             if (!isEditorialActive) return;
                                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                                             if (!form) return;
-                                            form.querySelectorAll('.radio-check-input').forEach(el => {
-                                                el.checked = true;
-                                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                            form.querySelectorAll('tbody tr').forEach(tr => {
+                                                const radio = tr.querySelector('.radio-check-input');
+                                                if (radio) radio.checked = true;
+                                                if (tr._x_dataStack && tr._x_dataStack[0]) tr._x_dataStack[0].checked = true;
                                             });
-                                            updateCheckedState();
+                                            updateCheckedState(true);
                                         " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-2xs transition disabled:opacity-50 disabled:cursor-not-allowed">
                                             ✓ Check All Passed
                                         </button>
@@ -251,11 +252,12 @@
                                             if (!isEditorialActive) return;
                                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                                             if (!form) return;
-                                            form.querySelectorAll('.radio-cross-input').forEach(el => {
-                                                el.checked = true;
-                                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                            form.querySelectorAll('tbody tr').forEach(tr => {
+                                                const radio = tr.querySelector('.radio-cross-input');
+                                                if (radio) radio.checked = true;
+                                                if (tr._x_dataStack && tr._x_dataStack[0]) tr._x_dataStack[0].checked = false;
                                             });
-                                            updateCheckedState();
+                                            updateCheckedState(true);
                                         " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-2xs transition disabled:opacity-50 disabled:cursor-not-allowed">
                                             ✕ Uncheck All
                                         </button>
