@@ -42,7 +42,7 @@ class ProfileController extends Controller
             newValues: $validated
         );
 
-        return back()->with('success', 'Profil berhasil diperbarui. Identitas ini digunakan pada komunikasi editorial.');
+        return back()->with('success', 'Profile updated successfully. This identity is used in editorial communications.');
     }
 
     public function checkUsername(Request $request): JsonResponse
@@ -58,7 +58,7 @@ class ProfileController extends Controller
             return response()->json([
                 'available' => true,
                 'is_current' => true,
-                'message' => 'Ini adalah username Anda saat ini.',
+                'message' => 'This is your current username.',
             ]);
         }
 
@@ -69,7 +69,7 @@ class ProfileController extends Controller
         return response()->json([
             'available' => ! $exists,
             'is_current' => false,
-            'message' => $exists ? 'Username sudah digunakan oleh pengguna lain.' : 'Username tersedia!',
+            'message' => $exists ? 'Username is already taken by another user.' : 'Username is available!',
         ]);
     }
 
@@ -97,7 +97,7 @@ class ProfileController extends Controller
             newValues: ['username' => $validated['username']]
         );
 
-        return back()->with('success', 'Username berhasil diperbarui menjadi "'.$validated['username'].'". Gunakan username ini untuk login berikutnya.');
+        return back()->with('success', 'Username updated successfully to "'.$validated['username'].'". Please use this new username for your next login.');
     }
 
     public function updatePassword(Request $request): RedirectResponse
@@ -109,7 +109,7 @@ class ProfileController extends Controller
         ]);
 
         if (! Hash::check($validated['old_password'], $user->password)) {
-            return back()->withErrors(['old_password' => 'Password saat ini yang Anda masukkan tidak sesuai.']);
+            return back()->withErrors(['old_password' => 'The provided current password does not match.']);
         }
 
         $user->update([
@@ -121,7 +121,7 @@ class ProfileController extends Controller
             auditable: $user
         );
 
-        return back()->with('success', 'Password Anda berhasil diperbarui.');
+        return back()->with('success', 'Your password has been updated successfully.');
     }
 
     public function requestEmailOtp(Request $request): RedirectResponse|JsonResponse
@@ -134,10 +134,10 @@ class ProfileController extends Controller
 
         if (! Hash::check($validated['password'], $user->password)) {
             if ($request->wantsJson()) {
-                return response()->json(['message' => 'Password saat ini tidak sesuai.'], 422);
+                return response()->json(['message' => 'The provided current password does not match.'], 422);
             }
 
-            return back()->withErrors(['password' => 'Password saat ini tidak sesuai.']);
+            return back()->withErrors(['password' => 'The provided current password does not match.']);
         }
 
         $otp = str_pad((string) random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
@@ -168,21 +168,20 @@ class ProfileController extends Controller
                 contextName: 'Security Verification',
             ));
         } catch (\Throwable $e) {
-            // Log mail exception if mailer service is unavailable in local env
             logger()->error('Failed to send email verification OTP: '.$e->getMessage());
         }
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Kode OTP 4 digit telah dikirimkan ke '.$validated['new_email'],
+                'message' => 'A 4-digit OTP code has been sent to '.$validated['new_email'],
                 'email' => $validated['new_email'],
             ]);
         }
 
         return back()->with('otp_sent', true)
             ->with('pending_new_email', $validated['new_email'])
-            ->with('success', 'Kode OTP 4 digit telah dikirimkan ke email '.$validated['new_email'].'. Silakan periksa kotak masuk Anda.');
+            ->with('success', 'A 4-digit OTP code has been sent to '.$validated['new_email'].'. Please check your inbox.');
     }
 
     public function verifyEmailOtp(Request $request): RedirectResponse|JsonResponse
@@ -194,27 +193,27 @@ class ProfileController extends Controller
         $sessionData = session('email_change_otp');
         if (! $sessionData || empty($sessionData['code'])) {
             if ($request->wantsJson()) {
-                return response()->json(['message' => 'Permintaan OTP tidak ditemukan atau sudah kadaluarsa. Silakan minta kode OTP baru.'], 422);
+                return response()->json(['message' => 'OTP request not found or expired. Please request a new OTP code.'], 422);
             }
 
-            return back()->withErrors(['otp' => 'Permintaan OTP tidak ditemukan atau sudah kadaluarsa. Silakan minta kode OTP baru.']);
+            return back()->withErrors(['otp' => 'OTP request not found or expired. Please request a new OTP code.']);
         }
 
         if (now()->timestamp > $sessionData['expires_at']) {
             session()->forget('email_change_otp');
             if ($request->wantsJson()) {
-                return response()->json(['message' => 'Kode OTP sudah kadaluarsa. Silakan minta kode OTP baru.'], 422);
+                return response()->json(['message' => 'OTP code has expired. Please request a new OTP code.'], 422);
             }
 
-            return back()->withErrors(['otp' => 'Kode OTP sudah kadaluarsa. Silakan minta kode OTP baru.']);
+            return back()->withErrors(['otp' => 'OTP code has expired. Please request a new OTP code.']);
         }
 
         if (! hash_equals((string) $sessionData['code'], trim((string) $validated['otp']))) {
             if ($request->wantsJson()) {
-                return response()->json(['message' => 'Kode OTP 4-digit yang Anda masukkan salah.'], 422);
+                return response()->json(['message' => 'Invalid 4-digit OTP code.'], 422);
             }
 
-            return back()->withErrors(['otp' => 'Kode OTP 4-digit yang Anda masukkan salah.']);
+            return back()->withErrors(['otp' => 'Invalid 4-digit OTP code.']);
         }
 
         $user = $request->user();
@@ -234,11 +233,11 @@ class ProfileController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Alamat email berhasil diperbarui menjadi '.$newEmail,
+                'message' => 'Your email address has been updated successfully to '.$newEmail,
                 'email' => $newEmail,
             ]);
         }
 
-        return back()->with('success', 'Alamat email Anda berhasil diperbarui menjadi '.$newEmail);
+        return back()->with('success', 'Your email address has been updated successfully to '.$newEmail);
     }
 }
