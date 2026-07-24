@@ -496,25 +496,20 @@
 
                                 <!-- Action Buttons -->
                                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
-                                    <template x-if="allPassed">
-                                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-                                            <template x-if="hasReviewer">
-                                                <button type="submit" name="action" value="approve_and_send_reviewer" @if(!$isEditorialActive) disabled @endif class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <span x-show="!submittingFeedback">✓ Approve &amp; Send to Reviewer</span>
-                                                    <span x-show="submittingFeedback">Processing...</span>
-                                                </button>
-                                            </template>
-                                            <template x-if="!hasReviewer">
-                                                <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
-                                                    ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
-                                                </button>
-                                            </template>
-                                        </div>
-                                    </template>
-                                    <template x-if="!allPassed">
-                                        <button type="submit" name="action" value="request_revision" @if(!$isEditorialActive) disabled @endif class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                            <span x-show="!submittingFeedback">Request Author Revision &amp; Send Email Notification</span>
+                                    <button type="submit" name="action" value="request_revision" @if(!$isEditorialActive) disabled @endif class="btn btn-secondary border border-navy/20 text-navy hover:bg-slate-100 px-4 py-2.5 text-xs font-bold w-full sm:w-auto flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span x-show="!submittingFeedback">Request Author Revision &amp; Send Email</span>
+                                        <span x-show="submittingFeedback">Processing...</span>
+                                    </button>
+
+                                    <template x-if="hasReviewer">
+                                        <button type="submit" name="action" value="approve_and_send_reviewer" @if(!$isEditorialActive) disabled @endif class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <span x-show="!submittingFeedback">✓ Approve &amp; Send to Reviewer</span>
                                             <span x-show="submittingFeedback">Processing...</span>
+                                        </button>
+                                    </template>
+                                    <template x-if="!hasReviewer">
+                                        <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
+                                            ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
                                         </button>
                                     </template>
                                     @if($whatsappUrl)
@@ -523,7 +518,7 @@
                                         </a>
                                     @endif
                                 </div>
-                                <template x-if="allPassed && !hasReviewer">
+                                <template x-if="!hasReviewer">
                                     <p class="text-[11px] font-bold text-amber-700 text-right mt-2">
                                         ⚠️ Reviewer PIC has not been assigned yet. Please select &amp; save a Reviewer PIC in the sidebar.
                                     </p>
