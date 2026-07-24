@@ -142,8 +142,8 @@ class ConferenceProvisioner
             ],
             [
                 'key' => 'revision_requested',
-                'subject' => '[{{conference}}] Required Final Revision for {{paper_code}}',
-                'body' => "Dear Authors,\n\nFirst of all, congratulations on the acceptance of your paper for {{conference}}.\n\nBefore the final manuscript upload, the {{conference}} Publication Committee reviewed your submission for IEEE template compliance. The editor has already corrected parts of the source file; please use the latest Word/LaTeX source from Paperflow, not an older version.\n\nRemaining corrections:\n{{feedback}}\n\nUpload the final editable revision through your private portal:\n{{portal_url}}\n\nDeadline: {{deadline}}\n\nFor clarification, contact the editor via WhatsApp: {{editor_whatsapp_url}}\n\nBest regards,\n{{editor_name}}\n{{editor_job_title}}\n{{editor_affiliation}}\nPublication Committee {{conference}}",
+                'subject' => '[{{conference}}] Revision Required for Submission {{paper_code}}',
+                'body' => "Dear Authors,\n\nThank you for your submission {{paper_code}} to {{conference}}.\n\nOur team has reviewed your submission. Action or revision is required based on the following feedback:\n\n{{feedback}}\n\nPlease submit your revision or update your details through your private portal:\n{{portal_url}}\n\nDeadline: {{deadline}}\n\nFor clarification, contact the team via WhatsApp: {{editor_whatsapp_url}}\n\nBest regards,\n{{editor_name}}\n{{editor_job_title}}\n{{editor_affiliation}}\n{{conference}} Committee",
                 'is_enabled' => true,
             ],
             [
