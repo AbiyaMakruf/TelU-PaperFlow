@@ -165,7 +165,7 @@
                         <summary class="flex cursor-pointer items-center justify-between gap-3 list-none font-black text-navy focus:outline-none select-none">
                             <div class="min-w-0">
                                 <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
-                                    <span>💬 Editorial Feedback &amp; Notes</span>
+                                    <span>Editorial Feedback &amp; Notes</span>
                                 </h2>
                                 <p class="mt-0.5 text-xs text-muted font-normal">Official evaluation feedback and revision requests sent by the editorial team. Click to expand/collapse.</p>
                             </div>
@@ -228,7 +228,7 @@
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-6 list-none font-black text-navy focus:outline-none select-none bg-slate-50/50 hover:bg-slate-100/50 transition">
                         <div class="min-w-0">
                             <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
-                                <span>📁 File Version History</span>
+                                <span>File Version History</span>
                             </h2>
                             <p class="mt-0.5 text-xs text-muted font-normal">History of uploaded manuscript versions (.docx / .zip) and revision response PDFs.</p>
                         </div>
