@@ -5,7 +5,7 @@
                 @if($conference->brandLogoUrl())
                     <img class="mb-6 max-h-20 max-w-56 object-contain" src="{{ $conference->brandLogoUrl() }}" alt="Logo {{ $conference->name }}">
                 @endif
-                <p class="eyebrow !text-orange">Konferensi Paperflow</p>
+                <p class="eyebrow !text-orange">Paperflow Conference</p>
                 <h1 class="mt-3 text-3xl font-black sm:text-4xl">{{ $conference->name }}</h1>
                 @if($conference->description)
                     <p class="mt-4 max-w-2xl text-white/75">{{ $conference->description }}</p>
@@ -17,21 +17,21 @@
             <div class="p-6 sm:p-10">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wide text-muted">Status Konferensi</p>
+                        <p class="text-xs font-bold uppercase tracking-wide text-muted">Conference Status</p>
                         <p class="mt-1 font-black text-navy">{{ $conference->status->label() }}</p>
                     </div>
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wide text-muted">Batas Pengiriman Naskah (Submission)</p>
-                        <p class="mt-1 font-black text-navy">{{ $conference->submission_closes_at?->timezone($conference->timezone)->format('d M Y H:i') ?? 'Tidak ditentukan' }}</p>
+                        <p class="text-xs font-bold uppercase tracking-wide text-muted">Submission Deadline</p>
+                        <p class="mt-1 font-black text-navy">{{ $conference->submission_closes_at?->timezone($conference->timezone)->format('d M Y H:i') ?? 'Not specified' }}</p>
                     </div>
                 </div>
                 <div class="mt-8 border-t border-navy/10 pt-6">
                     @if($formAvailable && $storageReady)
-                        <a href="{{ route('public.submission.show', $conference) }}" class="btn text-white font-bold" style="background:var(--brand-primary)">Kirimkan Naskah (Submit Manuscript) &rarr;</a>
+                        <a href="{{ route('public.submission.show', $conference) }}" class="btn text-white font-bold" style="background:var(--brand-primary)">Submit Manuscript &rarr;</a>
                     @elseif(!$formAvailable)
-                        <p class="font-bold text-muted">Formulir pendaftaran naskah belum dibuka atau telah ditutup.</p>
+                        <p class="font-bold text-muted">The manuscript submission form is not currently open.</p>
                     @else
-                        <p class="font-bold text-muted">Pendaftaran naskah sementara belum tersedia karena media penyimpanan konferensi sedang disiapkan.</p>
+                        <p class="font-bold text-muted">Submissions are temporarily unavailable while conference storage is being configured.</p>
                     @endif
                 </div>
             </div>

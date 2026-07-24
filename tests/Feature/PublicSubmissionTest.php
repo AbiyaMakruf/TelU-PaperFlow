@@ -139,7 +139,7 @@ class PublicSubmissionTest extends TestCase
         [$conference] = $this->openConference();
 
         $this->get(route('public.conference.show', $conference))->assertOk()->assertSee($conference->name);
-        $this->get(route('public.submission.show', $conference))->assertOk()->assertSee('Kirim submission');
+        $this->get(route('public.submission.show', $conference))->assertOk()->assertSee('Submit Manuscript');
         $this->assertSame('/paperconf', route('public.conference.show', $conference, false));
         $this->assertSame('/paperconf/submit', route('public.submission.show', $conference, false));
     }

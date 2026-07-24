@@ -78,7 +78,7 @@ class ConferenceProvisioner
         ]);
 
         $editorial = $conference->checklistTemplates()->create([
-            'name' => 'Pemeriksaan Editorial (IEEE Compliance)',
+            'name' => 'Editorial Compliance Check (IEEE Standard)',
             'stage' => ReviewStage::Editorial,
         ]);
         $ieeeItems = [
@@ -112,7 +112,7 @@ class ConferenceProvisioner
             'name' => 'Final Review',
             'stage' => ReviewStage::Reviewer,
         ]);
-        foreach (['Seluruh feedback editorial sudah diselesaikan', 'File final siap diunggah ke EDAS'] as $index => $title) {
+        foreach (['All editorial feedback has been addressed', 'Final file is ready for EDAS submission'] as $index => $title) {
             $reviewer->items()->create(['title' => $title, 'is_required' => true, 'sort_order' => $index + 1]);
         }
 
@@ -125,10 +125,10 @@ class ConferenceProvisioner
     private function defaultFormSchema(): array
     {
         return [
-            ['key' => 'affiliation', 'label' => 'Afiliasi', 'type' => 'text', 'required' => true, 'help' => 'Institusi corresponding author'],
-            ['key' => 'country', 'label' => 'Negara', 'type' => 'text', 'required' => true, 'help' => null],
-            ['key' => 'co_authors', 'label' => 'Co-authors', 'type' => 'textarea', 'required' => false, 'help' => 'Satu nama per baris'],
-            ['key' => 'notes', 'label' => 'Catatan untuk tim editorial', 'type' => 'textarea', 'required' => false, 'help' => null],
+            ['key' => 'affiliation', 'label' => 'Affiliation', 'type' => 'text', 'required' => true, 'help' => 'Corresponding author institution'],
+            ['key' => 'country', 'label' => 'Country', 'type' => 'text', 'required' => true, 'help' => null],
+            ['key' => 'co_authors', 'label' => 'Co-authors', 'type' => 'textarea', 'required' => false, 'help' => 'One name per line'],
+            ['key' => 'notes', 'label' => 'Notes for Editorial Team', 'type' => 'textarea', 'required' => false, 'help' => null],
         ];
     }
 
