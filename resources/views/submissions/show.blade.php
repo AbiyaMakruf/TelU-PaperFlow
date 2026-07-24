@@ -496,8 +496,6 @@
                                 </template>
                             </form>
                         </details>
-                                </div>
-                            </details>
                     </div>
                 @endif
             @endforeach
