@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ConferenceRole;
 use App\Enums\SubmissionStatus;
 use App\Models\FileVersion;
 use App\Models\Submission;
 use App\Models\UploadAttempt;
 use App\Services\ConferenceFileStorage;
+use App\Services\ConferenceMailer;
 use App\Services\PhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -117,6 +119,20 @@ class AuthorPortalController extends Controller
                 'created_at' => now(),
             ]);
         });
+
+        $paperUrl = route('submissions.show', $submission);
+        $subject = "[Paperflow] Author Revision Uploaded: Paper {$submission->paper_code} - {$submission->title}";
+        $notesText = ! empty($validated['notes']) ? $validated['notes'] : 'No author notes provided.';
+        $body = "Dear Editorial Team,\n\nAuthor {$submission->corresponding_author_name} has uploaded a new revision manuscript version for paper {$submission->paper_code} in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nAuthor Notes: {$notesText}\n\nPlease log in to Paperflow to inspect the updated manuscript files and checklist:\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$submission->conference->name}";
+
+        if ($submission->editor?->email) {
+            app(ConferenceMailer::class)->sendNotification($submission, $submission->editor->email, $subject, $body, templateKey: 'author_revision_uploaded');
+        } else {
+            $adminEmails = $submission->conference->memberships()->where('role', ConferenceRole::Admin)->where('is_active', true)->with('user')->get()->pluck('user.email')->filter();
+            foreach ($adminEmails as $email) {
+                app(ConferenceMailer::class)->sendNotification($submission, $email, $subject, $body, templateKey: 'author_revision_uploaded');
+            }
+        }
 
         return back()->with('success', 'File revisi berhasil diunggah dan masuk kembali ke antrean editorial.');
     }

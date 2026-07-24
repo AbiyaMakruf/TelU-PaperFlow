@@ -127,6 +127,17 @@ class SubmissionWorkflow
                 'reassignment_reason' => $reassignmentReason,
             ]);
 
+            $paperUrl = route('submissions.show', $submission);
+            if ($role === ConferenceRole::Editorial) {
+                $subject = "[Paperflow] Assigned as Editor: Paper {$submission->paper_code} - {$submission->title}";
+                $body = "Dear {$assignee->name},\n\nYou have been assigned as Editorial PIC for paper {$submission->paper_code} in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nAuthor: {$submission->corresponding_author_name} ({$submission->corresponding_author_email})\n\nPlease log in to Paperflow to inspect the manuscript and complete the IEEE compliance checklist:\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$submission->conference->name}";
+                app(ConferenceMailer::class)->sendNotification($submission, $assignee->email, $subject, $body, $actor, templateKey: 'assigned_editor');
+            } else {
+                $subject = "[Paperflow] Assigned as Reviewer: Paper {$submission->paper_code} - {$submission->title}";
+                $body = "Dear {$assignee->name},\n\nYou have been assigned as Reviewer PIC for paper {$submission->paper_code} in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nAuthor: {$submission->corresponding_author_name} ({$submission->corresponding_author_email})\n\nPlease log in to Paperflow to inspect the review status and IEEE PDF eXpress / EDAS details:\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$submission->conference->name}";
+                app(ConferenceMailer::class)->sendNotification($submission, $assignee->email, $subject, $body, $actor, templateKey: 'assigned_reviewer');
+            }
+
             if ($role === ConferenceRole::Editorial && $submission->status === SubmissionStatus::ReadyForAssignment) {
                 return $this->transition($submission, SubmissionStatus::EditorialReview, $actor, $note);
             }

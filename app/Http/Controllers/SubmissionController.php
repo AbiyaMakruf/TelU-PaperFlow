@@ -483,15 +483,15 @@ class SubmissionController extends Controller
 
             match ($action) {
                 'request_author_revision' => $this->requestRevision($request, $submission, $workflow, $mailer, $validated['note'] ?? ''),
-                'send_reviewer' => $this->sendReviewer($request, $submission, $workflow, $validated['note'] ?? null),
-                'reviewer_changes' => $this->reviewerChanges($request, $submission, $workflow, $validated['note'] ?? null),
-                'reviewer_approve' => $this->reviewerApprove($request, $submission, $workflow, $validated['note'] ?? null),
-                'edas_fix' => $this->edasFix($request, $submission, $workflow, $validated['note'] ?? null),
+                'send_reviewer' => $this->sendReviewer($request, $submission, $workflow, $validated['note'] ?? null, $mailer),
+                'reviewer_changes' => $this->reviewerChanges($request, $submission, $workflow, $validated['note'] ?? null, $mailer),
+                'reviewer_approve' => $this->reviewerApprove($request, $submission, $workflow, $validated['note'] ?? null, $mailer),
+                'edas_fix' => $this->edasFix($request, $submission, $workflow, $validated['note'] ?? null, $mailer),
                 'record_edas' => $this->recordEdas($request, $submission, $validated),
                 'approve_edas' => $this->approveEdas($request, $submission, $workflow, $mailer, $validated),
-                'revert_done_to_editorial' => $workflow->transition($submission, SubmissionStatus::EditorialReview, $request->user(), $validated['note'] ?? 'Dibalikkan dari Selesai oleh Admin Conference'),
-                'revert_done_to_reviewer' => $workflow->transition($submission, SubmissionStatus::ReviewerReview, $request->user(), $validated['note'] ?? 'Dibalikkan dari Selesai oleh Admin Conference'),
-                'revert_done_to_edas' => $workflow->transition($submission, SubmissionStatus::ReadyForEdas, $request->user(), $validated['note'] ?? 'Dibalikkan dari Selesai oleh Admin Conference'),
+                'revert_done_to_editorial' => $this->revertDone($request, $submission, $workflow, SubmissionStatus::EditorialReview, $validated['note'] ?? null, $mailer),
+                'revert_done_to_reviewer' => $this->revertDone($request, $submission, $workflow, SubmissionStatus::ReviewerReview, $validated['note'] ?? null, $mailer),
+                'revert_done_to_edas' => $this->revertDone($request, $submission, $workflow, SubmissionStatus::ReadyForEdas, $validated['note'] ?? null, $mailer),
                 'reject' => $workflow->transition($submission, SubmissionStatus::Rejected, $request->user(), $validated['note'] ?? null),
                 'withdraw' => $workflow->transition($submission, SubmissionStatus::Withdrawn, $request->user(), $validated['note'] ?? null),
             };
@@ -629,30 +629,79 @@ class SubmissionController extends Controller
         $mailer->queue($submission->load('conference'), 'revision_requested', ['feedback' => $note, 'portal_url' => route('author.portal', $this->authorToken($submission))]);
     }
 
-    private function sendReviewer(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note): void
+    private function sendReviewer(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void
     {
         abort_unless($submission->reviewer_id, 422, 'Reviewer belum di-assign.');
         $this->ensureChecklistComplete($submission, ReviewStage::Editorial);
         $workflow->transition($submission, SubmissionStatus::ReviewerReview, $request->user(), $note);
+
+        if ($submission->reviewer?->email) {
+            $paperUrl = route('submissions.show', $submission);
+            $subject = "[Paperflow] Ready for Review: Paper {$submission->paper_code} - {$submission->title}";
+            $noteText = $note ?: 'No additional notes provided by editor.';
+            $body = "Dear {$submission->reviewer->name},\n\nEditor {$request->user()->name} has completed the IEEE compliance checklist and sent paper {$submission->paper_code} for peer & technical review in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nEditor Note: {$noteText}\n\nPlease log in to Paperflow to inspect the checklist and update the review / EDAS status:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Editorial Team";
+            $mailer->sendNotification($submission, $submission->reviewer->email, $subject, $body, $request->user(), templateKey: 'send_reviewer');
+        }
     }
 
-    private function reviewerChanges(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note): void
+    private function reviewerChanges(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void
     {
         $this->ensureChecklistComplete($submission, ReviewStage::Reviewer);
         $workflow->transition($submission, SubmissionStatus::ReviewerChangesRequested, $request->user(), $note);
         $workflow->transition($submission->fresh(), SubmissionStatus::EditorialReview, $request->user(), $note);
+
+        if ($submission->editor?->email) {
+            $paperUrl = route('submissions.show', $submission);
+            $subject = "[Paperflow] Reviewer Requested Changes: Paper {$submission->paper_code} - {$submission->title}";
+            $noteText = $note ?: 'No additional notes provided by reviewer.';
+            $body = "Dear {$submission->editor->name},\n\nReviewer {$request->user()->name} has inspected paper {$submission->paper_code} and requested changes before proceeding.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nReviewer Note: {$noteText}\n\nPlease log in to Paperflow to review the feedback and communicate with the author:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Reviewer Team";
+            $mailer->sendNotification($submission, $submission->editor->email, $subject, $body, $request->user(), templateKey: 'reviewer_changes');
+        }
     }
 
-    private function reviewerApprove(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note): void
+    private function reviewerApprove(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void
     {
         $this->ensureChecklistComplete($submission, ReviewStage::Reviewer);
         $workflow->transition($submission, SubmissionStatus::ReadyForEdas, $request->user(), $note);
+
+        if ($submission->editor?->email) {
+            $paperUrl = route('submissions.show', $submission);
+            $subject = "[Paperflow] Approved by Reviewer (Ready for EDAS): Paper {$submission->paper_code} - {$submission->title}";
+            $noteText = $note ?: 'Manuscript approved for EDAS submission.';
+            $body = "Dear {$submission->editor->name},\n\nReviewer {$request->user()->name} has approved paper {$submission->paper_code} and marked it ready for EDAS upload in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nReviewer Note: {$noteText}\n\nPlease log in to Paperflow to record the EDAS manuscript upload:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Reviewer Team";
+            $mailer->sendNotification($submission, $submission->editor->email, $subject, $body, $request->user(), templateKey: 'reviewer_approve');
+        }
     }
 
-    private function edasFix(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note): void
+    private function edasFix(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void
     {
         $workflow->transition($submission, SubmissionStatus::EdasFixRequired, $request->user(), $note);
         $workflow->transition($submission->fresh(), SubmissionStatus::EditorialReview, $request->user(), $note);
+
+        if ($submission->reviewer?->email) {
+            $paperUrl = route('submissions.show', $submission);
+            $subject = "[Paperflow] Returned due to EDAS Error: Paper {$submission->paper_code} - {$submission->title}";
+            $noteText = $note ?: 'EDAS upload error encountered.';
+            $body = "Dear {$submission->reviewer->name},\n\nEditor {$request->user()->name} returned paper {$submission->paper_code} due to an issue encountered during EDAS upload in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nEDAS Error Note: {$noteText}\n\nPlease log in to Paperflow to inspect the EDAS error details and update the status:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Editorial Team";
+            $mailer->sendNotification($submission, $submission->reviewer->email, $subject, $body, $request->user(), templateKey: 'edas_fix');
+        }
+    }
+
+    private function revertDone(Request $request, Submission $submission, SubmissionWorkflow $workflow, SubmissionStatus $to, ?string $note, ConferenceMailer $mailer): void
+    {
+        $workflow->transition($submission, $to, $request->user(), $note ?? 'Dibalikkan dari Selesai oleh Admin Conference');
+
+        $paperUrl = route('submissions.show', $submission);
+        $subject = "[Paperflow] Completed Paper Reverted by Admin: Paper {$submission->paper_code} - {$submission->title}";
+        $noteText = $note ?: 'Reverted by Conference Admin.';
+        $body = "Dear Editorial & Reviewer Team,\n\nConference Admin {$request->user()->name} has reverted completed paper {$submission->paper_code} back to {$to->label()} in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nAdmin Note: {$noteText}\n\nPlease log in to Paperflow to inspect the paper status and resume processing:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Administration";
+
+        if ($submission->editor?->email) {
+            $mailer->sendNotification($submission, $submission->editor->email, $subject, $body, $request->user(), templateKey: 'revert_done');
+        }
+        if ($submission->reviewer?->email && $submission->reviewer_id !== $submission->editor_id) {
+            $mailer->sendNotification($submission, $submission->reviewer->email, $subject, $body, $request->user(), templateKey: 'revert_done');
+        }
     }
 
     /** @param array<string, mixed> $validated */

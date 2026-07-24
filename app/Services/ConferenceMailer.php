@@ -98,4 +98,36 @@ class ConferenceMailer
 
         return $copy;
     }
+
+    /** @param list<string> $cc */
+    public function sendNotification(
+        Submission $submission,
+        string $recipientEmail,
+        string $subject,
+        string $body,
+        ?User $sender = null,
+        array $cc = [],
+        string $templateKey = 'staff_notification'
+    ): ?EmailLog {
+        if (! filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+
+        $sender ??= Auth::user();
+        $log = EmailLog::create([
+            'conference_id' => $submission->conference_id,
+            'submission_id' => $submission->id,
+            'template_key' => $templateKey,
+            'recipient' => $recipientEmail,
+            'cc' => $cc,
+            'subject' => $subject,
+            'sender_name' => $submission->conference->email_sender_name ?: $submission->conference->name,
+            'sender_user_id' => $sender?->id,
+            'body' => $body,
+            'status' => 'queued',
+        ]);
+        SendLoggedEmail::dispatch($log, $body, $cc);
+
+        return $log;
+    }
 }
