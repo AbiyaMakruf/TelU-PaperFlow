@@ -147,8 +147,8 @@
                         <div class="mt-4 space-y-3">
                             @foreach ($submission->feedback as $item)
                                 <div class="rounded-xl bg-warm p-4 text-sm leading-6 break-words">
-                                    <p>{{ $item->message }}</p>
-                                    <p class="mt-2 text-xs text-muted">{{ $item->user->name }} &middot; {{ $item->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
+                                    <p class="whitespace-pre-line">{{ $item->body }}</p>
+                                    <p class="mt-2 text-xs text-muted">{{ $item->author?->name ?? 'Editorial Team' }} &middot; {{ $item->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
                                 </div>
                             @endforeach
                         </div>

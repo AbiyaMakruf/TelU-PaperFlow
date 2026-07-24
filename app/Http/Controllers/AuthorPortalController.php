@@ -28,7 +28,7 @@ class AuthorPortalController extends Controller
             'conference.checklistTemplates.items',
             'files',
             'uploadAttempts',
-            'feedback' => fn ($query) => $query->where('visibility', 'author'),
+            'feedback' => fn ($query) => $query->where('visibility', 'author')->with('author'),
             'statusHistory',
             'reviewCycles.results',
         ]);
