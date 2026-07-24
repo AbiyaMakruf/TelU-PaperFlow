@@ -115,12 +115,28 @@
                             @csrf
                             @method('PUT')
 
+                            @php
+                                $previousCycle = $submission->reviewCycles
+                                    ->where('stage', $stage)
+                                    ->reject(fn($c) => $c->id === $cycle?->id)
+                                    ->sortByDesc('cycle_number')
+                                    ->first();
+                                $hasBeforeColumn = (bool) $previousCycle;
+                            @endphp
+
                             <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
                             <div class="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border border-navy/10">
-                                <span class="text-xs font-bold text-navy">Quick Actions:</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-navy">Quick Batch Actions:</span>
+                                    @if($hasBeforeColumn)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                                            <span>ℹ️</span> Author Revision (Cycle #{{ $cycle?->cycle_number }})
+                                        </span>
+                                    @endif
+                                </div>
                                 <div class="flex items-center gap-2">
                                     <button type="button" @click="
-                                        document.querySelectorAll('#checklist-form-{{ $stage->value }} input[type=checkbox]').forEach(el => {
+                                        document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-check-input').forEach(el => {
                                             el.checked = true;
                                             el.dispatchEvent(new Event('change', { bubbles: true }));
                                         });
@@ -128,8 +144,8 @@
                                         ✓ Check All
                                     </button>
                                     <button type="button" @click="
-                                        document.querySelectorAll('#checklist-form-{{ $stage->value }} input[type=checkbox]').forEach(el => {
-                                            el.checked = false;
+                                        document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-cross-input').forEach(el => {
+                                            el.checked = true;
                                             el.dispatchEvent(new Event('change', { bubbles: true }));
                                         });
                                     " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm transition">
@@ -137,33 +153,86 @@
                                     </button>
                                 </div>
                             </div>
-                            @foreach($template->items as $item)
-                                @php($result = $cycle?->results->firstWhere('checklist_item_id', $item->id))
-                                <div class="rounded-xl border border-navy/10 p-3.5 sm:p-4 min-w-0" x-data="{ openGuidance: false, checked: {{ json_encode((bool)($result?->is_checked)) }} }">
-                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-3 min-w-0">
-                                        <label class="flex items-start gap-2.5 flex-1 cursor-pointer min-w-0">
-                                            <input class="mt-0.5 shrink-0 rounded text-orange focus:ring-orange" type="checkbox" name="items[{{ $item->id }}][checked]" value="1" x-model="checked" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description) }}">
-                                            <div class="min-w-0">
-                                                <strong class="text-navy text-xs sm:text-sm font-extrabold leading-snug break-words block">
-                                                    {{ $item->title }} @if($item->is_required)<span class="text-orange">*</span>@endif
-                                                </strong>
-                                            </div>
-                                        </label>
-                                        @if($item->description)
-                                            <button type="button" @click="openGuidance = !openGuidance" class="text-xs font-bold text-orange hover:underline shrink-0 self-start">
-                                                <span x-text="openGuidance ? 'Close Guidance −' : 'Guidance Accordion +'"></span>
-                                            </button>
-                                        @endif
-                                    </div>
-                                    @if($item->description)
-                                        <div x-show="openGuidance" x-cloak class="mt-3 rounded-lg bg-warm/80 p-3 text-xs leading-5 text-slate-700 border border-navy/8 break-words">
-                                            <strong class="block text-navy font-bold mb-1">💡 Guidance / Check Details:</strong>
-                                            <p class="leading-relaxed">{{ $item->description }}</p>
-                                        </div>
-                                    @endif
-                                    <textarea class="form-input mt-3 min-h-16 py-2 text-xs" name="items[{{ $item->id }}][note]" placeholder="Item notes (optional)">{{ $result?->note }}</textarea>
-                                </div>
-                            @endforeach
+
+                            <!-- Checklist Table Design -->
+                            <div class="overflow-x-auto rounded-xl border border-navy/10 shadow-sm">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                        <tr class="bg-navy text-white text-xs font-extrabold uppercase tracking-wider">
+                                            <th class="p-3.5 sm:p-4 font-black">Checklists</th>
+                                            <th class="p-3.5 sm:p-4 text-center w-28 font-black">Completed</th>
+                                            @if($hasBeforeColumn)
+                                                <th class="p-3.5 sm:p-4 text-center w-20 font-black bg-navy/80 border-l border-white/10" title="Status in previous review cycle before author revision">Before</th>
+                                            @endif
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-navy/10 bg-white">
+                                        @foreach($template->items as $index => $item)
+                                            @php
+                                                $result = $cycle?->results->firstWhere('checklist_item_id', $item->id);
+                                                $prevResult = $previousCycle?->results->firstWhere('checklist_item_id', $item->id);
+                                            @endphp
+                                            <tr class="hover:bg-slate-50/70 transition" x-data="{ openGuidance: false, checked: {{ json_encode((bool)($result?->is_checked)) }} }">
+                                                <td class="p-3.5 sm:p-4 align-top min-w-0">
+                                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 min-w-0">
+                                                        <div class="min-w-0">
+                                                            <strong class="text-navy text-xs sm:text-sm font-extrabold leading-snug break-words block">
+                                                                {{ $item->title }} @if($item->is_required)<span class="text-orange">*</span>@endif
+                                                            </strong>
+                                                        </div>
+                                                        @if($item->description)
+                                                            <button type="button" @click="openGuidance = !openGuidance" class="text-xs font-bold text-orange hover:underline shrink-0 self-start">
+                                                                <span x-text="openGuidance ? 'Close Guidance −' : 'Guidance Details +'"></span>
+                                                            </button>
+                                                        @endif
+                                                    </div>
+                                                    @if($item->description)
+                                                        <div x-show="openGuidance" x-cloak class="mt-2.5 rounded-lg bg-amber-50/70 p-3 text-xs leading-relaxed text-slate-700 border border-amber-200/60 break-words">
+                                                            <strong class="block text-navy font-bold mb-1">💡 Guidance / Inspection Details:</strong>
+                                                            <p class="leading-relaxed whitespace-pre-line">{{ $item->description }}</p>
+                                                        </div>
+                                                    @endif
+                                                    <textarea class="form-input mt-2.5 min-h-14 py-2 text-xs" name="items[{{ $item->id }}][note]" placeholder="Item notes (optional)...">{{ $result?->note }}</textarea>
+                                                </td>
+                                                <td class="p-3.5 sm:p-4 align-top text-center">
+                                                    <div class="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-navy/10 shadow-inner">
+                                                        <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
+                                                               :class="!checked ? 'bg-rose-600 text-white border-rose-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-rose-100 hover:text-rose-600'"
+                                                               title="Unchecked / Reject">
+                                                            <input type="radio" name="items[{{ $item->id }}][checked]" value="0" :checked="!checked" @change="checked = false" class="sr-only radio-cross-input">
+                                                            <span>✕</span>
+                                                        </label>
+                                                        <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
+                                                               :class="checked ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-emerald-100 hover:text-emerald-600'"
+                                                               title="Checked / Complete">
+                                                            <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" @change="checked = true" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description) }}">
+                                                            <span>✓</span>
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                                @if($hasBeforeColumn)
+                                                    <td class="p-3.5 sm:p-4 align-top text-center bg-slate-50/50 border-l border-navy/10">
+                                                        @if($prevResult !== null)
+                                                            @if($prevResult->is_checked)
+                                                                <span class="inline-flex items-center justify-center size-8 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 font-black text-xs shadow-xs" title="Passed in previous cycle before revision">
+                                                                    ✓
+                                                                </span>
+                                                            @else
+                                                                <span class="inline-flex items-center justify-center size-8 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 font-black text-xs shadow-xs" title="Unchecked / Rejected in previous cycle before revision">
+                                                                    ✕
+                                                                </span>
+                                                            @endif
+                                                        @else
+                                                            <span class="text-slate-400 font-bold text-xs" title="Not evaluated in previous cycle">-</span>
+                                                        @endif
+                                                    </td>
+                                                @endif
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+
                             <div class="flex items-center justify-end pt-3 border-t border-navy/10">
                                 <button class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto">Save Checklist</button>
                             </div>
