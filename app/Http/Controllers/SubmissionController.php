@@ -468,7 +468,9 @@ class SubmissionController extends Controller
             'edas_reference' => ['nullable', 'string', 'max:255'],
         ]);
         $action = $validated['action'];
-        if (in_array($action, ['reject', 'withdraw', 'revert_done_to_editorial', 'revert_done_to_reviewer', 'revert_done_to_edas'], true)) {
+        if (in_array($action, ['revert_done_to_editorial', 'revert_done_to_reviewer', 'revert_done_to_edas'], true)) {
+            $this->authorize('revertCompleted', $submission);
+        } elseif (in_array($action, ['reject', 'withdraw'], true)) {
             $this->authorize('assign', $submission);
         } else {
             $this->authorize(in_array($action, ['request_author_revision', 'send_reviewer', 'edas_fix', 'record_edas'], true) ? 'editorialReview' : 'reviewerReview', $submission);

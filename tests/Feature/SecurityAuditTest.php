@@ -176,4 +176,48 @@ class SecurityAuditTest extends TestCase
 
         return [$conference, $form];
     }
+
+    public function test_only_conference_admin_and_superadmin_can_revert_completed_paper(): void
+    {
+        $conference = Conference::create(['name' => 'Sec Conf', 'slug' => 'sec-conf', 'status' => 'active']);
+        $admin = User::factory()->create();
+        $editor = User::factory()->create();
+        $reviewer = User::factory()->create();
+
+        $conference->memberships()->create(['user_id' => $admin->id, 'role' => ConferenceRole::Admin, 'is_active' => true]);
+        $conference->memberships()->create(['user_id' => $editor->id, 'role' => ConferenceRole::Editorial, 'is_active' => true]);
+        $conference->memberships()->create(['user_id' => $reviewer->id, 'role' => ConferenceRole::Reviewer, 'is_active' => true]);
+
+        $submission = Submission::create([
+            'conference_id' => $conference->id,
+            'paper_code' => 'SEC-DONE-1',
+            'title' => 'Completed Security Paper',
+            'corresponding_author_name' => 'Author',
+            'corresponding_author_email' => 'author@example.com',
+            'status' => SubmissionStatus::Done,
+            'editor_id' => $editor->id,
+            'reviewer_id' => $reviewer->id,
+            'completed_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        // Editor cannot revert (403)
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), [
+            'action' => 'revert_done_to_editorial',
+            'note' => 'Unauthorized revert attempt by editor',
+        ])->assertForbidden();
+
+        // Reviewer cannot revert (403)
+        $this->actingAs($reviewer)->post(route('submissions.advance', $submission), [
+            'action' => 'revert_done_to_editorial',
+            'note' => 'Unauthorized revert attempt by reviewer',
+        ])->assertForbidden();
+
+        // Conference Admin can revert (302)
+        $this->actingAs($admin)->post(route('submissions.advance', $submission), [
+            'action' => 'revert_done_to_editorial',
+            'note' => 'Authorized revert by conference admin',
+        ])->assertRedirect();
+        $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
+    }
 }

@@ -27,6 +27,12 @@ class SubmissionPolicy
         return $user->hasConferenceRole($submission->conference_id, ConferenceRole::Admin);
     }
 
+    public function revertCompleted(User $user, Submission $submission): bool
+    {
+        return $user->isSuperAdmin()
+            || $user->hasConferenceRole($submission->conference_id, ConferenceRole::Admin);
+    }
+
     public function editorialReview(User $user, Submission $submission): bool
     {
         return $user->isSuperAdmin()

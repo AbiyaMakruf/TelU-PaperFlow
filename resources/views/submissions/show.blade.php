@@ -649,7 +649,7 @@
                             @endif
                         @endif
                     @endcan
-                    @can('assign', $submission)
+                    @can('revertCompleted', $submission)
                         @if($submission->status === \App\Enums\SubmissionStatus::Done)
                             <div class="rounded-xl border border-amber-300 bg-amber-50/80 p-4 space-y-3 shadow-sm">
                                 <h3 class="text-xs font-black text-amber-900 flex items-center gap-1.5">
@@ -679,6 +679,9 @@
                                 </form>
                             </div>
                         @endif
+                    @endcan
+
+                    @can('assign', $submission)
 
                         <div class="mt-5 border-t border-navy/10 pt-5">
                             <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
