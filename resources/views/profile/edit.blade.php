@@ -6,25 +6,6 @@
             <p class="page-subtitle">Manage your editorial identity details, username, email address with OTP verification, and account password.</p>
         </div>
 
-        @if(session('success'))
-            <div class="rounded-xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm text-emerald-800 shadow-sm flex items-center gap-3">
-                <span class="text-xl">✅</span>
-                <div class="font-bold">{{ session('success') }}</div>
-            </div>
-        @endif
-
-        @if($errors->any())
-            <div class="rounded-xl border border-rose-200 bg-rose-50/90 p-4 text-sm text-rose-800 shadow-sm">
-                <div class="font-extrabold flex items-center gap-2 mb-1">
-                    <span>⚠️</span> Input errors occurred:
-                </div>
-                <ul class="list-disc pl-5 space-y-0.5 text-xs">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
 
         <!-- CARD 1: EDITORIAL IDENTITY INFORMATION -->
         <div class="card p-6 sm:p-7">
