@@ -224,7 +224,7 @@
                 <div class="flex items-center gap-2 min-w-0 shrink-0">
                     <button type="button" class="grid size-9 sm:size-10 shrink-0 place-items-center rounded-xl bg-navy text-lg text-white lg:hidden" x-on:click="mobileMenu = true" aria-label="Open menu"><span class="-mt-0.5">☰</span></button>
                 </div>
-                <div class="hidden lg:block"><p class="text-xs font-bold uppercase tracking-[.18em] text-muted">Paperflow workspace</p><p class="font-bold text-navy">{{ $heading ?? 'Dashboard' }}</p></div>
+                <div class="hidden lg:block"><p class="text-xs font-bold uppercase tracking-[.18em] text-muted truncate max-w-xs sm:max-w-md">{{ $activeConf ? '📌 Workspace: ' . $activeConf->name : '🌐 Workspace: All Conferences' }}</p><p class="font-bold text-navy">{{ $heading ?? 'Dashboard' }}</p></div>
                 <!-- Profile Icon & Notifications in Header -->
                 <div class="ml-auto flex items-center gap-1.5 sm:gap-4 shrink-0">
                     @auth
