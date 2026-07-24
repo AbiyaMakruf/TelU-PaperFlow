@@ -288,7 +288,12 @@ Current baseline:
 - Queued email handling (`SendLoggedEmail`) preventing SMTP blocking
 - Mobile-friendly 100% viewport fit verified across all pages (320px–430px)
 - Ultrawide 34-inch monitor layout optimization verified across authenticated dashboard & public landing pages
-- Supabase migration `2026_07_22_000100_add_staff_profiles_and_email_ownership` is batch 11 / Ran
+## Pending Tasks & Feature Branches (TODO)
+
+- **[TODO] Merge Branch `feat/local-supabase`**:
+  - Implementasi Supabase Lokal (PostgreSQL `127.0.0.1:54322` via Docker), perintah `php artisan paperflow:switch-supabase {mode=local|cloud}`, 4 file launcher `.bat` (`start-paperflow-local.bat`, `start-paperflow-local-ngrok.bat`, `start-paperflow-cloud.bat`, `start-paperflow-cloud-ngrok.bat`), dan indikator status Superadmin di `/monitoring` sudah selesai dan teruji 100% pada branch `feat/local-supabase`.
+  - Branch ini sengaja belum di-merge ke branch utama `agent/build-paperflow` sesuai permintaan pengguna untuk pengerjaan fitur tambahan terlebih dahulu.
+  - Saat siap di-merge nanti, jalankan: `git merge feat/local-supabase`.
 
 ## Git workflow
 
