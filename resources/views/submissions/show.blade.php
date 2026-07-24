@@ -122,6 +122,8 @@
                     $cycle = $submission->reviewCycles->where('stage', $stage)->where('status', 'open')->first() ?? $submission->reviewCycles->where('stage', $stage)->first();
                     $requiredItemIds = $template ? $template->items->where('is_required', true)->pluck('id') : collect();
                     $initialPassedCount = $template ? $template->items->where('is_required', true)->filter(fn($i) => (bool) $cycle?->results->firstWhere('checklist_item_id', $i->id)?->is_checked)->count() : 0;
+                    $isEditorialActive = ($submission->status === \App\Enums\SubmissionStatus::EditorialReview);
+                    $isReviewerActive = in_array($submission->status, [\App\Enums\SubmissionStatus::ReviewerReview, \App\Enums\SubmissionStatus::EdasFixRequired, \App\Enums\SubmissionStatus::ReadyForEdas], true);
                 @endphp
                 @if($allowed && $template)
                     <div x-data="{
@@ -130,10 +132,12 @@
                         checkedCount: {{ $initialPassedCount }},
                         savingChecklist: false,
                         autoSaveStatus: '',
+                        isEditorialActive: {{ json_encode($isEditorialActive) }},
                         get allPassed() {
                             return this.requiredIds.length > 0 && this.checkedCount >= this.requiredIds.length;
                         },
                         updateCheckedState() {
+                            if (!this.isEditorialActive) return;
                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                             if (!form) return;
                             let count = 0;
@@ -147,6 +151,7 @@
                             this.autoSaveChecklist();
                         },
                         async autoSaveChecklist() {
+                            if (!this.isEditorialActive) return;
                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                             if (!form) return;
                             this.savingChecklist = true;
@@ -174,6 +179,7 @@
                             }
                         },
                         async prepareFeedbackSubmit() {
+                            if (!this.isEditorialActive) return;
                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                             if (form) {
                                 this.autoSaveStatus = 'Saving checklist...';
@@ -211,6 +217,13 @@
                                     $hasBeforeColumn = (bool) $previousCycle;
                                 @endphp
 
+                                @if(!$isEditorialActive)
+                                    <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
+                                        <span class="text-base shrink-0">ℹ️</span>
+                                        <span>Checklist editorial dalam mode <strong>Lihat Saja (Read Only)</strong> karena status paper saat ini adalah <strong>{{ $submission->status->label() }}</strong>. Checklist hanya dapat diubah saat status Editorial Compliance Check.</span>
+                                    </div>
+                                @endif
+
                                 <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
                                 <div class="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border border-navy/10">
                                     <div class="flex items-center gap-2">
@@ -222,22 +235,22 @@
                                         @endif
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <button type="button" @click="
+                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="
                                             document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-check-input').forEach(el => {
                                                 el.checked = true;
                                                 el.dispatchEvent(new Event('change', { bubbles: true }));
                                             });
                                             updateCheckedState();
-                                        " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-sm transition">
+                                        " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
                                             ✓ Check All
                                         </button>
-                                        <button type="button" @click="
+                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="
                                             document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-cross-input').forEach(el => {
                                                 el.checked = true;
                                                 el.dispatchEvent(new Event('change', { bubbles: true }));
                                             });
                                             updateCheckedState();
-                                        " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm transition">
+                                        " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
                                             ✕ Uncheck All
                                         </button>
                                     </div>
@@ -288,7 +301,7 @@
                                                             </div>
                                                         @endif
                                                         <div x-show="openNote" x-cloak class="mt-2.5">
-                                                            <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" @change="autoSaveChecklist()" @blur="autoSaveChecklist()" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $result?->note }}</textarea>
+                                                            <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" @if(!$isEditorialActive) disabled @endif @change="autoSaveChecklist()" @blur="autoSaveChecklist()" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $result?->note }}</textarea>
                                                         </div>
                                                     </td>
                                                     <td class="p-3.5 sm:p-4 align-top text-center">
@@ -296,13 +309,13 @@
                                                             <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
                                                                    :class="!checked ? 'bg-rose-600 text-white border-rose-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-rose-100 hover:text-rose-600'"
                                                                    title="Unchecked / Reject">
-                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="0" :checked="!checked" @change="checked = false; updateCheckedState()" class="sr-only radio-cross-input">
+                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="0" :checked="!checked" :disabled="!isEditorialActive" @if(!$isEditorialActive) disabled @endif @change="checked = false; updateCheckedState()" class="sr-only radio-cross-input">
                                                                 <span>✕</span>
                                                             </label>
                                                             <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
                                                                    :class="checked ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-emerald-100 hover:text-emerald-600'"
                                                                    title="Checked / Complete">
-                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" @change="checked = true; updateCheckedState()" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description) }}">
+                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" :disabled="!isEditorialActive" @if(!$isEditorialActive) disabled @endif @change="checked = true; updateCheckedState()" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description) }}">
                                                                 <span>✓</span>
                                                             </label>
                                                         </div>
@@ -332,7 +345,7 @@
 
                                 <div class="flex items-center justify-between pt-3 border-t border-navy/10">
                                     <span class="text-xs font-bold text-emerald-700" x-text="autoSaveStatus"></span>
-                                    <button type="submit" class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto">
+                                    <button type="submit" @if(!$isEditorialActive) disabled @endif class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed">
                                         <span x-show="!savingChecklist">Save Checklist</span>
                                         <span x-show="savingChecklist">Saving...</span>
                                     </button>
@@ -378,10 +391,17 @@
                                         @csrf
                                         <input type="hidden" name="visibility" value="author">
 
+                                        @if(!$isEditorialActive)
+                                            <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
+                                                <span class="text-base shrink-0">ℹ️</span>
+                                                <span>Komunikasi author &amp; tombol aksi berada dalam mode <strong>Lihat Saja (Read Only)</strong> karena status paper saat ini adalah <strong>{{ $submission->status->label() }}</strong>.</span>
+                                            </div>
+                                        @endif
+
                                         <div>
                                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
                                                 <label class="form-label text-xs mb-0">Revision Feedback / Message for Author *</label>
-                                                <button type="button" @click="
+                                                <button type="button" @if(!$isEditorialActive) disabled @endif @click="
                                                     let tableRowsHtml = '';
                                                     let totalItems = 0;
                                                     let failedCount = 0;
@@ -438,11 +458,11 @@
                                                         feedbackEl.scrollIntoView({ behavior: 'smooth' });
                                                         feedbackEl.focus();
                                                     }
-                                                " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0">
+                                                " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     ⚡ Use Revision Template (Unchecked Items Only)
                                                 </button>
                                             </div>
-                                            <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." required></textarea>
+                                            <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." @if(!$isEditorialActive) disabled @endif required></textarea>
                                         </div>
 
                                         <!-- Interactive CC Tag Input -->
@@ -450,6 +470,7 @@
                                             ccInput: '',
                                             tags: @js(old('cc') ? array_values(array_filter(preg_split('/[,;\s]+/', old('cc')))) : $defaultCc),
                                             addTag() {
+                                                if (!{{ json_encode($isEditorialActive) }}) return;
                                                 let val = this.ccInput.trim().replace(/,$/, '');
                                                 if (val && !this.tags.includes(val)) {
                                                     this.tags.push(val);
@@ -457,6 +478,7 @@
                                                 this.ccInput = '';
                                             },
                                             removeTag(index) {
+                                                if (!{{ json_encode($isEditorialActive) }}) return;
                                                 this.tags.splice(index, 1);
                                             }
                                         }" class="min-w-0">
@@ -466,11 +488,12 @@
                                                 <template x-for="(tag, index) in tags" :key="index">
                                                     <span class="inline-flex items-center gap-1 rounded-lg bg-navy text-white px-2 py-0.5 text-xs font-bold shadow-sm max-w-full truncate">
                                                         <span x-text="tag" class="truncate"></span>
-                                                        <button type="button" @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0">&times;</button>
+                                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0 disabled:opacity-50">&times;</button>
                                                     </span>
                                                 </template>
                                                 <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[120px]"
                                                        x-model="ccInput"
+                                                       @if(!$isEditorialActive) disabled @endif
                                                        @keydown.comma.prevent="addTag()"
                                                        @keydown.enter.prevent="addTag()"
                                                        @blur="addTag()"
@@ -483,7 +506,7 @@
                                             <template x-if="allPassed">
                                                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
                                                     <template x-if="hasReviewer">
-                                                        <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer">
+                                                        <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" @if(!$isEditorialActive) disabled @endif class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                                                             ✓ Approve &amp; Send to Reviewer
                                                         </button>
                                                     </template>
@@ -495,7 +518,7 @@
                                                 </div>
                                             </template>
                                             <template x-if="!allPassed">
-                                                <button type="submit" name="action" value="request_revision" @click="await prepareFeedbackSubmit()" class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 transition cursor-pointer">
+                                                <button type="submit" name="action" value="request_revision" @click="await prepareFeedbackSubmit()" @if(!$isEditorialActive) disabled @endif class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                                                     Request Author Revision &amp; Send Email Notification
                                                 </button>
                                             </template>
@@ -586,6 +609,12 @@
 
                 <div class="p-4 sm:p-6 bg-white space-y-4">
                     @can('reviewerReview', $submission)
+                        @if(!$isReviewerActive)
+                            <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
+                                <span class="text-base shrink-0">ℹ️</span>
+                                <span>Pengaturan PDF eXpress &amp; EDAS dalam mode <strong>Lihat Saja (Read Only)</strong> karena status paper saat ini adalah <strong>{{ $submission->status->label() }}</strong>.</span>
+                            </div>
+                        @endif
                         <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" class="space-y-4 min-w-0" x-data="{
                             statusState: @js(old('pdf_express_status', $submission->pdf_express_status ?? 'pending')),
                             setError(msg) {
@@ -597,7 +626,7 @@
                             <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
                                 <div>
                                     <label class="form-label text-xs">IEEE PDF eXpress / EDAS Upload Status *</label>
-                                    <select class="form-input text-xs font-bold" name="pdf_express_status" x-model="statusState" @if($submission->status->isTerminal()) disabled @endif>
+                                    <select class="form-input text-xs font-bold" name="pdf_express_status" x-model="statusState" @if(!$isReviewerActive || $submission->status->isTerminal()) disabled @endif>
                                         <option value="pending">⏳ Pending Verification</option>
                                         <option value="passed">✓ Passed &amp; EDAS Uploaded Successfully</option>
                                         <option value="failed">✕ Failed / EDAS Error Encountered</option>
@@ -605,14 +634,14 @@
                                 </div>
                                 <div>
                                     <label class="form-label text-xs">EDAS Link / Reference ID</label>
-                                    <input class="form-input text-xs font-mono" name="edas_reference" value="{{ old('edas_reference', $submission->edas_reference) }}" placeholder="e.g. 1570123456 or https://edas.info/..." @if($submission->status->isTerminal()) disabled @endif>
+                                    <input class="form-input text-xs font-mono" name="edas_reference" value="{{ old('edas_reference', $submission->edas_reference) }}" placeholder="e.g. 1570123456 or https://edas.info/..." @if(!$isReviewerActive || $submission->status->isTerminal()) disabled @endif>
                                 </div>
                             </div>
                             <div>
                                 <div class="flex items-center justify-between mb-1">
                                     <label class="form-label text-xs">EDAS Error Notes (Reviewer Only)</label>
                                 </div>
-                                @if(!$submission->status->isTerminal())
+                                @if($isReviewerActive && !$submission->status->isTerminal())
                                     <div class="flex flex-wrap gap-1.5 mb-2" x-show="statusState === 'failed'">
                                         <button type="button" @click="setError('pagesize: The page size is US letter size (8.5 by 11 inches), but only A4 size (210 x 297 mm) is allowed.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Page Size US Letter</button>
                                         <button type="button" @click="setError('The final manuscript must have at least 5 filled pages, not just 4.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Min 5 Pages</button>
@@ -620,10 +649,10 @@
                                         <button type="button" @click="setError('Authors must first upload or fill out the IEEE copyright form.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ IEEE Copyright Missing</button>
                                     </div>
                                 @endif
-                                <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Write EDAS error details or click preset buttons above..." @if($submission->status->isTerminal()) disabled @endif>{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
+                                <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Write EDAS error details or click preset buttons above..." @if(!$isReviewerActive || $submission->status->isTerminal()) disabled @endif>{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
                             </div>
 
-                            @if(!$submission->status->isTerminal())
+                            @if($isReviewerActive && !$submission->status->isTerminal())
                                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2 border-t border-navy/10">
                                     <button type="submit" name="action" value="save_status" class="btn btn-secondary px-4 py-2 text-xs font-bold w-full sm:w-auto" x-show="statusState === 'pending'">
                                         Save Reviewer Notes

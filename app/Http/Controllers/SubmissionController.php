@@ -448,9 +448,18 @@ class SubmissionController extends Controller
         } abort(422, 'Preview hanya tersedia untuk PDF dan DOCX.');
     }
 
-    public function saveChecklist(Request $request, Submission $submission, ReviewStage $stage): RedirectResponse
+    public function saveChecklist(Request $request, Submission $submission, ReviewStage $stage): JsonResponse|RedirectResponse
     {
         $this->authorize($stage === ReviewStage::Editorial ? 'editorialReview' : 'reviewerReview', $submission);
+
+        if ($stage === ReviewStage::Editorial && $submission->status !== SubmissionStatus::EditorialReview) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Checklist editorial hanya dapat diubah saat status paper berada pada Editorial Compliance Check.'], 422);
+            }
+
+            return back()->with('error', 'Checklist editorial hanya dapat diubah saat status paper berada pada Editorial Compliance Check.');
+        }
+
         $template = $submission->conference->checklistTemplates()->with('items')->where('stage', $stage)->where('is_active', true)->firstOrFail();
         $cycle = $this->currentCycle($submission, $stage, $template->id, $request->user()->id);
         $validated = $request->validate([
