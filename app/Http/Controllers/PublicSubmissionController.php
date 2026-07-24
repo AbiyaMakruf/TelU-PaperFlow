@@ -71,12 +71,12 @@ class PublicSubmissionController extends Controller
         }
 
         $messages = [
-            'paper_id.unique' => 'Paper ID ini sudah terdaftar. Anda tidak perlu melakukan submission ulang, silakan gunakan link portal author yang telah dikirimkan ke email Anda.',
+            'paper_id.unique' => 'This Paper ID has already been registered. Please do not submit again; use the author portal link previously sent to your email.',
         ];
 
         $validated = $request->validate($rules, $messages, $attributes);
         if (! $turnstile->verify($request, $validated['cf-turnstile-response'] ?? null)) {
-            return back()->withInput()->withErrors(['turnstile' => 'Verifikasi keamanan gagal atau kedaluwarsa. Silakan centang kembali.']);
+            return back()->withInput()->withErrors(['turnstile' => 'Security verification failed or expired. Please check the captcha box again.']);
         }
 
         $id = (string) Str::ulid();
@@ -84,7 +84,7 @@ class PublicSubmissionController extends Controller
         $file = $request->file('paper_file');
         $paperCode = Str::upper($conference->slug).'-'.Str::upper(substr($id, -8));
         if (! $storage->ready($conference)) {
-            return back()->withInput()->withErrors(['paper_file' => 'Penyimpanan conference belum siap.']);
+            return back()->withInput()->withErrors(['paper_file' => 'Conference file storage is not configured or ready.']);
         }
         $path = $conference->slug.'/'.$id.'/v1-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
         try {
@@ -92,7 +92,7 @@ class PublicSubmissionController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return back()->withInput()->withErrors(['paper_file' => 'Upload file gagal: '.$exception->getMessage()]);
+            return back()->withInput()->withErrors(['paper_file' => 'File upload failed: '.$exception->getMessage()]);
         }
 
         $fileHash = hash_file('sha256', $file->getRealPath());
