@@ -259,49 +259,7 @@
             @endforeach
 
             @can('editorialReview', $submission)
-                <!-- 1. Confidential Internal Notes (Accordion) -->
-                <details class="card overflow-hidden max-w-full min-w-0" id="internal-notes-accordion">
-                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
-                        <div class="min-w-0">
-                            <h2 class="text-sm sm:text-base font-black text-navy">Internal Notes (Team Only)</h2>
-                            <p class="text-[11px] text-muted font-normal truncate">Confidential notes for editorial team &amp; reviewers (hidden from author).</p>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span class="badge badge-primary text-[10px]">Confidential</span>
-                            <span class="text-xs text-muted">▼</span>
-                        </div>
-                    </summary>
-                    <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
-                        <!-- Internal Notes History -->
-                        <div class="space-y-3">
-                            @forelse($submission->feedback->where('visibility', 'internal') as $feedback)
-                                <div class="rounded-xl bg-slate-50 p-3.5 border border-navy/10 shadow-sm text-xs min-w-0">
-                                    <div class="flex items-center justify-between gap-2 text-muted min-w-0">
-                                        <span class="font-bold text-navy truncate">{{ $feedback->author?->name ?? 'Staff Member' }}</span>
-                                        <span class="text-[11px] shrink-0">{{ $feedback->created_at->format('d M Y H:i') }}</span>
-                                    </div>
-                                    <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
-                                </div>
-                            @empty
-                                <p class="text-xs text-muted italic">No internal notes yet.</p>
-                            @endforelse
-                        </div>
-
-                        <!-- Add Internal Note Form -->
-                        <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-3">
-                            @csrf
-                            <input type="hidden" name="visibility" value="internal">
-                            <textarea class="form-input min-h-20 py-2.5 text-xs" name="body" placeholder="Write internal note (visible only to editorial team & reviewers)..." required></textarea>
-                            <div class="flex justify-end">
-                                <button type="submit" class="btn btn-primary px-4 py-2 text-xs font-extrabold w-full sm:w-auto">
-                                    Save Internal Note
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </details>
-
-                <!-- 2. Author Feedback & Communication (Accordion) -->
+                <!-- 1. Author Feedback & Communication (Accordion) -->
                 <details class="card overflow-hidden max-w-full min-w-0" id="author-feedback-accordion">
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
                         <div class="min-w-0">
@@ -444,6 +402,48 @@
                                         Send via WhatsApp ↗
                                     </a>
                                 @endif
+                            </div>
+                        </form>
+                    </div>
+                </details>
+
+                <!-- 2. Confidential Internal Notes (Accordion) -->
+                <details class="card overflow-hidden max-w-full min-w-0" id="internal-notes-accordion">
+                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
+                        <div class="min-w-0">
+                            <h2 class="text-sm sm:text-base font-black text-navy">Internal Notes (Team Only)</h2>
+                            <p class="text-[11px] text-muted font-normal truncate">Confidential notes for editorial team &amp; reviewers (hidden from author).</p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="badge badge-primary text-[10px]">Confidential</span>
+                            <span class="text-xs text-muted">▼</span>
+                        </div>
+                    </summary>
+                    <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
+                        <!-- Internal Notes History -->
+                        <div class="space-y-3">
+                            @forelse($submission->feedback->where('visibility', 'internal') as $feedback)
+                                <div class="rounded-xl bg-slate-50 p-3.5 border border-navy/10 shadow-sm text-xs min-w-0">
+                                    <div class="flex items-center justify-between gap-2 text-muted min-w-0">
+                                        <span class="font-bold text-navy truncate">{{ $feedback->author?->name ?? 'Staff Member' }}</span>
+                                        <span class="text-[11px] shrink-0">{{ $feedback->created_at->format('d M Y H:i') }}</span>
+                                    </div>
+                                    <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
+                                </div>
+                            @empty
+                                <p class="text-xs text-muted italic">No internal notes yet.</p>
+                            @endforelse
+                        </div>
+
+                        <!-- Add Internal Note Form -->
+                        <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-3">
+                            @csrf
+                            <input type="hidden" name="visibility" value="internal">
+                            <textarea class="form-input min-h-20 py-2.5 text-xs" name="body" placeholder="Write internal note (visible only to editorial team & reviewers)..." required></textarea>
+                            <div class="flex justify-end">
+                                <button type="submit" class="btn btn-primary px-4 py-2 text-xs font-extrabold w-full sm:w-auto">
+                                    Save Internal Note
+                                </button>
                             </div>
                         </form>
                     </div>
