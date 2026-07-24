@@ -303,21 +303,23 @@
                                     <button type="button" @click="
                                         let tableRowsHtml = '';
                                         let totalItems = 0;
+                                        let failedCount = 0;
 
-                                        document.querySelectorAll('#checklist-form-editorial table tbody tr').forEach((row, idx) => {
+                                        document.querySelectorAll('#checklist-form-editorial table tbody tr').forEach((row) => {
                                             let checkRadio = row.querySelector('.radio-check-input');
                                             if (!checkRadio) return;
                                             totalItems++;
 
                                             let isChecked = checkRadio.checked;
+                                            if (isChecked) return; // Only include items that need revision!
+
+                                            failedCount++;
                                             let title = checkRadio.getAttribute('data-title') || '';
                                             let guidance = checkRadio.getAttribute('data-guidance') || '';
                                             let noteEl = row.querySelector('.item-note-input');
                                             let noteVal = noteEl ? noteEl.value.trim() : '';
 
-                                            let statusHtml = isChecked
-                                                ? '<span style=&quot;color:#15803d; font-weight:bold; background-color:#f0fdf4; border:1px solid #bbf7d0; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✓ Passed</span>'
-                                                : '<span style=&quot;color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✕ Needs Revision</span>';
+                                            let statusHtml = '<span style=&quot;color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✕ Needs Revision</span>';
 
                                             let noteText = '';
                                             if (noteVal) {
@@ -328,10 +330,8 @@
                                                 noteText = '-';
                                             }
 
-                                            let bgStyle = isChecked ? 'background-color:#ffffff;' : 'background-color:#fff1f2;';
-
-                                            tableRowsHtml += `<tr style=&quot;${bgStyle} border-bottom:1px solid #e2e8f0;&quot;>
-                                                <td style=&quot;padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;&quot;>${idx + 1}. ${title}</td>
+                                            tableRowsHtml += `<tr style=&quot;background-color:#fff1f2; border-bottom:1px solid #e2e8f0;&quot;>
+                                                <td style=&quot;padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;&quot;>${failedCount}. ${title}</td>
                                                 <td style=&quot;padding:8px 12px; text-align:center; vertical-align:top;&quot;>${statusHtml}</td>
                                                 <td style=&quot;padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;&quot;>${noteText}</td>
                                             </tr>`;
@@ -342,7 +342,12 @@
                                             return;
                                         }
 
-                                        let templateHtml = `Dear Authors,\n\nThank you for your submission. Below is the detailed editorial compliance evaluation results for your manuscript:\n\n<table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;&quot;>\n    <thead>\n        <tr style=&quot;background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;&quot;>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Checklist Criteria</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;&quot;>Status</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Notes / Guidance</th>\n        </tr>\n    </thead>\n    <tbody>\n        ${tableRowsHtml}\n    </tbody>\n</table>\n\nPlease address all items marked as <strong>✕ Needs Revision</strong> and upload your revised source files via your private author portal.\n\nBest regards,\nEditorial Team`;
+                                        if (failedCount === 0) {
+                                            alert('All checklist items have passed! No items require revision.');
+                                            return;
+                                        }
+
+                                        let templateHtml = `Dear Authors,\n\nThank you for your submission. Below are the checklist items requiring correction/revision for your manuscript:\n\n<table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;&quot;>\n    <thead>\n        <tr style=&quot;background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;&quot;>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Checklist Criteria</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;&quot;>Status</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Notes / Guidance</th>\n        </tr>\n    </thead>\n    <tbody>\n        ${tableRowsHtml}\n    </tbody>\n</table>\n\nPlease address all items listed above and upload your revised source files via your private author portal.\n\nBest regards,\nEditorial Team`;
 
                                         let feedbackEl = document.getElementById('author-feedback-textarea');
                                         let accordionEl = document.getElementById('author-feedback-accordion');
@@ -353,7 +358,7 @@
                                             feedbackEl.focus();
                                         }
                                     " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0">
-                                        ⚡ Use Revision Template (Full Evaluation Table)
+                                        ⚡ Use Revision Template (Unchecked Items Only)
                                     </button>
                                 </div>
                                 <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." required></textarea>

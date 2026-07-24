@@ -157,7 +157,7 @@ class SubmissionController extends Controller
     public function requestCorrection(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse
     {
         $this->authorize('assign', $submission);
-        $validated = $request->validate(['feedback' => ['required', 'string', 'max:10000']]);
+        $validated = $request->validate(['feedback' => ['required', 'string', 'max:50000']]);
         $feedback = $submission->feedback()->create(['visibility' => 'author', 'body' => $validated['feedback'], 'created_by' => $request->user()->id, 'emailed_at' => now()]);
         $workflow->transition($submission, SubmissionStatus::NeedsAuthorCorrection, $request->user(), $validated['feedback']);
         $mailer->queue($submission->load('conference'), 'revision_requested', [
@@ -506,7 +506,7 @@ class SubmissionController extends Controller
     {
         $this->authorize('editorialReview', $submission);
         $validated = $request->validate([
-            'body' => ['required', 'string', 'max:10000'],
+            'body' => ['required', 'string', 'max:50000'],
             'visibility' => ['required', Rule::in(['internal', 'author'])],
             'send_email' => ['nullable', 'boolean'],
             'cc' => ['nullable', 'string', 'max:2000'],
