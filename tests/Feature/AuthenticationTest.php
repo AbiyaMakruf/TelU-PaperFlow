@@ -15,7 +15,7 @@ class AuthenticationTest extends TestCase
 
     public function test_login_page_is_available(): void
     {
-        $this->get('/login')->assertOk()->assertSee('Masuk ke Paperflow');
+        $this->get('/login')->assertOk()->assertSee('Log in to Paperflow');
     }
 
     public function test_active_user_can_login_and_must_change_temporary_password(): void
@@ -47,7 +47,7 @@ class AuthenticationTest extends TestCase
 
         $this->actingAs($user)->get('/dashboard')
             ->assertOk()
-            ->assertSee('Selamat datang');
+            ->assertSee('Welcome');
     }
 
     public function test_email_diagnostic_command_sends_one_message(): void
@@ -69,7 +69,7 @@ class AuthenticationTest extends TestCase
         $this->assertTrue(RateLimiter::tooManyAttempts($email.'|127.0.0.1', 5));
         $response = $this->post('/login', ['login' => $email, 'password' => 'wrong-password'])
             ->assertSessionHasErrors('login');
-        $this->assertStringContainsString('Terlalu banyak percobaan login', $response->getSession()->get('errors')->first('login'));
+        $this->assertStringContainsString('Too many login attempts', $response->getSession()->get('errors')->first('login'));
     }
 
     public function test_password_only_requires_eight_characters_without_complexity_rules(): void

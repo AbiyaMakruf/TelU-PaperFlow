@@ -1,75 +1,75 @@
-<x-layouts.app title="User Manual Admin Conference - Paperflow" heading="Panduan Conference Admin">
+<x-layouts.app title="Conference Admin Manual · Paperflow" heading="Conference Admin Guide">
     <div class="max-w-5xl space-y-6">
         @include('user-manual._header', ['activeRole' => 'admin'])
 
         <section class="card p-6 sm:p-8 space-y-6 border-l-4 border-l-orange">
             <div class="border-b border-navy/10 pb-4">
-                <span class="badge badge-warning text-xs font-black mb-2">Role Staf Conference Admin</span>
-                <h2 class="text-xl sm:text-2xl font-black text-navy">📖 User Manual: Conference Admin (Administrator Conference)</h2>
-                <p class="text-xs sm:text-sm text-muted mt-1">Panduan lengkap penyiapan conference, pembangun form custom, penyedia penyimpanan file, template email, manajemen tim, dan aksi masal paper.</p>
+                <span class="badge badge-warning text-xs font-black mb-2">Conference Admin Staff Role</span>
+                <h2 class="text-xl sm:text-2xl font-black text-navy">📖 User Manual: Conference Admin</h2>
+                <p class="text-xs sm:text-sm text-muted mt-1">Complete guide for conference setup, custom form builder, file storage providers, email templates, team management, and paper bulk actions.</p>
             </div>
 
-            <!-- Fitur 1: Workspace Selector -->
+            <!-- Feature 1: Workspace Selector -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
                     <span>1.</span> <span>GCP-Style Active Workspace Selector</span>
                 </h3>
                 <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                    Conference Admin dapat berpindah aktif conference melalui pemilih workspace di header atau drawer seluler. Seluruh tampilan paper, performa editor, dan email log akan otomatis tersaring (*scoped*) sesuai workspace yang aktif.
+                    Conference Admins can switch active conferences via the workspace selector in the header or mobile drawer. All paper views, editor performance statistics, and email logs will automatically be scoped to the active workspace.
                 </p>
             </div>
 
-            <!-- Fitur 2: Form Builder & Public Landing Page -->
+            <!-- Feature 2: Form Builder -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>2.</span> <span>Form Builder Custom (`/conferences/{id}/form`)</span>
+                    <span>2.</span> <span>Custom Form Builder (`/conferences/{id}/form`)</span>
                 </h3>
                 <div class="bg-slate-50 p-4 rounded-xl border border-navy/10 space-y-2 text-xs text-slate-800">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li><strong>Field Inti Otomatis:</strong> Paper ID, judul paper, nama/email/telepon corresponding author, data co-authors, dan file naskah editable disajikan otomatis oleh sistem.</li>
-                        <li><strong>Tambah Field Kustom:</strong> Tambahkan field khusus conference (tipe teks, angka, tanggal, dropdown, radio, checkbox, textarea).</li>
-                        <li><strong>Publikasi Form:</strong> Setelah selesai menyusun draft, klik <strong>Publikasikan Form</strong> agar form aktif di URL submission publik.</li>
+                        <li><strong>Automatic Core Fields:</strong> Paper ID, paper title, corresponding author name/email/phone, co-authors data, and editable manuscript file are provided automatically by the system.</li>
+                        <li><strong>Add Custom Fields:</strong> Add conference-specific fields (text, number, date, dropdown, radio, checkbox, textarea).</li>
+                        <li><strong>Publish Form:</strong> Once draft layout is complete, click <strong>Publish Form</strong> to make it live on the public submission URL.</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Fitur 3: Storage Provider Configuration -->
+            <!-- Feature 3: Storage Provider Configuration -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>3.</span> <span>Penyimpanan File (`/conferences/{id}/drive`)</span>
+                    <span>3.</span> <span>File Storage (`/conferences/{id}/drive`)</span>
                 </h3>
                 <div class="bg-amber-50/50 p-4 rounded-xl border border-orange/20 space-y-2 text-xs text-slate-800">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li><strong>Supabase Storage (Privat Default):</strong> Menyimpan file pada bucket privat Supabase dengan Signed URL yang aman.</li>
-                        <li><strong>Google Drive OAuth:</strong> Menghubungkan folder Google Drive resmi conference menggunakan otentikasi OAuth2. Laravel mengurus otorisasi dan streaming unduhan secara aman.</li>
+                        <li><strong>Supabase Storage (Private Default):</strong> Stores files in private Supabase buckets secured with Signed URLs.</li>
+                        <li><strong>Google Drive OAuth:</strong> Connects official conference Google Drive folders using OAuth2 authentication. Laravel manages authorization and download streaming securely.</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Fitur 4: Custom Checklist IEEE & Email Templates -->
+            <!-- Feature 4: Custom Checklist IEEE & Email Templates -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>4.</span> <span>Checklist IEEE &amp; Template Email Conference</span>
+                    <span>4.</span> <span>IEEE Checklist &amp; Conference Email Templates</span>
                 </h3>
                 <div class="bg-emerald-50/40 p-4 rounded-xl border border-emerald-200 space-y-2 text-xs text-slate-800">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li><strong>Checklist IEEE Editor &amp; Reviewer (`/conferences/{id}/checklists`):</strong> Menambah, mengubah, atau mengaktifkan item pemeriksaan IEEE standar.</li>
-                        <li><strong>Template Email Branded (`/conferences/{id}/email-templates`):</strong> Mengedit template email HTML resmi conference, mengatur alamat Default CC conference, melihat live-preview template, serta mengirim uji coba (*Test Send*).</li>
+                        <li><strong>Editor &amp; Reviewer IEEE Checklists (`/conferences/{id}/checklists`):</strong> Add, edit, or toggle standard IEEE compliance inspection items.</li>
+                        <li><strong>Branded Email Templates (`/conferences/{id}/email-templates`):</strong> Edit official HTML email templates, configure conference Default CC addresses, view live-preview templates, and send test emails.</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Fitur 5: Kelola Tim & Bulk Actions -->
+            <!-- Feature 5: Manage Team & Bulk Actions -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>5.</span> <span>Kelola Anggota Tim &amp; Bulk Actions Paper (`/papers`)</span>
+                    <span>5.</span> <span>Manage Team Members &amp; Paper Bulk Actions (`/papers`)</span>
                 </h3>
                 <div class="bg-slate-50 p-4 rounded-xl border border-navy/10 space-y-2 text-xs text-slate-800">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li><strong>Kelola Tim (`/conferences/{id}/members`):</strong> Menambahkan staf ke dalam conference dengan role Admin, Editorial, Reviewer, atau Viewer.</li>
-                        <li><strong>Bulk Assignment:</strong> Menandai beberapa paper di daftar paper untuk menetapkan PIC Editor, PIC Reviewer, format naskah, atau tenggat waktu secara masal.</li>
-                        <li><strong>Bulk Status &amp; Download ZIP:</strong> Mengubah status masal (Validasi, Reject, Withdraw) atau mengunduh seluruh naskah editable author yang dipilih dalam 1 paket file ZIP bernama Paper ID.</li>
-                        <li><strong>Export Data CSV:</strong> Mengunduh seluruh rekapitulasi data submission conference ke format CSV (`/papers-export.csv`).</li>
+                        <li><strong>Team Management (`/conferences/{id}/members`):</strong> Add staff to the conference with Admin, Editorial, Reviewer, or Viewer roles.</li>
+                        <li><strong>Bulk Assignment:</strong> Select multiple papers in the paper list to assign Editor PIC, Reviewer PIC, manuscript format, or deadline in bulk.</li>
+                        <li><strong>Bulk Status &amp; Download ZIP:</strong> Update status in bulk (Validate, Reject, Withdraw) or download all selected author editable manuscripts in a single ZIP package named by Paper ID.</li>
+                        <li><strong>Export Summary Reports:</strong> Download full submission summary reports to CSV, Excel, or printable PDF format.</li>
                     </ul>
                 </div>
             </div>

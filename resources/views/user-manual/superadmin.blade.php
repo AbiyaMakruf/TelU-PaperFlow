@@ -1,74 +1,74 @@
-<x-layouts.app title="User Manual Superadmin - Paperflow" heading="Panduan Superadmin">
+<x-layouts.app title="Superadmin Manual · Paperflow" heading="Superadmin Guide">
     <div class="max-w-5xl space-y-6">
         @include('user-manual._header', ['activeRole' => 'superadmin'])
 
         <section class="card p-6 sm:p-8 space-y-6 border-l-4 border-l-rose-600">
             <div class="border-b border-navy/10 pb-4">
-                <span class="badge badge-danger text-xs font-black mb-2">Akses Penuh Superadmin</span>
-                <h2 class="text-xl sm:text-2xl font-black text-navy">📖 User Manual: Superadmin (Pengelola Sistem Paperflow)</h2>
-                <p class="text-xs sm:text-sm text-muted mt-1">Panduan operasional penuh pembuatan pengguna, provisioning conference, monitoring infrastruktur, audit log, dan impersonasi akun.</p>
+                <span class="badge badge-danger text-xs font-black mb-2">Superadmin Full Access</span>
+                <h2 class="text-xl sm:text-2xl font-black text-navy">📖 User Manual: Superadmin</h2>
+                <p class="text-xs sm:text-sm text-muted mt-1">Full operational guide for user management, conference provisioning, infrastructure monitoring, audit logs, and account impersonation.</p>
             </div>
 
-            <!-- Fitur 1: Manajemen Pengguna -->
+            <!-- Feature 1: User Management -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>1.</span> <span>Manajemen Pengguna (`/admin/users`)</span>
+                    <span>1.</span> <span>User Management (`/admin/users`)</span>
                 </h3>
                 <div class="bg-slate-50 p-4 rounded-xl border border-navy/10 space-y-2 text-xs text-slate-800">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li><strong>Pembuatan Akun Username-Only:</strong> Superadmin dapat membuat akun pengguna baru hanya dengan memasukkan <strong>Nama Lengkap</strong> dan <strong>Username</strong>.</li>
-                        <li><strong>Password Sementara (`user1234`):</strong> Pengguna baru otomatis menerima password sementara `user1234`. Pada login pertama kali, sistem memaksa pengguna memasukkan Email pribadi dan memilih Password baru (minimal 8 karakter).</li>
-                        <li><strong>Reset Password Pengguna:</strong> Memulihkan password pengguna yang lupa ke password default `user1234`.</li>
-                        <li><strong>CLI Bootstrap Superadmin:</strong> Perintah terminal <code>php artisan paperflow:make-superadmin username --email=admin@example.com --name="Super Admin"</code>.</li>
+                        <li><strong>Username-Only Account Creation:</strong> Superadmin can create new user accounts using only <strong>Full Name</strong> and <strong>Username</strong>.</li>
+                        <li><strong>Temporary Password (`user1234`):</strong> New accounts automatically receive temporary password `user1234`. On first login, the system prompts the user to enter their personal email and choose a new password (min 8 characters).</li>
+                        <li><strong>Reset User Password:</strong> Reset forgotten user passwords back to default `user1234`.</li>
+                        <li><strong>CLI Bootstrap Superadmin:</strong> Terminal command <code>php artisan paperflow:make-superadmin username --email=admin@example.com --name="Super Admin"</code>.</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Fitur 2: Provisioning Conference Baru -->
+            <!-- Feature 2: Provisioning New Conference -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>2.</span> <span>Pembuatan Conference Baru (`/conferences/create`)</span>
+                    <span>2.</span> <span>Provisioning New Conferences (`/conferences/create`)</span>
                 </h3>
                 <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                    Saat Superadmin membuat conference baru, layanan <code>ConferenceProvisioner</code> akan otomatis melakukan provisioning:
+                    When Superadmin creates a new conference, the <code>ConferenceProvisioner</code> service automatically provisions default assets:
                 </p>
                 <div class="bg-amber-50/50 p-4 rounded-xl border border-orange/20 space-y-2 text-xs text-slate-800">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li>Membuat 16 item standar IEEE Editorial Compliance Checklist.</li>
-                        <li>Membuat item standar IEEE Reviewer Checklist.</li>
-                        <li>Menyediakan template email HTML branded standar.</li>
-                        <li>Membuka form submission awal versi 1.</li>
+                        <li>Generates 16 standard IEEE Editorial Compliance Checklist items.</li>
+                        <li>Generates standard IEEE Reviewer Checklist items.</li>
+                        <li>Provides standard branded HTML email templates.</li>
+                        <li>Publishes initial version 1 submission form.</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Fitur 3: Monitoring & Audit Logs Hub -->
+            <!-- Feature 3: Monitoring & Audit Logs Hub -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>3.</span> <span>Monitoring Operasional &amp; Audit Logs (`/monitoring`)</span>
+                    <span>3.</span> <span>Operational Monitoring &amp; Audit Logs (`/monitoring`)</span>
                 </h3>
                 <div class="bg-emerald-50/40 p-4 rounded-xl border border-emerald-200 space-y-2 text-xs text-slate-800">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li><strong>Status Sistem &amp; Storage:</strong> Menampilkan status koneksi PostgreSQL Supabase (driver, host, latency, total record per tabel), status PHP `ext-zip`, serta statistik penyimpanan file.</li>
-                        <li><strong>Failed Queue Jobs &amp; Error Logs:</strong> Meninjau antrean email yang gagal dikirim, pesan exception Laravel, serta tombol <strong>Retry Job</strong>.</li>
-                        <li><strong>Audit Log Aktivitas Staf:</strong> Meninjau seluruh aktivitas perubahan data penting yang dilakukan staf di seluruh conference dengan viewer JSON diff interaktif.</li>
+                        <li><strong>System &amp; Storage Status:</strong> Displays Supabase PostgreSQL connection status (driver, host, latency, total record count per table), PHP `ext-zip` status, and file storage metrics.</li>
+                        <li><strong>Failed Queue Jobs &amp; Error Logs:</strong> Review failed queued emails, Laravel error log tracebacks, and click <strong>Retry Job</strong>.</li>
+                        <li><strong>Staff Activity Audit Logs:</strong> Review all critical data changes performed by staff across all conferences with an interactive JSON diff viewer.</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Fitur 4: User Impersonation -->
+            <!-- Feature 4: User Impersonation -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>4.</span> <span>Impersonasi Pengguna (`/admin/users/{user}/impersonate`)</span>
+                    <span>4.</span> <span>User Impersonation (`/admin/users/{user}/impersonate`)</span>
                 </h3>
                 <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                    Superadmin dapat "menyamar" sebagai pengguna lain untuk mendiagnosis kendala teknis atau melihat tampilan sudut pandang staf lain secara langsung.
+                    Superadmin can impersonate any user account to diagnose technical issues or view staff perspectives directly.
                 </p>
                 <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-200 space-y-2 text-xs text-slate-800">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li>Buka menu Pengguna &rarr; Klik <code>Impersonate</code> di samping nama pengguna target.</li>
-                        <li>Sistem akan beralih ke sesi pengguna tersebut secara aman. Banner penanda impersonasi berwarna kuning akan muncul di bagian atas aplikasi.</li>
-                        <li>Klik <strong>Kembali ke Akun Superadmin</strong> di banner atas untuk kembali ke akun utama Anda tanpa perlu memasukkan password lagi.</li>
+                        <li>Go to Users list &rarr; Click <code>Impersonate</code> next to target user.</li>
+                        <li>System switches securely to the target user's session. A yellow impersonation banner appears at the top of the screen.</li>
+                        <li>Click <strong>Return to Superadmin Account</strong> on the top banner to return to your main account without entering passwords again.</li>
                     </ul>
                 </div>
             </div>

@@ -6,7 +6,7 @@
 @endif
 @if ($errors->any())
     <div class="mb-5 rounded-xl border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
-        <p class="font-bold">Periksa kembali data berikut:</p>
+        <p class="font-bold">Please review the following errors:</p>
         <ul class="mt-1 list-disc pl-5">
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>

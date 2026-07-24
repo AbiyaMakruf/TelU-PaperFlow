@@ -1,74 +1,74 @@
-<x-layouts.app title="User Manual Reviewer - Paperflow" heading="Panduan Reviewer">
+<x-layouts.app title="Reviewer Manual · Paperflow" heading="Reviewer Guide">
     <div class="max-w-5xl space-y-6">
         @include('user-manual._header', ['activeRole' => 'reviewer'])
 
         <section class="card p-6 sm:p-8 space-y-6 border-l-4 border-l-amber-500">
             <div class="border-b border-navy/10 pb-4">
-                <span class="badge badge-warning text-xs font-black mb-2">Role Staf Reviewer</span>
-                <h2 class="text-xl sm:text-2xl font-black text-navy">📖 User Manual: Reviewer (Reviewer PIC / EDAS Officer)</h2>
-                <p class="text-xs sm:text-sm text-muted mt-1">Panduan inspeksi kelayakan naskah, verifikasi IEEE PDF eXpress, pencatatan error EDAS dengan preset tombol cepat, dan approval akhir EDAS.</p>
+                <span class="badge badge-warning text-xs font-black mb-2">Reviewer Staff Role</span>
+                <h2 class="text-xl sm:text-2xl font-black text-navy">📖 User Manual: Reviewer</h2>
+                <p class="text-xs sm:text-sm text-muted mt-1">Guide for manuscript inspection, IEEE PDF eXpress verification, EDAS error logging with quick preset buttons, and final EDAS approval.</p>
             </div>
 
             <!-- Flowchart Overview -->
             <div class="rounded-2xl bg-warm/80 p-4 sm:p-5 border border-navy/10 text-xs sm:text-sm">
-                <h3 class="font-extrabold text-navy mb-2 text-sm">🔄 Alur Kerja Utama Reviewer PIC:</h3>
+                <h3 class="font-extrabold text-navy mb-2 text-sm">🔄 Reviewer PIC Primary Workflow:</h3>
                 <ol class="list-decimal pl-5 space-y-1.5 text-slate-800">
-                    <li>Buka menu <strong>Paper (`/papers`)</strong> &rarr; Pilih paper dengan status <em>Reviewer Review</em>.</li>
-                    <li>Inspeksi kelayakan naskah dan hasil pemeriksaan 16 checklist IEEE dari Editor.</li>
-                    <li>Periksa file naskah pada sistem <strong>IEEE PDF eXpress</strong> dan perbarui statusnya (`Pending`, `Passed`, `Failed`).</li>
-                    <li>Jika ada kendala EDAS: Gunakan <strong>Preset Tombol Error EDAS</strong> atau tulis catatan error EDAS.</li>
-                    <li>Jika butuh perbaikan: Klik <strong>Kembalikan ke Editorial</strong>.</li>
-                    <li>Jika paper sempurna: Klik <strong>Setujui &amp; Ready for EDAS</strong>.</li>
-                    <li>Setelah Editor mengunggah ke EDAS: Verifikasi referensi EDAS, lalu klik <strong>Approve EDAS &amp; Selesai (Done)</strong>.</li>
+                    <li>Open <strong>Papers (`/papers`)</strong> &rarr; Select a paper with status <em>Reviewer Review</em>.</li>
+                    <li>Inspect manuscript quality and review the Editor's 16 IEEE checklist results.</li>
+                    <li>Verify manuscript compliance on <strong>IEEE PDF eXpress</strong> and update status (`Pending`, `Passed`, `Failed`).</li>
+                    <li>If EDAS issues exist: Use <strong>Quick Error Preset Buttons</strong> or write custom EDAS error notes.</li>
+                    <li>If corrections needed: Click <strong>Return to Editorial</strong>.</li>
+                    <li>If paper is valid: Click <strong>Approve &amp; Ready for EDAS</strong>.</li>
+                    <li>After Editor completes EDAS upload: Verify EDAS reference and click <strong>Approve EDAS &amp; Mark Completed (Done)</strong>.</li>
                 </ol>
             </div>
 
-            <!-- Fitur 1: IEEE PDF eXpress -->
+            <!-- Feature 1: IEEE PDF eXpress -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>1.</span> <span>Pengelolaan Status IEEE PDF eXpress</span>
+                    <span>1.</span> <span>IEEE PDF eXpress Status Management</span>
                 </h3>
                 <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                    Reviewer bertanggung jawab melakukan verifikasi sertifikasi PDF eXpress resmi dari IEEE.
+                    Reviewers are responsible for verifying official IEEE PDF eXpress certification.
                 </p>
                 <div class="bg-slate-50 p-4 rounded-xl border border-navy/10 space-y-2 text-xs text-slate-800">
-                    <strong class="text-navy block font-bold">Pilihan Status PDF eXpress:</strong>
+                    <strong class="text-navy block font-bold">PDF eXpress Status Options:</strong>
                     <ul class="list-disc pl-5 space-y-1">
-                        <li>🟡 <strong>Pending:</strong> Naskah masih dalam antrean verifikasi atau belum diperiksa.</li>
-                        <li>🟢 <strong>✓ Passed / Done:</strong> Naskah telah lolos verifikasi kompatibilitas IEEE PDF eXpress.</li>
-                        <li>🔴 <strong>✕ Failed / Error:</strong> Naskah gagal terverifikasi PDF eXpress (font tidak ter-embed, margin salah, dll.).</li>
+                        <li>🟡 <strong>Pending:</strong> Manuscript is queued for verification or pending inspection.</li>
+                        <li>🟢 <strong>✓ Passed / Done:</strong> Manuscript has passed IEEE PDF eXpress compatibility verification.</li>
+                        <li>🔴 <strong>✕ Failed / Error:</strong> Manuscript failed PDF eXpress verification (unembedded fonts, incorrect margins, etc.).</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Fitur 2: EDAS Error Notes & Presets -->
+            <!-- Feature 2: EDAS Error Notes & Presets -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>2.</span> <span>Catatan Error EDAS &amp; Preset Tombol Cepat</span>
+                    <span>2.</span> <span>EDAS Error Notes &amp; Quick Preset Buttons</span>
                 </h3>
                 <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                    Untuk mempercepat pencatatan kendala unggah ke sistem EDAS, Reviewer dapat menggunakan tombol preset kesalahan standar:
+                    To accelerate logging EDAS upload issues, Reviewers can click quick preset buttons:
                 </p>
                 <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-200 space-y-2 text-xs text-slate-800">
-                    <strong class="text-navy block font-bold">Tombol Preset Error EDAS:</strong>
+                    <strong class="text-navy block font-bold">EDAS Error Preset Buttons:</strong>
                     <ul class="list-disc pl-5 space-y-1.5">
-                        <li><code>+ Page Size US Letter</code>: Menambahkan pesan error ukuran kertas bukan A4.</li>
-                        <li><code>+ Min 5 Pages</code>: Menambahkan pesan error naskah kurang dari 5 halaman penuh.</li>
-                        <li><code>+ Doubleblind Author Visible</code>: Menambahkan pesan error identitas author masih terlihat pada konferensi doubleblind.</li>
-                        <li><code>+ IEEE Copyright Missing</code>: Menambahkan pesan error form hak cipta IEEE belum diisi oleh author.</li>
+                        <li><code>+ Page Size US Letter</code>: Adds paper size error message (not A4 size).</li>
+                        <li><code>+ Min 5 Pages</code>: Adds minimum length error message (less than 5 filled pages).</li>
+                        <li><code>+ Doubleblind Author Visible</code>: Adds visible author identity error message for double-blind conferences.</li>
+                        <li><code>+ IEEE Copyright Missing</code>: Adds missing IEEE copyright form error message.</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Fitur 3: Aksi Tahap Reviewer & Final EDAS Approval -->
+            <!-- Feature 3: Reviewer Actions & Final EDAS Approval -->
             <div class="space-y-3">
                 <h3 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>3.</span> <span>Persetujuan &amp; Approval EDAS Final</span>
+                    <span>3.</span> <span>Final EDAS Approval &amp; Completion</span>
                 </h3>
                 <div class="bg-emerald-50/40 p-4 rounded-xl border border-emerald-200 space-y-2 text-xs text-slate-800">
                     <ul class="list-disc pl-5 space-y-1">
-                        <li><strong>Setujui &amp; Ready for EDAS:</strong> Memindahkan status paper ke <em>Ready for EDAS</em> agar Editor dapat melakukan proses upload akhir ke EDAS.</li>
-                        <li><strong>Approve EDAS &amp; Selesai:</strong> Setelah Editor mencatat referensi EDAS ID, Reviewer memeriksa keabsahan upload tersebut. Klik <strong>Approve EDAS &amp; Selesai</strong> untuk menyelesaikan alur paper hingga status **Done**.</li>
+                        <li><strong>Approve &amp; Ready for EDAS:</strong> Advances paper status to <em>Ready for EDAS</em> so the Editor can perform final upload to EDAS.</li>
+                        <li><strong>Approve EDAS &amp; Mark Completed:</strong> After Editor records EDAS ID reference, Reviewer verifies the upload. Click <strong>Approve EDAS &amp; Mark Completed</strong> to conclude paper workflow to <strong>Done</strong>.</li>
                     </ul>
                 </div>
             </div>

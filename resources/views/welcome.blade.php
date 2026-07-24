@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Paperflow · Editorial workflow</title>
+    <title>Paperflow &middot; Editorial Workflow System</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-warm text-ink antialiased" x-data="{ openSearch: false, search: '' }">
@@ -11,28 +11,28 @@
         <div class="container-page flex h-20 items-center justify-between">
             <x-brand class="text-navy" />
             <div class="flex items-center gap-3">
-                <a href="{{ route('user-manual.author') }}" class="btn btn-ghost text-xs font-bold text-navy hover:text-orange">📖 Panduan Author</a>
-                <a href="{{ route('login') }}" class="btn btn-secondary text-xs">Login editorial</a>
+                <a href="{{ route('user-manual.author') }}" class="btn btn-ghost text-xs font-bold text-navy hover:text-orange">📖 Author Guide</a>
+                <a href="{{ route('login') }}" class="btn btn-secondary text-xs">Editorial Login</a>
             </div>
         </div>
     </header>
     <main class="flex-1 flex flex-col justify-center max-w-[1400px] mx-auto w-full">
         <section class="container-page grid items-center gap-12 py-12 lg:grid-cols-[1.1fr_.9fr]">
             <div>
-                <p class="text-sm font-black uppercase tracking-[.24em] text-orange">Conference editorial workflow</p>
-                <h1 class="mt-5 max-w-3xl text-5xl font-black leading-[1.05] text-navy sm:text-6xl">Dari submission hingga siap ke EDAS.</h1>
-                <p class="mt-6 max-w-2xl text-lg leading-8 text-muted">Paperflow menyatukan form author, assignment PIC, pemeriksaan editorial, versioning dokumen, dan final review dalam satu workspace.</p>
+                <p class="text-sm font-black uppercase tracking-[.24em] text-orange">Conference Editorial Workflow</p>
+                <h1 class="mt-5 max-w-3xl text-5xl font-black leading-[1.05] text-navy sm:text-6xl">From submission to EDAS ready.</h1>
+                <p class="mt-6 max-w-2xl text-lg leading-8 text-muted">Paperflow unifies author submission forms, PIC assignments, editorial compliance checks, document versioning, and final review into a single streamlined workspace.</p>
                 <div class="mt-8 flex flex-wrap gap-3">
-                    <button type="button" @click="openSearch = true" class="btn btn-primary">Cari conference 🔍</button>
-                    <a href="{{ route('login') }}" class="btn btn-ghost">Saya tim editorial →</a>
+                    <button type="button" @click="openSearch = true" class="btn btn-primary">Search Conferences 🔍</button>
+                    <a href="{{ route('login') }}" class="btn btn-ghost">I am Editorial Staff &rarr;</a>
                 </div>
             </div>
             <div class="relative">
                 <div class="absolute inset-10 rounded-full bg-orange/20 blur-3xl"></div>
                 <div class="relative rounded-[2rem] bg-navy p-7 text-white shadow-2xl shadow-navy/25">
-                    <div class="flex items-center justify-between"><p class="font-bold">Editorial progress</p><span class="badge badge-warning">Live workspace</span></div>
+                    <div class="flex items-center justify-between"><p class="font-bold">Editorial Progress</p><span class="badge badge-warning">Live Workspace</span></div>
                     <div class="mt-8 grid grid-cols-2 gap-4">
-                        <div class="rounded-2xl bg-white/8 p-5"><p class="text-sm text-white/55">Paper aktif</p><p class="mt-2 text-3xl font-black">128</p></div>
+                        <div class="rounded-2xl bg-white/8 p-5"><p class="text-sm text-white/55">Active Papers</p><p class="mt-2 text-3xl font-black">128</p></div>
                         <div class="rounded-2xl bg-orange p-5"><p class="text-sm text-white/75">Ready EDAS</p><p class="mt-2 text-3xl font-black">34</p></div>
                     </div>
                     <div class="mt-5 space-y-3">
@@ -48,27 +48,27 @@
         <div x-show="openSearch" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
             <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl" @click.away="openSearch = false">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-xl font-extrabold text-navy">Cari Conference Active</h3>
+                    <h3 class="text-xl font-extrabold text-navy">Search Active Conferences</h3>
                     <button type="button" @click="openSearch = false" class="text-slate-400 hover:text-slate-700 font-bold text-2xl leading-none">&times;</button>
                 </div>
-                <p class="text-xs text-muted mt-1">Cari nama atau deskripsi conference yang sedang membuka submission.</p>
-                <input class="form-input mt-4 py-3" x-model="search" placeholder="Ketik nama conference..." autofocus>
+                <p class="text-xs text-muted mt-1">Search for active conference names or descriptions accepting paper submissions.</p>
+                <input class="form-input mt-4 py-3" x-model="search" placeholder="Type conference name..." autofocus>
                 <div class="mt-4 max-h-96 overflow-y-auto space-y-3 pr-1">
                     @forelse ($conferences as $conference)
                         <a href="/{{ $conference->slug }}" x-show="!search || '{{ strtolower($conference->name) }}'.includes(search.toLowerCase())" class="card block p-4 hover:border-orange transition">
                             <div class="flex items-center justify-between">
                                 <h4 class="font-extrabold text-navy">{{ $conference->name }}</h4>
-                                <span class="text-xs font-bold text-orange">Buka Landing Page &rarr;</span>
+                                <span class="text-xs font-bold text-orange">Open Landing Page &rarr;</span>
                             </div>
-                            <p class="mt-1 text-xs text-muted line-clamp-2">{{ $conference->description ?: 'Submission paper dan dokumen editable.' }}</p>
+                            <p class="mt-1 text-xs text-muted line-clamp-2">{{ $conference->description ?: 'Paper submissions and editable manuscripts.' }}</p>
                         </a>
                     @empty
-                        <p class="text-center py-6 text-sm text-muted">Belum ada conference yang membuka submission.</p>
+                        <p class="text-center py-6 text-sm text-muted">No active conferences currently accepting submissions.</p>
                     @endforelse
                 </div>
             </div>
         </div>
     </main>
-    <footer class="bg-navy py-8 text-white/60 shrink-0"><div class="container-page flex flex-wrap justify-between gap-3 text-sm"><span>© {{ date('Y') }} Paperflow</span><span>Editorial work, clearly moving.</span></div></footer>
+    <footer class="bg-navy py-8 text-white/60 shrink-0"><div class="container-page flex flex-wrap justify-between gap-3 text-sm"><span>&copy; {{ date('Y') }} Paperflow</span><span>Editorial work, clearly moving.</span></div></footer>
 </body>
 </html>

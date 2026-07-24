@@ -62,7 +62,7 @@ class DashboardController extends Controller
         $inProgressCount = max(0, $stats['active'] - $stats['waiting']);
 
         $statusChartData = [
-            'labels' => ['Selesai (Done)', 'Dalam Proses', 'Revisi Author', 'Ditolak / Ditarik'],
+            'labels' => ['Completed (Done)', 'In Progress', 'Awaiting Author Revision', 'Rejected / Withdrawn'],
             'data' => [$stats['done'], $inProgressCount, $stats['waiting'], $rejectedOrWithdrawnCount],
         ];
 
@@ -91,25 +91,25 @@ class DashboardController extends Controller
             if (! isset($picMatrix[$picName])) {
                 $picMatrix[$picName] = [
                     'Total' => 0,
-                    'Belum' => 0,
+                    'Unassigned' => 0,
                     'In Progress' => 0,
-                    'Menunggu Jawaban' => 0,
+                    'Awaiting Response' => 0,
                     'Revised by Editor' => 0,
                     'Revised by Author' => 0,
-                    'Selesai' => 0,
+                    'Completed' => 0,
                 ];
             }
 
             $picMatrix[$picName]['Total']++;
 
             if (in_array($sub->status, [SubmissionStatus::Submitted, SubmissionStatus::ReadyForAssignment], true)) {
-                $picMatrix[$picName]['Belum']++;
+                $picMatrix[$picName]['Unassigned']++;
             } elseif (in_array($sub->status, [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview, SubmissionStatus::ReadyForEdas], true)) {
                 $picMatrix[$picName]['In Progress']++;
             } elseif (in_array($sub->status, [SubmissionStatus::WaitingAuthorRevision, SubmissionStatus::NeedsAuthorCorrection], true)) {
-                $picMatrix[$picName]['Menunggu Jawaban']++;
+                $picMatrix[$picName]['Awaiting Response']++;
             } elseif ($sub->status === SubmissionStatus::Done) {
-                $picMatrix[$picName]['Selesai']++;
+                $picMatrix[$picName]['Completed']++;
             }
 
             if ($sub->revision_substatus === 'revised_by_editor') {
@@ -128,8 +128,8 @@ class DashboardController extends Controller
         // Formatted PIC chart data
         $picChartData = [
             'labels' => array_keys($picMatrix),
-            'active' => array_map(fn ($p) => $p['In Progress'] + $p['Belum'] + $p['Menunggu Jawaban'], array_values($picMatrix)),
-            'done' => array_map(fn ($p) => $p['Selesai'], array_values($picMatrix)),
+            'active' => array_map(fn ($p) => $p['In Progress'] + $p['Unassigned'] + $p['Awaiting Response'], array_values($picMatrix)),
+            'done' => array_map(fn ($p) => $p['Completed'], array_values($picMatrix)),
         ];
 
         // Average turnaround time (days between submitted_at and completed_at)

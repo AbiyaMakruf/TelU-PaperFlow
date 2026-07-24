@@ -39,7 +39,7 @@ class OperationalFeaturesTest extends TestCase
     public function test_superadmin_can_open_application_monitoring(): void
     {
         $superadmin = User::factory()->create(['is_super_admin' => true, 'must_change_password' => false]);
-        $this->actingAs($superadmin)->get(route('admin.monitoring.index'))->assertOk()->assertSee('Monitoring Database');
+        $this->actingAs($superadmin)->get(route('admin.monitoring.index'))->assertOk()->assertSee('Database Monitoring');
     }
 
     public function test_superadmin_can_impersonate_user_and_leave(): void

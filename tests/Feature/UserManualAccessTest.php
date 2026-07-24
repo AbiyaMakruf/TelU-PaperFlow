@@ -51,7 +51,7 @@ class UserManualAccessTest extends TestCase
         $showResponse = $this->actingAs($user)->get(route('user-manual.show', 'editorial'));
         $showResponse->assertOk();
         $showResponse->assertSee('User Manual: Editorial');
-        $showResponse->assertSee('16 Item IEEE Compliance Checklist');
+        $showResponse->assertSee('16 IEEE Compliance Checklist');
 
         $reviewerResponse = $this->actingAs($user)->get(route('user-manual.show', 'reviewer'));
         $reviewerResponse->assertOk();

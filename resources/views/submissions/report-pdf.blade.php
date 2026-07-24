@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Paperflow - {{ now()->format('d M Y') }}</title>
+    <title>Paperflow Summary Report - {{ now()->format('d M Y') }}</title>
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; color: #1e293b; margin: 20px; }
         h1 { font-size: 18px; font-weight: bold; color: #0f172a; margin-bottom: 4px; }
@@ -20,21 +20,21 @@
 </head>
 <body>
     <div class="no-print" style="margin-bottom: 16px;">
-        <button onclick="window.print()" style="background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">Cetak PDF / Print</button>
+        <button onclick="window.print()" style="background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">Print PDF Report</button>
     </div>
 
-    <h1>Laporan Rekapitulasi Submissions</h1>
-    <div class="meta">Tanggal: {{ now()->format('d F Y H:i') }} | Total: {{ $submissions->count() }} Paper</div>
+    <h1>Submissions Summary Report</h1>
+    <div class="meta">Date: {{ now()->format('d F Y H:i') }} | Total: {{ $submissions->count() }} Papers</div>
 
     <table>
         <thead>
             <tr>
                 <th>No</th>
                 <th>Paper ID</th>
-                <th>Kode Paper</th>
-                <th>Konferensi</th>
-                <th>Judul Paper</th>
-                <th>Author</th>
+                <th>Paper Code</th>
+                <th>Conference</th>
+                <th>Paper Title</th>
+                <th>Corresponding Author</th>
                 <th>Status</th>
                 <th>Editor</th>
                 <th>Reviewer</th>

@@ -32,14 +32,14 @@ class AuthenticatedSessionController extends Controller
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             throw ValidationException::withMessages([
-                'login' => "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik.",
+                'login' => "Too many login attempts. Please try again in {$seconds} seconds.",
             ]);
         }
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             RateLimiter::hit($throttleKey, 60);
             throw ValidationException::withMessages([
-                'login' => 'Username/email atau password tidak sesuai.',
+                'login' => 'Invalid username/email or password.',
             ]);
         }
 
@@ -50,7 +50,7 @@ class AuthenticatedSessionController extends Controller
             Auth::logout();
             RateLimiter::hit($throttleKey, 60);
             throw ValidationException::withMessages([
-                'login' => 'Akun Anda tidak aktif. Hubungi superadmin Paperflow.',
+                'login' => 'Your account is inactive. Please contact a Paperflow superadmin.',
             ]);
         }
 
