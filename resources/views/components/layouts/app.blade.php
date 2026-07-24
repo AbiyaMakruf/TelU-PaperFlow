@@ -119,12 +119,7 @@
             @auth
                 <div class="mt-auto border-t border-white/10 pt-5">
                     <a href="{{ route('profile.edit') }}" class="block group cursor-pointer" title="Manage My Profile">
-                        <div class="flex items-center justify-between gap-2">
-                            <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
-                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-black {{ $userRoleBadgeClass }}">
-                                {{ $userRoleLabel }}
-                            </span>
-                        </div>
+                        <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
                         <p class="mt-1 truncate text-xs text-white/55 group-hover:text-white/85 transition">{{ '@' . auth()->user()->username }} &middot; {{ auth()->user()->email }}</p>
                     </a>
                     <div class="grid grid-cols-2 gap-2 mt-4">
@@ -160,12 +155,7 @@
             @auth
                 <div class="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
                     <a href="{{ route('profile.edit') }}" class="block group cursor-pointer" title="Manage My Profile">
-                        <div class="flex items-center justify-between gap-2">
-                            <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
-                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-black {{ $userRoleBadgeClass }}">
-                                {{ $userRoleLabel }}
-                            </span>
-                        </div>
+                        <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
                         <p class="mt-1 truncate text-xs text-white/55 group-hover:text-white/85 transition">{{ '@' . auth()->user()->username }} &middot; {{ auth()->user()->email }}</p>
                     </a>
                     <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
