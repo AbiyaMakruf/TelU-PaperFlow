@@ -11,14 +11,6 @@
                 $portalToken = $submission->ensureValidAuthorToken();
                 $latestFile = $submission->files->first();
             @endphp
-            @if($latestFile)
-                <a href="{{ route('submissions.files.download', [$submission, $latestFile]) }}" class="btn btn-primary text-xs inline-flex items-center gap-1.5 shadow-sm font-extrabold" title="Download latest manuscript version (v{{ $latestFile->version_number }})">
-                    <span>⬇️</span> Download Latest File (v{{ $latestFile->version_number }})
-                </a>
-            @endif
-            <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs inline-flex items-center gap-1.5 shadow-sm hover:border-orange hover:text-orange" title="Inspect author portal view exactly as seen by the author">
-                <span>👁️</span> Open Author Portal ↗
-            </a>
             <x-status-badge :status="$submission->status" />
         </div>
     </div>
@@ -44,15 +36,8 @@
         <div class="space-y-6 min-w-0 w-full max-w-full">
             <!-- Data Submission Card -->
             <section class="card p-4 sm:p-6 max-w-full min-w-0">
-                <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-navy/8 pb-3">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <h2 class="text-base sm:text-lg font-black text-navy">Submission Details</h2>
-                        @if($latestFile)
-                            <a href="{{ route('submissions.files.download', [$submission, $latestFile]) }}" class="btn text-xs py-1.5 px-3 inline-flex items-center gap-1.5 font-black shadow-xs bg-orange hover:bg-orange-dark text-white rounded-lg transition" title="Download latest manuscript version (v{{ $latestFile->version_number }} - {{ $latestFile->original_name }})">
-                                <span>⬇️</span> Download Latest File (v{{ $latestFile->version_number }})
-                            </a>
-                        @endif
-                    </div>
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-navy/8 pb-3">
+                    <h2 class="text-base sm:text-lg font-black text-navy">Submission Details</h2>
                     <span class="text-xs text-muted font-medium">{{ $submission->submitted_at?->timezone($submission->conference->timezone)->format('d M Y H:i') }}</span>
                 </div>
                 <dl class="mt-5 grid gap-4 sm:grid-cols-2 text-xs sm:text-sm">
@@ -77,6 +62,17 @@
                         </div>
                     @endforeach
                 </dl>
+
+                <div class="mt-5 border-t border-navy/10 pt-4 flex flex-wrap items-center gap-3">
+                    @if($latestFile)
+                        <a href="{{ route('submissions.files.download', [$submission, $latestFile]) }}" class="btn text-xs py-2 px-4 inline-flex items-center gap-1.5 font-black shadow-xs bg-orange hover:bg-orange-dark text-white rounded-xl transition" title="Download latest manuscript version (v{{ $latestFile->version_number }} - {{ $latestFile->original_name }})">
+                            <span>⬇️</span> Download Latest File (v{{ $latestFile->version_number }})
+                        </a>
+                    @endif
+                    <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-orange hover:text-orange rounded-xl transition" title="Inspect author portal view exactly as seen by the author">
+                        <span>👁️</span> Buka Portal Author ↗
+                    </a>
+                </div>
 
                 @if($submission->authors->count() > 1)
                     <div class="mt-5 border-t border-navy/10 pt-5">
