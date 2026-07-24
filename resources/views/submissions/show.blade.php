@@ -164,31 +164,8 @@
                                     <textarea class="form-input mt-3 min-h-16 py-2 text-xs" name="items[{{ $item->id }}][note]" placeholder="Item notes (optional)">{{ $result?->note }}</textarea>
                                 </div>
                             @endforeach
-                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-navy/10">
+                            <div class="flex items-center justify-end pt-3 border-t border-navy/10">
                                 <button class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto">Save Checklist</button>
-                                <button type="button" @click="
-                                    let unchecked = [];
-                                    document.querySelectorAll('#checklist-form-{{ $stage->value }} input[type=checkbox]').forEach(el => {
-                                        if (!el.checked) {
-                                            let title = el.getAttribute('data-title');
-                                            let guidance = el.getAttribute('data-guidance');
-                                            unchecked.push('- ' + title + (guidance ? ' (' + guidance + ')' : ''));
-                                        }
-                                    });
-                                    if (unchecked.length === 0) {
-                                        alert('All checklist items are checked (Passed)!');
-                                        return;
-                                    }
-                                    let text = 'Dear Author,\n\nPlease address the following items based on editorial inspection:\n\n' + unchecked.join('\n\n') + '\n\nBest regards,\nEditorial Team';
-                                    let feedbackEl = document.querySelector('textarea[name=body]');
-                                    if (feedbackEl) {
-                                        feedbackEl.value = text;
-                                        feedbackEl.scrollIntoView({ behavior: 'smooth' });
-                                        feedbackEl.focus();
-                                    }
-                                " class="btn btn-secondary text-xs py-2 px-3.5 w-full sm:w-auto text-left sm:text-center leading-normal">
-                                    ⚡ Use Revision Template (Unchecked Items)
-                                </button>
                             </div>
                         </form>
                     </details>
@@ -242,7 +219,7 @@
                 </details>
 
                 <!-- 2. Author Feedback & Communication (Accordion) -->
-                <details class="card overflow-hidden border-l-4 border-l-orange bg-amber-50/20 max-w-full min-w-0">
+                <details class="card overflow-hidden border-l-4 border-l-orange bg-amber-50/20 max-w-full min-w-0" id="author-feedback-accordion" open>
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-amber-100/50 hover:bg-amber-100/80 transition select-none">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="text-base sm:text-lg">📩</span>
@@ -278,13 +255,40 @@
                         </div>
 
                         <!-- Author Feedback Form -->
-                        <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-4">
+                        <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-4" id="author-feedback-form">
                             @csrf
                             <input type="hidden" name="visibility" value="author">
 
                             <div>
-                                <label class="form-label text-xs">Revision Feedback / Message for Author *</label>
-                                <textarea class="form-input min-h-24 py-2.5 text-xs" name="body" placeholder="Write revision feedback or message for the author..." required></textarea>
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                                    <label class="form-label text-xs mb-0">Revision Feedback / Message for Author *</label>
+                                    <button type="button" @click="
+                                        let unchecked = [];
+                                        document.querySelectorAll('input[type=checkbox][data-title]').forEach(el => {
+                                            if (!el.checked) {
+                                                let title = el.getAttribute('data-title');
+                                                let guidance = el.getAttribute('data-guidance');
+                                                unchecked.push('- ' + title + (guidance ? ' (' + guidance + ')' : ''));
+                                            }
+                                        });
+                                        if (unchecked.length === 0) {
+                                            alert('All checklist items are checked (Passed)!');
+                                            return;
+                                        }
+                                        let text = 'Dear Author,\n\nPlease address the following items based on editorial inspection:\n\n' + unchecked.join('\n\n') + '\n\nBest regards,\nEditorial Team';
+                                        let feedbackEl = document.getElementById('author-feedback-textarea');
+                                        let accordionEl = document.getElementById('author-feedback-accordion');
+                                        if (accordionEl) accordionEl.open = true;
+                                        if (feedbackEl) {
+                                            feedbackEl.value = text;
+                                            feedbackEl.scrollIntoView({ behavior: 'smooth' });
+                                            feedbackEl.focus();
+                                        }
+                                    " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0">
+                                        ⚡ Use Revision Template (Unchecked Items)
+                                    </button>
+                                </div>
+                                <textarea class="form-input min-h-24 py-2.5 text-xs" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or message for the author..." required></textarea>
                             </div>
 
                             <!-- Interactive CC Tag Input -->
