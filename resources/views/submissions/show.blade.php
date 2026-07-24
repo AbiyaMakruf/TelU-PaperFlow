@@ -342,8 +342,7 @@
                                         </tbody>
                                     </table>
                                 </div>
-
-                                <div class="flex items-center justify-between pt-3 border-t border-navy/10">
+                               <div class="flex items-center justify-between pt-3 border-t border-navy/10">
                                     <span class="text-xs font-bold text-emerald-700" x-text="autoSaveStatus"></span>
                                     <button type="submit" @if(!$isEditorialActive) disabled @endif class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed">
                                         <span x-show="!savingChecklist">Save Checklist</span>
@@ -351,189 +350,152 @@
                                     </button>
                                 </div>
                             </form>
-                        </details>
+                            <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="p-4 sm:p-6 border-t border-navy/10 space-y-4 bg-slate-50/50" id="author-feedback-form">
+                                @csrf
+                                <input type="hidden" name="visibility" value="author">
 
-                        <!-- 1. Author Feedback & Communication (Accordion) -->
-                        <details class="card overflow-hidden max-w-full min-w-0" id="author-feedback-accordion">
-                                <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
-                                    <div class="min-w-0">
-                                        <h2 class="text-sm sm:text-base font-black text-navy">Author Feedback &amp; Communication</h2>
-                                        <p class="text-[11px] text-muted font-normal truncate">This message will be visible to the author on the portal and can be sent via Email / WhatsApp.</p>
+                                @if(!$isEditorialActive)
+                                    <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
+                                        <span class="text-base shrink-0">ℹ️</span>
+                                        <span>Komunikasi author &amp; tombol aksi berada dalam mode <strong>Lihat Saja (Read Only)</strong> karena status paper saat ini adalah <strong>{{ $submission->status->label() }}</strong>.</span>
                                     </div>
-                                    <div class="flex items-center gap-2 shrink-0">
-                                        <span class="badge badge-warning text-[10px]">Visible to Author</span>
-                                        <span class="text-xs text-muted">▼</span>
-                                    </div>
-                                </summary>
-                                <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
-                                    <!-- Author Feedback History -->
-                                    <div class="space-y-3">
-                                        @forelse($submission->feedback->where('visibility', 'author') as $feedback)
-                                            <div class="rounded-xl bg-amber-50/40 p-3.5 border border-orange/20 shadow-sm text-xs min-w-0">
-                                                <div class="flex flex-wrap items-center justify-between gap-2 text-muted">
-                                                    <div class="flex items-center gap-2 min-w-0">
-                                                        <span class="font-bold text-navy truncate">{{ $feedback->author?->name ?? 'Editorial' }}</span>
-                                                        @if($feedback->emailed_at)
-                                                            <span class="badge badge-success text-[9px] shrink-0">Sent via Email</span>
-                                                        @endif
-                                                    </div>
-                                                    <span class="text-[11px] shrink-0">{{ $feedback->created_at->format('d M Y H:i') }}</span>
-                                                </div>
-                                                <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
-                                            </div>
-                                        @empty
-                                            <p class="text-xs text-muted italic">No feedback sent to author yet.</p>
-                                        @endforelse
-                                    </div>
+                                @endif
 
-                                    <!-- Author Feedback Form -->
-                                    <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-4" id="author-feedback-form">
-                                        @csrf
-                                        <input type="hidden" name="visibility" value="author">
+                                <div>
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                                        <label class="form-label text-xs mb-0">Revision Feedback / Message for Author *</label>
+                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="
+                                            let tableRowsHtml = '';
+                                            let totalItems = 0;
+                                            let failedCount = 0;
 
-                                        @if(!$isEditorialActive)
-                                            <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
-                                                <span class="text-base shrink-0">ℹ️</span>
-                                                <span>Komunikasi author &amp; tombol aksi berada dalam mode <strong>Lihat Saja (Read Only)</strong> karena status paper saat ini adalah <strong>{{ $submission->status->label() }}</strong>.</span>
-                                            </div>
-                                        @endif
+                                            document.querySelectorAll('#checklist-form-{{ $stage->value }} table tbody tr').forEach((row) => {
+                                                let checkRadio = row.querySelector('.radio-check-input');
+                                                if (!checkRadio) return;
+                                                totalItems++;
 
-                                        <div>
-                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
-                                                <label class="form-label text-xs mb-0">Revision Feedback / Message for Author *</label>
-                                                <button type="button" @if(!$isEditorialActive) disabled @endif @click="
-                                                    let tableRowsHtml = '';
-                                                    let totalItems = 0;
-                                                    let failedCount = 0;
+                                                let isChecked = checkRadio.checked;
+                                                if (isChecked) return; // Only include items that need revision!
 
-                                                    document.querySelectorAll('#checklist-form-editorial table tbody tr').forEach((row) => {
-                                                        let checkRadio = row.querySelector('.radio-check-input');
-                                                        if (!checkRadio) return;
-                                                        totalItems++;
+                                                failedCount++;
+                                                let title = checkRadio.getAttribute('data-title') || '';
+                                                let guidance = checkRadio.getAttribute('data-guidance') || '';
+                                                let noteEl = row.querySelector('.item-note-input');
+                                                let noteVal = noteEl ? noteEl.value.trim() : '';
 
-                                                        let isChecked = checkRadio.checked;
-                                                        if (isChecked) return; // Only include items that need revision!
+                                                let statusHtml = '<span style=&quot;color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✕ Needs Revision</span>';
 
-                                                        failedCount++;
-                                                        let title = checkRadio.getAttribute('data-title') || '';
-                                                        let guidance = checkRadio.getAttribute('data-guidance') || '';
-                                                        let noteEl = row.querySelector('.item-note-input');
-                                                        let noteVal = noteEl ? noteEl.value.trim() : '';
-
-                                                        let statusHtml = '<span style=&quot;color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✕ Needs Revision</span>';
-
-                                                        let noteText = '';
-                                                        if (noteVal) {
-                                                            noteText = '<strong>Note:</strong> ' + noteVal;
-                                                        } else if (guidance) {
-                                                            noteText = guidance;
-                                                        } else {
-                                                            noteText = '-';
-                                                        }
-
-                                                        tableRowsHtml += `<tr style=&quot;background-color:#fff1f2; border-bottom:1px solid #e2e8f0;&quot;>
-                                                            <td style=&quot;padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;&quot;>${failedCount}. ${title}</td>
-                                                            <td style=&quot;padding:8px 12px; text-align:center; vertical-align:top;&quot;>${statusHtml}</td>
-                                                            <td style=&quot;padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;&quot;>${noteText}</td>
-                                                        </tr>`;
-                                                    });
-
-                                                    if (totalItems === 0) {
-                                                        alert('No editorial checklist items found!');
-                                                        return;
-                                                    }
-
-                                                    if (failedCount === 0) {
-                                                        alert('All checklist items have passed! No items require revision.');
-                                                        return;
-                                                    }
-
-                                                    let templateHtml = `Dear Authors,\n\nThank you for your submission. Below are the checklist items requiring correction/revision for your manuscript:\n\n<table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;&quot;>\n    <thead>\n        <tr style=&quot;background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;&quot;>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Checklist Criteria</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;&quot;>Status</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Notes / Guidance</th>\n        </tr>\n    </thead>\n    <tbody>\n        ${tableRowsHtml}\n    </tbody>\n</table>\n\nPlease address all items listed above and upload your revised source files via your private author portal.\n\nBest regards,\nEditorial Team`;
-
-                                                    let feedbackEl = document.getElementById('author-feedback-textarea');
-                                                    let accordionEl = document.getElementById('author-feedback-accordion');
-                                                    if (accordionEl) accordionEl.open = true;
-                                                    if (feedbackEl) {
-                                                        feedbackEl.value = templateHtml;
-                                                        feedbackEl.scrollIntoView({ behavior: 'smooth' });
-                                                        feedbackEl.focus();
-                                                    }
-                                                " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    ⚡ Use Revision Template (Unchecked Items Only)
-                                                </button>
-                                            </div>
-                                            <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." @if(!$isEditorialActive) disabled @endif required></textarea>
-                                        </div>
-
-                                        <!-- Interactive CC Tag Input -->
-                                        <div x-data="{
-                                            ccInput: '',
-                                            tags: @js(old('cc') ? array_values(array_filter(preg_split('/[,;\s]+/', old('cc')))) : $defaultCc),
-                                            addTag() {
-                                                if (!{{ json_encode($isEditorialActive) }}) return;
-                                                let val = this.ccInput.trim().replace(/,$/, '');
-                                                if (val && !this.tags.includes(val)) {
-                                                    this.tags.push(val);
+                                                let noteText = '';
+                                                if (noteVal) {
+                                                    noteText = '<strong>Note:</strong> ' + noteVal;
+                                                } else if (guidance) {
+                                                    noteText = guidance;
+                                                } else {
+                                                    noteText = '-';
                                                 }
-                                                this.ccInput = '';
-                                            },
-                                            removeTag(index) {
-                                                if (!{{ json_encode($isEditorialActive) }}) return;
-                                                this.tags.splice(index, 1);
-                                            }
-                                        }" class="min-w-0">
-                                            <label class="form-label text-xs mb-1 block">CC Email (Type email address and press comma / Enter)</label>
-                                            <input type="hidden" name="cc" :value="tags.join(',')">
-                                            <div class="flex flex-wrap items-center gap-1.5 rounded-xl border border-navy/20 bg-white p-2 min-h-11 focus-within:ring-2 focus-within:ring-orange max-w-full">
-                                                <template x-for="(tag, index) in tags" :key="index">
-                                                    <span class="inline-flex items-center gap-1 rounded-lg bg-navy text-white px-2 py-0.5 text-xs font-bold shadow-sm max-w-full truncate">
-                                                        <span x-text="tag" class="truncate"></span>
-                                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0 disabled:opacity-50">&times;</button>
-                                                    </span>
-                                                </template>
-                                                <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[120px]"
-                                                       x-model="ccInput"
-                                                       @if(!$isEditorialActive) disabled @endif
-                                                       @keydown.comma.prevent="addTag()"
-                                                       @keydown.enter.prevent="addTag()"
-                                                       @blur="addTag()"
-                                                       placeholder="Type CC email...">
-                                            </div>
-                                        </div>
 
-                                        <!-- Action Buttons -->
-                                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
-                                            <template x-if="allPassed">
-                                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-                                                    <template x-if="hasReviewer">
-                                                        <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" @if(!$isEditorialActive) disabled @endif class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                                            ✓ Approve &amp; Send to Reviewer
-                                                        </button>
-                                                    </template>
-                                                    <template x-if="!hasReviewer">
-                                                        <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
-                                                            ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
-                                                        </button>
-                                                    </template>
-                                                </div>
-                                            </template>
-                                            <template x-if="!allPassed">
-                                                <button type="submit" name="action" value="request_revision" @click="await prepareFeedbackSubmit()" @if(!$isEditorialActive) disabled @endif class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    Request Author Revision &amp; Send Email Notification
+                                                tableRowsHtml += `<tr style=&quot;background-color:#fff1f2; border-bottom:1px solid #e2e8f0;&quot;>
+                                                    <td style=&quot;padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;&quot;>${failedCount}. ${title}</td>
+                                                    <td style=&quot;padding:8px 12px; text-align:center; vertical-align:top;&quot;>${statusHtml}</td>
+                                                    <td style=&quot;padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;&quot;>${noteText}</td>
+                                                </tr>`;
+                                            });
+
+                                            if (totalItems === 0) {
+                                                alert('No editorial checklist items found!');
+                                                return;
+                                            }
+
+                                            if (failedCount === 0) {
+                                                alert('All checklist items have passed! No items require revision.');
+                                                return;
+                                            }
+
+                                            let templateHtml = `Dear Authors,\n\nThank you for your submission. Below are the checklist items requiring correction/revision for your manuscript:\n\n<table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;&quot;>\n    <thead>\n        <tr style=&quot;background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;&quot;>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Checklist Criteria</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;&quot;>Status</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Notes / Guidance</th>\n        </tr>\n    </thead>\n    <tbody>\n        ${tableRowsHtml}\n    </tbody>\n</table>\n\nPlease address all items listed above and upload your revised source files via your private author portal.\n\nBest regards,\nEditorial Team`;
+
+                                            let feedbackEl = document.getElementById('author-feedback-textarea');
+                                            if (feedbackEl) {
+                                                feedbackEl.value = templateHtml;
+                                                feedbackEl.scrollIntoView({ behavior: 'smooth' });
+                                                feedbackEl.focus();
+                                            }
+                                        " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            ⚡ Use Revision Template (Unchecked Items Only)
+                                        </button>
+                                    </div>
+                                    <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." @if(!$isEditorialActive) disabled @endif required></textarea>
+                                </div>
+
+                                <!-- Interactive CC Tag Input -->
+                                <div x-data="{
+                                    ccInput: '',
+                                    tags: @js(old('cc') ? array_values(array_filter(preg_split('/[,;\s]+/', old('cc')))) : $defaultCc),
+                                    addTag() {
+                                        if (!{{ json_encode($isEditorialActive) }}) return;
+                                        let val = this.ccInput.trim().replace(/,$/, '');
+                                        if (val && !this.tags.includes(val)) {
+                                            this.tags.push(val);
+                                        }
+                                        this.ccInput = '';
+                                    },
+                                    removeTag(index) {
+                                        if (!{{ json_encode($isEditorialActive) }}) return;
+                                        this.tags.splice(index, 1);
+                                    }
+                                }" class="min-w-0">
+                                    <label class="form-label text-xs mb-1 block">CC Email (Type email address and press comma / Enter)</label>
+                                    <input type="hidden" name="cc" :value="tags.join(',')">
+                                    <div class="flex flex-wrap items-center gap-1.5 rounded-xl border border-navy/20 bg-white p-2 min-h-11 focus-within:ring-2 focus-within:ring-orange max-w-full">
+                                        <template x-for="(tag, index) in tags" :key="index">
+                                            <span class="inline-flex items-center gap-1 rounded-lg bg-navy text-white px-2 py-0.5 text-xs font-bold shadow-sm max-w-full truncate">
+                                                <span x-text="tag" class="truncate"></span>
+                                                <button type="button" @if(!$isEditorialActive) disabled @endif @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0 disabled:opacity-50">&times;</button>
+                                            </span>
+                                        </template>
+                                        <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[120px]"
+                                               x-model="ccInput"
+                                               @if(!$isEditorialActive) disabled @endif
+                                               @keydown.comma.prevent="addTag()"
+                                               @keydown.enter.prevent="addTag()"
+                                               @blur="addTag()"
+                                               placeholder="Type CC email...">
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
+                                    <template x-if="allPassed">
+                                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+                                            <template x-if="hasReviewer">
+                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" @if(!$isEditorialActive) disabled @endif class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    ✓ Approve &amp; Send to Reviewer
                                                 </button>
                                             </template>
-                                            @if($whatsappUrl)
-                                                <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2.5 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center">
-                                                    Send via WhatsApp ↗
-                                                </a>
-                                            @endif
+                                            <template x-if="!hasReviewer">
+                                                <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
+                                                    ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
+                                                </button>
+                                            </template>
                                         </div>
-                                        <template x-if="allPassed && !hasReviewer">
-                                            <p class="text-[11px] font-bold text-amber-700 text-right mt-2">
-                                                ⚠️ Reviewer PIC has not been assigned yet. Please select &amp; save a Reviewer PIC in the sidebar.
-                                            </p>
-                                        </template>
-                                    </form>
+                                    </template>
+                                    <template x-if="!allPassed">
+                                        <button type="submit" name="action" value="request_revision" @click="await prepareFeedbackSubmit()" @if(!$isEditorialActive) disabled @endif class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Request Author Revision &amp; Send Email Notification
+                                        </button>
+                                    </template>
+                                    @if($whatsappUrl)
+                                        <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2.5 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center">
+                                            Send via WhatsApp ↗
+                                        </a>
+                                    @endif
+                                </div>
+                                <template x-if="allPassed && !hasReviewer">
+                                    <p class="text-[11px] font-bold text-amber-700 text-right mt-2">
+                                        ⚠️ Reviewer PIC has not been assigned yet. Please select &amp; save a Reviewer PIC in the sidebar.
+                                    </p>
+                                </template>
+                            </form>
+                        </details>
                                 </div>
                             </details>
                     </div>
