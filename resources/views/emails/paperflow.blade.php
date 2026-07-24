@@ -9,7 +9,13 @@
         <table role="presentation" width="100%"><tr><td><div style="font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-.5px">Paper<span style="color:{{ $accentColor ?? '#f47c20' }}">flow</span></div><div style="margin-top:7px;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:{{ $accentColor ?? '#f47c20' }}">{{ $contextName }}</div></td><td align="right">@if($logoUrl ?? null)<img src="{{ $logoUrl }}" alt="Logo" style="max-height:54px;max-width:130px">@else<div style="width:44px;height:44px;line-height:44px;text-align:center;border-radius:13px;background:{{ $accentColor ?? '#f47c20' }};color:#fff;font-weight:900;font-size:20px">P</div>@endif</td></tr></table>
     </td></tr>
     <tr><td style="padding:38px 36px 24px">
-        <div style="font-size:15px;line-height:1.75;color:#374151;white-space:pre-line">{{ $messageBody }}</div>
+        <div style="font-size:15px;line-height:1.75;color:#374151;">
+            @if(str_contains($messageBody, '<table') || str_contains($messageBody, '<div') || str_contains($messageBody, '<p'))
+                {!! $messageBody !!}
+            @else
+                {!! nl2br(e($messageBody)) !!}
+            @endif
+        </div>
         @if($otpCode ?? null)
             <div style="margin:28px 0 10px;padding:26px 20px;background:#f7f3ec;border:2px dashed {{ $accentColor ?? '#f47c20' }};border-radius:16px;text-align:center">
                 <div style="font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:8px">Verification Code (OTP)</div>

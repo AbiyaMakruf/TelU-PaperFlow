@@ -171,8 +171,9 @@
                                             @php
                                                 $result = $cycle?->results->firstWhere('checklist_item_id', $item->id);
                                                 $prevResult = $previousCycle?->results->firstWhere('checklist_item_id', $item->id);
+                                                $hasNote = !empty($result?->note);
                                             @endphp
-                                            <tr class="hover:bg-slate-50/70 transition" x-data="{ openGuidance: false, checked: {{ json_encode((bool)($result?->is_checked)) }} }">
+                                            <tr class="hover:bg-slate-50/70 transition" x-data="{ openGuidance: false, openNote: {{ json_encode($hasNote) }}, checked: {{ json_encode((bool)($result?->is_checked)) }} }">
                                                 <td class="p-3.5 sm:p-4 align-top min-w-0">
                                                     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 min-w-0">
                                                         <div class="min-w-0">
@@ -180,11 +181,16 @@
                                                                 {{ $item->title }} @if($item->is_required)<span class="text-orange">*</span>@endif
                                                             </strong>
                                                         </div>
-                                                        @if($item->description)
-                                                            <button type="button" @click="openGuidance = !openGuidance" class="text-xs font-bold text-orange hover:underline shrink-0 self-start">
-                                                                <span x-text="openGuidance ? 'Close Guidance −' : 'Guidance Details +'"></span>
+                                                        <div class="flex items-center gap-2.5 shrink-0 self-start">
+                                                            @if($item->description)
+                                                                <button type="button" @click="openGuidance = !openGuidance" class="text-xs font-bold text-orange hover:underline">
+                                                                    <span x-text="openGuidance ? 'Close Guidance −' : 'Guidance Details +'"></span>
+                                                                </button>
+                                                            @endif
+                                                            <button type="button" @click="openNote = !openNote" class="text-xs font-bold text-navy hover:underline">
+                                                                <span x-text="openNote ? 'Hide Note −' : '+ Add Note'"></span>
                                                             </button>
-                                                        @endif
+                                                        </div>
                                                     </div>
                                                     @if($item->description)
                                                         <div x-show="openGuidance" x-cloak class="mt-2.5 rounded-lg bg-amber-50/70 p-3 text-xs leading-relaxed text-slate-700 border border-amber-200/60 break-words">
@@ -192,7 +198,9 @@
                                                             <p class="leading-relaxed whitespace-pre-line">{{ $item->description }}</p>
                                                         </div>
                                                     @endif
-                                                    <textarea class="form-input mt-2.5 min-h-14 py-2 text-xs" name="items[{{ $item->id }}][note]" placeholder="Item notes (optional)...">{{ $result?->note }}</textarea>
+                                                    <div x-show="openNote" x-cloak class="mt-2.5">
+                                                        <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $result?->note }}</textarea>
+                                                    </div>
                                                 </td>
                                                 <td class="p-3.5 sm:p-4 align-top text-center">
                                                     <div class="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-navy/10 shadow-inner">
@@ -264,7 +272,7 @@
                                 <div class="rounded-xl bg-slate-50 p-3.5 border border-navy/10 shadow-sm text-xs min-w-0">
                                     <div class="flex items-center justify-between gap-2 text-muted min-w-0">
                                         <span class="font-bold text-navy truncate">👤 {{ $feedback->author?->name ?? 'Staff Member' }}</span>
-                                        <span class="shrink-0 text-[11px]">{{ $feedback->created_at->format('d M Y H:i') }}</span>
+                                        <span class="text-[11px] shrink-0">{{ $feedback->created_at->format('d M Y H:i') }}</span>
                                     </div>
                                     <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
                                 </div>
@@ -332,32 +340,62 @@
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
                                     <label class="form-label text-xs mb-0">Revision Feedback / Message for Author *</label>
                                     <button type="button" @click="
-                                        let unchecked = [];
-                                        document.querySelectorAll('input[type=checkbox][data-title]').forEach(el => {
-                                            if (!el.checked) {
-                                                let title = el.getAttribute('data-title');
-                                                let guidance = el.getAttribute('data-guidance');
-                                                unchecked.push('- ' + title + (guidance ? ' (' + guidance + ')' : ''));
+                                        let tableRowsHtml = '';
+                                        let totalItems = 0;
+
+                                        document.querySelectorAll('#checklist-form-editorial table tbody tr').forEach((row, idx) => {
+                                            let checkRadio = row.querySelector('.radio-check-input');
+                                            if (!checkRadio) return;
+                                            totalItems++;
+
+                                            let isChecked = checkRadio.checked;
+                                            let title = checkRadio.getAttribute('data-title') || '';
+                                            let guidance = checkRadio.getAttribute('data-guidance') || '';
+                                            let noteEl = row.querySelector('.item-note-input');
+                                            let noteVal = noteEl ? noteEl.value.trim() : '';
+
+                                            let statusHtml = isChecked
+                                                ? '<span style=&quot;color:#15803d; font-weight:bold; background-color:#f0fdf4; border:1px solid #bbf7d0; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✓ Passed</span>'
+                                                : '<span style=&quot;color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✕ Needs Revision</span>';
+
+                                            let noteText = '';
+                                            if (noteVal) {
+                                                noteText = '<strong>Note:</strong> ' + noteVal;
+                                            } else if (guidance) {
+                                                noteText = guidance;
+                                            } else {
+                                                noteText = '-';
                                             }
+
+                                            let bgStyle = isChecked ? 'background-color:#ffffff;' : 'background-color:#fff1f2;';
+
+                                            tableRowsHtml += `<tr style=&quot;${bgStyle} border-bottom:1px solid #e2e8f0;&quot;>
+                                                <td style=&quot;padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;&quot;>${idx + 1}. ${title}</td>
+                                                <td style=&quot;padding:8px 12px; text-align:center; vertical-align:top;&quot;>${statusHtml}</td>
+                                                <td style=&quot;padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;&quot;>${noteText}</td>
+                                            </tr>`;
                                         });
-                                        if (unchecked.length === 0) {
-                                            alert('All checklist items are checked (Passed)!');
+
+                                        if (totalItems === 0) {
+                                            alert('No editorial checklist items found!');
                                             return;
                                         }
-                                        let text = 'Dear Author,\n\nPlease address the following items based on editorial inspection:\n\n' + unchecked.join('\n\n') + '\n\nBest regards,\nEditorial Team';
+
+                                        let templateHtml = `Dear Authors,\n\nThank you for your submission. Below is the detailed editorial compliance evaluation results for your manuscript:\n\n<table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;&quot;>\n    <thead>\n        <tr style=&quot;background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;&quot;>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Checklist Criteria</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;&quot;>Status</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Notes / Guidance</th>\n        </tr>\n    </thead>\n    <tbody>\n        ${tableRowsHtml}\n    </tbody>\n</table>\n\nPlease address all items marked as <strong>✕ Needs Revision</strong> and upload your revised source files via your private author portal.\n\nBest regards,\nEditorial Team`;
+
                                         let feedbackEl = document.getElementById('author-feedback-textarea');
                                         let accordionEl = document.getElementById('author-feedback-accordion');
                                         if (accordionEl) accordionEl.open = true;
                                         if (feedbackEl) {
-                                            feedbackEl.value = text;
+                                            feedbackEl.value = templateHtml;
                                             feedbackEl.scrollIntoView({ behavior: 'smooth' });
                                             feedbackEl.focus();
                                         }
                                     " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0">
-                                        ⚡ Use Revision Template (Unchecked Items)
+                                        ⚡ Use Revision Template (Full Evaluation Table)
                                     </button>
                                 </div>
-                                <textarea class="form-input min-h-24 py-2.5 text-xs" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or message for the author..." required></textarea>
+                                <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." required></textarea>
                             </div>
 
                             <!-- Interactive CC Tag Input -->
