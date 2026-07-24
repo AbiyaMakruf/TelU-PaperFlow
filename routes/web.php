@@ -57,6 +57,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/workspace/switch', [WorkspaceController::class, 'switch'])->name('workspace.switch');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/check-username', [ProfileController::class, 'checkUsername'])->name('profile.username.check');
+    Route::put('/profile/username', [ProfileController::class, 'updateUsername'])->name('profile.username.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::post('/profile/email/request-otp', [ProfileController::class, 'requestEmailOtp'])->name('profile.email.request-otp');
+    Route::post('/profile/email/verify-otp', [ProfileController::class, 'verifyEmailOtp'])->name('profile.email.verify-otp');
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
