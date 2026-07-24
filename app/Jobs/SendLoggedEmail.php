@@ -29,15 +29,21 @@ class SendLoggedEmail implements ShouldQueue
         try {
             preg_match('/https?:\/\/[^\s]+/', $this->body, $matches);
             $actionUrl = isset($matches[0]) ? rtrim($matches[0], '.,);') : null;
+            $cleanBody = $this->body;
+            if ($actionUrl !== null) {
+                $cleanBody = preg_replace('/\s*https?:\/\/[^\s]+\s*/', "\n\n", $cleanBody);
+                $cleanBody = preg_replace("/\n{3,}/", "\n\n", trim((string) $cleanBody));
+            }
+
             $actionLabel = match ($this->emailLog->template_key) {
-                'revision_requested' => 'Buka portal & unggah revisi',
-                'submission_received' => 'Pantau submission',
-                'paper_completed' => 'Buka portal paper',
-                default => 'Buka Paperflow',
+                'revision_requested' => 'Upload Revision',
+                'submission_received' => 'Track Submission',
+                'paper_completed' => 'View Paper Portal',
+                default => 'Open Paperflow',
             };
             $mail = new PaperflowMail(
                 mailSubject: $this->emailLog->subject,
-                messageBody: $this->body,
+                messageBody: $cleanBody,
                 senderName: $this->emailLog->sender_name ?: (string) config('mail.from.name'),
                 contextName: $this->emailLog->conference?->name ?: 'Paperflow',
                 actionUrl: $actionUrl,
