@@ -12,11 +12,11 @@
             <input class="form-input" id="login" type="text" name="login" value="{{ old('login') }}" required autofocus autocomplete="username" placeholder="username atau nama@organisasi.id">
         </div>
         <div>
-            <div class="flex items-center justify-between">
-                <label class="form-label" for="password">Password</label>
+            <div class="flex items-center justify-between mb-1">
+                <label class="form-label mb-0" for="password">Password</label>
                 <a href="{{ route('password.request') }}" class="text-xs font-bold text-orange hover:text-navy">Lupa password?</a>
             </div>
-            <input class="form-input" id="password" type="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+            <x-input-password id="password" name="password" required autocomplete="current-password" placeholder="••••••••" />
         </div>
         <label class="flex items-center gap-3 text-sm text-muted">
             <input type="checkbox" name="remember" class="size-4 rounded border-navy/20 text-orange focus:ring-orange">

@@ -230,10 +230,10 @@
                         <input type="email" class="form-input" name="new_email" value="{{ old('new_email', session('pending_new_email')) }}" required placeholder="new_email@example.com">
                     </label>
 
-                    <label>
+                    <div>
                         <span class="form-label">Current Password (Security Confirmation) *</span>
-                        <input type="password" class="form-input" name="password" required placeholder="••••••••">
-                    </label>
+                        <x-input-password name="password" required placeholder="••••••••" />
+                    </div>
                 </div>
 
                 <div class="pt-2">
@@ -293,20 +293,20 @@
                 @csrf
                 @method('PUT')
 
-                <label class="sm:col-span-2">
+                <div class="sm:col-span-2">
                     <span class="form-label">Current Password (Old Password) *</span>
-                    <input type="password" class="form-input" name="old_password" required placeholder="Enter current password">
-                </label>
+                    <x-input-password name="old_password" required placeholder="Enter current password" />
+                </div>
 
-                <label>
+                <div>
                     <span class="form-label">New Password *</span>
-                    <input type="password" class="form-input" name="new_password" required minlength="8" placeholder="Minimum 8 characters">
-                </label>
+                    <x-input-password name="new_password" required minlength="8" placeholder="Minimum 8 characters" />
+                </div>
 
-                <label>
+                <div>
                     <span class="form-label">Confirm New Password *</span>
-                    <input type="password" class="form-input" name="new_password_confirmation" required minlength="8" placeholder="Retype new password">
-                </label>
+                    <x-input-password name="new_password_confirmation" required minlength="8" placeholder="Retype new password" />
+                </div>
 
                 <div class="sm:col-span-2 pt-2">
                     <button class="btn btn-primary w-full sm:w-auto">🔒 Save New Password</button>
