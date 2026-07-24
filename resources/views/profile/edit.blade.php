@@ -10,8 +10,8 @@
         <!-- CARD 1: EDITORIAL IDENTITY INFORMATION -->
         <div class="card p-6 sm:p-7">
             <div class="border-b border-navy/10 pb-4 mb-6">
-                <h2 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>👤</span> Editorial Identity Information
+                <h2 class="text-lg font-black text-navy">
+                    Editorial Identity Information
                 </h2>
                 <p class="text-xs text-muted mt-0.5">This identity is used in automated email signatures and editorial WhatsApp links.</p>
             </div>
@@ -51,7 +51,7 @@
                 </label>
 
                 <div class="sm:col-span-2 pt-2">
-                    <button class="btn btn-primary w-full sm:w-auto">💾 Save Profile Information</button>
+                    <button class="btn btn-primary w-full sm:w-auto">Save Profile Information</button>
                 </div>
             </form>
         </div>
@@ -103,8 +103,8 @@
             }
         }" class="card p-6 sm:p-7">
             <div class="border-b border-navy/10 pb-4 mb-6">
-                <h2 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>🆔</span> Username Settings
+                <h2 class="text-lg font-black text-navy">
+                    Username Settings
                 </h2>
                 <p class="text-xs text-muted mt-0.5">Your username is used to log in to the Paperflow system.</p>
             </div>
@@ -127,7 +127,7 @@
                                 @click="checkAvailability()" 
                                 :disabled="checking || !username || username === initialUsername"
                                 class="btn btn-secondary text-xs shrink-0 py-2.5">
-                            <span x-show="!checking">🔍 Check Availability</span>
+                            <span x-show="!checking">Check Availability</span>
                             <span x-show="checking">Checking...</span>
                         </button>
                     </div>
@@ -135,11 +135,11 @@
                     <!-- Availability Status Badge -->
                     <div class="mt-2 text-xs font-bold">
                         <template x-if="username === initialUsername">
-                            <span class="text-slate-500">🔵 This is your current username.</span>
+                            <span class="text-slate-500">This is your current username.</span>
                         </template>
                         <template x-if="username !== initialUsername && checkMessage">
                             <span :class="available ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-rose-700 bg-rose-50 border-rose-200'" class="px-2.5 py-1 rounded-lg border inline-block">
-                                <span x-text="available ? '✓ ' : '✕ '"></span>
+                                <span x-text="available ? 'Available: ' : 'Unavailable: '"></span>
                                 <span x-text="checkMessage"></span>
                             </span>
                         </template>
@@ -150,7 +150,7 @@
                     <button type="submit" 
                             :disabled="username === initialUsername || available === false" 
                             class="btn btn-primary w-full sm:w-auto">
-                        ✏️ Change Username
+                        Change Username
                     </button>
                 </div>
             </form>
@@ -158,12 +158,9 @@
             <!-- CONFIRMATION POPUP MODAL FOR USERNAME CHANGE -->
             <div x-show="showConfirmModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 backdrop-blur-sm p-4">
                 <div class="card w-full max-w-md p-6 bg-white shadow-2xl space-y-4 text-left" @click.outside="showConfirmModal = false">
-                    <div class="flex items-center gap-3 border-b border-navy/10 pb-3">
-                        <span class="text-2xl">⚠️</span>
-                        <div>
-                            <h3 class="text-base font-black text-navy">Confirm Username Change</h3>
-                            <p class="text-xs text-muted">This action requires your confirmation</p>
-                        </div>
+                    <div class="border-b border-navy/10 pb-3">
+                        <h3 class="text-base font-black text-navy">Confirm Username Change</h3>
+                        <p class="text-xs text-muted">This action requires your confirmation</p>
                     </div>
 
                     <p class="text-sm text-slate-700 leading-relaxed">
@@ -171,7 +168,7 @@
                     </p>
 
                     <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 font-medium">
-                        📌 <strong>Note:</strong> After updating, you must use this new username (<strong><span x-text="username"></span></strong>) to log in to your Paperflow account next time.
+                        <strong>Note:</strong> After updating, you must use this new username (<strong><span x-text="username"></span></strong>) to log in to your Paperflow account next time.
                     </div>
 
                     <div class="flex items-center justify-end gap-3 pt-2">
@@ -188,8 +185,8 @@
             pendingEmail: '{{ session('pending_new_email', '') }}'
         }" class="card p-6 sm:p-7">
             <div class="border-b border-navy/10 pb-4 mb-6">
-                <h2 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>✉️</span> Email Address Settings
+                <h2 class="text-lg font-black text-navy">
+                    Email Address Settings
                 </h2>
                 <p class="text-xs text-muted mt-0.5">Your email address is used for system notifications and account password recovery.</p>
             </div>
@@ -199,7 +196,7 @@
                     <span class="text-slate-500 font-medium block">Current Email Address:</span>
                     <span class="text-base font-black text-navy mt-0.5 block font-mono">{{ $user->email }}</span>
                 </div>
-                <span class="badge badge-success text-[11px] px-3 py-1 font-bold">✓ Verified</span>
+                <span class="badge badge-success text-[11px] px-3 py-1 font-bold">Verified</span>
             </div>
 
             <!-- REQUEST OTP FORM -->
@@ -212,7 +209,7 @@
 
                 <div class="pt-1">
                     <button class="btn btn-primary w-full sm:w-auto">
-                        📩 Send OTP Code to New Email
+                        Send OTP Code to New Email
                     </button>
                 </div>
             </form>
@@ -221,12 +218,9 @@
             <template x-if="showOtpForm || '{{ session('otp_sent') }}'">
                 <div class="mt-6 border-t border-navy/10 pt-6">
                     <div class="rounded-2xl border-2 border-orange-400/40 bg-orange-50/60 p-5 sm:p-6 space-y-4">
-                        <div class="flex items-center gap-3">
-                            <span class="text-3xl">🔑</span>
-                            <div>
-                                <h3 class="text-base font-black text-navy">Enter 4-Digit Verification Code (OTP)</h3>
-                                <p class="text-xs text-slate-600">A 4-digit verification code in English has been sent to your new email: <strong class="text-navy font-mono" x-text="pendingEmail || '{{ session('pending_new_email') }}'"></strong></p>
-                            </div>
+                        <div>
+                            <h3 class="text-base font-black text-navy">Enter 4-Digit Verification Code (OTP)</h3>
+                            <p class="text-xs text-slate-600">A 4-digit verification code in English has been sent to your new email: <strong class="text-navy font-mono" x-text="pendingEmail || '{{ session('pending_new_email') }}'"></strong></p>
                         </div>
 
                         <form method="POST" action="{{ route('profile.email.verify-otp') }}" class="space-y-4 max-w-sm">
@@ -245,7 +239,7 @@
 
                             <div class="flex items-center gap-3">
                                 <button type="submit" class="btn btn-primary text-xs font-bold py-2.5">
-                                    ✅ Verify &amp; Save New Email
+                                    Verify &amp; Save New Email
                                 </button>
                             </div>
                         </form>
@@ -257,8 +251,8 @@
         <!-- CARD 4: CHANGE PASSWORD -->
         <div class="card p-6 sm:p-7">
             <div class="border-b border-navy/10 pb-4 mb-6">
-                <h2 class="text-lg font-black text-navy flex items-center gap-2">
-                    <span>🔒</span> Change Password
+                <h2 class="text-lg font-black text-navy">
+                    Change Password
                 </h2>
                 <p class="text-xs text-muted mt-0.5">Periodically update your account password to maintain account security.</p>
             </div>
@@ -283,7 +277,7 @@
                 </div>
 
                 <div class="sm:col-span-2 pt-2">
-                    <button class="btn btn-primary w-full sm:w-auto">🔒 Save New Password</button>
+                    <button class="btn btn-primary w-full sm:w-auto">Save New Password</button>
                 </div>
             </form>
         </div>
