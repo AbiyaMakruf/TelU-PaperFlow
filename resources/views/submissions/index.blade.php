@@ -148,17 +148,16 @@
                             <th><a href="{{ $sortUrl('pic') }}">PIC ↕</a></th>
                             <th><a href="{{ $sortUrl('status') }}">Status ↕</a></th>
                             <th><a href="{{ $sortUrl('submitted_at') }}">Submitted ↕</a></th>
-                            <th></th>
                         </tr>
                     </thead>
                     @forelse ($submissions as $submission)
                         <tbody x-data="{ open: false }" class="border-b border-navy/8">
-                        <tr>
-                            <td>
+                        <tr @click="open = !open" class="cursor-pointer hover:bg-slate-50/80 transition" title="Click row to view quick summary">
+                            <td @click.stop>
                                 <input type="checkbox" value="{{ $submission->id }}" x-model="selected">
                             </td>
                             <td>
-                                <a href="{{ route('submissions.show', $submission) }}" class="font-black text-navy hover:text-orange hover:underline block">
+                                <a href="{{ route('submissions.show', $submission) }}" @click.stop class="font-black text-navy hover:text-orange hover:underline block">
                                     {{ $submission->paper_id ?: $submission->paper_code }}
                                 </a>
                                 <p class="mt-1 text-xs text-muted">{{ $submission->conference->name }}</p>
@@ -167,7 +166,7 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('submissions.show', $submission) }}" class="block max-w-lg font-bold text-navy hover:text-orange hover:underline" title="{{ $submission->title }}">
+                                <a href="{{ route('submissions.show', $submission) }}" @click.stop class="block max-w-lg font-bold text-navy hover:text-orange hover:underline" title="{{ $submission->title }}">
                                     {{ $submission->title }}
                                 </a>
                             </td>
@@ -182,14 +181,14 @@
                             </td>
                             <td>
                                 @if($submission->editor)
-                                    <button type="button" @click="activePic = staffMap[{{ $submission->editor->id }}]" class="font-bold text-navy hover:text-orange hover:underline text-left block">
+                                    <button type="button" @click.stop="activePic = staffMap[{{ $submission->editor->id }}]" class="font-bold text-navy hover:text-orange hover:underline text-left block">
                                         👤 {{ $submission->editor->name }}
                                     </button>
                                 @else
                                     <p class="text-muted text-xs">No editor assigned</p>
                                 @endif
                                 @if($submission->reviewer)
-                                    <button type="button" @click="activePic = staffMap[{{ $submission->reviewer->id }}]" class="mt-1 text-xs text-muted hover:text-orange hover:underline text-left block">
+                                    <button type="button" @click.stop="activePic = staffMap[{{ $submission->reviewer->id }}]" class="mt-1 text-xs text-muted hover:text-orange hover:underline text-left block">
                                         🔍 Reviewer: {{ $submission->reviewer->name }}
                                     </button>
                                 @else
@@ -198,17 +197,9 @@
                             </td>
                             <td><x-status-badge :status="$submission->status" /></td>
                             <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->deadline_at->format('d M Y') }}</p>@endif</td>
-                            <td class="whitespace-nowrap space-x-2">
-                                @if($submission->files->first())
-                                    <a href="{{ route('submissions.files.download', [$submission, $submission->files->first()]) }}" class="btn text-[11px] py-1 px-2 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-2xs transition" title="Download latest file (v{{ $submission->files->first()->version_number }})">
-                                        <span>⬇️</span> v{{ $submission->files->first()->version_number }}
-                                    </a>
-                                @endif
-                                <button type="button" class="font-bold text-orange text-xs" x-on:click="open = !open" x-text="open ? 'Close −' : 'View +'">View +</button>
-                            </td>
                         </tr>
                         <tr x-show="open" x-cloak>
-                            <td colspan="8" class="bg-warm/70 p-5">
+                            <td colspan="7" class="bg-warm/70 p-5">
                                 <div class="grid gap-4 text-sm md:grid-cols-4">
                                     <div><p class="form-label">Internal Code</p><p class="font-bold text-navy">{{ $submission->paper_code }}</p></div>
                                     <div><p class="form-label">Primary Author</p><p class="font-bold text-navy">{{ $submission->corresponding_author_name }}</p><p class="text-muted">{{ $submission->corresponding_author_email }}</p></div>
@@ -217,17 +208,12 @@
                                 </div>
                                 <div class="mt-4 flex flex-wrap gap-3">
                                     <a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-4 py-2 text-xs">Open full details</a>
-                                    @if($submission->files->first())
-                                        <a href="{{ route('submissions.files.download', [$submission, $submission->files->first()]) }}" class="btn btn-primary px-4 py-2 text-xs font-black shadow-xs">
-                                            ⬇️ Download Latest File (v{{ $submission->files->first()->version_number }})
-                                        </a>
-                                    @endif
                                 </div>
                             </td>
                         </tr>
                         </tbody>
                     @empty
-                        <tbody><tr><td colspan="8" class="py-12 text-center text-muted">No papers match the selected filters.</td></tr></tbody>
+                        <tbody><tr><td colspan="7" class="py-12 text-center text-muted">No papers match the selected filters.</td></tr></tbody>
                     @endforelse
                 </table>
             </div>
@@ -235,9 +221,9 @@
             <!-- Mobile Card List View -->
             <div class="divide-y divide-navy/10 md:hidden">
                 @forelse($submissions as $submission)
-                    <article x-data="{ open: false }" class="p-4 space-y-3">
+                    <article x-data="{ open: false }" @click="open = !open" class="p-4 space-y-3 cursor-pointer hover:bg-slate-50/70 transition">
                         <div class="flex items-start justify-between gap-2 min-w-0">
-                            <div class="flex items-center gap-2 min-w-0">
+                            <div class="flex items-center gap-2 min-w-0" @click.stop>
                                 <input type="checkbox" value="{{ $submission->id }}" x-model="selected" class="shrink-0">
                                 <a href="{{ route('submissions.show', $submission) }}" class="truncate font-black text-navy hover:text-orange text-base">
                                     {{ $submission->paper_id ?: $submission->paper_code }}
@@ -253,7 +239,7 @@
                         </div>
 
                         <div>
-                            <a href="{{ route('submissions.show', $submission) }}" class="block font-bold text-navy hover:text-orange text-sm leading-snug">
+                            <a href="{{ route('submissions.show', $submission) }}" @click.stop class="block font-bold text-navy hover:text-orange text-sm leading-snug">
                                 {{ $submission->title }}
                             </a>
                             <p class="mt-1 text-xs text-muted truncate">{{ $submission->conference->name }}</p>
@@ -273,7 +259,7 @@
                             <div class="min-w-0">
                                 <span class="text-muted block text-[11px]">Editor PIC</span>
                                 @if($submission->editor)
-                                    <button type="button" @click="activePic = staffMap[{{ $submission->editor->id }}]" class="mt-0.5 truncate font-bold text-navy hover:text-orange text-left block w-full">
+                                    <button type="button" @click.stop="activePic = staffMap[{{ $submission->editor->id }}]" class="mt-0.5 truncate font-bold text-navy hover:text-orange text-left block w-full">
                                         👤 {{ $submission->editor->name }}
                                     </button>
                                 @else
@@ -283,7 +269,7 @@
                             <div class="min-w-0">
                                 <span class="text-muted block text-[11px]">Reviewer PIC</span>
                                 @if($submission->reviewer)
-                                    <button type="button" @click="activePic = staffMap[{{ $submission->reviewer->id }}]" class="mt-0.5 truncate font-bold text-navy hover:text-orange text-left block w-full">
+                                    <button type="button" @click.stop="activePic = staffMap[{{ $submission->reviewer->id }}]" class="mt-0.5 truncate font-bold text-navy hover:text-orange text-left block w-full">
                                         🔍 {{ $submission->reviewer->name }}
                                     </button>
                                 @else
@@ -293,15 +279,10 @@
                         </div>
 
                         <div class="flex items-center justify-between gap-3 pt-1">
-                            <button type="button" class="text-xs font-bold text-orange" x-on:click="open = !open" x-text="open ? 'Close summary −' : 'Summary info +'">
-                                Summary info +
-                            </button>
-                            <div class="flex items-center gap-2">
-                                @if($submission->files->first())
-                                    <a href="{{ route('submissions.files.download', [$submission, $submission->files->first()]) }}" class="btn text-xs py-1.5 px-2.5 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-2xs" title="Download latest file (v{{ $submission->files->first()->version_number }})">
-                                        ⬇️ v{{ $submission->files->first()->version_number }}
-                                    </a>
-                                @endif
+                            <span class="text-xs font-bold text-orange select-none" x-text="open ? 'Close summary −' : 'Click card for summary +'">
+                                Click card for summary +
+                            </span>
+                            <div class="flex items-center gap-2" @click.stop>
                                 <a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-3 py-1.5 text-xs">
                                     Details ↗
                                 </a>
