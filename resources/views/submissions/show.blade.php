@@ -239,7 +239,10 @@
                                             if (!isEditorialActive) return;
                                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                                             if (!form) return;
-                                            form.querySelectorAll('.radio-check-input').forEach(r => r.checked = true);
+                                            form.querySelectorAll('.radio-check-input').forEach(el => {
+                                                el.checked = true;
+                                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                            });
                                             updateCheckedState();
                                         " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-2xs transition disabled:opacity-50 disabled:cursor-not-allowed">
                                             ✓ Check All Passed
@@ -248,7 +251,10 @@
                                             if (!isEditorialActive) return;
                                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                                             if (!form) return;
-                                            form.querySelectorAll('.radio-cross-input').forEach(r => r.checked = true);
+                                            form.querySelectorAll('.radio-cross-input').forEach(el => {
+                                                el.checked = true;
+                                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                            });
                                             updateCheckedState();
                                         " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-2xs transition disabled:opacity-50 disabled:cursor-not-allowed">
                                             ✕ Uncheck All
