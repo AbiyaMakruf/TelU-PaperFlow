@@ -136,13 +136,34 @@
                             </span>
                         </summary>
 
+                        @php
+                            $isRevisionStage = in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true);
+                        @endphp
                         <div class="mt-4 pt-4 border-t border-slate-100 space-y-2">
                             @foreach($editorialTemplates as $tmpl)
                                 @foreach($tmpl->items as $item)
                                     @php $res = isset($checklistResults) ? $checklistResults->get($item->id) : null; @endphp
-                                    <div class="flex flex-col gap-2.5 p-3.5 rounded-xl border sm:flex-row sm:items-start sm:justify-between {{ $res?->is_checked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200' }}">
+                                    @php
+                                        if ($res?->is_checked) {
+                                            $cardBg = 'bg-emerald-50/50 border-emerald-200';
+                                            $titleColor = 'text-emerald-900';
+                                            $badgeClass = 'badge-success';
+                                            $badgeText = '✓ Passed';
+                                        } elseif ($isRevisionStage) {
+                                            $cardBg = 'bg-rose-50/50 border-rose-200';
+                                            $titleColor = 'text-rose-900';
+                                            $badgeClass = 'badge-danger';
+                                            $badgeText = '✕ Revision Needed';
+                                        } else {
+                                            $cardBg = 'bg-amber-50/50 border-amber-200';
+                                            $titleColor = 'text-amber-900';
+                                            $badgeClass = 'badge-warning';
+                                            $badgeText = 'Under Review';
+                                        }
+                                    @endphp
+                                    <div class="flex flex-col gap-2.5 p-3.5 rounded-xl border sm:flex-row sm:items-start sm:justify-between {{ $cardBg }}">
                                         <div class="min-w-0">
-                                            <p class="text-xs font-extrabold break-words {{ $res?->is_checked ? 'text-emerald-900' : 'text-rose-900' }}">{{ $item->title }}</p>
+                                            <p class="text-xs font-extrabold break-words {{ $titleColor }}">{{ $item->title }}</p>
                                             @if($item->description)
                                                 <p class="mt-0.5 text-[11px] text-slate-600 break-words">{{ $item->description }}</p>
                                             @endif
@@ -150,8 +171,8 @@
                                                 <p class="mt-1 text-[11px] font-semibold text-slate-800 break-words">Note: {{ $res->note }}</p>
                                             @endif
                                         </div>
-                                        <span class="badge {{ $res?->is_checked ? 'badge-success' : 'badge-danger' }} shrink-0 self-start sm:self-auto">
-                                            {{ $res?->is_checked ? '✓ Passed' : '✕ Revision Needed' }}
+                                        <span class="badge {{ $badgeClass }} shrink-0 self-start sm:self-auto">
+                                            {{ $badgeText }}
                                         </span>
                                     </div>
                                 @endforeach
