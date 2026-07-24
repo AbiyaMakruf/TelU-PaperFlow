@@ -12,7 +12,6 @@
     <header class="border-b border-white/10 bg-navy text-white">
         <div class="container-page flex min-h-18 items-center justify-between gap-3 py-3 sm:min-h-20">
             <x-brand class="text-white" />
-            <a href="{{ route('login') }}" class="shrink-0 text-right text-xs font-bold text-white/70 hover:text-orange sm:text-sm">Login tim editorial</a>
         </div>
     </header>
     <main class="container-page py-7 sm:py-14">
@@ -21,6 +20,6 @@
         @endif
         {{ $slot }}
     </main>
-    <footer class="container-page pb-10 text-center text-xs text-muted">Paperflow &middot; Alur editorial conference yang dapat ditelusuri</footer>
+    <footer class="container-page pb-10 text-center text-xs text-muted">Paperflow &middot; Alur kerja editorial ilmiah konferensi</footer>
 </body>
 </html>

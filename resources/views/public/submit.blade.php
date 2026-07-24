@@ -31,7 +31,7 @@
             </div>
 
             <div class="my-8 border-t border-navy/10"></div>
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 class="text-lg font-black text-navy">Co-author</h2><p class="mt-1 text-sm text-muted">Tambahkan satu section untuk setiap co-author.</p></div><button type="button" class="btn btn-secondary w-full sm:w-auto" x-on:click="coAuthors.push({ name: '', email: '', affiliation: '' })">+ Add co-author</button></div>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 class="text-lg font-black text-navy">Co-author</h2><p class="mt-1 text-sm text-muted">Tambahkan satu section untuk setiap co-author.</p></div><button type="button" class="btn btn-secondary w-full sm:w-auto" x-on:click="coAuthors.push({ name: '', email: '', affiliation: '' })">+ Tambah co-author</button></div>
             <div class="mt-5 space-y-4">
                 <template x-for="(author, index) in coAuthors" :key="index">
                     <section class="rounded-2xl border border-navy/10 bg-warm/60 p-5">
