@@ -182,14 +182,13 @@
             <header class="sticky top-0 z-30 flex min-h-14 sm:min-h-16 items-center justify-between gap-2 border-b border-navy/10 bg-white/95 px-3 sm:px-8 lg:px-10 py-2.5 backdrop-blur">
                 <div class="flex items-center gap-2 min-w-0 shrink-0">
                     <button type="button" class="grid size-9 sm:size-10 shrink-0 place-items-center rounded-xl bg-navy text-lg text-white lg:hidden" x-on:click="mobileMenu = true" aria-label="Open menu"><span class="-mt-0.5">☰</span></button>
-                    <x-brand class="min-w-0 scale-90 sm:scale-100 lg:hidden shrink-0" />
                 </div>
                 <div class="hidden lg:block"><p class="text-xs font-bold uppercase tracking-[.18em] text-muted">Paperflow workspace</p><p class="font-bold text-navy">{{ $heading ?? 'Dashboard' }}</p></div>
                 <!-- GCP-style Workspace Selector & Profile Icon in Header -->
                 <div class="ml-auto flex items-center gap-1.5 sm:gap-4 shrink-0">
                     @auth
-                        <!-- Custom Styled Workspace Selector Dropdown -->
-                        <div x-data="{ openWs: false }" @click.away="openWs = false" class="relative inline-block text-left">
+                        <!-- Custom Styled Workspace Selector Dropdown (Desktop Only) -->
+                        <div x-data="{ openWs: false }" @click.away="openWs = false" class="relative hidden lg:inline-block text-left">
                             <div class="flex items-center gap-1.5">
                                 <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 hidden md:inline">Workspace:</span>
                                 <button type="button" @click="openWs = !openWs" class="inline-flex items-center gap-1.5 rounded-xl border border-navy/20 bg-slate-100 px-2.5 sm:px-3 py-1.5 text-xs font-extrabold text-navy hover:bg-slate-200 transition focus:ring-2 focus:ring-orange cursor-pointer max-w-[120px] xs:max-w-[150px] sm:max-w-xs shadow-sm">
@@ -261,16 +260,16 @@
                             @endif
                         </a>
                         <!-- Profile Header Link with Role Badge & Username -->
-                        <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-xl p-1 hover:bg-slate-100 transition group shrink-0" title="Manage My Profile ({{ auth()->user()->name }})">
-                            <div class="text-right hidden sm:flex flex-col items-end leading-tight min-w-0">
-                                <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-black tracking-tight {{ $userRoleBadgeClass }}">
+                        <a href="{{ route('profile.edit') }}" class="flex items-center gap-1.5 sm:gap-2 rounded-xl p-1 hover:bg-slate-100 transition group shrink-0" title="Manage My Profile ({{ auth()->user()->name }})">
+                            <div class="text-right flex flex-col items-end leading-tight min-w-0">
+                                <span class="inline-flex items-center rounded-md px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-black tracking-tight {{ $userRoleBadgeClass }}">
                                     {{ $userRoleLabel }}
                                 </span>
-                                <span class="text-[11px] font-semibold text-slate-500 mt-0.5 group-hover:text-orange transition truncate max-w-[120px]">
+                                <span class="text-[10px] sm:text-[11px] font-semibold text-slate-500 mt-0.5 group-hover:text-orange transition truncate max-w-[80px] xs:max-w-[110px] sm:max-w-[140px]">
                                     {{ '@' . auth()->user()->username }}
                                 </span>
                             </div>
-                            <span class="grid size-9 sm:size-10 place-items-center rounded-full bg-navy text-xs sm:text-sm font-black text-white shadow-sm group-hover:bg-orange transition shrink-0">
+                            <span class="grid size-8 sm:size-10 place-items-center rounded-full bg-navy text-xs sm:text-sm font-black text-white shadow-sm group-hover:bg-orange transition shrink-0">
                                 {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                             </span>
                         </a>
