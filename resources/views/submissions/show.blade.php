@@ -114,6 +114,29 @@
                         <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" class="space-y-4 border-t border-navy/10 p-4 sm:p-6" id="checklist-form-{{ $stage->value }}">
                             @csrf
                             @method('PUT')
+
+                            <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
+                            <div class="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border border-navy/10">
+                                <span class="text-xs font-bold text-navy">Quick Actions:</span>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" @click="
+                                        document.querySelectorAll('#checklist-form-{{ $stage->value }} input[type=checkbox]').forEach(el => {
+                                            el.checked = true;
+                                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                                        });
+                                    " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-sm transition">
+                                        ✓ Check All
+                                    </button>
+                                    <button type="button" @click="
+                                        document.querySelectorAll('#checklist-form-{{ $stage->value }} input[type=checkbox]').forEach(el => {
+                                            el.checked = false;
+                                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                                        });
+                                    " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm transition">
+                                        ✕ Uncheck All
+                                    </button>
+                                </div>
+                            </div>
                             @foreach($template->items as $item)
                                 @php($result = $cycle?->results->firstWhere('checklist_item_id', $item->id))
                                 <div class="rounded-xl border border-navy/10 p-3.5 sm:p-4 min-w-0" x-data="{ openGuidance: false, checked: {{ json_encode((bool)($result?->is_checked)) }} }">
