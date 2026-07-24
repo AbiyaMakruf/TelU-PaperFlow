@@ -16,6 +16,25 @@
                 : \App\Models\Conference::whereIn('id', auth()->user()->conferenceMemberships()->where('is_active', true)->pluck('conference_id'))->orderBy('name')->get())
             : collect();
         $activeConf = session('active_conference_id') ? $userConferences->firstWhere('id', session('active_conference_id')) : null;
+
+        if (auth()->check()) {
+            $authUser = auth()->user();
+            if ($authUser->isSuperAdmin()) {
+                $userRoleLabel = 'Superadmin';
+                $userRoleBadgeClass = 'bg-amber-100 text-amber-900 border border-amber-300';
+            } else {
+                $currentMembership = $activeConf
+                    ? $authUser->conferenceMemberships()->where('conference_id', $activeConf->id)->where('is_active', true)->first()
+                    : $authUser->conferenceMemberships()->where('is_active', true)->first();
+                $userRoleLabel = $currentMembership?->role?->label() ?? 'Staff';
+                $userRoleBadgeClass = match($currentMembership?->role) {
+                    \App\Enums\ConferenceRole::Admin => 'bg-indigo-100 text-indigo-900 border border-indigo-300',
+                    \App\Enums\ConferenceRole::Editorial => 'bg-sky-100 text-sky-900 border border-sky-300',
+                    \App\Enums\ConferenceRole::Reviewer => 'bg-emerald-100 text-emerald-900 border border-emerald-300',
+                    default => 'bg-slate-100 text-slate-800 border border-slate-300',
+                };
+            }
+        }
     @endphp
 
     @if(session('impersonated_by'))
@@ -100,8 +119,13 @@
             @auth
                 <div class="mt-auto border-t border-white/10 pt-5">
                     <a href="{{ route('profile.edit') }}" class="block group cursor-pointer" title="Manage My Profile">
-                        <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
-                        <p class="mt-1 truncate text-xs text-white/55 group-hover:text-white/85 transition">{{ auth()->user()->email }}</p>
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
+                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-black {{ $userRoleBadgeClass }}">
+                                {{ $userRoleLabel }}
+                            </span>
+                        </div>
+                        <p class="mt-1 truncate text-xs text-white/55 group-hover:text-white/85 transition">{{ '@' . auth()->user()->username }} &middot; {{ auth()->user()->email }}</p>
                     </a>
                     <div class="grid grid-cols-2 gap-2 mt-4">
                         <a href="{{ route('profile.edit') }}" class="btn border border-white/15 text-white hover:bg-white/10 text-xs px-2 py-2 text-center">Edit Profile</a>
@@ -136,8 +160,13 @@
             @auth
                 <div class="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
                     <a href="{{ route('profile.edit') }}" class="block group cursor-pointer" title="Manage My Profile">
-                        <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
-                        <p class="mt-1 truncate text-xs text-white/55 group-hover:text-white/85 transition">{{ auth()->user()->email }}</p>
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="truncate font-bold group-hover:text-orange transition">{{ auth()->user()->name }} ⚙️</p>
+                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-black {{ $userRoleBadgeClass }}">
+                                {{ $userRoleLabel }}
+                            </span>
+                        </div>
+                        <p class="mt-1 truncate text-xs text-white/55 group-hover:text-white/85 transition">{{ '@' . auth()->user()->username }} &middot; {{ auth()->user()->email }}</p>
                     </a>
                     <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
                         <a href="{{ route('profile.edit') }}" class="font-bold text-white/70 hover:text-white transition">Edit Profile</a>
@@ -231,12 +260,17 @@
                                 <span class="absolute -top-0.5 -right-0.5 sm:static size-2 rounded-full bg-orange animate-pulse"></span>
                             @endif
                         </a>
-                        <!-- Profile Header Link & Avatar Icon -->
-                        <a href="{{ route('profile.edit') }}" class="flex items-center gap-1.5 rounded-full p-0.5 hover:bg-navy/5 transition group shrink-0" title="Manage My Profile ({{ auth()->user()->name }})">
-                            @if(auth()->user()->isSuperAdmin())
-                                <span class="badge badge-warning hidden md:inline-flex">Superadmin</span>
-                            @endif
-                            <span class="grid size-9 sm:size-10 place-items-center rounded-full bg-navy text-xs sm:text-sm font-bold text-white shadow-sm group-hover:bg-orange transition">
+                        <!-- Profile Header Link with Role Badge & Username -->
+                        <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-xl p-1 hover:bg-slate-100 transition group shrink-0" title="Manage My Profile ({{ auth()->user()->name }})">
+                            <div class="text-right hidden sm:flex flex-col items-end leading-tight min-w-0">
+                                <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-black tracking-tight {{ $userRoleBadgeClass }}">
+                                    {{ $userRoleLabel }}
+                                </span>
+                                <span class="text-[11px] font-semibold text-slate-500 mt-0.5 group-hover:text-orange transition truncate max-w-[120px]">
+                                    {{ '@' . auth()->user()->username }}
+                                </span>
+                            </div>
+                            <span class="grid size-9 sm:size-10 place-items-center rounded-full bg-navy text-xs sm:text-sm font-black text-white shadow-sm group-hover:bg-orange transition shrink-0">
                                 {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                             </span>
                         </a>
