@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ $mailSubject }}</title></head>
 <body style="margin:0;background:#f7f3ec;color:#111827;font-family:Inter,'Segoe UI',Arial,sans-serif">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7f3ec;padding:32px 12px">
@@ -18,11 +18,11 @@
             </div>
         @endif
         @if($actionUrl)
-            <div style="padding:30px 0 12px"><a href="{{ $actionUrl }}" style="display:inline-block;background:{{ $accentColor ?? '#f47c20' }};color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 24px;border-radius:12px">{{ $actionLabel ?: 'Buka Paperflow' }}</a></div>
-            <div style="margin-top:16px;padding:14px 16px;border-radius:10px;background:#f7f3ec;color:#64748b;font-size:11px;line-height:1.6;word-break:break-all">Jika tombol tidak dapat dibuka, salin tautan ini:<br><a href="{{ $actionUrl }}" style="color:#102a43">{{ $actionUrl }}</a></div>
+            <div style="padding:30px 0 12px"><a href="{{ $actionUrl }}" style="display:inline-block;background:{{ $accentColor ?? '#f47c20' }};color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 24px;border-radius:12px">{{ $actionLabel ?: 'Open Paperflow' }}</a></div>
+            <div style="margin-top:16px;padding:14px 16px;border-radius:10px;background:#f7f3ec;color:#64748b;font-size:11px;line-height:1.6;word-break:break-all">If the button above does not work, copy and paste this link into your browser:<br><a href="{{ $actionUrl }}" style="color:#102a43">{{ $actionUrl }}</a></div>
         @endif
     </td></tr>
-    <tr><td style="padding:22px 36px 30px;border-top:1px solid #e8edf2;color:#64748b;font-size:12px;line-height:1.6">Email ini dikirim oleh <strong style="color:#102a43">{{ $senderName }}</strong> melalui Paperflow. Mohon tidak membagikan tautan akses paper kepada pihak lain.</td></tr>
+    <tr><td style="padding:22px 36px 30px;border-top:1px solid #e8edf2;color:#64748b;font-size:12px;line-height:1.6">This email was sent by <strong style="color:#102a43">{{ $senderName }}</strong> via Paperflow. Please do not share paper access links with unauthorized parties.</td></tr>
 </table>
 <div style="padding:20px;color:#94a3b8;font-size:11px">Editorial workflow, made simpler.</div>
 </td></tr></table>

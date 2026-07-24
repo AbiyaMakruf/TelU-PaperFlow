@@ -17,27 +17,27 @@ class TestEmail extends Command
     {
         $recipient = (string) $this->argument('recipient');
         if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
-            $this->error('Alamat email tidak valid.');
+            $this->error('Invalid email address.');
 
             return self::FAILURE;
         }
 
         try {
             Mail::to($recipient)->send(new PaperflowMail(
-                mailSubject: 'Paperflow - Tes koneksi SMTP',
-                messageBody: "Halo,\n\nIni adalah email pengujian SMTP Paperflow. Koneksi email berhasil jika pesan ini diterima.",
+                mailSubject: 'Paperflow - SMTP Connection Test',
+                messageBody: "Hello,\n\nThis is a Paperflow SMTP diagnostic test email. Your email configuration is working properly if you receive this message.",
                 senderName: (string) config('mail.from.name'),
-                contextName: 'Email diagnostic',
+                contextName: 'Email Diagnostic',
                 actionUrl: (string) config('app.url'),
-                actionLabel: 'Buka Paperflow',
+                actionLabel: 'Open Paperflow',
             ));
         } catch (Throwable $exception) {
-            $this->error('Email gagal dikirim: '.$exception->getMessage());
+            $this->error('Failed to send email: '.$exception->getMessage());
 
             return self::FAILURE;
         }
 
-        $this->info("Email pengujian berhasil dikirim ke {$recipient}.");
+        $this->info("Test email successfully sent to {$recipient}.");
 
         return self::SUCCESS;
     }

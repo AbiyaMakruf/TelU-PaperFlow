@@ -3,7 +3,7 @@
 {{ $messageBody }}
 @if($actionUrl)
 
-{{ $actionLabel ?: 'Buka Paperflow' }}: {{ $actionUrl }}
+{{ $actionLabel ?: 'Open Paperflow' }}: {{ $actionUrl }}
 @endif
 
 — {{ $senderName }} via Paperflow

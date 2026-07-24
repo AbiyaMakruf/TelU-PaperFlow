@@ -55,7 +55,7 @@ class AuthenticationTest extends TestCase
         Mail::fake();
 
         $this->artisan('paperflow:test-email', ['recipient' => 'diagnostic@example.com'])
-            ->expectsOutputToContain('Email pengujian berhasil dikirim')
+            ->expectsOutputToContain('Test email successfully sent')
             ->assertSuccessful();
     }
 

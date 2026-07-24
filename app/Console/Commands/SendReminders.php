@@ -40,11 +40,11 @@ class SendReminders extends Command
 
         foreach ($overdueSubmissions as $sub) {
             if ($sub->editor) {
-                $sub->editor->notify(new WorkflowNotification($sub, 'Pengingat Deadline Paper Overdue', "Paper {$sub->paper_code} telah melebihi tenggat waktu deadline."));
+                $sub->editor->notify(new WorkflowNotification($sub, 'Overdue Paper Deadline Reminder', "Paper {$sub->paper_code} has exceeded its set deadline."));
                 $remindedCount++;
             }
             if ($sub->reviewer) {
-                $sub->reviewer->notify(new WorkflowNotification($sub, 'Pengingat Deadline Paper Overdue', "Paper {$sub->paper_code} telah melebihi tenggat waktu deadline."));
+                $sub->reviewer->notify(new WorkflowNotification($sub, 'Overdue Paper Deadline Reminder', "Paper {$sub->paper_code} has exceeded its set deadline."));
                 $remindedCount++;
             }
         }

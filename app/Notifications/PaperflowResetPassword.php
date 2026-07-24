@@ -14,16 +14,18 @@ class PaperflowResetPassword extends ResetPassword
             'email' => $notifiable->getEmailForPasswordReset(),
         ], false));
 
+        $expireMinutes = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
+
         return (new MailMessage)
             ->from((string) config('mail.from.address'), (string) config('mail.from.name'))
-            ->subject('Reset password Paperflow')
+            ->subject('Paperflow - Password Reset Request')
             ->view('emails.paperflow', [
-                'mailSubject' => 'Reset password Paperflow',
-                'messageBody' => "Halo {$notifiable->name},\n\nKami menerima permintaan untuk mengatur ulang password akun Paperflow Anda. Tautan ini akan kedaluwarsa dalam ".config('auth.passwords.'.config('auth.defaults.passwords').'.expire').' menit.',
+                'mailSubject' => 'Paperflow - Password Reset Request',
+                'messageBody' => "Hello {$notifiable->name},\n\nWe received a request to reset your Paperflow account password. Click the button below to proceed with setting a new password. This password reset link will expire in {$expireMinutes} minutes.\n\nIf you did not request a password reset, no further action is required.",
                 'senderName' => (string) config('mail.from.name'),
-                'contextName' => 'Keamanan akun',
+                'contextName' => 'Account Security',
                 'actionUrl' => $url,
-                'actionLabel' => 'Atur ulang password',
+                'actionLabel' => 'Reset Password',
             ]);
     }
 }
