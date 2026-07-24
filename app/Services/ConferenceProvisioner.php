@@ -108,14 +108,6 @@ class ConferenceProvisioner
             ]);
         }
 
-        $reviewer = $conference->checklistTemplates()->create([
-            'name' => 'Final Review',
-            'stage' => ReviewStage::Reviewer,
-        ]);
-        foreach (['All editorial feedback has been addressed', 'Final file is ready for EDAS submission'] as $index => $title) {
-            $reviewer->items()->create(['title' => $title, 'is_required' => true, 'sort_order' => $index + 1]);
-        }
-
         foreach ($this->defaultEmailTemplates() as $template) {
             EmailTemplate::create([...$template, 'conference_id' => $conference->id]);
         }

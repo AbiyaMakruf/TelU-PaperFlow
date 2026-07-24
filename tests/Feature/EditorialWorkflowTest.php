@@ -43,9 +43,6 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer'])->assertRedirect();
         $this->assertSame(SubmissionStatus::ReviewerReview, $submission->fresh()->status);
 
-        $this->actingAs($reviewer)->put(route('submissions.checklist', [$submission, ReviewStage::Reviewer->value]), [
-            'items' => [$reviewerItem->id => ['checked' => '1']],
-        ])->assertRedirect();
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'reviewer_approve'])->assertRedirect();
         $this->assertSame(SubmissionStatus::ReadyForEdas, $submission->fresh()->status);
 
@@ -80,7 +77,7 @@ class EditorialWorkflowTest extends TestCase
         $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
     }
 
-    public function test_reviewer_cannot_approve_before_required_checklist_is_complete(): void
+    public function test_reviewer_can_approve_and_mark_ready_for_edas(): void
     {
         [, $admin, $editor, $reviewer, $submission, $editorialItem] = $this->workflowFixture();
         $this->actingAs($admin)->post(route('submissions.accept', $submission));
@@ -91,9 +88,8 @@ class EditorialWorkflowTest extends TestCase
         ]);
         $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer']);
 
-        $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'reviewer_approve'])
-            ->assertSessionHasErrors('workflow');
-        $this->assertSame(SubmissionStatus::ReviewerReview, $submission->fresh()->status);
+        $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'reviewer_approve']);
+        $this->assertSame(SubmissionStatus::ReadyForEdas, $submission->fresh()->status);
     }
 
     public function test_conference_admin_can_export_visible_papers_as_csv(): void

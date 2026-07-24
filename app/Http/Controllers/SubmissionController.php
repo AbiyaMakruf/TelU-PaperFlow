@@ -675,7 +675,6 @@ class SubmissionController extends Controller
 
     private function reviewerChanges(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void
     {
-        $this->ensureChecklistComplete($submission, ReviewStage::Reviewer);
         $workflow->transition($submission, SubmissionStatus::ReviewerChangesRequested, $request->user(), $note);
         $workflow->transition($submission->fresh(), SubmissionStatus::EditorialReview, $request->user(), $note);
 
@@ -690,7 +689,6 @@ class SubmissionController extends Controller
 
     private function reviewerApprove(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void
     {
-        $this->ensureChecklistComplete($submission, ReviewStage::Reviewer);
         $workflow->transition($submission, SubmissionStatus::ReadyForEdas, $request->user(), $note);
 
         if ($submission->editor?->email) {

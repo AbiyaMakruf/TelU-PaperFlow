@@ -35,7 +35,7 @@ class ChecklistController extends Controller
         ]);
 
         DB::transaction(function () use ($conference, $validated) {
-            foreach ([ReviewStage::Editorial, ReviewStage::Reviewer] as $stage) {
+            foreach ([ReviewStage::Editorial] as $stage) {
                 $payload = $validated['templates'][$stage->value] ?? null;
                 if (! $payload) {
                     continue;

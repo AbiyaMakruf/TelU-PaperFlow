@@ -115,16 +115,16 @@
             </section>
 
             <!-- Checklist Sections -->
-            @foreach([\App\Enums\ReviewStage::Editorial, \App\Enums\ReviewStage::Reviewer] as $stage)
+            @foreach([\App\Enums\ReviewStage::Editorial] as $stage)
                 @php
-                    $allowed = $stage === \App\Enums\ReviewStage::Editorial ? auth()->user()->can('editorialReview', $submission) : auth()->user()->can('reviewerReview', $submission);
+                    $allowed = auth()->user()->can('editorialReview', $submission);
                     $template = $submission->conference->checklistTemplates->where('stage', $stage)->where('is_active', true)->first();
                     $cycle = $submission->reviewCycles->where('stage', $stage)->where('status', 'open')->first() ?? $submission->reviewCycles->where('stage', $stage)->first();
                 @endphp
                 @if($allowed && $template)
-                    <details class="card overflow-hidden max-w-full min-w-0" @if(($stage === \App\Enums\ReviewStage::Editorial && $submission->status === \App\Enums\SubmissionStatus::EditorialReview) || ($stage === \App\Enums\ReviewStage::Reviewer && $submission->status === \App\Enums\SubmissionStatus::ReviewerReview)) open @endif>
+                    <details class="card overflow-hidden max-w-full min-w-0" @if($submission->status === \App\Enums\SubmissionStatus::EditorialReview) open @endif>
                         <summary class="cursor-pointer list-none p-4 sm:p-6 text-base sm:text-lg font-black text-navy flex items-center justify-between select-none">
-                            <span>Checklist {{ $stage->label() }}</span>
+                            <span>Editorial Compliance Checklist (16 IEEE Rules)</span>
                             <span class="text-orange font-bold text-xl">+</span>
                         </summary>
                         <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" class="space-y-4 border-t border-navy/10 p-4 sm:p-6" id="checklist-form-{{ $stage->value }}">

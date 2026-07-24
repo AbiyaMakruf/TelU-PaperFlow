@@ -32,7 +32,7 @@ class ConferenceAdministrationTest extends TestCase
         $this->assertSame('icoict', $conference->slug);
         $this->assertTrue($conference->memberships()->where('user_id', $admin->id)->where('role', ConferenceRole::Admin)->exists());
         $this->assertCount(1, $conference->formVersions);
-        $this->assertCount(2, $conference->checklistTemplates);
+        $this->assertCount(1, $conference->checklistTemplates);
         $this->assertCount(4, $conference->emailTemplates);
     }
 

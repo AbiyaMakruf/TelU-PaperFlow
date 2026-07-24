@@ -110,19 +110,6 @@ class PaperflowEmailPresentationTest extends TestCase
         ]);
 
         // 4. Reviewer Changes -> Email to Editor
-        $revChecklist = $conference->checklistTemplates()->where('stage', ReviewStage::Reviewer)->first();
-        $revCycle = $submission->reviewCycles()->create([
-            'checklist_template_id' => $revChecklist->id,
-            'stage' => ReviewStage::Reviewer,
-            'cycle_number' => 1,
-            'status' => 'open',
-            'assigned_to' => $reviewer->id,
-            'started_at' => now(),
-        ]);
-        foreach ($revChecklist->items as $item) {
-            ReviewItemResult::create(['review_cycle_id' => $revCycle->id, 'checklist_item_id' => $item->id, 'is_checked' => true]);
-        }
-
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), [
             'action' => 'reviewer_changes',
             'note' => 'Please fix formatting.',
@@ -134,17 +121,6 @@ class PaperflowEmailPresentationTest extends TestCase
 
         // 5. Reviewer Approve -> Email to Editor
         $submission->update(['status' => SubmissionStatus::ReviewerReview]);
-        $revCycle2 = $submission->reviewCycles()->create([
-            'checklist_template_id' => $revChecklist->id,
-            'stage' => ReviewStage::Reviewer,
-            'cycle_number' => 2,
-            'status' => 'open',
-            'assigned_to' => $reviewer->id,
-            'started_at' => now(),
-        ]);
-        foreach ($revChecklist->items as $item) {
-            ReviewItemResult::create(['review_cycle_id' => $revCycle2->id, 'checklist_item_id' => $item->id, 'is_checked' => true]);
-        }
 
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), [
             'action' => 'reviewer_approve',

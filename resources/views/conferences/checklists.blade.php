@@ -5,7 +5,7 @@
         <form method="POST" action="{{ route('conferences.checklists.update', $conference) }}" class="mt-7 space-y-6">
             @csrf
             @method('PUT')
-            @foreach(\App\Enums\ReviewStage::cases() as $stage)
+            @foreach([\App\Enums\ReviewStage::Editorial] as $stage)
                 @php($template = $templates->get($stage->value))
                 <section class="card p-6" data-builder="{{ $stage->value }}">
                     <div class="flex flex-wrap items-end justify-between gap-4">
