@@ -352,7 +352,8 @@
                                 <div class="flex items-center justify-between pt-3 border-t border-navy/10">
                                     <span class="text-xs font-bold text-emerald-700" x-text="autoSaveStatus"></span>
                                     <button type="submit" @if(!$isEditorialActive) disabled @endif class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed">
-                                        Save Checklist
+                                        <span x-show="!savingChecklist">Save Checklist</span>
+                                        <span x-show="savingChecklist" x-cloak style="display:none;">Saving...</span>
                                     </button>
                                 </div>
                             </form>
@@ -370,8 +371,13 @@
                                 @endif
 
                                 <div>
-                                    <label class="form-label text-xs mb-1.5">Revision Feedback / Message for Author</label>
-                                    <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." @if(!$isEditorialActive) disabled @endif></textarea>
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                                        <label class="form-label text-xs mb-0">Revision Feedback / Message for Author <span x-show="!allPassed" class="text-rose-500">*</span></label>
+                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="generateRevisionFeedback('{{ $stage->value }}', {{ json_encode($isEditorialActive) }})" class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            ⚡ Use Revision Template (Unchecked Items Only)
+                                        </button>
+                                    </div>
+                                    <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." @if(!$isEditorialActive) disabled @endif :required="!allPassed"></textarea>
                                 </div>
 
                                 <!-- Interactive CC Tag Input -->
