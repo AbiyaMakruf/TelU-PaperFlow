@@ -198,7 +198,14 @@
                             </td>
                             <td><x-status-badge :status="$submission->status" /></td>
                             <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->deadline_at->format('d M Y') }}</p>@endif</td>
-                            <td><button type="button" class="font-bold text-orange" x-on:click="open = !open" x-text="open ? 'Close −' : 'View +'">View +</button></td>
+                            <td class="whitespace-nowrap space-x-2">
+                                @if($submission->files->first())
+                                    <a href="{{ route('submissions.files.download', [$submission, $submission->files->first()]) }}" class="btn text-[11px] py-1 px-2 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-2xs transition" title="Download latest file (v{{ $submission->files->first()->version_number }})">
+                                        <span>⬇️</span> v{{ $submission->files->first()->version_number }}
+                                    </a>
+                                @endif
+                                <button type="button" class="font-bold text-orange text-xs" x-on:click="open = !open" x-text="open ? 'Close −' : 'View +'">View +</button>
+                            </td>
                         </tr>
                         <tr x-show="open" x-cloak>
                             <td colspan="8" class="bg-warm/70 p-5">
@@ -208,7 +215,14 @@
                                     <div><p class="form-label">Editable Format</p><p class="font-bold text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Not confirmed by admin') }}</p></div>
                                     <div><p class="form-label">Author Count</p><p class="font-bold text-navy">{{ $submission->authors->count() }}</p></div>
                                 </div>
-                                <div class="mt-4 flex flex-wrap gap-3"><a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-4 py-2 text-xs">Open full details</a>@if($submission->files->first())<span class="self-center text-xs text-muted">File: {{ $submission->files->first()->original_name }}</span>@endif</div>
+                                <div class="mt-4 flex flex-wrap gap-3">
+                                    <a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-4 py-2 text-xs">Open full details</a>
+                                    @if($submission->files->first())
+                                        <a href="{{ route('submissions.files.download', [$submission, $submission->files->first()]) }}" class="btn btn-primary px-4 py-2 text-xs font-black shadow-xs">
+                                            ⬇️ Download Latest File (v{{ $submission->files->first()->version_number }})
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         </tbody>
@@ -282,9 +296,16 @@
                             <button type="button" class="text-xs font-bold text-orange" x-on:click="open = !open" x-text="open ? 'Close summary −' : 'Summary info +'">
                                 Summary info +
                             </button>
-                            <a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-3 py-1.5 text-xs">
-                                Details ↗
-                            </a>
+                            <div class="flex items-center gap-2">
+                                @if($submission->files->first())
+                                    <a href="{{ route('submissions.files.download', [$submission, $submission->files->first()]) }}" class="btn text-xs py-1.5 px-2.5 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-2xs" title="Download latest file (v{{ $submission->files->first()->version_number }})">
+                                        ⬇️ v{{ $submission->files->first()->version_number }}
+                                    </a>
+                                @endif
+                                <a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-3 py-1.5 text-xs">
+                                    Details ↗
+                                </a>
+                            </div>
                         </div>
 
                         <div x-cloak x-show="open" x-collapse class="rounded-xl bg-warm p-4 text-xs space-y-2.5">
