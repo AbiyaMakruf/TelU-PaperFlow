@@ -125,10 +125,8 @@ class ConferenceProvisioner
     private function defaultFormSchema(): array
     {
         return [
-            ['key' => 'affiliation', 'label' => 'Affiliation', 'type' => 'text', 'required' => true, 'help' => 'Corresponding author institution'],
-            ['key' => 'country', 'label' => 'Country', 'type' => 'text', 'required' => true, 'help' => null],
-            ['key' => 'co_authors', 'label' => 'Co-authors', 'type' => 'textarea', 'required' => false, 'help' => 'One name per line'],
-            ['key' => 'notes', 'label' => 'Notes for Editorial Team', 'type' => 'textarea', 'required' => false, 'help' => null],
+            ['key' => 'co_authors', 'label' => 'Co-authors', 'type' => 'textarea', 'required' => false, 'help' => 'Additional co-authors data'],
+            ['key' => 'notes', 'label' => 'Notes for Editorial Team', 'type' => 'textarea', 'required' => false, 'help' => 'Optional notes or instructions for the editorial team'],
         ];
     }
 

@@ -39,7 +39,11 @@ class ConferenceMailer
         $replace = collect($variables)->mapWithKeys(fn ($value, $key) => ['{{'.$key.'}}' => $value])->all();
         $subject = strtr($template->subject, $replace);
         $body = strtr($template->body, $replace);
-        $defaults = [...$submission->conference->defaultCc(), ...($template->default_cc ?? [])];
+        $coAuthorEmails = $submission->relationLoaded('authors')
+            ? $submission->authors->reject(fn ($a) => mb_strtolower((string) $a->email) === mb_strtolower((string) $submission->corresponding_author_email))->pluck('email')->filter()->values()->all()
+            : $submission->authors()->where('is_corresponding', false)->pluck('email')->filter()->values()->all();
+
+        $defaults = [...$submission->conference->defaultCc(), ...($template->default_cc ?? []), ...$coAuthorEmails];
         $recipients = array_values(array_unique($replaceDefaultCc ? $cc : [...$defaults, ...$cc]));
 
         $log = EmailLog::create([

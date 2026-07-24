@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\ConferenceRole;
 use App\Enums\SubmissionStatus;
 use App\Models\Conference;
+use App\Models\EmailLog;
 use App\Models\EmailTemplate;
 use App\Models\FormVersion;
 use App\Models\Submission;
@@ -272,5 +273,34 @@ class PublicSubmissionTest extends TestCase
 
             return Http::response(['id' => 'drive-file-123']);
         });
+    }
+
+    public function test_co_author_emails_are_included_in_email_cc(): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+        [$conference] = $this->openConference();
+
+        $response = $this->post(route('public.submission.store', $conference->slug), [
+            'paper_id' => '15709999',
+            'title' => 'Test CoAuthor Email',
+            'author_name' => 'Primary Author',
+            'author_email' => 'primary@example.com',
+            'author_phone_country_code' => '+62',
+            'author_phone' => '08123456789',
+            'answers' => ['affiliation' => 'Telkom University'],
+            'co_authors' => [
+                ['name' => 'CoAuthor One', 'email' => 'coauthor1@example.com'],
+                ['name' => 'CoAuthor Two', 'email' => 'coauthor2@example.com'],
+            ],
+            'paper_file' => UploadedFile::fake()->create('paper.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        ]);
+
+        $response->assertRedirect();
+        $submission = Submission::where('paper_id', '15709999')->firstOrFail();
+        $log = EmailLog::where('submission_id', $submission->id)->firstOrFail();
+
+        $this->assertContains('coauthor1@example.com', $log->cc);
+        $this->assertContains('coauthor2@example.com', $log->cc);
     }
 }

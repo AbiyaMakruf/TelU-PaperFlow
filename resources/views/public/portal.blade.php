@@ -30,7 +30,7 @@
                         </div>
                         <div class="grid gap-3 pt-2 sm:grid-cols-2">
                             <div class="min-w-0">
-                                <span class="text-xs font-bold text-muted">Corresponding Author:</span>
+                                <span class="text-xs font-bold text-muted">Primary Author:</span>
                                 <p class="mt-0.5 font-semibold text-navy break-words">{{ $submission->corresponding_author_name }}</p>
                                 <p class="text-xs text-muted break-all">{{ $submission->corresponding_author_email }}</p>
                             </div>
@@ -44,7 +44,7 @@
                                 <span class="text-xs font-bold text-muted">Co-Authors:</span>
                                 <ul class="mt-1 space-y-1.5 list-disc list-inside text-xs text-slate-700">
                                     @foreach($submission->authors->where('is_corresponding', false) as $co)
-                                        <li class="break-words">{{ $co->name }} ({{ $co->email ?: 'No email' }}) - {{ $co->affiliation ?: '-' }}</li>
+                                        <li class="break-words">{{ $co->name }} ({{ $co->email ?: 'No email' }})</li>
                                     @endforeach
                                 </ul>
                             </div>
@@ -60,11 +60,11 @@
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="min-w-0">
-                                <label class="form-label">Corresponding Author Name *</label>
+                                <label class="form-label">Primary Author Name *</label>
                                 <input class="form-input min-w-0" name="author_name" value="{{ old('author_name', $submission->corresponding_author_name) }}" required>
                             </div>
                             <div class="min-w-0">
-                                <label class="form-label">Corresponding Author Email *</label>
+                                <label class="form-label">Primary Author Email *</label>
                                 <input class="form-input min-w-0" type="email" name="author_email" value="{{ old('author_email', $submission->corresponding_author_email) }}" required>
                             </div>
                         </div>
@@ -86,18 +86,17 @@
 
                         <!-- Co-authors list editor -->
                         <div class="min-w-0 pt-2" x-data="{
-                            coAuthors: {{ Js::from($submission->authors->where('is_corresponding', false)->values()->map(fn($a) => ['name' => $a->name, 'email' => $a->email, 'affiliation' => $a->affiliation])) }}
+                            coAuthors: {{ Js::from($submission->authors->where('is_corresponding', false)->values()->map(fn($a) => ['name' => $a->name, 'email' => $a->email])) }}
                         }">
                             <div class="flex items-center justify-between gap-2 mb-2">
                                 <span class="form-label mb-0">Co-Authors List</span>
-                                <button type="button" @click="coAuthors.push({name: '', email: '', affiliation: ''})" class="text-xs font-bold text-orange hover:underline shrink-0">+ Add Co-Author</button>
+                                <button type="button" @click="coAuthors.push({name: '', email: ''})" class="text-xs font-bold text-orange hover:underline shrink-0">+ Add Co-Author</button>
                             </div>
                             <template x-for="(co, index) in coAuthors" :key="index">
-                                <div class="space-y-2 mb-3 p-3 bg-warm/50 rounded-xl sm:grid sm:grid-cols-3 sm:gap-2 sm:space-y-0 sm:items-center">
+                                <div class="space-y-2 mb-3 p-3 bg-warm/50 rounded-xl sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0 sm:items-center">
                                     <input class="form-input text-xs w-full min-w-0" :name="`co_authors[${index}][name]`" x-model="co.name" placeholder="Full Name *" required>
-                                    <input class="form-input text-xs w-full min-w-0" type="email" :name="`co_authors[${index}][email]`" x-model="co.email" placeholder="Email (Optional)">
                                     <div class="flex items-center gap-2 w-full min-w-0">
-                                        <input class="form-input text-xs flex-1 min-w-0" :name="`co_authors[${index}][affiliation]`" x-model="co.affiliation" placeholder="Affiliation (Optional)">
+                                        <input class="form-input text-xs flex-1 min-w-0" type="email" :name="`co_authors[${index}][email]`" x-model="co.email" placeholder="Email (Optional)">
                                         <button type="button" @click="coAuthors.splice(index, 1)" class="text-rose-600 font-bold px-2 py-1 hover:bg-rose-100 rounded-lg shrink-0" title="Remove">✕</button>
                                     </div>
                                 </div>

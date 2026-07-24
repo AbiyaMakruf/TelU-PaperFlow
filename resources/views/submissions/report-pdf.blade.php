@@ -34,7 +34,7 @@
                 <th>Paper Code</th>
                 <th>Conference</th>
                 <th>Paper Title</th>
-                <th>Corresponding Author</th>
+                <th>Primary Author</th>
                 <th>Status</th>
                 <th>Editor</th>
                 <th>Reviewer</th>

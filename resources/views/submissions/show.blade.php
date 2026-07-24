@@ -44,7 +44,7 @@
                 </div>
                 <dl class="mt-5 grid gap-4 sm:grid-cols-2 text-xs sm:text-sm">
                     <div class="min-w-0">
-                        <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">Corresponding Author</dt>
+                        <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">Primary Author</dt>
                         <dd class="mt-1 font-bold text-navy leading-snug break-words">{{ $submission->corresponding_author_name }}</dd>
                         <dd class="text-xs text-muted break-all">{{ $submission->corresponding_author_email }}</dd>
                     </div>
@@ -57,7 +57,7 @@
                         <dd class="mt-1 font-medium text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Not confirmed') }}</dd>
                     </div>
                     @foreach($submission->formVersion?->schema ?? [] as $field)
-                        @continue($field['key'] === 'co_authors')
+                        @continue(in_array($field['key'], ['co_authors', 'affiliation', 'country']))
                         <div class="min-w-0">
                             <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">{{ $field['label'] }}</dt>
                             <dd class="mt-1 whitespace-pre-line text-navy break-words leading-relaxed">{{ $submission->answers[$field['key']] ?? '-' }}</dd>
@@ -73,7 +73,7 @@
                                 <div class="rounded-xl bg-warm/80 p-3.5 border border-navy/8 text-xs min-w-0">
                                     <p class="font-bold text-navy break-words">{{ $author->name }}</p>
                                     <p class="text-[11px] text-muted mt-0.5 break-all">
-                                        {{ $author->email ?: '-' }} @if($author->affiliation) &middot; {{ $author->affiliation }} @endif
+                                        {{ $author->email ?: '-' }}
                                     </p>
                                 </div>
                             @endforeach
