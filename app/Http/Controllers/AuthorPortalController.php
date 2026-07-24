@@ -134,7 +134,7 @@ class AuthorPortalController extends Controller
             }
         }
 
-        return back()->with('success', 'File revisi berhasil diunggah dan masuk kembali ke antrean editorial.');
+        return back()->with('success', 'Revision file successfully uploaded and returned to the editorial queue.');
     }
 
     public function download(string $token, FileVersion $file, ConferenceFileStorage $storage): RedirectResponse|BinaryFileResponse
@@ -158,14 +158,14 @@ class AuthorPortalController extends Controller
         } catch (Throwable $e) {
             $attempt->update(['attempts' => $attempt->attempts + 1, 'error' => $e->getMessage()]);
 
-            return back()->withErrors(['paper_file' => 'Retry masih gagal: '.$e->getMessage()]);
+            return back()->withErrors(['paper_file' => 'Retry upload failed: '.$e->getMessage()]);
         }
         $submission->files()->create(['version_number' => $version, 'label' => $attempt->label, 'source' => 'author', 'disk' => $stored['disk'], 'storage_path' => $stored['storage_path'], 'original_name' => $attempt->original_name, 'mime_type' => $attempt->mime_type, 'size' => $attempt->size, 'checksum' => hash_file('sha256', $absolute), 'notes' => $attempt->notes, 'external_provider' => $stored['external_provider'], 'external_id' => $stored['external_id'], 'external_url' => $stored['external_url']]);
         Storage::disk('local')->delete($attempt->temporary_path);
         $attempt->update(['status' => 'completed', 'retried_at' => now(), 'attempts' => $attempt->attempts + 1]);
         $submission->update(['status' => SubmissionStatus::EditorialReview]);
 
-        return back()->with('success', 'Revisi berhasil diunggah ulang.');
+        return back()->with('success', 'Revision file successfully re-uploaded.');
     }
 
     public function updateDetails(Request $request, string $token): RedirectResponse
@@ -210,7 +210,7 @@ class AuthorPortalController extends Controller
             }
         });
 
-        return back()->with('success', 'Data submission berhasil diperbarui.');
+        return back()->with('success', 'Submission details successfully updated.');
     }
 
     private function submissionFor(string $token): Submission

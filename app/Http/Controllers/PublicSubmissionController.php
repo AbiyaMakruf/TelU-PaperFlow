@@ -177,6 +177,6 @@ class PublicSubmissionController extends Controller
             $recipient->notify($notification);
         }
 
-        return redirect()->route('author.portal', $token)->with('success', 'Submission berhasil diterima. Simpan tautan portal ini untuk memantau progres.');
+        return redirect()->route('author.portal', $token)->with('success', 'Submission successfully received. Please save or bookmark this portal link to track your paper progress.');
     }
 }
