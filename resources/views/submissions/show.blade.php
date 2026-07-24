@@ -10,6 +10,13 @@
             @php
                 $portalToken = $submission->ensureValidAuthorToken();
                 $latestFile = $submission->files->first();
+                $editorialCycle = $submission->reviewCycles()->where('stage', \App\Enums\ReviewStage::Editorial)->where('status', 'open')->first();
+                $allEditorialPassed = false;
+                if ($editorialCycle && $editorialCycle->template) {
+                    $requiredItemIds = $editorialCycle->template->items->where('is_required', true)->pluck('id');
+                    $checkedItemIds = $editorialCycle->results->where('is_checked', true)->pluck('checklist_item_id');
+                    $allEditorialPassed = $requiredItemIds->isNotEmpty() && $requiredItemIds->diff($checkedItemIds)->isEmpty();
+                }
             @endphp
             <x-status-badge :status="$submission->status" />
         </div>
@@ -399,11 +406,17 @@
 
                             <!-- Action Buttons -->
                             <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
-                                <button type="submit" name="send_email" value="1" class="btn btn-primary px-4 py-2 text-xs font-extrabold w-full sm:w-auto">
-                                    Save &amp; Send Email Notification
-                                </button>
+                                @if($allEditorialPassed)
+                                    <button type="submit" name="action" value="approve_and_send_reviewer" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition">
+                                        ✓ Approve &amp; Send to Reviewer
+                                    </button>
+                                @else
+                                    <button type="submit" name="action" value="request_revision" class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 transition">
+                                        Request Author Revision &amp; Send Email Notification
+                                    </button>
+                                @endif
                                 @if($whatsappUrl)
-                                    <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center">
+                                    <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2.5 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center">
                                         Send via WhatsApp ↗
                                     </a>
                                 @endif
@@ -515,7 +528,7 @@
                                 </div>
                                 <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Write EDAS error details or click preset buttons above...">{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
                             </div>
-                            <div class="flex justify-end pt-1">
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-1">
                                 <button class="btn btn-primary px-5 py-2 text-xs font-black w-full sm:w-auto">
                                     Save Reviewer Status &amp; EDAS Notes
                                 </button>
@@ -531,6 +544,55 @@
                                 </div>
                             @endif
                         </div>
+                    @endcan
+
+                    <!-- Reviewer & EDAS Stage Action Controls -->
+                    @can('reviewerReview', $submission)
+                        @if($submission->status === \App\Enums\SubmissionStatus::ReviewerReview)
+                            <div class="pt-4 border-t border-navy/10 flex flex-col sm:flex-row items-center justify-end gap-2.5">
+                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="w-full sm:w-auto">
+                                    @csrf
+                                    <input type="hidden" name="action" value="reviewer_changes">
+                                    <button class="btn btn-secondary text-xs font-bold py-2 px-4 w-full sm:w-auto">Return to Editorial</button>
+                                </form>
+                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="w-full sm:w-auto">
+                                    @csrf
+                                    <input type="hidden" name="action" value="reviewer_approve">
+                                    <button class="btn btn-primary text-xs font-extrabold py-2 px-4 w-full sm:w-auto">Approve &amp; Mark Ready for EDAS</button>
+                                </form>
+                            </div>
+                        @endif
+                        @if($submission->status === \App\Enums\SubmissionStatus::ReadyForEdas && $submission->edas_submitted_at)
+                            <div class="pt-4 border-t border-navy/10 flex justify-end">
+                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3 w-full sm:w-auto">
+                                    @csrf
+                                    <input type="hidden" name="action" value="approve_edas">
+                                    <textarea class="form-input min-h-16 py-2 text-xs" name="note" placeholder="EDAS approval notes"></textarea>
+                                    <button class="btn btn-primary w-full text-xs font-extrabold py-2 px-4">Approve EDAS &amp; Mark Completed</button>
+                                </form>
+                            </div>
+                        @endif
+                    @endcan
+                    @can('editorialReview', $submission)
+                        @if($submission->status === \App\Enums\SubmissionStatus::ReadyForEdas)
+                            <div class="pt-4 border-t border-navy/10 space-y-3">
+                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3">
+                                    @csrf
+                                    <input type="hidden" name="action" value="edas_fix">
+                                    <textarea class="form-input min-h-16 py-2 text-xs" name="note" placeholder="EDAS error details"></textarea>
+                                    <button class="btn btn-secondary w-full sm:w-auto text-xs font-bold py-2 px-4">Return due to EDAS Error</button>
+                                </form>
+                                @if(!$submission->edas_submitted_at)
+                                    <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3 pt-3 border-t border-navy/10">
+                                        @csrf
+                                        <input type="hidden" name="action" value="record_edas">
+                                        <input class="form-input text-xs" name="edas_reference" placeholder="EDAS ID / reference" required>
+                                        <textarea class="form-input min-h-16 py-2 text-xs" name="note" placeholder="EDAS upload notes" required></textarea>
+                                        <button class="btn btn-primary w-full sm:w-auto text-xs font-extrabold py-2 px-4">Record EDAS Upload</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @endif
                     @endcan
                 </div>
             </details>
@@ -765,73 +827,27 @@
 
                         <button class="btn btn-secondary w-full py-2.5 text-xs font-extrabold">Save / Assign Reviewer</button>
                     </form>
-                </section>
-            @endcan
+                    @can('assign', $submission)
+                        <div class="mt-5 border-t border-navy/10 pt-5 space-y-3">
+                            <h3 class="font-extrabold text-xs text-navy">Administrative Actions</h3>
+                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
+                                @csrf
+                                <input type="hidden" name="action" value="reject">
+                                <input class="form-input text-xs" name="note" placeholder="Rejection reason" required>
+                                <button class="btn btn-secondary w-full text-xs font-bold">Reject Paper</button>
+                            </form>
+                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
+                                @csrf
+                                <input type="hidden" name="action" value="withdraw">
+                                <input class="form-input text-xs" name="note" placeholder="Withdrawal reason" required>
+                                <button class="btn btn-secondary w-full text-xs font-bold">Withdraw Paper</button>
+                            </form>
+                        </div>
+                    @endcan
 
-            <!-- Workflow Stage Actions Card -->
-            <section class="card p-4 sm:p-6 max-w-full min-w-0">
-                <h2 class="font-black text-navy text-base">Stage Actions</h2>
-                <div class="mt-4 space-y-4 min-w-0">
-                    @can('editorialReview', $submission)
-                        @if($submission->status === \App\Enums\SubmissionStatus::EditorialReview)
-                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3">
-                                @csrf
-                                <input type="hidden" name="action" value="request_author_revision">
-                                <textarea class="form-input min-h-24 py-3 text-xs" name="note" placeholder="Revision feedback for author" required></textarea>
-                                <button class="btn btn-secondary w-full text-xs">Request Author Revision</button>
-                            </form>
-                            <form method="POST" action="{{ route('submissions.advance', $submission) }}">
-                                @csrf
-                                <input type="hidden" name="action" value="send_reviewer">
-                                <button class="btn btn-primary w-full text-xs">Send to Reviewer</button>
-                            </form>
-                        @endif
-                        @if($submission->status === \App\Enums\SubmissionStatus::ReadyForEdas)
-                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3">
-                                @csrf
-                                <input type="hidden" name="action" value="edas_fix">
-                                <textarea class="form-input min-h-20 py-3 text-xs" name="note" placeholder="EDAS error details"></textarea>
-                                <button class="btn btn-secondary w-full text-xs">Return due to EDAS Error</button>
-                            </form>
-                            @if(!$submission->edas_submitted_at)
-                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3 border-t border-navy/10 pt-4">
-                                    @csrf
-                                    <input type="hidden" name="action" value="record_edas">
-                                    <input class="form-input text-xs" name="edas_reference" placeholder="EDAS ID / reference" required>
-                                    <textarea class="form-input min-h-20 py-3 text-xs" name="note" placeholder="EDAS upload notes" required></textarea>
-                                    <button class="btn btn-primary w-full text-xs">Record EDAS Upload</button>
-                                </form>
-                            @endif
-                        @endif
-                    @endcan
-                    @can('reviewerReview', $submission)
-                        @if($submission->status === \App\Enums\SubmissionStatus::ReviewerReview)
-                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3">
-                                @csrf
-                                <input type="hidden" name="action" value="reviewer_changes">
-                                <textarea class="form-input min-h-20 py-3 text-xs" name="note" placeholder="Note for editorial"></textarea>
-                                <button class="btn btn-secondary w-full text-xs">Return to Editorial</button>
-                            </form>
-                            <form method="POST" action="{{ route('submissions.advance', $submission) }}">
-                                @csrf
-                                <input type="hidden" name="action" value="reviewer_approve">
-                                <button class="btn btn-primary w-full text-xs">Approve &amp; Mark Ready for EDAS</button>
-                            </form>
-                        @endif
-                        @if($submission->status === \App\Enums\SubmissionStatus::ReadyForEdas)
-                            @if($submission->edas_submitted_at)
-                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3 border-t border-navy/10 pt-4">
-                                    @csrf
-                                    <input type="hidden" name="action" value="approve_edas">
-                                    <textarea class="form-input min-h-20 py-3 text-xs" name="note" placeholder="EDAS approval notes"></textarea>
-                                    <button class="btn btn-primary w-full text-xs">Approve EDAS &amp; Mark Completed</button>
-                                </form>
-                            @endif
-                        @endif
-                    @endcan
                     @can('revertCompleted', $submission)
                         @if($submission->status === \App\Enums\SubmissionStatus::Done)
-                            <div class="rounded-xl border border-amber-300 bg-amber-50/80 p-4 space-y-3 shadow-sm">
+                            <div class="rounded-xl border border-amber-300 bg-amber-50/80 p-4 space-y-3 shadow-sm mt-5">
                                 <h3 class="font-extrabold text-xs text-amber-900 flex items-center gap-1.5">
                                     Revert Completed Paper (Admin Only)
                                 </h3>
@@ -860,26 +876,8 @@
                             </div>
                         @endif
                     @endcan
-
-                    @can('assign', $submission)
-
-                        <div class="mt-5 border-t border-navy/10 pt-5">
-                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
-                                @csrf
-                                <input type="hidden" name="action" value="reject">
-                                <input class="form-input text-xs" name="note" placeholder="Rejection reason" required>
-                                <button class="btn btn-secondary w-full text-xs">Reject Paper</button>
-                            </form>
-                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="mt-3 space-y-2">
-                                @csrf
-                                <input type="hidden" name="action" value="withdraw">
-                                <input class="form-input text-xs" name="note" placeholder="Withdrawal reason" required>
-                                <button class="btn btn-secondary w-full text-xs">Withdraw Paper</button>
-                            </form>
-                        </div>
-                    @endcan
-                </div>
-            </section>
+                </section>
+            @endcan
 
             <!-- Timeline Status Card -->
             <section class="card p-4 sm:p-6 max-w-full min-w-0">

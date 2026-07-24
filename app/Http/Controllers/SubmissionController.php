@@ -502,30 +502,53 @@ class SubmissionController extends Controller
         return back()->with('success', 'Status paper berhasil diperbarui.');
     }
 
-    public function addFeedback(Request $request, Submission $submission, ConferenceMailer $mailer): RedirectResponse
+    public function addFeedback(Request $request, Submission $submission, ConferenceMailer $mailer, SubmissionWorkflow $workflow): RedirectResponse
     {
         $this->authorize('editorialReview', $submission);
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:50000'],
             'visibility' => ['required', Rule::in(['internal', 'author'])],
+            'action' => ['nullable', 'string', Rule::in(['request_revision', 'approve_and_send_reviewer'])],
             'send_email' => ['nullable', 'boolean'],
             'cc' => ['nullable', 'string', 'max:2000'],
         ]);
+
         $feedback = $submission->feedback()->create([
             'visibility' => $validated['visibility'],
             'body' => $validated['body'],
             'created_by' => $request->user()->id,
-            'emailed_at' => $request->boolean('send_email') ? now() : null,
+            'emailed_at' => ($request->boolean('send_email') || ($validated['action'] ?? null) === 'request_revision') ? now() : null,
         ]);
-        if ($request->boolean('send_email') && $validated['visibility'] === 'author') {
+
+        if ($validated['visibility'] === 'author') {
             $cc = collect(preg_split('/[,;\s]+/', $validated['cc'] ?? ''))->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))->values()->all();
-            $mailer->queue($submission->load('conference'), 'revision_requested', [
-                'feedback' => $feedback->body,
-                'portal_url' => route('author.portal', $this->authorToken($submission)),
-            ], $cc, $request->user(), true);
+
+            if (($validated['action'] ?? null) === 'request_revision' || $request->boolean('send_email')) {
+                $mailer->queue($submission->load('conference'), 'revision_requested', [
+                    'feedback' => $feedback->body,
+                    'portal_url' => route('author.portal', $this->authorToken($submission)),
+                ], $cc, $request->user(), true);
+            }
+
+            if (($validated['action'] ?? null) === 'request_revision') {
+                if ($submission->status === SubmissionStatus::EditorialReview) {
+                    $workflow->transition($submission, SubmissionStatus::WaitingAuthorRevision, $request->user(), $validated['body']);
+                }
+
+                return back()->with('success', 'Revision feedback sent to author and paper status updated to Waiting Author Revision.');
+            }
+
+            if (($validated['action'] ?? null) === 'approve_and_send_reviewer') {
+                if ($submission->status === SubmissionStatus::EditorialReview) {
+                    $this->ensureChecklistComplete($submission, ReviewStage::Editorial);
+                    $this->sendReviewer($request, $submission, $workflow, $validated['body'], $mailer);
+                }
+
+                return back()->with('success', 'Editorial checklist approved and submission sent to Reviewer.');
+            }
         }
 
-        return back()->with('success', 'Feedback tersimpan.');
+        return back()->with('success', 'Feedback saved.');
     }
 
     public function uploadFile(Request $request, Submission $submission, ConferenceFileStorage $storage): RedirectResponse
