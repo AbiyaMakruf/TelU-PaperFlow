@@ -128,17 +128,8 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         $validated = $request->validate([
-            'password' => ['required', 'string'],
             'new_email' => ['required', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
         ]);
-
-        if (! Hash::check($validated['password'], $user->password)) {
-            if ($request->wantsJson()) {
-                return response()->json(['message' => 'The provided current password does not match.'], 422);
-            }
-
-            return back()->withErrors(['password' => 'The provided current password does not match.']);
-        }
 
         $otp = str_pad((string) random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
         $expiresAt = now()->addMinutes(15);
@@ -154,11 +145,8 @@ class ProfileController extends Controller
         // Build English Email Message
         $subject = 'Paperflow - Email Verification Code';
         $messageBody = "Hello {$user->name},\n\n"
-            ."You have requested to change your account email address on Paperflow to {$validated['new_email']}.\n\n"
-            ."Your 4-digit email verification code is:\n\n"
-            ."      {$otp}\n\n"
-            ."This code will expire in 15 minutes. If you did not request this change, please ignore this email.\n\n"
-            ."Best regards,\nPaperflow Editorial Team";
+            ."You have requested to change your account email address on Paperflow to {$validated['new_email']}.\n"
+            .'Please enter the verification code below into your Paperflow profile page to complete your email change.';
 
         try {
             Mail::to($validated['new_email'])->send(new PaperflowMail(
@@ -166,6 +154,7 @@ class ProfileController extends Controller
                 messageBody: $messageBody,
                 senderName: 'Paperflow System',
                 contextName: 'Security Verification',
+                otpCode: $otp,
             ));
         } catch (\Throwable $e) {
             logger()->error('Failed to send email verification OTP: '.$e->getMessage());

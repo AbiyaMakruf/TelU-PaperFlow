@@ -203,21 +203,14 @@
             </div>
 
             <!-- REQUEST OTP FORM -->
-            <form method="POST" action="{{ route('profile.email.request-otp') }}" class="space-y-4">
+            <form method="POST" action="{{ route('profile.email.request-otp') }}" class="space-y-4 max-w-md">
                 @csrf
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <label>
-                        <span class="form-label">New Email Address *</span>
-                        <input type="email" class="form-input" name="new_email" value="{{ old('new_email', session('pending_new_email')) }}" required placeholder="new_email@example.com">
-                    </label>
-
-                    <div>
-                        <span class="form-label">Current Password (Security Confirmation) *</span>
-                        <x-input-password name="password" required placeholder="••••••••" />
-                    </div>
+                <div>
+                    <label class="form-label">New Email Address *</label>
+                    <input type="email" class="form-input" name="new_email" value="{{ old('new_email', session('pending_new_email')) }}" required placeholder="new_email@example.com">
                 </div>
 
-                <div class="pt-2">
+                <div class="pt-1">
                     <button class="btn btn-primary w-full sm:w-auto">
                         📩 Send OTP Code to New Email
                     </button>

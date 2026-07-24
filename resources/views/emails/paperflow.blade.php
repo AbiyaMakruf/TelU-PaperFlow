@@ -9,8 +9,14 @@
         <table role="presentation" width="100%"><tr><td><div style="font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-.5px">Paper<span style="color:{{ $accentColor ?? '#f47c20' }}">flow</span></div><div style="margin-top:7px;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:{{ $accentColor ?? '#f47c20' }}">{{ $contextName }}</div></td><td align="right">@if($logoUrl ?? null)<img src="{{ $logoUrl }}" alt="Logo" style="max-height:54px;max-width:130px">@else<div style="width:44px;height:44px;line-height:44px;text-align:center;border-radius:13px;background:{{ $accentColor ?? '#f47c20' }};color:#fff;font-weight:900;font-size:20px">P</div>@endif</td></tr></table>
     </td></tr>
     <tr><td style="padding:38px 36px 24px">
-        <h1 style="margin:0 0 22px;color:#102a43;font-size:26px;line-height:1.25;letter-spacing:-.4px">{{ $mailSubject }}</h1>
         <div style="font-size:15px;line-height:1.75;color:#374151;white-space:pre-line">{{ $messageBody }}</div>
+        @if($otpCode ?? null)
+            <div style="margin:28px 0 10px;padding:26px 20px;background:#f7f3ec;border:2px dashed {{ $accentColor ?? '#f47c20' }};border-radius:16px;text-align:center">
+                <div style="font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#64748b;margin-bottom:8px">Verification Code (OTP)</div>
+                <div style="font-size:42px;font-weight:900;letter-spacing:14px;color:{{ $primaryColor ?? '#102a43' }};font-family:Consolas,Monaco,'Courier New',monospace;margin:10px 0 6px 14px">{{ $otpCode }}</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:8px">Valid for 15 minutes • Do not share this code with anyone</div>
+            </div>
+        @endif
         @if($actionUrl)
             <div style="padding:30px 0 12px"><a href="{{ $actionUrl }}" style="display:inline-block;background:{{ $accentColor ?? '#f47c20' }};color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 24px;border-radius:12px">{{ $actionLabel ?: 'Buka Paperflow' }}</a></div>
             <div style="margin-top:16px;padding:14px 16px;border-radius:10px;background:#f7f3ec;color:#64748b;font-size:11px;line-height:1.6;word-break:break-all">Jika tombol tidak dapat dibuka, salin tautan ini:<br><a href="{{ $actionUrl }}" style="color:#102a43">{{ $actionUrl }}</a></div>

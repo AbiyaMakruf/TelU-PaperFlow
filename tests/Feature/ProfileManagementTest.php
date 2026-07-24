@@ -99,20 +99,19 @@ class ProfileManagementTest extends TestCase
             'must_change_password' => false,
         ]);
 
-        // 1. Request OTP
+        // 1. Request OTP (No password required)
         $response = $this->actingAs($user)->post(route('profile.email.request-otp'), [
-            'password' => 'mysecret123',
             'new_email' => 'newemail@example.com',
         ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('otp_sent', true);
 
-        // Verify Mail was sent in English
+        // Verify Mail was sent in English with styled otpCode
         Mail::assertSent(PaperflowMail::class, function ($mail) {
             return $mail->hasTo('newemail@example.com')
                 && $mail->mailSubject === 'Paperflow - Email Verification Code'
-                && str_contains($mail->messageBody, 'Your 4-digit email verification code is:');
+                && ! empty($mail->otpCode);
         });
 
         // 2. Extract OTP from session and verify
