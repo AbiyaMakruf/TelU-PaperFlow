@@ -407,9 +407,15 @@
                             <!-- Action Buttons -->
                             <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
                                 @if($allEditorialPassed)
-                                    <button type="submit" name="action" value="approve_and_send_reviewer" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition">
-                                        ✓ Approve &amp; Send to Reviewer
-                                    </button>
+                                    @if($submission->reviewer_id)
+                                        <button type="submit" name="action" value="approve_and_send_reviewer" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition">
+                                            ✓ Approve &amp; Send to Reviewer
+                                        </button>
+                                    @else
+                                        <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
+                                            ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
+                                        </button>
+                                    @endif
                                 @else
                                     <button type="submit" name="action" value="request_revision" class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 transition">
                                         Request Author Revision &amp; Send Email Notification
@@ -421,6 +427,11 @@
                                     </a>
                                 @endif
                             </div>
+                            @if($allEditorialPassed && !$submission->reviewer_id)
+                                <p class="text-[11px] font-bold text-amber-700 text-right mt-2">
+                                    ⚠️ Reviewer PIC has not been assigned yet. Please select &amp; save a Reviewer PIC in the sidebar.
+                                </p>
+                            @endif
                         </form>
                     </div>
                 </details>

@@ -540,8 +540,12 @@ class SubmissionController extends Controller
 
             if (($validated['action'] ?? null) === 'approve_and_send_reviewer') {
                 if ($submission->status === SubmissionStatus::EditorialReview) {
-                    $this->ensureChecklistComplete($submission, ReviewStage::Editorial);
-                    $this->sendReviewer($request, $submission, $workflow, $validated['body'], $mailer);
+                    try {
+                        $this->ensureChecklistComplete($submission, ReviewStage::Editorial);
+                        $this->sendReviewer($request, $submission, $workflow, $validated['body'], $mailer);
+                    } catch (DomainException $exception) {
+                        return back()->withErrors(['workflow' => $exception->getMessage()]);
+                    }
                 }
 
                 return back()->with('success', 'Editorial checklist approved and submission sent to Reviewer.');
@@ -654,7 +658,9 @@ class SubmissionController extends Controller
 
     private function sendReviewer(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void
     {
-        abort_unless($submission->reviewer_id, 422, 'Reviewer belum di-assign.');
+        if (! $submission->reviewer_id) {
+            throw new DomainException('A Reviewer PIC must be assigned before sending the paper to Reviewer.');
+        }
         $this->ensureChecklistComplete($submission, ReviewStage::Editorial);
         $workflow->transition($submission, SubmissionStatus::ReviewerReview, $request->user(), $note);
 
