@@ -120,321 +120,402 @@
                     $allowed = auth()->user()->can('editorialReview', $submission);
                     $template = $submission->conference->checklistTemplates->where('stage', $stage)->where('is_active', true)->first();
                     $cycle = $submission->reviewCycles->where('stage', $stage)->where('status', 'open')->first() ?? $submission->reviewCycles->where('stage', $stage)->first();
+                    $requiredItemIds = $template ? $template->items->where('is_required', true)->pluck('id') : collect();
+                    $initialPassedCount = $template ? $template->items->where('is_required', true)->filter(fn($i) => (bool) $cycle?->results->firstWhere('checklist_item_id', $i->id)?->is_checked)->count() : 0;
                 @endphp
                 @if($allowed && $template)
-                    <details class="card overflow-hidden max-w-full min-w-0" @if($submission->status === \App\Enums\SubmissionStatus::EditorialReview) open @endif>
-                        <summary class="cursor-pointer list-none p-4 sm:p-6 text-base sm:text-lg font-black text-navy flex items-center justify-between select-none">
-                            <span>Editorial Compliance Checklist (16 IEEE Rules)</span>
-                            <span class="text-orange font-bold text-xl">+</span>
-                        </summary>
-                        <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" class="space-y-4 border-t border-navy/10 p-4 sm:p-6" id="checklist-form-{{ $stage->value }}">
-                            @csrf
-                            @method('PUT')
+                    <div x-data="{
+                        requiredIds: @js($requiredItemIds->values()->all()),
+                        hasReviewer: {{ json_encode((bool)$submission->reviewer_id) }},
+                        checkedCount: {{ $initialPassedCount }},
+                        savingChecklist: false,
+                        autoSaveStatus: '',
+                        get allPassed() {
+                            return this.requiredIds.length > 0 && this.checkedCount >= this.requiredIds.length;
+                        },
+                        updateCheckedState() {
+                            const form = document.getElementById('checklist-form-{{ $stage->value }}');
+                            if (!form) return;
+                            let count = 0;
+                            this.requiredIds.forEach(id => {
+                                const checkRadio = form.querySelector(`.radio-check-input[name='items[${id}][checked]']`);
+                                if (checkRadio && checkRadio.checked) {
+                                    count++;
+                                }
+                            });
+                            this.checkedCount = count;
+                            this.autoSaveChecklist();
+                        },
+                        async autoSaveChecklist() {
+                            const form = document.getElementById('checklist-form-{{ $stage->value }}');
+                            if (!form) return;
+                            this.savingChecklist = true;
+                            this.autoSaveStatus = 'Saving...';
+                            try {
+                                const formData = new FormData(form);
+                                const response = await fetch(form.action, {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Accept': 'application/json'
+                                    }
+                                });
+                                if (response.ok) {
+                                    this.autoSaveStatus = 'Auto-saved ✓';
+                                    setTimeout(() => { if (this.autoSaveStatus === 'Auto-saved ✓') this.autoSaveStatus = ''; }, 2500);
+                                }
+                            } catch (e) {
+                                console.error('Checklist auto-save error:', e);
+                                this.autoSaveStatus = '';
+                            } finally {
+                                this.savingChecklist = false;
+                            }
+                        },
+                        async prepareFeedbackSubmit() {
+                            const form = document.getElementById('checklist-form-{{ $stage->value }}');
+                            if (form) {
+                                this.autoSaveStatus = 'Saving checklist...';
+                                try {
+                                    await fetch(form.action, {
+                                        method: 'POST',
+                                        body: new FormData(form),
+                                        headers: {
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                            'Accept': 'application/json'
+                                        }
+                                    });
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }
+                        }
+                    }" class="space-y-6">
+                        <details class="card overflow-hidden max-w-full min-w-0" @if($submission->status === \App\Enums\SubmissionStatus::EditorialReview) open @endif>
+                            <summary class="cursor-pointer list-none p-4 sm:p-6 text-base sm:text-lg font-black text-navy flex items-center justify-between select-none">
+                                <span>Editorial Compliance Checklist (16 IEEE Rules)</span>
+                                <span class="text-orange font-bold text-xl">+</span>
+                            </summary>
+                            <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" class="space-y-4 border-t border-navy/10 p-4 sm:p-6" id="checklist-form-{{ $stage->value }}">
+                                @csrf
+                                @method('PUT')
 
-                            @php
-                                $previousCycle = $submission->reviewCycles
-                                    ->where('stage', $stage)
-                                    ->reject(fn($c) => $c->id === $cycle?->id)
-                                    ->sortByDesc('cycle_number')
-                                    ->first();
-                                $hasBeforeColumn = (bool) $previousCycle;
-                            @endphp
+                                @php
+                                    $previousCycle = $submission->reviewCycles
+                                        ->where('stage', $stage)
+                                        ->reject(fn($c) => $c->id === $cycle?->id)
+                                        ->sortByDesc('cycle_number')
+                                        ->first();
+                                    $hasBeforeColumn = (bool) $previousCycle;
+                                @endphp
 
-                            <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
-                            <div class="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border border-navy/10">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold text-navy">Quick Batch Actions:</span>
-                                    @if($hasBeforeColumn)
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
-                                            <span>ℹ️</span> Author Revision (Cycle #{{ $cycle?->cycle_number }})
-                                        </span>
-                                    @endif
+                                <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
+                                <div class="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border border-navy/10">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-bold text-navy">Quick Batch Actions:</span>
+                                        @if($hasBeforeColumn)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                                                <span>ℹ️</span> Author Revision (Cycle #{{ $cycle?->cycle_number }})
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" @click="
+                                            document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-check-input').forEach(el => {
+                                                el.checked = true;
+                                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                            });
+                                            updateCheckedState();
+                                        " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-sm transition">
+                                            ✓ Check All
+                                        </button>
+                                        <button type="button" @click="
+                                            document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-cross-input').forEach(el => {
+                                                el.checked = true;
+                                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                            });
+                                            updateCheckedState();
+                                        " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm transition">
+                                            ✕ Uncheck All
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" @click="
-                                        document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-check-input').forEach(el => {
-                                            el.checked = true;
-                                            el.dispatchEvent(new Event('change', { bubbles: true }));
-                                        });
-                                    " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-sm transition">
-                                        ✓ Check All
-                                    </button>
-                                    <button type="button" @click="
-                                        document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-cross-input').forEach(el => {
-                                            el.checked = true;
-                                            el.dispatchEvent(new Event('change', { bubbles: true }));
-                                        });
-                                    " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm transition">
-                                        ✕ Uncheck All
-                                    </button>
-                                </div>
-                            </div>
 
-                            <!-- Checklist Table Design -->
-                            <div class="overflow-x-auto rounded-xl border border-navy/10 shadow-sm">
-                                <table class="w-full text-left text-xs border-collapse">
-                                    <thead>
-                                        <tr class="bg-navy text-white text-xs font-extrabold uppercase tracking-wider">
-                                            <th class="p-3.5 sm:p-4 font-black">Checklists</th>
-                                            <th class="p-3.5 sm:p-4 text-center w-28 font-black">Completed</th>
-                                            @if($hasBeforeColumn)
-                                                <th class="p-3.5 sm:p-4 text-center w-20 font-black bg-navy/80 border-l border-white/10" title="Status in previous review cycle before author revision">Before</th>
-                                            @endif
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-navy/10 bg-white">
-                                        @foreach($template->items as $index => $item)
-                                            @php
-                                                $result = $cycle?->results->firstWhere('checklist_item_id', $item->id);
-                                                $prevResult = $previousCycle?->results->firstWhere('checklist_item_id', $item->id);
-                                                $hasNote = !empty($result?->note);
-                                            @endphp
-                                            <tr class="hover:bg-slate-50/70 transition" x-data="{ openGuidance: false, openNote: {{ json_encode($hasNote) }}, checked: {{ json_encode((bool)($result?->is_checked)) }} }">
-                                                <td class="p-3.5 sm:p-4 align-top min-w-0">
-                                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 min-w-0">
-                                                        <div class="min-w-0">
-                                                            <strong class="text-navy text-xs sm:text-sm font-extrabold leading-snug break-words block">
-                                                                {{ $item->title }} @if($item->is_required)<span class="text-orange">*</span>@endif
-                                                            </strong>
-                                                        </div>
-                                                        <div class="flex items-center gap-2.5 shrink-0 self-start">
-                                                            @if($item->description)
-                                                                <button type="button" @click="openGuidance = !openGuidance" class="text-xs font-bold text-orange hover:underline">
-                                                                    <span x-text="openGuidance ? 'Close Guidance −' : 'Guidance Details +'"></span>
-                                                                </button>
-                                                            @endif
-                                                            <button type="button" @click="openNote = !openNote" class="text-xs font-bold text-navy hover:underline">
-                                                                <span x-text="openNote ? 'Hide Note −' : '+ Add Note'"></span>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    @if($item->description)
-                                                        <div x-show="openGuidance" x-cloak class="mt-2.5 rounded-lg bg-amber-50/70 p-3 text-xs leading-relaxed text-slate-700 border border-amber-200/60 break-words">
-                                                            <strong class="block text-navy font-bold mb-1">💡 Guidance / Inspection Details:</strong>
-                                                            <p class="leading-relaxed whitespace-pre-line">{{ $item->description }}</p>
-                                                        </div>
-                                                    @endif
-                                                    <div x-show="openNote" x-cloak class="mt-2.5">
-                                                        <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $result?->note }}</textarea>
-                                                    </div>
-                                                </td>
-                                                <td class="p-3.5 sm:p-4 align-top text-center">
-                                                    <div class="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-navy/10 shadow-inner">
-                                                        <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
-                                                               :class="!checked ? 'bg-rose-600 text-white border-rose-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-rose-100 hover:text-rose-600'"
-                                                               title="Unchecked / Reject">
-                                                            <input type="radio" name="items[{{ $item->id }}][checked]" value="0" :checked="!checked" @change="checked = false" class="sr-only radio-cross-input">
-                                                            <span>✕</span>
-                                                        </label>
-                                                        <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
-                                                               :class="checked ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-emerald-100 hover:text-emerald-600'"
-                                                               title="Checked / Complete">
-                                                            <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" @change="checked = true" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description) }}">
-                                                            <span>✓</span>
-                                                        </label>
-                                                    </div>
-                                                </td>
+                                <!-- Checklist Table Design -->
+                                <div class="overflow-x-auto rounded-xl border border-navy/10 shadow-sm">
+                                    <table class="w-full text-left text-xs border-collapse">
+                                        <thead>
+                                            <tr class="bg-navy text-white text-xs font-extrabold uppercase tracking-wider">
+                                                <th class="p-3.5 sm:p-4 font-black">Checklists</th>
+                                                <th class="p-3.5 sm:p-4 text-center w-28 font-black">Completed</th>
                                                 @if($hasBeforeColumn)
-                                                    <td class="p-3.5 sm:p-4 align-top text-center bg-slate-50/50 border-l border-navy/10">
-                                                        @if($prevResult !== null)
-                                                            @if($prevResult->is_checked)
-                                                                <span class="inline-flex items-center justify-center size-8 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 font-black text-xs shadow-xs" title="Passed in previous cycle before revision">
-                                                                    ✓
-                                                                </span>
-                                                            @else
-                                                                <span class="inline-flex items-center justify-center size-8 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 font-black text-xs shadow-xs" title="Unchecked / Rejected in previous cycle before revision">
-                                                                    ✕
-                                                                </span>
-                                                            @endif
-                                                        @else
-                                                            <span class="text-slate-400 font-bold text-xs" title="Not evaluated in previous cycle">-</span>
-                                                        @endif
-                                                    </td>
+                                                    <th class="p-3.5 sm:p-4 text-center w-20 font-black bg-navy/80 border-l border-white/10" title="Status in previous review cycle before author revision">Before</th>
                                                 @endif
                                             </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody class="divide-y divide-navy/10 bg-white">
+                                            @foreach($template->items as $index => $item)
+                                                @php
+                                                    $result = $cycle?->results->firstWhere('checklist_item_id', $item->id);
+                                                    $prevResult = $previousCycle?->results->firstWhere('checklist_item_id', $item->id);
+                                                    $hasNote = !empty($result?->note);
+                                                @endphp
+                                                <tr class="hover:bg-slate-50/70 transition" x-data="{ openGuidance: false, openNote: {{ json_encode($hasNote) }}, checked: {{ json_encode((bool)($result?->is_checked)) }} }">
+                                                    <td class="p-3.5 sm:p-4 align-top min-w-0">
+                                                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 min-w-0">
+                                                            <div class="min-w-0">
+                                                                <strong class="text-navy text-xs sm:text-sm font-extrabold leading-snug break-words block">
+                                                                    {{ $item->title }} @if($item->is_required)<span class="text-orange">*</span>@endif
+                                                                </strong>
+                                                            </div>
+                                                            <div class="flex items-center gap-2.5 shrink-0 self-start">
+                                                                @if($item->description)
+                                                                    <button type="button" @click="openGuidance = !openGuidance" class="text-xs font-bold text-orange hover:underline">
+                                                                        <span x-text="openGuidance ? 'Close Guidance −' : 'Guidance Details +'"></span>
+                                                                    </button>
+                                                                @endif
+                                                                <button type="button" @click="openNote = !openNote" class="text-xs font-bold text-navy hover:underline">
+                                                                    <span x-text="openNote ? 'Hide Note −' : '+ Add Note'"></span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        @if($item->description)
+                                                            <div x-show="openGuidance" x-cloak class="mt-2.5 rounded-lg bg-amber-50/70 p-3 text-xs leading-relaxed text-slate-700 border border-amber-200/60 break-words">
+                                                                <strong class="block text-navy font-bold mb-1">💡 Guidance / Inspection Details:</strong>
+                                                                <p class="leading-relaxed whitespace-pre-line">{{ $item->description }}</p>
+                                                            </div>
+                                                        @endif
+                                                        <div x-show="openNote" x-cloak class="mt-2.5">
+                                                            <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" @change="autoSaveChecklist()" @blur="autoSaveChecklist()" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $result?->note }}</textarea>
+                                                        </div>
+                                                    </td>
+                                                    <td class="p-3.5 sm:p-4 align-top text-center">
+                                                        <div class="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-navy/10 shadow-inner">
+                                                            <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
+                                                                   :class="!checked ? 'bg-rose-600 text-white border-rose-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-rose-100 hover:text-rose-600'"
+                                                                   title="Unchecked / Reject">
+                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="0" :checked="!checked" @change="checked = false; updateCheckedState()" class="sr-only radio-cross-input">
+                                                                <span>✕</span>
+                                                            </label>
+                                                            <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
+                                                                   :class="checked ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-emerald-100 hover:text-emerald-600'"
+                                                                   title="Checked / Complete">
+                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" @change="checked = true; updateCheckedState()" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description) }}">
+                                                                <span>✓</span>
+                                                            </label>
+                                                        </div>
+                                                    </td>
+                                                    @if($hasBeforeColumn)
+                                                        <td class="p-3.5 sm:p-4 align-top text-center bg-slate-50/50 border-l border-navy/10">
+                                                            @if($prevResult !== null)
+                                                                @if($prevResult->is_checked)
+                                                                    <span class="inline-flex items-center justify-center size-8 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 font-black text-xs shadow-xs" title="Passed in previous cycle before revision">
+                                                                        ✓
+                                                                    </span>
+                                                                @else
+                                                                    <span class="inline-flex items-center justify-center size-8 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 font-black text-xs shadow-xs" title="Unchecked / Rejected in previous cycle before revision">
+                                                                        ✕
+                                                                    </span>
+                                                                @endif
+                                                            @else
+                                                                <span class="text-slate-400 font-bold text-xs" title="Not evaluated in previous cycle">-</span>
+                                                            @endif
+                                                        </td>
+                                                    @endif
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                            <div class="flex items-center justify-end pt-3 border-t border-navy/10">
-                                <button class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto">Save Checklist</button>
-                            </div>
-                        </form>
-                    </details>
-                @endif
-            @endforeach
+                                <div class="flex items-center justify-between pt-3 border-t border-navy/10">
+                                    <span class="text-xs font-bold text-emerald-700" x-text="autoSaveStatus"></span>
+                                    <button type="submit" class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto">
+                                        <span x-show="!savingChecklist">Save Checklist</span>
+                                        <span x-show="savingChecklist">Saving...</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </details>
 
-            @can('editorialReview', $submission)
-                <!-- 1. Author Feedback & Communication (Accordion) -->
-                <details class="card overflow-hidden max-w-full min-w-0" id="author-feedback-accordion">
-                    <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
-                        <div class="min-w-0">
-                            <h2 class="text-sm sm:text-base font-black text-navy">Author Feedback &amp; Communication</h2>
-                            <p class="text-[11px] text-muted font-normal truncate">This message will be visible to the author on the portal and can be sent via Email / WhatsApp.</p>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span class="badge badge-warning text-[10px]">Visible to Author</span>
-                            <span class="text-xs text-muted">▼</span>
-                        </div>
-                    </summary>
-                    <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
-                        <!-- Author Feedback History -->
-                        <div class="space-y-3">
-                            @forelse($submission->feedback->where('visibility', 'author') as $feedback)
-                                <div class="rounded-xl bg-amber-50/40 p-3.5 border border-orange/20 shadow-sm text-xs min-w-0">
-                                    <div class="flex flex-wrap items-center justify-between gap-2 text-muted">
-                                        <div class="flex items-center gap-2 min-w-0">
-                                            <span class="font-bold text-navy truncate">{{ $feedback->author?->name ?? 'Editorial' }}</span>
-                                            @if($feedback->emailed_at)
-                                                <span class="badge badge-success text-[9px] shrink-0">Sent via Email</span>
+                        <!-- 1. Author Feedback & Communication (Accordion) -->
+                        <details class="card overflow-hidden max-w-full min-w-0" id="author-feedback-accordion">
+                                <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
+                                    <div class="min-w-0">
+                                        <h2 class="text-sm sm:text-base font-black text-navy">Author Feedback &amp; Communication</h2>
+                                        <p class="text-[11px] text-muted font-normal truncate">This message will be visible to the author on the portal and can be sent via Email / WhatsApp.</p>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="badge badge-warning text-[10px]">Visible to Author</span>
+                                        <span class="text-xs text-muted">▼</span>
+                                    </div>
+                                </summary>
+                                <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
+                                    <!-- Author Feedback History -->
+                                    <div class="space-y-3">
+                                        @forelse($submission->feedback->where('visibility', 'author') as $feedback)
+                                            <div class="rounded-xl bg-amber-50/40 p-3.5 border border-orange/20 shadow-sm text-xs min-w-0">
+                                                <div class="flex flex-wrap items-center justify-between gap-2 text-muted">
+                                                    <div class="flex items-center gap-2 min-w-0">
+                                                        <span class="font-bold text-navy truncate">{{ $feedback->author?->name ?? 'Editorial' }}</span>
+                                                        @if($feedback->emailed_at)
+                                                            <span class="badge badge-success text-[9px] shrink-0">Sent via Email</span>
+                                                        @endif
+                                                    </div>
+                                                    <span class="text-[11px] shrink-0">{{ $feedback->created_at->format('d M Y H:i') }}</span>
+                                                </div>
+                                                <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
+                                            </div>
+                                        @empty
+                                            <p class="text-xs text-muted italic">No feedback sent to author yet.</p>
+                                        @endforelse
+                                    </div>
+
+                                    <!-- Author Feedback Form -->
+                                    <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-4" id="author-feedback-form">
+                                        @csrf
+                                        <input type="hidden" name="visibility" value="author">
+
+                                        <div>
+                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                                                <label class="form-label text-xs mb-0">Revision Feedback / Message for Author *</label>
+                                                <button type="button" @click="
+                                                    let tableRowsHtml = '';
+                                                    let totalItems = 0;
+                                                    let failedCount = 0;
+
+                                                    document.querySelectorAll('#checklist-form-editorial table tbody tr').forEach((row) => {
+                                                        let checkRadio = row.querySelector('.radio-check-input');
+                                                        if (!checkRadio) return;
+                                                        totalItems++;
+
+                                                        let isChecked = checkRadio.checked;
+                                                        if (isChecked) return; // Only include items that need revision!
+
+                                                        failedCount++;
+                                                        let title = checkRadio.getAttribute('data-title') || '';
+                                                        let guidance = checkRadio.getAttribute('data-guidance') || '';
+                                                        let noteEl = row.querySelector('.item-note-input');
+                                                        let noteVal = noteEl ? noteEl.value.trim() : '';
+
+                                                        let statusHtml = '<span style=&quot;color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✕ Needs Revision</span>';
+
+                                                        let noteText = '';
+                                                        if (noteVal) {
+                                                            noteText = '<strong>Note:</strong> ' + noteVal;
+                                                        } else if (guidance) {
+                                                            noteText = guidance;
+                                                        } else {
+                                                            noteText = '-';
+                                                        }
+
+                                                        tableRowsHtml += `<tr style=&quot;background-color:#fff1f2; border-bottom:1px solid #e2e8f0;&quot;>
+                                                            <td style=&quot;padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;&quot;>${failedCount}. ${title}</td>
+                                                            <td style=&quot;padding:8px 12px; text-align:center; vertical-align:top;&quot;>${statusHtml}</td>
+                                                            <td style=&quot;padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;&quot;>${noteText}</td>
+                                                        </tr>`;
+                                                    });
+
+                                                    if (totalItems === 0) {
+                                                        alert('No editorial checklist items found!');
+                                                        return;
+                                                    }
+
+                                                    if (failedCount === 0) {
+                                                        alert('All checklist items have passed! No items require revision.');
+                                                        return;
+                                                    }
+
+                                                    let templateHtml = `Dear Authors,\n\nThank you for your submission. Below are the checklist items requiring correction/revision for your manuscript:\n\n<table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;&quot;>\n    <thead>\n        <tr style=&quot;background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;&quot;>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Checklist Criteria</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;&quot;>Status</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Notes / Guidance</th>\n        </tr>\n    </thead>\n    <tbody>\n        ${tableRowsHtml}\n    </tbody>\n</table>\n\nPlease address all items listed above and upload your revised source files via your private author portal.\n\nBest regards,\nEditorial Team`;
+
+                                                    let feedbackEl = document.getElementById('author-feedback-textarea');
+                                                    let accordionEl = document.getElementById('author-feedback-accordion');
+                                                    if (accordionEl) accordionEl.open = true;
+                                                    if (feedbackEl) {
+                                                        feedbackEl.value = templateHtml;
+                                                        feedbackEl.scrollIntoView({ behavior: 'smooth' });
+                                                        feedbackEl.focus();
+                                                    }
+                                                " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0">
+                                                    ⚡ Use Revision Template (Unchecked Items Only)
+                                                </button>
+                                            </div>
+                                            <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." required></textarea>
+                                        </div>
+
+                                        <!-- Interactive CC Tag Input -->
+                                        <div x-data="{
+                                            ccInput: '',
+                                            tags: @js(old('cc') ? array_values(array_filter(preg_split('/[,;\s]+/', old('cc')))) : $defaultCc),
+                                            addTag() {
+                                                let val = this.ccInput.trim().replace(/,$/, '');
+                                                if (val && !this.tags.includes(val)) {
+                                                    this.tags.push(val);
+                                                }
+                                                this.ccInput = '';
+                                            },
+                                            removeTag(index) {
+                                                this.tags.splice(index, 1);
+                                            }
+                                        }" class="min-w-0">
+                                            <label class="form-label text-xs mb-1 block">CC Email (Type email address and press comma / Enter)</label>
+                                            <input type="hidden" name="cc" :value="tags.join(',')">
+                                            <div class="flex flex-wrap items-center gap-1.5 rounded-xl border border-navy/20 bg-white p-2 min-h-11 focus-within:ring-2 focus-within:ring-orange max-w-full">
+                                                <template x-for="(tag, index) in tags" :key="index">
+                                                    <span class="inline-flex items-center gap-1 rounded-lg bg-navy text-white px-2 py-0.5 text-xs font-bold shadow-sm max-w-full truncate">
+                                                        <span x-text="tag" class="truncate"></span>
+                                                        <button type="button" @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0">&times;</button>
+                                                    </span>
+                                                </template>
+                                                <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[120px]"
+                                                       x-model="ccInput"
+                                                       @keydown.comma.prevent="addTag()"
+                                                       @keydown.enter.prevent="addTag()"
+                                                       @blur="addTag()"
+                                                       placeholder="Type CC email...">
+                                            </div>
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
+                                            <template x-if="allPassed">
+                                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+                                                    <template x-if="hasReviewer">
+                                                        <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer">
+                                                            ✓ Approve &amp; Send to Reviewer
+                                                        </button>
+                                                    </template>
+                                                    <template x-if="!hasReviewer">
+                                                        <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
+                                                            ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <template x-if="!allPassed">
+                                                <button type="submit" name="action" value="request_revision" @click="await prepareFeedbackSubmit()" class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 transition cursor-pointer">
+                                                    Request Author Revision &amp; Send Email Notification
+                                                </button>
+                                            </template>
+                                            @if($whatsappUrl)
+                                                <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2.5 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center">
+                                                    Send via WhatsApp ↗
+                                                </a>
                                             @endif
                                         </div>
-                                        <span class="text-[11px] shrink-0">{{ $feedback->created_at->format('d M Y H:i') }}</span>
-                                    </div>
-                                    <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
+                                        <template x-if="allPassed && !hasReviewer">
+                                            <p class="text-[11px] font-bold text-amber-700 text-right mt-2">
+                                                ⚠️ Reviewer PIC has not been assigned yet. Please select &amp; save a Reviewer PIC in the sidebar.
+                                            </p>
+                                        </template>
+                                    </form>
                                 </div>
-                            @empty
-                                <p class="text-xs text-muted italic">No feedback sent to author yet.</p>
-                            @endforelse
-                        </div>
-
-                        <!-- Author Feedback Form -->
-                        <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-4" id="author-feedback-form">
-                            @csrf
-                            <input type="hidden" name="visibility" value="author">
-
-                            <div>
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
-                                    <label class="form-label text-xs mb-0">Revision Feedback / Message for Author *</label>
-                                    <button type="button" @click="
-                                        let tableRowsHtml = '';
-                                        let totalItems = 0;
-                                        let failedCount = 0;
-
-                                        document.querySelectorAll('#checklist-form-editorial table tbody tr').forEach((row) => {
-                                            let checkRadio = row.querySelector('.radio-check-input');
-                                            if (!checkRadio) return;
-                                            totalItems++;
-
-                                            let isChecked = checkRadio.checked;
-                                            if (isChecked) return; // Only include items that need revision!
-
-                                            failedCount++;
-                                            let title = checkRadio.getAttribute('data-title') || '';
-                                            let guidance = checkRadio.getAttribute('data-guidance') || '';
-                                            let noteEl = row.querySelector('.item-note-input');
-                                            let noteVal = noteEl ? noteEl.value.trim() : '';
-
-                                            let statusHtml = '<span style=&quot;color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✕ Needs Revision</span>';
-
-                                            let noteText = '';
-                                            if (noteVal) {
-                                                noteText = '<strong>Note:</strong> ' + noteVal;
-                                            } else if (guidance) {
-                                                noteText = guidance;
-                                            } else {
-                                                noteText = '-';
-                                            }
-
-                                            tableRowsHtml += `<tr style=&quot;background-color:#fff1f2; border-bottom:1px solid #e2e8f0;&quot;>
-                                                <td style=&quot;padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;&quot;>${failedCount}. ${title}</td>
-                                                <td style=&quot;padding:8px 12px; text-align:center; vertical-align:top;&quot;>${statusHtml}</td>
-                                                <td style=&quot;padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;&quot;>${noteText}</td>
-                                            </tr>`;
-                                        });
-
-                                        if (totalItems === 0) {
-                                            alert('No editorial checklist items found!');
-                                            return;
-                                        }
-
-                                        if (failedCount === 0) {
-                                            alert('All checklist items have passed! No items require revision.');
-                                            return;
-                                        }
-
-                                        let templateHtml = `Dear Authors,\n\nThank you for your submission. Below are the checklist items requiring correction/revision for your manuscript:\n\n<table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;&quot;>\n    <thead>\n        <tr style=&quot;background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;&quot;>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Checklist Criteria</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;&quot;>Status</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Notes / Guidance</th>\n        </tr>\n    </thead>\n    <tbody>\n        ${tableRowsHtml}\n    </tbody>\n</table>\n\nPlease address all items listed above and upload your revised source files via your private author portal.\n\nBest regards,\nEditorial Team`;
-
-                                        let feedbackEl = document.getElementById('author-feedback-textarea');
-                                        let accordionEl = document.getElementById('author-feedback-accordion');
-                                        if (accordionEl) accordionEl.open = true;
-                                        if (feedbackEl) {
-                                            feedbackEl.value = templateHtml;
-                                            feedbackEl.scrollIntoView({ behavior: 'smooth' });
-                                            feedbackEl.focus();
-                                        }
-                                    " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0">
-                                        ⚡ Use Revision Template (Unchecked Items Only)
-                                    </button>
-                                </div>
-                                <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." required></textarea>
-                            </div>
-
-                            <!-- Interactive CC Tag Input -->
-                            <div x-data="{
-                                ccInput: '',
-                                tags: @js(old('cc') ? array_values(array_filter(preg_split('/[,;\s]+/', old('cc')))) : $defaultCc),
-                                addTag() {
-                                    let val = this.ccInput.trim().replace(/,$/, '');
-                                    if (val && !this.tags.includes(val)) {
-                                        this.tags.push(val);
-                                    }
-                                    this.ccInput = '';
-                                },
-                                removeTag(index) {
-                                    this.tags.splice(index, 1);
-                                }
-                            }" class="min-w-0">
-                                <label class="form-label text-xs mb-1 block">CC Email (Type email address and press comma / Enter)</label>
-                                <input type="hidden" name="cc" :value="tags.join(',')">
-                                <div class="flex flex-wrap items-center gap-1.5 rounded-xl border border-navy/20 bg-white p-2 min-h-11 focus-within:ring-2 focus-within:ring-orange max-w-full">
-                                    <template x-for="(tag, index) in tags" :key="index">
-                                        <span class="inline-flex items-center gap-1 rounded-lg bg-navy text-white px-2 py-0.5 text-xs font-bold shadow-sm max-w-full truncate">
-                                            <span x-text="tag" class="truncate"></span>
-                                            <button type="button" @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0">&times;</button>
-                                        </span>
-                                    </template>
-                                    <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[120px]"
-                                           x-model="ccInput"
-                                           @keydown.comma.prevent="addTag()"
-                                           @keydown.enter.prevent="addTag()"
-                                           @blur="addTag()"
-                                           placeholder="Type CC email...">
-                                </div>
-                            </div>
-
-                            <!-- Action Buttons -->
-                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
-                                @if($allEditorialPassed)
-                                    @if($submission->reviewer_id)
-                                        <button type="submit" name="action" value="approve_and_send_reviewer" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition">
-                                            ✓ Approve &amp; Send to Reviewer
-                                        </button>
-                                    @else
-                                        <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
-                                            ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
-                                        </button>
-                                    @endif
-                                @else
-                                    <button type="submit" name="action" value="request_revision" class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 transition">
-                                        Request Author Revision &amp; Send Email Notification
-                                    </button>
-                                @endif
-                                @if($whatsappUrl)
-                                    <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2.5 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center">
-                                        Send via WhatsApp ↗
-                                    </a>
-                                @endif
-                            </div>
-                            @if($allEditorialPassed && !$submission->reviewer_id)
-                                <p class="text-[11px] font-bold text-amber-700 text-right mt-2">
-                                    ⚠️ Reviewer PIC has not been assigned yet. Please select &amp; save a Reviewer PIC in the sidebar.
-                                </p>
-                            @endif
-                        </form>
+                            </details>
                     </div>
-                </details>
+                @endif
+            @endforeach
 
                 <!-- 2. Confidential Internal Notes (Accordion) -->
                 <details class="card overflow-hidden max-w-full min-w-0" id="internal-notes-accordion">
@@ -477,7 +558,6 @@
                         </form>
                     </div>
                 </details>
-            @endcan
 
             <!-- IEEE PDF eXpress & EDAS Section (Accordion) -->
             <details class="card overflow-hidden max-w-full min-w-0" id="pdfexpress-edas-accordion">

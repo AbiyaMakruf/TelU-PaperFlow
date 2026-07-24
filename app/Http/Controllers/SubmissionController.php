@@ -472,6 +472,10 @@ class SubmissionController extends Controller
             }
         });
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Checklist tersimpan.']);
+        }
+
         return back()->with('success', 'Checklist tersimpan.');
     }
 
