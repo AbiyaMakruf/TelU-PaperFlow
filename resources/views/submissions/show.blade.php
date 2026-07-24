@@ -372,12 +372,15 @@
 
                                 <div>
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
-                                        <label class="form-label text-xs mb-0">Revision Feedback / Message for Author <span x-show="!allPassed" class="text-rose-500">*</span></label>
-                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="generateRevisionFeedback('{{ $stage->value }}', {{ json_encode($isEditorialActive) }})" class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <label class="form-label text-xs mb-0">
+                                            <span x-show="!allPassed">Revision Feedback / Message for Author <span class="text-rose-500">*</span></span>
+                                            <span x-show="allPassed" x-cloak style="display: none;">Catatan untuk Reviewer (Optional)</span>
+                                        </label>
+                                        <button type="button" x-show="!allPassed" @if(!$isEditorialActive) disabled @endif @click="generateRevisionFeedback('{{ $stage->value }}', {{ json_encode($isEditorialActive) }})" class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
                                             ⚡ Use Revision Template (Unchecked Items Only)
                                         </button>
                                     </div>
-                                    <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" placeholder="Write revision feedback or generate evaluation table..." @if(!$isEditorialActive) disabled @endif :required="!allPassed"></textarea>
+                                    <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" :placeholder="!allPassed ? 'Write revision feedback for author...' : 'Tulis catatan atau instruksi khusus untuk Reviewer...'" @if(!$isEditorialActive) disabled @endif :required="!allPassed"></textarea>
                                 </div>
 
                                 <!-- Interactive CC Tag Input -->

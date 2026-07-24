@@ -678,14 +678,34 @@ class SubmissionController extends Controller
 
     private function ensureChecklistComplete(Submission $submission, ReviewStage $stage): void
     {
-        $cycle = $submission->reviewCycles()->where('stage', $stage)->where('status', 'open')->with(['template.items', 'results'])->first();
+        $cycle = $submission->reviewCycles()->where('stage', $stage)->where('status', 'open')->with(['template.items', 'results'])->first()
+            ?? $submission->reviewCycles()->where('stage', $stage)->with(['template.items', 'results'])->latest()->first();
+
+        if (! $cycle) {
+            $template = $submission->conference->checklistTemplates()->where('stage', $stage)->where('is_active', true)->first();
+            if ($template) {
+                $cycle = $submission->reviewCycles()->create([
+                    'checklist_template_id' => $template->id,
+                    'stage' => $stage,
+                    'cycle_number' => 1,
+                    'status' => 'open',
+                    'assigned_to' => auth()->id() ?? $submission->editor_id,
+                    'started_at' => now(),
+                ]);
+            }
+        }
+
         if (! $cycle) {
             throw new DomainException('Checklist belum diisi.');
         }
+
         $checkedIds = $cycle->results->where('is_checked', true)->pluck('checklist_item_id');
-        if ($cycle->template->items->where('is_required', true)->pluck('id')->diff($checkedIds)->isNotEmpty()) {
+        $requiredIds = $cycle->template?->items->where('is_required', true)->pluck('id') ?? collect();
+
+        if ($requiredIds->isEmpty() || $requiredIds->diff($checkedIds)->isNotEmpty()) {
             throw new DomainException('Seluruh checklist wajib harus dicentang.');
         }
+
         $cycle->update(['status' => 'completed', 'completed_at' => now()]);
     }
 
