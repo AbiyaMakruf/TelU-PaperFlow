@@ -173,6 +173,9 @@ Laravel migrations in `database/migrations` are the source of truth. Latest appl
 - `2026_07_21_001300_update_editorial_checklist_items_to_ieee.php`
 - `2026_07_21_001400_add_pdf_express_and_revision_guidance_fields.php`
 - `2026_07_22_000100_add_staff_profiles_and_email_ownership.php`
+- `2026_07_24_000100_update_form_schema_notes_label_to_english.php`
+- `2026_07_24_000200_update_email_templates_to_english.php`
+- `2026_07_24_000300_update_revision_requested_email_template.php`
 
 Application tables are server-only. RLS is enabled without anon/authenticated policies because the browser does not use Supabase Data API for these tables. Laravel connects with the server database role.
 
@@ -280,8 +283,8 @@ php artisan migrate --force
 
 Current baseline:
 
-- **71 tests**
-- **338 assertions**
+- **78 tests**
+- **363 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
