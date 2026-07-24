@@ -226,6 +226,66 @@
                             }
 
                             form.submit();
+                        },
+                        useRevisionTemplate() {
+                            if (!this.isEditorialActive) return;
+                            let tableRowsHtml = '';
+                            let totalItems = 0;
+                            let failedCount = 0;
+
+                            const checklistForm = document.getElementById('checklist-form-{{ $stage->value }}');
+                            if (!checklistForm) return;
+
+                            checklistForm.querySelectorAll('table tbody tr').forEach((row) => {
+                                let checkInput = row.querySelector('.radio-check-input');
+                                if (!checkInput) return;
+                                totalItems++;
+
+                                let isChecked = checkInput.checked;
+                                if (isChecked) return;
+
+                                failedCount++;
+                                let title = checkInput.getAttribute('data-title') || '';
+                                let guidance = checkInput.getAttribute('data-guidance') || '';
+                                let noteEl = row.querySelector('.item-note-input');
+                                let noteVal = noteEl ? noteEl.value.trim() : '';
+
+                                let statusHtml = '<span style=\"color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;\">✕ Needs Revision</span>';
+
+                                let noteText = '';
+                                if (noteVal) {
+                                    noteText = '<strong>Note:</strong> ' + noteVal;
+                                } else if (guidance) {
+                                    noteText = guidance;
+                                } else {
+                                    noteText = '-';
+                                }
+
+                                tableRowsHtml += `<tr style=\"background-color:#fff1f2; border-bottom:1px solid #e2e8f0;\">
+                                    <td style=\"padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;\">${failedCount}. ${title}</td>
+                                    <td style=\"padding:8px 12px; text-align:center; vertical-align:top;\">${statusHtml}</td>
+                                    <td style=\"padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;\">${noteText}</td>
+                                </tr>`;
+                            });
+
+                            if (totalItems === 0) {
+                                alert('No editorial checklist items found!');
+                                return;
+                            }
+
+                            if (failedCount === 0) {
+                                alert('All checklist items have passed! No items require revision.');
+                                return;
+                            }
+
+                            let templateHtml = `Dear Authors,\n\nThank you for your submission. Below are the checklist items requiring correction/revision for your manuscript:\n\n<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;\">\n    <thead>\n        <tr style=\"background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;\">\n            <th style=\"padding:10px 12px; border:1px solid #102a43;\">Checklist Criteria</th>\n            <th style=\"padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;\">Status</th>\n            <th style=\"padding:10px 12px; border:1px solid #102a43;\">Notes / Guidance</th>\n        </tr>\n    </thead>\n    <tbody>\n        ${tableRowsHtml}\n    </tbody>\n</table>\n\nPlease address all items listed above and upload your revised source files via your private author portal.\n\nBest regards,\nEditorial Team`;
+
+                            let feedbackEl = document.getElementById('author-feedback-textarea');
+                            if (feedbackEl) {
+                                feedbackEl.value = templateHtml;
+                                feedbackEl.scrollIntoView({ behavior: 'smooth' });
+                                feedbackEl.focus();
+                            }
                         }
                     }" class="space-y-6">
                         <details class="card overflow-hidden max-w-full min-w-0" @if($submission->status === \App\Enums\SubmissionStatus::EditorialReview) open @endif>
@@ -265,21 +325,21 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button type="button" @if(!$isEditorialActive) disabled @endif @click="
-                                            document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-check-input').forEach(el => {
-                                                el.checked = true;
-                                                el.dispatchEvent(new Event('change', { bubbles: true }));
-                                            });
+                                            if (!isEditorialActive) return;
+                                            const form = document.getElementById('checklist-form-{{ $stage->value }}');
+                                            if (!form) return;
+                                            form.querySelectorAll('.radio-check-input').forEach(r => r.checked = true);
                                             updateCheckedState();
-                                        " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
-                                            ✓ Check All
+                                        " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-2xs transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                            ✓ Check All Passed
                                         </button>
                                         <button type="button" @if(!$isEditorialActive) disabled @endif @click="
-                                            document.querySelectorAll('#checklist-form-{{ $stage->value }} .radio-cross-input').forEach(el => {
-                                                el.checked = true;
-                                                el.dispatchEvent(new Event('change', { bubbles: true }));
-                                            });
+                                            if (!isEditorialActive) return;
+                                            const form = document.getElementById('checklist-form-{{ $stage->value }}');
+                                            if (!form) return;
+                                            form.querySelectorAll('.radio-cross-input').forEach(r => r.checked = true);
                                             updateCheckedState();
-                                        " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                        " class="btn text-xs py-1.5 px-3 bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 font-extrabold shadow-2xs transition disabled:opacity-50 disabled:cursor-not-allowed">
                                             ✕ Uncheck All
                                         </button>
                                     </div>
@@ -376,7 +436,7 @@
                                     <span class="text-xs font-bold text-emerald-700" x-text="autoSaveStatus"></span>
                                     <button type="submit" @if(!$isEditorialActive) disabled @endif class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed">
                                         <span x-show="!savingChecklist">Save Checklist</span>
-                                        <span x-show="savingChecklist">Saving...</span>
+                                        <span x-show="savingChecklist" x-cloak style="display:none;">Saving...</span>
                                     </button>
                                 </div>
                             </form>
@@ -396,62 +456,7 @@
                                 <div>
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
                                         <label class="form-label text-xs mb-0">Revision Feedback / Message for Author <span x-show="!allPassed" class="text-rose-500">*</span></label>
-                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="
-                                            let tableRowsHtml = '';
-                                            let totalItems = 0;
-                                            let failedCount = 0;
-
-                                            document.querySelectorAll('#checklist-form-{{ $stage->value }} table tbody tr').forEach((row) => {
-                                                let checkInput = row.querySelector('.radio-check-input');
-                                                if (!checkInput) return;
-                                                totalItems++;
-
-                                                let isChecked = checkInput.checked;
-                                                if (isChecked) return;
-
-                                                failedCount++;
-                                                let title = checkInput.getAttribute('data-title') || '';
-                                                let guidance = checkInput.getAttribute('data-guidance') || '';
-                                                let noteEl = row.querySelector('.item-note-input');
-                                                let noteVal = noteEl ? noteEl.value.trim() : '';
-
-                                                let statusHtml = '<span style=&quot;color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;&quot;>✕ Needs Revision</span>';
-
-                                                let noteText = '';
-                                                if (noteVal) {
-                                                    noteText = '<strong>Note:</strong> ' + noteVal;
-                                                } else if (guidance) {
-                                                    noteText = guidance;
-                                                } else {
-                                                    noteText = '-';
-                                                }
-
-                                                tableRowsHtml += `<tr style=&quot;background-color:#fff1f2; border-bottom:1px solid #e2e8f0;&quot;>
-                                                    <td style=&quot;padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;&quot;>${failedCount}. ${title}</td>
-                                                    <td style=&quot;padding:8px 12px; text-align:center; vertical-align:top;&quot;>${statusHtml}</td>
-                                                    <td style=&quot;padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;&quot;>${noteText}</td>
-                                                </tr>`;
-                                            });
-
-                                            if (totalItems === 0) {
-                                                alert('No editorial checklist items found!');
-                                                return;
-                                            }
-
-                                            if (failedCount === 0) {
-                                                alert('All checklist items have passed! No items require revision.');
-                                                return;
-                                            }
-
-                                            let templateHtml = `Dear Authors,\n\nThank you for your submission. Below are the checklist items requiring correction/revision for your manuscript:\n\n<table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; style=&quot;width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;&quot;>\n    <thead>\n        <tr style=&quot;background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;&quot;>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Checklist Criteria</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;&quot;>Status</th>\n            <th style=&quot;padding:10px 12px; border:1px solid #102a43;&quot;>Notes / Guidance</th>\n        </tr>\n    </thead>\n    <tbody>\n        ${tableRowsHtml}\n    </tbody>\n</table>\n\nPlease address all items listed above and upload your revised source files via your private author portal.\n\nBest regards,\nEditorial Team`;
-
-                                            let feedbackEl = document.getElementById('author-feedback-textarea');
-                                            if (feedbackEl) {
-                                                feedbackEl.value = templateHtml;
-                                                feedbackEl.scrollIntoView({ behavior: 'smooth' });
-                                                feedbackEl.focus();
-                                            }
-                                        " class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="useRevisionTemplate()" class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
                                             ⚡ Use Revision Template (Unchecked Items Only)
                                         </button>
                                     </div>
@@ -498,13 +503,13 @@
                                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
                                     <button type="submit" name="action" value="request_revision" @if(!$isEditorialActive) disabled @endif class="btn btn-secondary border border-navy/20 text-navy hover:bg-slate-100 px-4 py-2.5 text-xs font-bold w-full sm:w-auto flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                                         <span x-show="!submittingFeedback">Request Author Revision &amp; Send Email</span>
-                                        <span x-show="submittingFeedback">Processing...</span>
+                                        <span x-show="submittingFeedback" x-cloak style="display:none;">Processing...</span>
                                     </button>
 
                                     <template x-if="hasReviewer">
                                         <button type="submit" name="action" value="approve_and_send_reviewer" @if(!$isEditorialActive) disabled @endif class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                                             <span x-show="!submittingFeedback">✓ Approve &amp; Send to Reviewer</span>
-                                            <span x-show="submittingFeedback">Processing...</span>
+                                            <span x-show="submittingFeedback" x-cloak style="display:none;">Processing...</span>
                                         </button>
                                     </template>
                                     <template x-if="!hasReviewer">
