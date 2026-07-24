@@ -121,7 +121,7 @@
                     $editorialTemplates = $submission->conference->checklistTemplates->filter(fn ($t) => strtolower($t->stage->value ?? $t->stage) === 'editorial');
                 @endphp
                 @if($submission->editor_id !== null && $editorialTemplates->isNotEmpty())
-                    <details class="card group p-4 sm:p-6 transition" @if(in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true)) open @endif>
+                    <details class="card group p-4 sm:p-6 transition">
                         <summary class="flex cursor-pointer items-center justify-between gap-3 list-none font-black text-navy focus:outline-none select-none">
                             <div class="min-w-0">
                                 <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
@@ -161,7 +161,7 @@
                 @endif
 
                 @if ($submission->feedback->isNotEmpty())
-                    <details class="card group p-4 sm:p-6 transition" open>
+                    <details class="card group p-4 sm:p-6 transition">
                         <summary class="flex cursor-pointer items-center justify-between gap-3 list-none font-black text-navy focus:outline-none select-none">
                             <div class="min-w-0">
                                 <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
@@ -224,7 +224,7 @@
                 @endif
 
                 <!-- Card File History (Accordion) -->
-                <details class="card group overflow-hidden transition" open>
+                <details class="card group overflow-hidden transition">
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-6 list-none font-black text-navy focus:outline-none select-none bg-slate-50/50 hover:bg-slate-100/50 transition">
                         <div class="min-w-0">
                             <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
