@@ -344,6 +344,11 @@
                                             <span>{{ $file->label }}</span>
                                         </p>
                                         <p class="text-xs text-muted break-all mt-0.5">{{ $file->original_name }}</p>
+                                        @if($file->notes)
+                                            <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
+                                                <span class="font-bold text-amber-950">📝 Notes:</span> {{ $file->notes }}
+                                            </div>
+                                        @endif
                                     </div>
                                     <div class="pt-1">
                                         <a class="btn btn-secondary text-xs w-full py-2.5 flex items-center justify-center gap-2" href="{{ route('author.files.download', [$token, $file]) }}">
@@ -377,6 +382,11 @@
                                             <td class="min-w-[200px]">
                                                 <p class="font-bold text-navy break-words">{{ $file->label }}</p>
                                                 <p class="text-xs text-muted break-all">{{ $file->original_name }}</p>
+                                                @if($file->notes)
+                                                    <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
+                                                        <span class="font-bold text-amber-950">📝 Notes:</span> {{ $file->notes }}
+                                                    </div>
+                                                @endif
                                             </td>
                                             <td class="whitespace-nowrap">{{ ucfirst($file->source) }}</td>
                                             <td class="whitespace-nowrap text-right">

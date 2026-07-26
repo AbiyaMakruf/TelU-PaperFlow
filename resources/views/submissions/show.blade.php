@@ -682,6 +682,11 @@
                                     <td class="min-w-[180px]">
                                         <p class="font-bold text-navy text-xs sm:text-sm break-all leading-snug">{{ $file->label }}</p>
                                         <p class="text-xs text-muted break-all mt-0.5">{{ $file->original_name }} &middot; {{ number_format($file->size / 1024, 0) }} KB</p>
+                                        @if($file->notes)
+                                            <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
+                                                <span class="font-bold text-amber-950">📝 Notes:</span> {{ $file->notes }}
+                                            </div>
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="badge {{ $file->file_category === 'revision_guidance_pdf' ? 'badge-warning' : 'badge-neutral' }} text-[10px]">
