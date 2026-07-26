@@ -30,9 +30,15 @@
                     </div>
 
                     <div x-show="!openEdit" class="mt-5 space-y-3 text-sm">
-                        <div class="min-w-0">
-                            <span class="text-xs font-bold text-muted">Paper Title:</span>
-                            <p class="mt-0.5 font-bold text-navy break-words">{{ $submission->title }}</p>
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <div class="min-w-0">
+                                <span class="text-xs font-bold text-muted">Paper ID:</span>
+                                <p class="mt-0.5 font-black text-navy font-mono text-xs">{{ $submission->paper_code }}</p>
+                            </div>
+                            <div class="min-w-0 sm:col-span-2">
+                                <span class="text-xs font-bold text-muted">Paper Title:</span>
+                                <p class="mt-0.5 font-bold text-navy break-words">{{ $submission->title }}</p>
+                            </div>
                         </div>
                         <div class="grid gap-3 pt-2 sm:grid-cols-2">
                             <div class="min-w-0">
