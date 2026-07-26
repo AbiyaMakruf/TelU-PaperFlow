@@ -14,6 +14,7 @@ use App\Http\Controllers\ConferenceController;
 use App\Http\Controllers\ConferenceLandingController;
 use App\Http\Controllers\ConferenceMemberController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EdasReconciliationController;
 use App\Http\Controllers\EditorPerformanceController;
 use App\Http\Controllers\EmailMonitoringController;
 use App\Http\Controllers\EmailTemplateController;
@@ -97,6 +98,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/papers/{submission}/files/{file}', [SubmissionController::class, 'destroyFile'])->name('submissions.files.destroy');
         Route::post('/papers/{submission}/uploads/{attempt}/retry', [SubmissionController::class, 'retryUpload'])->name('submissions.uploads.retry');
 
+        Route::get('/conferences/edas-reconciliation', [EdasReconciliationController::class, 'index'])->name('conferences.edas-reconciliation.index');
+        Route::post('/conferences/edas-reconciliation/upload', [EdasReconciliationController::class, 'upload'])->name('conferences.edas-reconciliation.upload');
+        Route::post('/conferences/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
+        Route::get('/conferences/edas-reconciliation/export-missing', [EdasReconciliationController::class, 'exportMissing'])->name('conferences.edas-reconciliation.export-missing');
         Route::resource('conferences', ConferenceController::class)->except(['destroy']);
         Route::post('/conferences/{conference}/duplicate', [ConferenceController::class, 'duplicate'])->name('conferences.duplicate');
         Route::get('/conferences/{conference}/members', [ConferenceMemberController::class, 'index'])->name('conferences.members.index');
