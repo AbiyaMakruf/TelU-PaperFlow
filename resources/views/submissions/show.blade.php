@@ -647,8 +647,8 @@
             </details>
 
             <!-- 3. File Versioning Section (Accordion) -->
-            <details class="card overflow-hidden max-w-full min-w-0">
-                <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
+            <details class="card overflow-hidden max-w-full min-w-0" x-data="{ deleteTarget: null }">
+                <summary class="flex items-center justify-between gap-3 p-4 sm:p-5 cursor-pointer bg-slate-50/80 hover:bg-slate-100 transition select-none border-b border-navy/8">
                     <div class="min-w-0">
                         <h2 class="text-sm sm:text-base font-black text-navy">File Versioning &amp; Attachments</h2>
                         <p class="text-[11px] text-muted font-normal truncate">Manuscript history (.docx/.zip) and Revision Guidance PDF.</p>
@@ -702,13 +702,9 @@
                                                     </button>
                                                 </form>
                                             @endif
-                                            <form method="POST" action="{{ route('submissions.files.destroy', [$submission, $file]) }}" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus berkas versi v{{ $file->version_number }} ({{ $file->label }}) ini?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="font-bold text-rose-600 hover:underline text-xs" title="Hapus berkas versi v{{ $file->version_number }}">
-                                                    Delete
-                                                </button>
-                                            </form>
+                                            <button type="button" @click="deleteTarget = { id: '{{ $file->id }}', version: 'v{{ $file->version_number }}', label: {{ json_encode($file->label) }}, url: '{{ route('submissions.files.destroy', [$submission, $file]) }}' }" class="font-bold text-rose-600 hover:underline text-xs" title="Hapus berkas versi v{{ $file->version_number }}">
+                                                Delete
+                                            </button>
                                         @endcan
                                     </td>
                                 </tr>
@@ -764,6 +760,42 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
+
+                    <!-- Custom Paperflow Delete Confirmation Modal -->
+                    <div x-show="deleteTarget !== null" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 backdrop-blur-sm p-4 text-left">
+                        <div class="card w-full max-w-md p-6 bg-white shadow-2xl space-y-4" @click.outside="deleteTarget = null" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+                            <div class="flex items-center gap-3 border-b border-navy/10 pb-3">
+                                <div class="rounded-full bg-rose-100 p-2.5 text-rose-600 shrink-0">
+                                    <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-black text-navy">Konfirmasi Hapus Berkas</h3>
+                                    <p class="text-xs text-muted">Tindakan ini tidak dapat dibatalkan</p>
+                                </div>
+                            </div>
+
+                            <p class="text-sm text-slate-700 leading-relaxed">
+                                Apakah Anda yakin ingin menghapus berkas versi <strong class="text-navy font-bold" x-text="deleteTarget?.version"></strong> (<span class="font-semibold text-slate-900" x-text="deleteTarget?.label"></span>)?
+                            </p>
+
+                            <div class="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-900 font-medium">
+                                <strong>Catatan:</strong> Berkas akan dihapus dari versi aktif. Penomoran versi berkas lainnya tidak akan berubah, dan unggahan berkas baru berikutnya akan melanjutkan nomor versi historis tertinggi.
+                            </div>
+
+                            <form method="POST" :action="deleteTarget?.url" class="flex items-center justify-end gap-3 pt-2">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button" @click="deleteTarget = null" class="btn btn-secondary text-xs">
+                                    Batal
+                                </button>
+                                <button type="submit" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition">
+                                    Ya, Hapus Berkas
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 @endcan
             </details>
