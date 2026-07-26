@@ -99,16 +99,22 @@
 
                 @can('assign', $submission)
                     @if($submission->status === \App\Enums\SubmissionStatus::Submitted)
-                        <div class="mt-6 grid gap-4 border-t border-navy/10 pt-6 grid-cols-1 md:grid-cols-2">
-                            <form method="POST" action="{{ route('submissions.accept', $submission) }}">
-                                @csrf
-                                <button class="btn btn-primary w-full text-xs py-2.5">Data Valid &amp; Proceed to Assignment</button>
-                            </form>
-                            <form method="POST" action="{{ route('submissions.correction', $submission) }}" class="space-y-3">
-                                @csrf
-                                <textarea class="form-input min-h-24 py-3 text-xs" name="feedback" placeholder="Describe the data needing correction..." required></textarea>
-                                <button class="btn btn-secondary w-full text-xs py-2.5">Return to Author</button>
-                            </form>
+                        <div class="mt-6 border-t border-navy/10 pt-6 space-y-4" x-data="{ correctionText: '' }">
+                            <div>
+                                <label class="form-label text-xs font-extrabold text-navy">Correction Feedback / Notes for Author (Required if returning to author)</label>
+                                <textarea class="form-input min-h-20 py-2.5 text-xs" x-model="correctionText" placeholder="Describe the data needing correction before returning to author..."></textarea>
+                            </div>
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <form method="POST" action="{{ route('submissions.accept', $submission) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-primary w-full text-xs py-2.5 font-extrabold">Data Valid &amp; Proceed to Assignment</button>
+                                </form>
+                                <form method="POST" action="{{ route('submissions.correction', $submission) }}">
+                                    @csrf
+                                    <input type="hidden" name="feedback" :value="correctionText">
+                                    <button type="submit" class="btn btn-secondary w-full text-xs py-2.5 font-bold" :disabled="!correctionText.trim()" title="Please describe the data needing correction above before returning to author">Return to Author</button>
+                                </form>
+                            </div>
                         </div>
                     @endif
                 @endcan
