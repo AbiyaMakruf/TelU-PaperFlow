@@ -359,7 +359,7 @@ class FreshDemoSeeder extends Seeder
                     'answers' => ['affiliation' => 'Universitas Indonesia', 'country' => 'Indonesia'],
                     'status' => $scen['status'],
                     'is_flagged_duplicate' => $scen['flag_duplicate'],
-                    'duplicate_notes' => $scen['flag_duplicate'] ? 'Judul dan email penulis identik dengan paper #15701001' : null,
+                    'duplicate_notes' => $scen['flag_duplicate'] ? 'Paper title and author email are identical to submission #15701001' : null,
                     'editor_id' => $scen['editor']?->id,
                     'reviewer_id' => $scen['reviewer']?->id,
                     'author_token_hash' => hash('sha256', $rawToken),
