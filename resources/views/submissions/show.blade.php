@@ -1,6 +1,6 @@
 <x-layouts.app :title="$submission->paper_code" heading="Paper Details">
     <a class="back-link" href="{{ route('submissions.index') }}">&larr; Back to papers</a>
-    <div class="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start min-w-0">
+        <div class="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start min-w-0">
         <div class="min-w-0">
             <p class="eyebrow truncate">{{ $submission->conference->name }} &middot; internal code {{ $submission->paper_code }}</p>
             <h1 class="page-title leading-tight break-words">{{ $submission->paper_id ?: $submission->paper_code }}</h1>
@@ -105,11 +105,11 @@
                                 <textarea class="form-input min-h-20 py-2.5 text-xs" x-model="correctionText" placeholder="Describe the data needing correction before returning to author..."></textarea>
                             </div>
                             <div class="grid gap-3 sm:grid-cols-2">
-                                <form method="POST" action="{{ route('submissions.accept', $submission) }}">
+                                <form method="POST" action="{{ route('submissions.accept', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)">
                                     @csrf
                                     <button type="submit" class="btn btn-primary w-full text-xs py-2.5 font-extrabold">Data Valid &amp; Proceed to Assignment</button>
                                 </form>
-                                <form method="POST" action="{{ route('submissions.correction', $submission) }}">
+                                <form method="POST" action="{{ route('submissions.correction', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)">
                                     @csrf
                                     <input type="hidden" name="feedback" :value="correctionText">
                                     <button type="submit" class="btn btn-secondary w-full text-xs py-2.5 font-bold" :disabled="!correctionText.trim()" title="Please describe the data needing correction above before returning to author">Return to Author</button>
@@ -210,7 +210,7 @@
                                 <span>Editorial Compliance Checklist (16 IEEE Rules)</span>
                                 <span class="text-orange font-bold text-xl">+</span>
                             </summary>
-                            <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" class="space-y-4 border-t border-navy/10 p-4 sm:p-6" id="checklist-form-{{ $stage->value }}">
+                            <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 border-t border-navy/10 p-4 sm:p-6" id="checklist-form-{{ $stage->value }}">
                                 @csrf
                                 @method('PUT')
 
@@ -367,7 +367,7 @@
                             </form>
 
                             <!-- Author Feedback & Action Submission Section (Merged into Editorial Checklist Card) -->
-                            <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="p-4 sm:p-6 border-t border-navy/10 space-y-4 bg-slate-50/50" id="author-feedback-form">
+                            <form method="POST" action="{{ route('submissions.feedback', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="p-4 sm:p-6 border-t border-navy/10 space-y-4 bg-slate-50/50" id="author-feedback-form">
                                 @csrf
                                 <input type="hidden" name="visibility" value="author">
 
@@ -503,7 +503,7 @@
                     </summary>
                     <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
                         <!-- Internal Notes History -->
-                        <div class="space-y-3">
+                        <div class="space-y-3" id="internal-notes-list">
                             @forelse($submission->feedback->where('visibility', 'internal') as $feedback)
                                 <div class="rounded-xl bg-slate-50 p-3.5 border border-navy/10 shadow-sm text-xs min-w-0">
                                     <div class="flex items-center justify-between gap-2 text-muted min-w-0">
@@ -513,12 +513,12 @@
                                     <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">{{ $feedback->body }}</p>
                                 </div>
                             @empty
-                                <p class="text-xs text-muted italic">No internal notes yet.</p>
+                                <p class="text-xs text-muted italic" id="no-internal-notes-text">No internal notes yet.</p>
                             @endforelse
                         </div>
 
                         <!-- Add Internal Note Form -->
-                        <form method="POST" action="{{ route('submissions.feedback', $submission) }}" class="pt-2 border-t border-navy/8 space-y-3">
+                        <form method="POST" action="{{ route('submissions.feedback', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="pt-2 border-t border-navy/8 space-y-3">
                             @csrf
                             <input type="hidden" name="visibility" value="internal">
                             <textarea class="form-input min-h-20 py-2.5 text-xs" name="body" placeholder="Write internal note (visible only to editorial team & reviewers)..." required></textarea>
@@ -564,7 +564,7 @@
                                 <span>PDF eXpress &amp; EDAS settings are in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>.</span>
                             </div>
                         @endif
-                        <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" class="space-y-4 min-w-0" x-data="{
+                        <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 min-w-0" x-data="{
                             statusState: @js(old('pdf_express_status', $submission->pdf_express_status ?? 'pending')),
                             setError(msg) {
                                 let current = $refs.noteInput.value;
@@ -625,14 +625,14 @@
                     @can('editorialReview', $submission)
                         @if($submission->status === \App\Enums\SubmissionStatus::ReadyForEdas)
                             <div class="pt-4 border-t border-navy/10 space-y-3">
-                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3">
+                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-3">
                                     @csrf
                                     <input type="hidden" name="action" value="edas_fix">
                                     <textarea class="form-input min-h-16 py-2 text-xs" name="note" placeholder="EDAS error details"></textarea>
                                     <button class="btn btn-secondary w-full sm:w-auto text-xs font-bold py-2 px-4">Return due to EDAS Error</button>
                                 </form>
                                 @if(!$submission->edas_submitted_at)
-                                    <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3 pt-3 border-t border-navy/10">
+                                    <form method="POST" action="{{ route('submissions.advance', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-3 pt-3 border-t border-navy/10">
                                         @csrf
                                         <input type="hidden" name="action" value="record_edas">
                                         <input class="form-input text-xs" name="edas_reference" placeholder="EDAS ID / reference" required>
@@ -659,7 +659,7 @@
                     </div>
                 </summary>
                 <div class="overflow-x-auto min-w-0 max-w-full">
-                    <table class="data-table min-w-[560px]">
+                    <table class="data-table min-w-[560px]" id="file-version-table">
                         <thead>
                             <tr>
                                 <th>Version</th>
@@ -670,9 +670,9 @@
                                 <th class="text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="file-version-table-body">
                             @foreach($submission->files as $file)
-                                <tr>
+                                <tr id="file-row-{{ $file->id }}">
                                     <td class="whitespace-nowrap font-bold text-xs">
                                         v{{ $file->version_number }}
                                         @if($file->is_final)
@@ -700,14 +700,14 @@
                                         <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $file]) }}">Download</a>
                                         @can('editorialReview', $submission)
                                             @if(!$file->is_final && $file->file_category !== 'revision_guidance_pdf')
-                                                <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $file]) }}" class="inline">
+                                                <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $file]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="inline">
                                                     @csrf
                                                     <button type="submit" class="font-bold text-emerald-600 hover:underline text-xs" title="Tandai berkas ini sebagai versi final">
                                                         Set Final
                                                     </button>
                                                 </form>
                                             @endif
-                                            <button type="button" @click="deleteTarget = { id: '{{ $file->id }}', version: 'v{{ $file->version_number }}', label: {{ json_encode($file->label) }}, url: '{{ route('submissions.files.destroy', [$submission, $file]) }}' }" class="font-bold text-rose-600 hover:underline text-xs" title="Hapus berkas versi v{{ $file->version_number }}">
+                                            <button type="button" data-id="{{ $file->id }}" data-version="v{{ $file->version_number }}" data-label="{{ $file->label }}" data-url="{{ route('submissions.files.destroy', [$submission, $file]) }}" @click="deleteTarget = { id: $el.dataset.id, version: $el.dataset.version, label: $el.dataset.label, url: $el.dataset.url }" class="font-bold text-rose-600 hover:underline text-xs" title="Hapus berkas versi v{{ $file->version_number }}">
                                                 Delete
                                             </button>
                                         @endcan
@@ -728,7 +728,7 @@
                                         <p class="font-bold text-navy break-all">{{ $attempt->original_name }}</p>
                                         <p class="text-xs text-danger break-words mt-0.5">{{ Str::limit($attempt->error, 150) }}</p>
                                     </div>
-                                    <form method="POST" action="{{ route('submissions.uploads.retry', [$submission, $attempt]) }}" class="shrink-0 w-full sm:w-auto">
+                                    <form method="POST" action="{{ route('submissions.uploads.retry', [$submission, $attempt]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="shrink-0 w-full sm:w-auto">
                                         @csrf
                                         <button class="btn btn-secondary text-xs px-3 py-1.5 w-full sm:w-auto">Retry</button>
                                     </form>
@@ -741,7 +741,7 @@
                 @can('editorialReview', $submission)
                     <div class="border-t border-navy/10 p-4 sm:p-6 bg-slate-50/50">
                         <h3 class="font-extrabold text-navy text-xs sm:text-sm mb-3">Upload New File Version</h3>
-                        <form method="POST" action="{{ route('submissions.files.store', $submission) }}" enctype="multipart/form-data" class="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                        <form method="POST" action="{{ route('submissions.files.store', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" enctype="multipart/form-data" class="grid gap-4 grid-cols-1 sm:grid-cols-2">
                             @csrf
                             <div>
                                 <label class="form-label text-xs">File Label *</label>
@@ -790,7 +790,7 @@
                                 <strong>Note:</strong> The file will be removed from active versions. Existing version numbers of other files will remain unchanged, and future uploads will continue from the highest historical version.
                             </div>
 
-                            <form method="POST" :action="deleteTarget?.url" class="flex items-center justify-end gap-3 pt-2">
+                            <form method="POST" :action="deleteTarget?.url" @submit.prevent="window.submitPaperflowForm($event); deleteTarget = null;" class="flex items-center justify-end gap-3 pt-2">
                                 @csrf
                                 @method('DELETE')
                                 <button type="button" @click="deleteTarget = null" class="btn btn-secondary text-xs">
@@ -845,7 +845,7 @@
                                         <p class="mt-2 text-[11px] text-rose-700 bg-rose-50 p-2.5 rounded-lg border border-rose-200 leading-relaxed break-words font-medium">{{ Str::limit($email->error, 250) }}</p>
                                     @endif
                                     @if($email->status === 'failed' && $email->body)
-                                        <form class="mt-3 flex justify-end" method="POST" action="{{ route('emails.resend', $email) }}">
+                                        <form class="mt-3 flex justify-end" method="POST" action="{{ route('emails.resend', $email) }}" @submit.prevent="window.submitPaperflowForm($event)">
                                             @csrf
                                             <button class="btn btn-secondary px-3 py-1.5 text-xs font-black">🔁 Re-send Email</button>
                                         </form>
@@ -870,7 +870,7 @@
                     </div>
 
                     <!-- Editor Assignment Form -->
-                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="space-y-4 rounded-2xl bg-warm/60 p-3.5 sm:p-4 border border-navy/10 min-w-0">
+                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 rounded-2xl bg-warm/60 p-3.5 sm:p-4 border border-navy/10 min-w-0">
                         @csrf
                         <input type="hidden" name="role" value="editorial">
                         <div>
@@ -908,7 +908,7 @@
                     </form>
 
                     <!-- Reviewer Assignment Form -->
-                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" class="space-y-4 rounded-2xl bg-warm/60 p-3.5 sm:p-4 border border-navy/10 min-w-0">
+                    <form method="POST" action="{{ route('submissions.assign', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 rounded-2xl bg-warm/60 p-3.5 sm:p-4 border border-navy/10 min-w-0">
                         @csrf
                         <input type="hidden" name="role" value="reviewer">
                         <div>
@@ -933,7 +933,7 @@
                     @can('assign', $submission)
                         <div class="mt-5 border-t border-navy/10 pt-5 space-y-3">
                             <h3 class="font-extrabold text-xs text-navy">Administrative Actions</h3>
-                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
+                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-2">
                                 @csrf
                                 <input type="hidden" name="action" value="withdraw">
                                 <input class="form-input text-xs" name="note" placeholder="Withdrawal reason" required @if($submission->status->isTerminal()) disabled @endif>
@@ -951,7 +951,7 @@
                                 <p class="text-[11px] text-amber-800 leading-snug">
                                     If completed by mistake or requiring further inspection, Conference Admin can revert this paper back to an active state.
                                 </p>
-                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-3">
+                                <form method="POST" action="{{ route('submissions.advance', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-3">
                                     @csrf
                                     <div>
                                         <label class="form-label text-xs">Revert Target Stage *</label>
@@ -1066,6 +1066,157 @@
             feedbackEl.scrollIntoView({ behavior: 'smooth' });
             feedbackEl.focus();
         }
+    }
+
+    window.submitPaperflowForm = async function(event) {
+        if (!event) return;
+        event.preventDefault();
+        const form = event.target;
+        if (!form) return;
+
+        const submitBtn = event.submitter || form.querySelector('button[type="submit"]') || form.querySelector('button');
+        const originalHtml = submitBtn ? submitBtn.innerHTML : '';
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="inline-flex items-center gap-1.5"><svg class="animate-spin size-4 text-current" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...</span>';
+        }
+
+        try {
+            const formData = new FormData(form);
+            if (event.submitter && event.submitter.name && event.submitter.value) {
+                formData.set(event.submitter.name, event.submitter.value);
+            }
+
+            const response = await fetch(form.action, {
+                method: (form.getAttribute('method') || 'POST').toUpperCase(),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: formData
+            });
+
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (e) {
+                data = {};
+            }
+
+            if (response.ok && data.success !== false) {
+                const msg = data.message || 'Action completed successfully.';
+                window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                    detail: { message: msg, type: 'success' }
+                }));
+
+                // Handle dynamic UI updates
+                if (data.feedback && data.feedback.visibility === 'internal') {
+                    const list = document.getElementById('internal-notes-list');
+                    const emptyText = document.getElementById('no-internal-notes-text');
+                    if (emptyText) emptyText.style.display = 'none';
+                    if (list) {
+                        const newNoteHtml = `
+                            <div class="rounded-xl bg-slate-50 p-3.5 border border-navy/10 shadow-sm text-xs min-w-0">
+                                <div class="flex items-center justify-between gap-2 text-muted min-w-0">
+                                    <span class="font-bold text-navy truncate">${escapeHtml(data.feedback.author_name)}</span>
+                                    <span class="text-[11px] shrink-0">${escapeHtml(data.feedback.created_at)}</span>
+                                </div>
+                                <p class="mt-2 whitespace-pre-line text-slate-800 leading-relaxed break-words">${escapeHtml(data.feedback.body)}</p>
+                            </div>
+                        `;
+                        list.insertAdjacentHTML('beforeend', newNoteHtml);
+                    }
+                    const textarea = form.querySelector('textarea');
+                    if (textarea) textarea.value = '';
+                } else if (data.file) {
+                    const tbody = document.getElementById('file-version-table-body');
+                    if (tbody) {
+                        let setFinalBtnHtml = '';
+                        let deleteBtnHtml = '';
+
+                        if (data.file.can_editorial) {
+                            if (!data.file.is_final && data.file.file_category !== 'revision_guidance_pdf') {
+                                setFinalBtnHtml = `
+                                    <form method="POST" action="${data.file.set_final_url}" @submit.prevent="window.submitPaperflowForm($event)" class="inline">
+                                        <input type="hidden" name="_token" value="${data.file.csrf_token}">
+                                        <button type="submit" class="font-bold text-emerald-600 hover:underline text-xs" title="Tandai berkas ini sebagai versi final">
+                                            Set Final
+                                        </button>
+                                    </form>
+                                `;
+                            }
+                            deleteBtnHtml = `
+                                <button type="button" data-id="${data.file.id}" data-version="v${data.file.version_number}" data-label="${escapeHtml(data.file.label)}" data-url="${data.file.destroy_url}" @click="deleteTarget = { id: $el.dataset.id, version: $el.dataset.version, label: $el.dataset.label, url: $el.dataset.url }" class="font-bold text-rose-600 hover:underline text-xs" title="Hapus berkas versi v${data.file.version_number}">
+                                    Delete
+                                </button>
+                            `;
+                        }
+
+                        const newRowHtml = `
+                            <tr id="file-row-${data.file.id}">
+                                <td class="whitespace-nowrap font-bold text-xs">
+                                    v${data.file.version_number}
+                                    ${data.file.is_final ? '<span class="badge badge-success text-[10px] ml-1">Final</span>' : ''}
+                                </td>
+                                <td class="min-w-[180px]">
+                                    <p class="font-bold text-navy text-xs sm:text-sm break-all leading-snug">${escapeHtml(data.file.label)}</p>
+                                    <p class="text-xs text-muted break-all mt-0.5">${escapeHtml(data.file.original_name)} &middot; ${data.file.size_kb} KB</p>
+                                    ${data.file.notes ? `<div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words"><span class="font-bold text-amber-950">📝 Notes:</span> ${escapeHtml(data.file.notes)}</div>` : ''}
+                                </td>
+                                <td>
+                                    <span class="badge ${data.file.file_category === 'revision_guidance_pdf' ? 'badge-warning' : 'badge-neutral'} text-[10px]">
+                                        ${data.file.file_category === 'revision_guidance_pdf' ? 'Revision Guidance PDF' : 'Editable Manuscript'}
+                                    </span>
+                                </td>
+                                <td class="text-xs capitalize">${escapeHtml(data.file.source)}</td>
+                                <td class="text-xs truncate max-w-[120px]">${escapeHtml(data.file.uploader_name)}</td>
+                                <td class="text-right space-x-2 whitespace-nowrap">
+                                    <a class="font-bold text-orange hover:underline text-xs" href="${data.file.preview_url}">Preview</a>
+                                    <a class="font-bold text-orange hover:underline text-xs" href="${data.file.download_url}">Download</a>
+                                    ${setFinalBtnHtml}
+                                    ${deleteBtnHtml}
+                                </td>
+                            </tr>
+                        `;
+                        tbody.insertAdjacentHTML('afterbegin', newRowHtml);
+                    }
+                    form.reset();
+                } else if (data.deleted_file_id) {
+                    const fileRow = document.getElementById(`file-row-${data.deleted_file_id}`);
+                    if (fileRow) fileRow.remove();
+                } else {
+                    // Refresh after 1 second for status or PIC changes so toast is clearly seen
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                }
+            } else {
+                let errorMsg = data.message || 'An error occurred.';
+                if (data.errors) {
+                    errorMsg = Object.values(data.errors).flat().join(' ');
+                }
+                window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                    detail: { message: errorMsg, type: 'error' }
+                }));
+            }
+        } catch (err) {
+            console.error('Submit error:', err);
+            window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                detail: { message: 'Network error or server error: ' + err.message, type: 'error' }
+            }));
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHtml;
+            }
+        }
+        return false;
+    };
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
     </script>
 </x-layouts.app>

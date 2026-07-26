@@ -97,6 +97,8 @@ Do not update `submissions.status` directly when a transition should be validate
 - **International Phone and WhatsApp**: public/author profile forms use country-code selectors and normalized numbers; Editorial gets a `wa.me` action with checklist-derived draft text.
 - **Staff Communication Profiles**: every authenticated role can update name, email, WhatsApp, committee title, and affiliation. These fields populate dynamic email signatures.
 - **Conference Default CC**: Conference Admin configures conference and per-template defaults; Editorial receives them as removable CC chips before sending.
+- **Asynchronous AJAX Actions with Top-Right High-Contrast Floating Toast**: Global `window.submitPaperflowForm(event)` form submit handler preventing full page reloads on paper detail page, providing button loading spinner states, dispatching `paperflow-toast` events to a high-contrast slate floating toast component (`x-teleport="body"`), and dynamically updating internal notes and file versioning table without page reload.
+- **HTML Dataset-Bound File Deletion Modal**: Refactored paper version delete modal bindings using HTML `$el.dataset` (`data-id`, `data-version`, `data-label`, `data-url`), completely eliminating quote escaping clashes and JavaScript syntax errors in Alpine directives.
 - **Role-Scoped User Manuals & Public Author Guide**: Dedicated public standalone author user manual (`/user-manual/author`) without staff sidebar, and authenticated role-scoped staff documentation hub (`/user-manual/{role}`) covering Superadmin, Conference Admin, Editorial, Reviewer, and Viewer roles with role ecosystem matrix.
 
 ## File storage design
@@ -283,8 +285,8 @@ php artisan migrate --force
 
 Current baseline:
 
-- **78 tests**
-- **363 assertions**
+- **84 tests**
+- **397 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)

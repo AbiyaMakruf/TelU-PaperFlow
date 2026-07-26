@@ -19,6 +19,7 @@ use App\Services\SubmissionWorkflow;
 use App\Services\VisibleEmailLogs;
 use App\Services\VisibleSubmissions;
 use DomainException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -149,15 +150,19 @@ class SubmissionController extends Controller
         return view('submissions.show', compact('submission', 'editors', 'reviewers', 'emailLogs', 'defaultCc', 'whatsappUrl'));
     }
 
-    public function accept(Request $request, Submission $submission, SubmissionWorkflow $workflow): RedirectResponse
+    public function accept(Request $request, Submission $submission, SubmissionWorkflow $workflow): RedirectResponse|JsonResponse
     {
         $this->authorize('assign', $submission);
         $workflow->transition($submission, SubmissionStatus::ReadyForAssignment, $request->user(), 'Data submission telah divalidasi.');
 
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Submission valid dan siap di-assign.']);
+        }
+
         return back()->with('success', 'Submission valid dan siap di-assign.');
     }
 
-    public function requestCorrection(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse
+    public function requestCorrection(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse|JsonResponse
     {
         $this->authorize('assign', $submission);
         $validated = $request->validate(['feedback' => ['required', 'string', 'max:50000']]);
@@ -168,10 +173,14 @@ class SubmissionController extends Controller
             'portal_url' => route('author.portal', $this->authorToken($submission)),
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Permintaan koreksi dikirim ke author.']);
+        }
+
         return back()->with('success', 'Permintaan koreksi dikirim ke author.');
     }
 
-    public function assign(Request $request, Submission $submission, SubmissionWorkflow $workflow, AuditLogger $audit): RedirectResponse
+    public function assign(Request $request, Submission $submission, SubmissionWorkflow $workflow, AuditLogger $audit): RedirectResponse|JsonResponse
     {
         $this->authorize('assign', $submission);
         $validated = $request->validate([
@@ -193,6 +202,10 @@ class SubmissionController extends Controller
                 $validated['reassignment_reason'] ?? null
             );
         } catch (DomainException $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+            }
+
             return back()->withErrors(['assignment' => $exception->getMessage()]);
         }
         $audit->record('submission.assigned', $submission, $submission->conference, newValues: $validated);
@@ -201,6 +214,10 @@ class SubmissionController extends Controller
         }
         if ($validated['role'] === ConferenceRole::Editorial->value) {
             $submission->update(['manuscript_format' => $validated['manuscript_format']]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'PIC berhasil diperbarui.']);
         }
 
         return back()->with('success', 'PIC berhasil diperbarui.');
@@ -362,7 +379,7 @@ class SubmissionController extends Controller
         return response()->download($zipPath, 'Paperflow_Author_Files_'.now()->format('Ymd_His').'.zip')->deleteFileAfterSend(true);
     }
 
-    public function updateEdasStatus(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse
+    public function updateEdasStatus(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse|JsonResponse
     {
         $this->authorize('reviewerReview', $submission);
 
@@ -385,6 +402,10 @@ class SubmissionController extends Controller
             if ($action === 'reviewer_changes') {
                 $this->reviewerChanges($request, $submission, $workflow, $validated['edas_error_note'] ?? 'EDAS upload error.', $mailer);
 
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => true, 'message' => 'EDAS error recorded and paper returned to Editorial team for correction.']);
+                }
+
                 return back()->with('success', 'EDAS error recorded and paper returned to Editorial team for correction.');
             }
         }
@@ -392,7 +413,15 @@ class SubmissionController extends Controller
         if ($action === 'reviewer_approve') {
             $this->reviewerApprove($request, $submission, $workflow, $validated['edas_error_note'] ?? 'Uploaded to EDAS without errors.', $mailer);
 
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Paper marked as uploaded to EDAS and completed (Done).']);
+            }
+
             return back()->with('success', 'Paper marked as uploaded to EDAS and completed (Done).');
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Status IEEE PDF eXpress & catatan EDAS berhasil diperbarui.']);
         }
 
         return back()->with('success', 'Status IEEE PDF eXpress & catatan EDAS berhasil diperbarui.');
@@ -466,15 +495,32 @@ class SubmissionController extends Controller
             'items' => ['nullable', 'array'],
             'items.*.checked' => ['nullable', 'boolean'],
             'items.*.note' => ['nullable', 'string', 'max:2000'],
+            'checklist' => ['nullable', 'array'],
+            'notes' => ['nullable', 'array'],
         ]);
 
-        DB::transaction(function () use ($template, $cycle, $validated, $request) {
+        $itemsData = $validated['items'] ?? [];
+        $checklistData = $validated['checklist'] ?? [];
+        $notesData = $validated['notes'] ?? [];
+
+        DB::transaction(function () use ($template, $cycle, $itemsData, $checklistData, $notesData, $request) {
             foreach ($template->items as $item) {
-                $data = $validated['items'][$item->id] ?? [];
-                $checked = (bool) ($data['checked'] ?? false);
+                $checked = false;
+                $note = null;
+
+                if (isset($itemsData[$item->id])) {
+                    $checked = (bool) ($itemsData[$item->id]['checked'] ?? false);
+                    $note = $itemsData[$item->id]['note'] ?? null;
+                } elseif (isset($checklistData[$item->id])) {
+                    $checked = ($checklistData[$item->id] === 'passed' || $checklistData[$item->id] === '1' || $checklistData[$item->id] === true);
+                    $note = $notesData[$item->id] ?? null;
+                } else {
+                    $note = $notesData[$item->id] ?? null;
+                }
+
                 $cycle->results()->updateOrCreate(['checklist_item_id' => $item->id], [
                     'is_checked' => $checked,
-                    'note' => $data['note'] ?? null,
+                    'note' => $note,
                     'checked_by' => $checked ? $request->user()->id : null,
                     'checked_at' => $checked ? now() : null,
                 ]);
@@ -488,7 +534,7 @@ class SubmissionController extends Controller
         return back()->with('success', 'Checklist tersimpan.');
     }
 
-    public function advance(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse
+    public function advance(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'action' => ['required', Rule::in([
@@ -529,13 +575,21 @@ class SubmissionController extends Controller
                 'withdraw' => $workflow->transition($submission, SubmissionStatus::Withdrawn, $request->user(), $validated['note'] ?? null),
             };
         } catch (DomainException $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+            }
+
             return back()->withErrors(['workflow' => $exception->getMessage()]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Status paper berhasil diperbarui.']);
         }
 
         return back()->with('success', 'Status paper berhasil diperbarui.');
     }
 
-    public function addFeedback(Request $request, Submission $submission, ConferenceMailer $mailer, SubmissionWorkflow $workflow): RedirectResponse
+    public function addFeedback(Request $request, Submission $submission, ConferenceMailer $mailer, SubmissionWorkflow $workflow): RedirectResponse|JsonResponse
     {
         $this->authorize('editorialReview', $submission);
         $validated = $request->validate([
@@ -604,18 +658,40 @@ class SubmissionController extends Controller
                         $this->ensureChecklistComplete($submission, ReviewStage::Editorial);
                         $this->sendReviewer($request, $submission, $workflow, $bodyText, $mailer);
                     } catch (DomainException $exception) {
+                        if ($request->expectsJson()) {
+                            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+                        }
+
                         return back()->withErrors(['workflow' => $exception->getMessage()]);
                     }
+                }
+
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => true, 'message' => 'Editorial checklist approved and submission sent to Reviewer.']);
                 }
 
                 return back()->with('success', 'Editorial checklist approved and submission sent to Reviewer.');
             }
         }
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Feedback saved.',
+                'feedback' => isset($feedback) ? [
+                    'id' => $feedback->id,
+                    'visibility' => $feedback->visibility,
+                    'body' => $feedback->body,
+                    'author_name' => $feedback->author?->name ?? $request->user()->name,
+                    'created_at' => $feedback->created_at->format('d M Y H:i'),
+                ] : null,
+            ]);
+        }
+
         return back()->with('success', 'Feedback saved.');
     }
 
-    public function uploadFile(Request $request, Submission $submission, ConferenceFileStorage $storage): RedirectResponse
+    public function uploadFile(Request $request, Submission $submission, ConferenceFileStorage $storage): RedirectResponse|JsonResponse
     {
         $this->authorize('editorialReview', $submission);
         $validated = $request->validate([
@@ -634,12 +710,16 @@ class SubmissionController extends Controller
             $submission->uploadAttempts()->create(['user_id' => $request->user()->id, 'source' => 'editorial', 'label' => $validated['label'], 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size' => $file->getSize(), 'temporary_path' => $pendingPath, 'notes' => $validated['notes'] ?? null, 'is_final' => $request->boolean('is_final'), 'status' => 'failed', 'error' => $exception->getMessage()]);
             report($exception);
 
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Upload gagal. File disimpan sementara dan dapat dicoba kembali.'], 422);
+            }
+
             return back()->withErrors(['paper_file' => 'Upload gagal. File disimpan sementara dan dapat dicoba kembali.']);
         }
         if ($request->boolean('is_final')) {
             $submission->files()->update(['is_final' => false]);
         }
-        $submission->files()->create([
+        $createdFile = $submission->files()->create([
             'version_number' => $version, 'label' => $validated['label'], 'source' => 'editorial',
             'disk' => $storedFile['disk'], 'storage_path' => $storedFile['storage_path'],
             'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(),
@@ -649,6 +729,31 @@ class SubmissionController extends Controller
             'external_provider' => $storedFile['external_provider'], 'external_id' => $storedFile['external_id'],
             'external_url' => $storedFile['external_url'],
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Versi file baru berhasil disimpan.',
+                'file' => [
+                    'id' => $createdFile->id,
+                    'version_number' => $createdFile->version_number,
+                    'label' => $createdFile->label,
+                    'original_name' => $createdFile->original_name,
+                    'size_kb' => number_format($createdFile->size / 1024, 0),
+                    'notes' => $createdFile->notes,
+                    'file_category' => $createdFile->file_category,
+                    'source' => $createdFile->source,
+                    'uploader_name' => $request->user()->name,
+                    'is_final' => $createdFile->is_final,
+                    'preview_url' => route('submissions.files.preview', [$submission, $createdFile]),
+                    'download_url' => route('submissions.files.download', [$submission, $createdFile]),
+                    'set_final_url' => route('submissions.files.set-final', [$submission, $createdFile]),
+                    'destroy_url' => route('submissions.files.destroy', [$submission, $createdFile]),
+                    'can_editorial' => $request->user()->can('editorialReview', $submission),
+                    'csrf_token' => csrf_token(),
+                ],
+            ]);
+        }
 
         return back()->with('success', 'Versi file baru berhasil disimpan.');
     }
@@ -661,7 +766,7 @@ class SubmissionController extends Controller
         return $storage->download($file);
     }
 
-    public function retryUpload(Request $request, Submission $submission, UploadAttempt $attempt, ConferenceFileStorage $storage): RedirectResponse
+    public function retryUpload(Request $request, Submission $submission, UploadAttempt $attempt, ConferenceFileStorage $storage): RedirectResponse|JsonResponse
     {
         $this->authorize('editorialReview', $submission);
         abort_unless($attempt->submission_id === $submission->id && $attempt->status === 'failed', 404);
@@ -868,7 +973,7 @@ class SubmissionController extends Controller
         return $token;
     }
 
-    public function setFinalFile(Request $request, Submission $submission, FileVersion $file, AuditLogger $auditLogger): RedirectResponse
+    public function setFinalFile(Request $request, Submission $submission, FileVersion $file, AuditLogger $auditLogger): RedirectResponse|JsonResponse
     {
         $this->authorize('editorialReview', $submission);
         abort_unless($file->submission_id === $submission->id, 404);
@@ -882,10 +987,17 @@ class SubmissionController extends Controller
             'label' => $file->label,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'File version v'.$file->version_number.' ('.$file->label.') marked as Final Version.',
+            ]);
+        }
+
         return back()->with('success', 'File version v'.$file->version_number.' ('.$file->label.') marked as Final Version.');
     }
 
-    public function destroyFile(Request $request, Submission $submission, FileVersion $file, AuditLogger $auditLogger): RedirectResponse
+    public function destroyFile(Request $request, Submission $submission, FileVersion $file, AuditLogger $auditLogger): RedirectResponse|JsonResponse
     {
         $this->authorize('editorialReview', $submission);
         abort_unless($file->submission_id === $submission->id, 404);
@@ -908,6 +1020,14 @@ class SubmissionController extends Controller
             'version_number' => $versionNumber,
             'label' => $label,
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'File version v'.$versionNumber.' ('.$label.') successfully deleted.',
+                'deleted_file_id' => $file->id,
+            ]);
+        }
 
         return back()->with('success', 'File version v'.$versionNumber.' ('.$label.') successfully deleted.');
     }
