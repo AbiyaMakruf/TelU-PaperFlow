@@ -156,7 +156,19 @@ class SubmissionController extends Controller
         $workflow->transition($submission, SubmissionStatus::ReadyForAssignment, $request->user(), 'Data submission telah divalidasi.');
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Submission valid dan siap di-assign.']);
+            $fresh = $submission->fresh();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Submission valid dan siap di-assign.',
+                'status_change' => [
+                    'status' => $fresh->status->value,
+                    'status_label' => $fresh->status->label(),
+                    'status_color' => $fresh->status->color(),
+                    'is_terminal' => $fresh->status->isTerminal(),
+                ],
+                'timeline' => $this->formatStatusHistory($submission),
+            ]);
         }
 
         return back()->with('success', 'Submission valid dan siap di-assign.');
@@ -174,7 +186,19 @@ class SubmissionController extends Controller
         ]);
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Permintaan koreksi dikirim ke author.']);
+            $fresh = $submission->fresh();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Permintaan koreksi dikirim ke author.',
+                'status_change' => [
+                    'status' => $fresh->status->value,
+                    'status_label' => $fresh->status->label(),
+                    'status_color' => $fresh->status->color(),
+                    'is_terminal' => $fresh->status->isTerminal(),
+                ],
+                'timeline' => $this->formatStatusHistory($submission),
+            ]);
         }
 
         return back()->with('success', 'Permintaan koreksi dikirim ke author.');

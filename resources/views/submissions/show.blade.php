@@ -99,7 +99,7 @@
 
                 @can('assign', $submission)
                     @if($submission->status === \App\Enums\SubmissionStatus::Submitted)
-                        <div class="mt-6 border-t border-navy/10 pt-6 space-y-4" x-data="{ correctionText: '' }">
+                        <div class="mt-6 border-t border-navy/10 pt-6 space-y-4" id="submission-validation-block" style="{{ $submission->status === \App\Enums\SubmissionStatus::Submitted ? '' : 'display: none;' }}" x-data="{ correctionText: '' }">
                             <div>
                                 <label class="form-label text-xs font-extrabold text-navy">Correction Feedback / Notes for Author (Required if returning to author)</label>
                                 <textarea class="form-input min-h-20 py-2.5 text-xs" x-model="correctionText" placeholder="Describe the data needing correction before returning to author..."></textarea>
@@ -1231,6 +1231,10 @@
                     const badgeContainer = document.getElementById('paper-status-badge-container');
                     if (badgeContainer) {
                         badgeContainer.innerHTML = `<span class="badge badge-${escapeHtml(data.status_change.status_color)}">${escapeHtml(data.status_change.status_label)}</span>`;
+                    }
+                    const valBlock = document.getElementById('submission-validation-block');
+                    if (valBlock && data.status_change.status !== 'submitted') {
+                        valBlock.style.display = 'none';
                     }
                     if (data.status_change.is_terminal) {
                         document.querySelectorAll('button:not(.back-link), input, select, textarea').forEach(el => {
