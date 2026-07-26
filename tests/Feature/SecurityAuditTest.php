@@ -114,7 +114,10 @@ class SecurityAuditTest extends TestCase
     public function test_invalid_author_portal_token_returns_404(): void
     {
         $this->get(route('author.portal', 'invalid-token-string-that-does-not-exist'))
-            ->assertNotFound();
+            ->assertNotFound()
+            ->assertSee('404')
+            ->assertSee('Halaman Tidak Ditemukan')
+            ->assertSee('Halaman Utama');
     }
 
     public function test_public_submission_is_rate_limited_per_ip(): void
