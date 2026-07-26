@@ -116,8 +116,8 @@ class SecurityAuditTest extends TestCase
         $this->get(route('author.portal', 'invalid-token-string-that-does-not-exist'))
             ->assertNotFound()
             ->assertSee('404')
-            ->assertSee('Halaman Tidak Ditemukan')
-            ->assertSee('Halaman Utama');
+            ->assertSee('Page Not Found')
+            ->assertSee('Go Back to Previous Page');
     }
 
     public function test_public_submission_is_rate_limited_per_ip(): void
