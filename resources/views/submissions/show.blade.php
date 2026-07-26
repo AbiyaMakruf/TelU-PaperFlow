@@ -978,7 +978,12 @@
                             <span class="text-xs sm:text-sm font-bold text-navy block leading-tight">{{ $history->to_status->label() }}</span>
                             <p class="mt-0.5 text-[11px] text-muted">{{ $history->actor?->name ?? 'System' }} &middot; {{ $history->created_at->timezone($submission->conference->timezone ?? 'Asia/Jakarta')->format('d M H:i') }}</p>
                             @if($history->note)
-                                <p class="mt-1 text-xs text-slate-700 break-words leading-relaxed">{{ Str::limit($history->note, 100) }}</p>
+                                @php
+                                    $cleanHistoryNote = trim(preg_replace('/\s+/', ' ', strip_tags(str_replace(['<br>', '<br/>', '<br />', '</th>', '</td>', '</tr>', '</div>', '</p>'], ' ', $history->note))));
+                                @endphp
+                                @if($cleanHistoryNote !== '')
+                                    <p class="mt-1 text-xs text-slate-700 break-words leading-relaxed">{{ Str::limit($cleanHistoryNote, 120) }}</p>
+                                @endif
                             @endif
                         </li>
                     @endforeach

@@ -6,7 +6,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "concurrently -k -n \"SERVE,QUEUE,VITE\" -c \"blue,magenta,yellow\" \"php artisan serve\" \"php artisan queue:work --tries=3\" \"vite\"",
-        "dev:ngrok": "node -e \"try{require('fs').unlinkSync('public/hot')}catch(e){}\" && npm run build && concurrently -k -n \"SERVE,QUEUE,NGROK\" -c \"blue,magenta,cyan\" \"php artisan serve\" \"php artisan queue:work --tries=3\" \"ngrok http --url=hormonal-shari-noncommodiously.ngrok-free.dev 8000\""
+        "dev:ngrok": "node -e \"try{require('fs').unlinkSync('public/hot')}catch(e){}\" && npm run build && concurrently -k -n \"SERVE,QUEUE,NGROK\" -c \"blue,magenta,cyan\" \"php artisan serve\" \"php artisan queue:work --tries=3\" \"ngrok http --request-header-add \\\"ngrok-skip-browser-warning: true\\\" --url=hormonal-shari-noncommodiously.ngrok-free.dev 8000\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

@@ -743,7 +743,8 @@ class SubmissionController extends Controller
                 ], $cc, $request->user(), true);
 
                 if ($submission->status === SubmissionStatus::EditorialReview) {
-                    $workflow->transition($submission, SubmissionStatus::WaitingAuthorRevision, $request->user(), $bodyText);
+                    $transitionNote = 'Revision requested and sent to author (Deadline: '.$deadlineFormatted.').';
+                    $workflow->transition($submission, SubmissionStatus::WaitingAuthorRevision, $request->user(), $transitionNote);
                 }
 
                 if ($request->expectsJson()) {
@@ -1175,12 +1176,21 @@ class SubmissionController extends Controller
         $timezone = $submission->conference->timezone ?? 'Asia/Jakarta';
 
         return $submission->fresh()->statusHistory()->with('actor')->orderBy('created_at')->get()->map(function ($history) use ($timezone) {
+            $cleanNote = null;
+            if ($history->note) {
+                $text = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</th>', '</td>', '</tr>', '</div>', '</p>'], ' ', $history->note));
+                $clean = trim(preg_replace('/\s+/', ' ', $text));
+                if ($clean !== '') {
+                    $cleanNote = Str::limit($clean, 120);
+                }
+            }
+
             return [
                 'id' => $history->id,
                 'status_label' => $history->to_status->label(),
                 'actor_name' => $history->actor?->name ?? 'System',
                 'created_at' => $history->created_at->timezone($timezone)->format('d M H:i'),
-                'note' => $history->note ? Str::limit($history->note, 100) : null,
+                'note' => $cleanNote,
             ];
         })->all();
     }

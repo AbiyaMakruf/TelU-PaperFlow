@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ForcePasswordChange;
 use App\Http\Middleware\RequireSuperAdmin;
+use App\Http\Middleware\SkipNgrokWarning;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->append(SkipNgrokWarning::class);
         $middleware->appendToGroup('web', EnsureUserIsActive::class);
         $middleware->alias([
             'password.changed' => ForcePasswordChange::class,

@@ -1,11 +1,15 @@
 @props(['title' => 'Paperflow'])
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Paperflow' }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-warm text-ink antialiased">
@@ -15,8 +19,8 @@
             <x-brand class="relative text-white" />
             <div class="relative max-w-xl">
                 <p class="mb-4 text-sm font-bold uppercase tracking-[.24em] text-orange">Editorial workspace</p>
-                <h1 class="text-5xl font-black leading-tight">Setiap paper bergerak dengan jelas.</h1>
-                <p class="mt-5 max-w-lg text-lg leading-8 text-white/70">Submission, pemeriksaan, revisi, dan persiapan EDAS dalam satu alur yang dapat ditelusuri.</p>
+                <h1 class="text-5xl font-black leading-tight">Every paper moves with clarity.</h1>
+                <p class="mt-5 max-w-lg text-lg leading-8 text-white/70">Submissions, compliance checks, revisions, and EDAS handoffs in one transparent workflow.</p>
             </div>
             <p class="relative text-sm text-white/50">Paperflow · Conference editorial management</p>
         </section>
