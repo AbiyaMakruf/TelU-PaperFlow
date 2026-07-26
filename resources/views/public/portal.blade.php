@@ -209,7 +209,7 @@
                                             @if($item->description)
                                                 <p class="mt-0.5 text-[11px] text-slate-600 break-words">{{ $item->description }}</p>
                                             @endif
-                                            @if($res?->note)
+                                            @if(!$res?->is_checked && $res?->note)
                                                 <p class="mt-1 text-[11px] font-semibold text-slate-800 break-words">Note: {{ $res->note }}</p>
                                             @endif
                                         </div>
