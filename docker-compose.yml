@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: paperflow-postgres-local
+    restart: always
+    environment:
+      POSTGRES_DB: paperflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "54322:5432"
+    volumes:
+      - paperflow_pgdata:/var/lib/postgresql/data
+
+volumes:
+  paperflow_pgdata:
+    name: paperflow_pgdata

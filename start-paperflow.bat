@@ -64,6 +64,13 @@ if %ERRORLEVEL% NEQ 0 (
 
 php bootstrap/enable-pgsql.php
 
+:: 3. Ensure Docker PostgreSQL container is up
+where docker >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    echo  [DOCKER] Memastikan container PostgreSQL local (port 54322) berjalan...
+    docker compose up -d >nul 2>nul
+)
+
 :: Free port 8000 if previously locked by an orphaned process
 for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8000" ^| findstr "LISTENING"') do (
     echo  [FIX] Membebaskan port 8000 yang terpakai oleh PID %%a...
