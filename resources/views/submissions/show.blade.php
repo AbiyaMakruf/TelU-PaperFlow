@@ -892,12 +892,10 @@
                             </select>
                         </div>
 
-                        @if($submission->editor_id)
-                            <div>
-                                <label class="form-label text-xs text-amber-700">Editor Reassignment Reason *</label>
-                                <input class="form-input text-xs border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="e.g. Workload rebalancing" required @if($submission->status->isTerminal()) disabled @endif>
-                            </div>
-                        @endif
+                        <div id="editor-reassignment-reason-block" style="{{ $submission->editor_id ? '' : 'display: none;' }}">
+                            <label class="form-label text-xs text-amber-700">Editor Reassignment Reason *</label>
+                            <input class="form-input text-xs border-amber-300 bg-amber-50" name="reassignment_reason" id="editor-reassignment-reason-input" placeholder="e.g. Workload rebalancing" @if($submission->editor_id) required @endif @if($submission->status->isTerminal()) disabled @endif>
+                        </div>
 
                         <div>
                             <label class="form-label text-xs">Assignment Note (Optional)</label>
@@ -921,12 +919,10 @@
                             </select>
                         </div>
 
-                        @if($submission->reviewer_id)
-                            <div>
-                                <label class="form-label text-xs text-amber-700">Reviewer Reassignment Reason *</label>
-                                <input class="form-input text-xs border-amber-300 bg-amber-50" name="reassignment_reason" placeholder="e.g. Reviewer availability change" required @if($submission->status->isTerminal()) disabled @endif>
-                            </div>
-                        @endif
+                        <div id="reviewer-reassignment-reason-block" style="{{ $submission->reviewer_id ? '' : 'display: none;' }}">
+                            <label class="form-label text-xs text-amber-700">Reviewer Reassignment Reason *</label>
+                            <input class="form-input text-xs border-amber-300 bg-amber-50" name="reassignment_reason" id="reviewer-reassignment-reason-input" placeholder="e.g. Reviewer availability change" @if($submission->reviewer_id) required @endif @if($submission->status->isTerminal()) disabled @endif>
+                        </div>
 
                         <button class="btn btn-secondary w-full py-2.5 text-xs font-extrabold" @if($submission->status->isTerminal()) disabled @endif>Save / Assign Reviewer</button>
                     </form>
@@ -1203,6 +1199,18 @@
                 } else if (data.deleted_file_id) {
                     const fileRow = document.getElementById(`file-row-${data.deleted_file_id}`);
                     if (fileRow) fileRow.remove();
+                } else if (data.assignment) {
+                    if (data.assignment.role === 'editorial') {
+                        const editorBlock = document.getElementById('editor-reassignment-reason-block');
+                        const editorInput = document.getElementById('editor-reassignment-reason-input');
+                        if (editorBlock) editorBlock.style.display = 'block';
+                        if (editorInput) editorInput.required = true;
+                    } else if (data.assignment.role === 'reviewer') {
+                        const reviewerBlock = document.getElementById('reviewer-reassignment-reason-block');
+                        const reviewerInput = document.getElementById('reviewer-reassignment-reason-input');
+                        if (reviewerBlock) reviewerBlock.style.display = 'block';
+                        if (reviewerInput) reviewerInput.required = true;
+                    }
                 } else {
                     // Refresh after 1 second for status or PIC changes so toast is clearly seen
                     setTimeout(() => {

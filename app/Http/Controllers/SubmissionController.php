@@ -217,7 +217,20 @@ class SubmissionController extends Controller
         }
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'PIC berhasil diperbarui.']);
+            $assignedUser = User::find($validated['user_id']);
+            $fresh = $submission->fresh();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'PIC berhasil diperbarui.',
+                'assignment' => [
+                    'role' => $validated['role'],
+                    'user_id' => (string) $validated['user_id'],
+                    'user_name' => $assignedUser?->name ?? '',
+                    'has_editor' => (bool) $fresh->editor_id,
+                    'has_reviewer' => (bool) $fresh->reviewer_id,
+                ],
+            ]);
         }
 
         return back()->with('success', 'PIC berhasil diperbarui.');
