@@ -41,6 +41,22 @@ class CommunicationAccessTest extends TestCase
             ->assertOk()->assertSee($own->subject);
     }
 
+    public function test_email_monitoring_is_scoped_to_active_workspace(): void
+    {
+        [$conf1, $admin] = $this->member(ConferenceRole::Admin);
+        $conf2 = Conference::create(['name' => 'Conf Two', 'slug' => 'conf-two-'.str()->random(6), 'status' => 'active']);
+        $admin->conferenceMemberships()->create(['conference_id' => $conf2->id, 'role' => ConferenceRole::Admin, 'is_active' => true]);
+
+        $email1 = $this->email($conf1, $admin, 'Email Konferensi 1');
+        $email2 = $this->email($conf2, $admin, 'Email Konferensi 2');
+
+        $this->actingAs($admin)->withSession(['active_conference_id' => $conf1->id])
+            ->get(route('emails.index'))
+            ->assertOk()
+            ->assertSee($email1->subject)
+            ->assertDontSee($email2->subject);
+    }
+
     public function test_admin_can_resend_failed_email(): void
     {
         Queue::fake();
