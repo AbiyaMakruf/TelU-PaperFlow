@@ -179,7 +179,7 @@
                         </summary>
 
                         @php
-                            $isRevisionStage = in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true);
+                            $isRevisionStage = $submission->status === \App\Enums\SubmissionStatus::WaitingAuthorRevision;
                         @endphp
                         <div class="mt-4 pt-4 border-t border-slate-100 space-y-2">
                             @foreach($editorialTemplates as $tmpl)
@@ -223,7 +223,7 @@
                     </details>
                 @endif
 
-                @if (in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true))
+                @if ($submission->status === \App\Enums\SubmissionStatus::WaitingAuthorRevision)
                     <div class="card p-4 sm:p-5 border-amber-300 bg-amber-50/80 text-xs text-amber-950 space-y-2.5 shadow-2xs">
                         <h3 class="font-extrabold text-amber-950 text-sm">Important Revision Instructions</h3>
                         <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
