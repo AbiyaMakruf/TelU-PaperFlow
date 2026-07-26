@@ -207,7 +207,7 @@
                                 }
                             }
                         }
-                    }" class="space-y-6">
+                    }" id="editorial-checklist-container" class="space-y-6">
                         <details class="card overflow-hidden max-w-full min-w-0" @if($submission->status === \App\Enums\SubmissionStatus::EditorialReview) open @endif>
                             <summary class="cursor-pointer list-none p-4 sm:p-6 text-base sm:text-lg font-black text-navy flex items-center justify-between select-none">
                                 <span>Editorial Compliance Checklist (16 IEEE Rules)</span>
@@ -226,12 +226,10 @@
                                     $hasBeforeColumn = (bool) $previousCycle;
                                 @endphp
 
-                                @if(!$isEditorialActive)
-                                    <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
-                                        <span class="text-base shrink-0">ℹ️</span>
-                                        <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Compliance Check.</span>
-                                    </div>
-                                @endif
+                                <div class="editorial-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isEditorialActive ? 'display: none;' : '' }}">
+                                    <span class="text-base shrink-0">ℹ️</span>
+                                    <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Compliance Check.</span>
+                                </div>
 
                                 <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
                                 <div class="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border border-navy/10">
@@ -374,12 +372,10 @@
                                 @csrf
                                 <input type="hidden" name="visibility" value="author">
 
-                                @if(!$isEditorialActive)
-                                    <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
-                                        <span class="text-base shrink-0">ℹ️</span>
-                                        <span>Author communication &amp; action buttons are in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>.</span>
-                                    </div>
-                                @endif
+                                <div class="editorial-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isEditorialActive ? 'display: none;' : '' }}">
+                                    <span class="text-base shrink-0">ℹ️</span>
+                                    <span>Author communication &amp; action buttons are in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>.</span>
+                                </div>
 
                                 <div>
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
@@ -1238,6 +1234,21 @@
                     const valBlock = document.getElementById('submission-validation-block');
                     if (valBlock && data.status_change.status !== 'submitted') {
                         valBlock.style.display = 'none';
+                    }
+                    if (data.status_change.status === 'editorial_review') {
+                        const checklistContainer = document.getElementById('editorial-checklist-container');
+                        if (checklistContainer) {
+                            if (checklistContainer._x_dataStack && checklistContainer._x_dataStack[0]) {
+                                checklistContainer._x_dataStack[0].isEditorialActive = true;
+                            }
+                            checklistContainer.querySelectorAll('.editorial-read-only-banner').forEach(b => b.style.display = 'none');
+                            checklistContainer.querySelectorAll('button, input, select, textarea').forEach(el => {
+                                el.disabled = false;
+                                el.removeAttribute('disabled');
+                            });
+                            const detailsCard = checklistContainer.querySelector('details');
+                            if (detailsCard) detailsCard.open = true;
+                        }
                     }
                     if (data.status_change.is_terminal) {
                         document.querySelectorAll('button:not(.back-link), input, select, textarea').forEach(el => {
