@@ -1213,6 +1213,7 @@
                 } else if (data.deleted_file_id) {
                     const fileRow = document.getElementById(`file-row-${data.deleted_file_id}`);
                     if (fileRow) fileRow.remove();
+                }
                 if (data.assignment) {
                     if (data.assignment.role === 'editorial') {
                         const editorBlock = document.getElementById('editor-reassignment-reason-block');
