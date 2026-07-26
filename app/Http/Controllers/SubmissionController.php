@@ -991,6 +991,7 @@ class SubmissionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'File version v'.$file->version_number.' ('.$file->label.') marked as Final Version.',
+                'set_final_file_id' => $file->id,
             ]);
         }
 

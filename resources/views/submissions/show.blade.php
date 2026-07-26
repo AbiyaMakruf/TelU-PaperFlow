@@ -699,8 +699,8 @@
                                         <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.preview', [$submission, $file]) }}">Preview</a>
                                         <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $file]) }}">Download</a>
                                         @can('editorialReview', $submission)
-                                            @if(!$file->is_final && $file->file_category !== 'revision_guidance_pdf')
-                                                <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $file]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="inline">
+                                            @if($file->file_category !== 'revision_guidance_pdf')
+                                                <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $file]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form" style="{{ $file->is_final ? 'display: none;' : '' }}">
                                                     @csrf
                                                     <button type="submit" class="font-bold text-emerald-600 hover:underline text-xs" title="Tandai berkas ini sebagai versi final">
                                                         Set Final
@@ -1136,9 +1136,9 @@
                         let deleteBtnHtml = '';
 
                         if (data.file.can_editorial) {
-                            if (!data.file.is_final && data.file.file_category !== 'revision_guidance_pdf') {
+                            if (data.file.file_category !== 'revision_guidance_pdf') {
                                 setFinalBtnHtml = `
-                                    <form method="POST" action="${data.file.set_final_url}" @submit.prevent="window.submitPaperflowForm($event)" class="inline">
+                                    <form method="POST" action="${data.file.set_final_url}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form" style="${data.file.is_final ? 'display: none;' : ''}">
                                         <input type="hidden" name="_token" value="${data.file.csrf_token}">
                                         <button type="submit" class="font-bold text-emerald-600 hover:underline text-xs" title="Tandai berkas ini sebagai versi final">
                                             Set Final
@@ -1182,6 +1182,24 @@
                         tbody.insertAdjacentHTML('afterbegin', newRowHtml);
                     }
                     form.reset();
+                } else if (data.set_final_file_id) {
+                    const tbody = document.getElementById('file-version-table-body');
+                    if (tbody) {
+                        tbody.querySelectorAll('.badge-success').forEach(badge => badge.remove());
+                        tbody.querySelectorAll('.set-final-form').forEach(form => form.style.display = 'inline');
+
+                        const targetRow = document.getElementById(`file-row-${data.set_final_file_id}`);
+                        if (targetRow) {
+                            const versionCell = targetRow.querySelector('td');
+                            if (versionCell && !versionCell.querySelector('.badge-success')) {
+                                versionCell.insertAdjacentHTML('beforeend', ' <span class="badge badge-success text-[10px] ml-1">Final</span>');
+                            }
+                            const targetSetFinalForm = targetRow.querySelector('.set-final-form');
+                            if (targetSetFinalForm) {
+                                targetSetFinalForm.style.display = 'none';
+                            }
+                        }
+                    }
                 } else if (data.deleted_file_id) {
                     const fileRow = document.getElementById(`file-row-${data.deleted_file_id}`);
                     if (fileRow) fileRow.remove();
