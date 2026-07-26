@@ -375,12 +375,7 @@
                                                 @endif
                                             </td>
                                             <td class="min-w-[200px]">
-                                                <p class="font-bold text-navy break-words inline-flex items-center gap-2">
-                                                    <span>{{ $file->label }}</span>
-                                                    @if($file->is_final)
-                                                        <span class="badge badge-success text-[10px] font-bold">Final Version</span>
-                                                    @endif
-                                                </p>
+                                                <p class="font-bold text-navy break-words">{{ $file->label }}</p>
                                                 <p class="text-xs text-muted break-all">{{ $file->original_name }}</p>
                                             </td>
                                             <td class="whitespace-nowrap">{{ ucfirst($file->source) }}</td>
