@@ -267,6 +267,40 @@ class EditorialWorkflowTest extends TestCase
         return [$conference, $admin, $editor, $reviewer, $submission, $editorialItem, $reviewerItem];
     }
 
+    public function test_editor_can_delete_file_version_and_set_final_version(): void
+    {
+        [$conference, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+
+        $f1 = $submission->files()->create(['version_number' => 1, 'label' => 'V1 File', 'source' => 'author', 'disk' => 'local', 'storage_path' => 'p1', 'original_name' => 'v1.docx', 'is_final' => false]);
+        $f2 = $submission->files()->create(['version_number' => 2, 'label' => 'V2 File', 'source' => 'author', 'disk' => 'local', 'storage_path' => 'p2', 'original_name' => 'v2.docx', 'is_final' => false]);
+        $f3 = $submission->files()->create(['version_number' => 3, 'label' => 'V3 File', 'source' => 'author', 'disk' => 'local', 'storage_path' => 'p3', 'original_name' => 'v3.docx', 'is_final' => false]);
+        $f4 = $submission->files()->create(['version_number' => 4, 'label' => 'V4 File', 'source' => 'author', 'disk' => 'local', 'storage_path' => 'p4', 'original_name' => 'v4.docx', 'is_final' => false]);
+        $f5 = $submission->files()->create(['version_number' => 5, 'label' => 'V5 File', 'source' => 'author', 'disk' => 'local', 'storage_path' => 'p5', 'original_name' => 'v5.docx', 'is_final' => true]);
+
+        // 1. Set v3 as Final
+        $this->actingAs($editor)->post(route('submissions.files.set-final', [$submission, $f3]))->assertRedirect();
+        $this->assertTrue($f3->fresh()->is_final);
+        $this->assertFalse($f5->fresh()->is_final);
+
+        // 2. Delete v3
+        $this->actingAs($editor)->delete(route('submissions.files.destroy', [$submission, $f3]))->assertRedirect();
+        $this->assertSoftDeleted('file_versions', ['id' => $f3->id]);
+
+        // Version numbers of remaining files must NOT change (v4 is 4, v5 is 5)
+        $this->assertSame(4, $f4->fresh()->version_number);
+        $this->assertSame(5, $f5->fresh()->version_number);
+
+        // 3. New upload should become v6
+        $file = \Illuminate\Http\UploadedFile::fake()->create('v6.docx', 100);
+        $this->actingAs($editor)->post(route('submissions.files.store', $submission), [
+            'paper_file' => $file,
+            'label' => 'V6 File',
+        ])->assertRedirect();
+
+        $latestFile = $submission->files()->orderByDesc('version_number')->first();
+        $this->assertSame(6, $latestFile->version_number);
+    }
+
     private function submissionFor(Conference $conference, string $code, string $title, ?User $editor = null): Submission
     {
         return Submission::create([

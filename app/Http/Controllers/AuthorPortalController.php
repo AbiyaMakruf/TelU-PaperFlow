@@ -52,7 +52,7 @@ class AuthorPortalController extends Controller
         ]);
         $file = $request->file('paper_file');
         $guidanceFile = $request->file('guidance_pdf');
-        $version = $submission->files()->max('version_number') + 1;
+        $version = ($submission->files()->withTrashed()->max('version_number') ?? 0) + 1;
         $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
         try {
             $storedFile = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-V'.$version);
@@ -152,7 +152,7 @@ class AuthorPortalController extends Controller
         $absolute = Storage::disk('local')->path($attempt->temporary_path);
         abort_unless(is_file($absolute), 404);
         $uploaded = new UploadedFile($absolute, $attempt->original_name, $attempt->mime_type, null, true);
-        $version = $submission->files()->max('version_number') + 1;
+        $version = ($submission->files()->withTrashed()->max('version_number') ?? 0) + 1;
         try {
             $stored = $storage->put($submission->conference, $uploaded, $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-retry.'.$uploaded->getClientOriginalExtension(), $submission->paper_code.'-V'.$version);
         } catch (Throwable $e) {

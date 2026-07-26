@@ -625,7 +625,7 @@ class SubmissionController extends Controller
             'is_final' => ['nullable', 'boolean'],
         ]);
         $file = $request->file('paper_file');
-        $version = $submission->files()->max('version_number') + 1;
+        $version = ($submission->files()->withTrashed()->max('version_number') ?? 0) + 1;
         $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
         try {
             $storedFile = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-V'.$version);
@@ -866,5 +866,50 @@ class SubmissionController extends Controller
         ]);
 
         return $token;
+    }
+
+    public function setFinalFile(Request $request, Submission $submission, FileVersion $file, AuditLogger $auditLogger): RedirectResponse
+    {
+        $this->authorize('editorialReview', $submission);
+        abort_unless($file->submission_id === $submission->id, 404);
+
+        $submission->files()->update(['is_final' => false]);
+        $file->update(['is_final' => true]);
+
+        $auditLogger->log($request->user(), 'file_version.set_final', $submission->conference, [
+            'submission_id' => $submission->id,
+            'file_version_id' => $file->id,
+            'version_number' => $file->version_number,
+            'label' => $file->label,
+        ]);
+
+        return back()->with('success', 'Versi file v'.$file->version_number.' ('.$file->label.') berhasil ditandai sebagai versi Final.');
+    }
+
+    public function destroyFile(Request $request, Submission $submission, FileVersion $file, AuditLogger $auditLogger): RedirectResponse
+    {
+        $this->authorize('editorialReview', $submission);
+        abort_unless($file->submission_id === $submission->id, 404);
+
+        $versionNumber = $file->version_number;
+        $label = $file->label;
+        $wasFinal = $file->is_final;
+
+        $file->delete();
+
+        if ($wasFinal) {
+            $latestRemaining = $submission->files()->orderByDesc('version_number')->first();
+            if ($latestRemaining) {
+                $latestRemaining->update(['is_final' => true]);
+            }
+        }
+
+        $auditLogger->log($request->user(), 'file_version.deleted', $submission->conference, [
+            'submission_id' => $submission->id,
+            'version_number' => $versionNumber,
+            'label' => $label,
+        ]);
+
+        return back()->with('success', 'Versi file v'.$versionNumber.' ('.$label.') berhasil dihapus.');
     }
 }

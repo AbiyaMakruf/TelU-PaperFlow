@@ -693,6 +693,23 @@
                                     <td class="text-right space-x-2 whitespace-nowrap">
                                         <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.preview', [$submission, $file]) }}">Preview</a>
                                         <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $file]) }}">Download</a>
+                                        @can('editorialReview', $submission)
+                                            @if(!$file->is_final && $file->file_category !== 'revision_guidance_pdf')
+                                                <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $file]) }}" class="inline">
+                                                    @csrf
+                                                    <button type="submit" class="font-bold text-emerald-600 hover:underline text-xs" title="Tandai berkas ini sebagai versi final">
+                                                        Set Final
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            <form method="POST" action="{{ route('submissions.files.destroy', [$submission, $file]) }}" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus berkas versi v{{ $file->version_number }} ({{ $file->label }}) ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="font-bold text-rose-600 hover:underline text-xs" title="Hapus berkas versi v{{ $file->version_number }}">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        @endcan
                                     </td>
                                 </tr>
                             @endforeach

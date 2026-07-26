@@ -93,6 +93,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/papers/{submission}/files', [SubmissionController::class, 'uploadFile'])->name('submissions.files.store');
         Route::get('/papers/{submission}/files/{file}', [SubmissionController::class, 'download'])->middleware('throttle:file-download')->name('submissions.files.download');
         Route::get('/papers/{submission}/files/{file}/preview', [SubmissionController::class, 'preview'])->name('submissions.files.preview');
+        Route::post('/papers/{submission}/files/{file}/set-final', [SubmissionController::class, 'setFinalFile'])->name('submissions.files.set-final');
+        Route::delete('/papers/{submission}/files/{file}', [SubmissionController::class, 'destroyFile'])->name('submissions.files.destroy');
         Route::post('/papers/{submission}/uploads/{attempt}/retry', [SubmissionController::class, 'retryUpload'])->name('submissions.uploads.retry');
 
         Route::resource('conferences', ConferenceController::class)->except(['destroy']);
