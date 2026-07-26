@@ -14,14 +14,16 @@ echo.
 echo  [1/3] Memeriksa instalasi PHP dan Node.js...
 
 :: 1. Auto-detect & prioritize Laragon/XAMPP PHP over barebones C:\php
-if exist "C:\laragon\bin\php" for /d %%F in ("C:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
-if exist "D:\laragon\bin\php" for /d %%F in ("D:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
-if exist "E:\laragon\bin\php" for /d %%F in ("E:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
-if exist "F:\laragon\bin\php" for /d %%F in ("F:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PATH=%%F;%PATH%"
-if exist "C:\xampp\php\php.exe" set "PATH=C:\xampp\php;%PATH%"
-if exist "D:\xampp\php\php.exe" set "PATH=D:\xampp\php;%PATH%"
-if exist "E:\xampp\php\php.exe" set "PATH=E:\xampp\php;%PATH%"
-if exist "F:\xampp\php\php.exe" set "PATH=F:\xampp\php;%PATH%"
+if exist "C:\laragon\bin\php" for /d %%F in ("C:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PHP_BIN=%%F"
+if exist "D:\laragon\bin\php" for /d %%F in ("D:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PHP_BIN=%%F"
+if exist "E:\laragon\bin\php" for /d %%F in ("E:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PHP_BIN=%%F"
+if exist "F:\laragon\bin\php" for /d %%F in ("F:\laragon\bin\php\*") do if exist "%%F\php.exe" set "PHP_BIN=%%F"
+if exist "C:\xampp\php\php.exe" set "PHP_BIN=C:\xampp\php"
+if exist "D:\xampp\php\php.exe" set "PHP_BIN=D:\xampp\php"
+if exist "E:\xampp\php\php.exe" set "PHP_BIN=E:\xampp\php"
+if exist "F:\xampp\php\php.exe" set "PHP_BIN=F:\xampp\php"
+
+if defined PHP_BIN set "PATH=%PHP_BIN%;%PATH%"
 
 where php >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
@@ -30,12 +32,14 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 :: 2. Auto-detect Node.js
-if exist "C:\laragon\bin\nodejs" for /d %%F in ("C:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
-if exist "D:\laragon\bin\nodejs" for /d %%F in ("D:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
-if exist "E:\laragon\bin\nodejs" for /d %%F in ("E:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
-if exist "F:\laragon\bin\nodejs" for /d %%F in ("F:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "PATH=%%F;%PATH%"
-if exist "C:\Program Files\nodejs\node.exe" set "PATH=C:\Program Files\nodejs;%PATH%"
-if exist "D:\Program Files\nodejs\node.exe" set "PATH=D:\Program Files\nodejs;%PATH%"
+if exist "C:\laragon\bin\nodejs" for /d %%F in ("C:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "NODE_BIN=%%F"
+if exist "D:\laragon\bin\nodejs" for /d %%F in ("D:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "NODE_BIN=%%F"
+if exist "E:\laragon\bin\nodejs" for /d %%F in ("E:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "NODE_BIN=%%F"
+if exist "F:\laragon\bin\nodejs" for /d %%F in ("F:\laragon\bin\nodejs\*") do if exist "%%F\node.exe" set "NODE_BIN=%%F"
+if exist "C:\Program Files\nodejs\node.exe" set "NODE_BIN=C:\Program Files\nodejs"
+if exist "D:\Program Files\nodejs\node.exe" set "NODE_BIN=D:\Program Files\nodejs"
+
+if defined NODE_BIN set "PATH=%NODE_BIN%;%PATH%"
 
 :: Verification
 where php >nul 2>nul
@@ -71,7 +75,8 @@ if %ERRORLEVEL% EQU 0 (
     docker compose up -d >nul 2>nul
 )
 
-:: Free port 8000 if previously locked by an orphaned process
+:: Free port 8000 & kill orphaned ngrok process
+taskkill /F /IM ngrok.exe >nul 2>nul
 for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8000" ^| findstr "LISTENING"') do (
     echo  [FIX] Membebaskan port 8000 yang terpakai oleh PID %%a...
     taskkill /F /PID %%a >nul 2>nul
@@ -109,7 +114,13 @@ echo.
 
 start "" powershell -Command "Start-Sleep -Seconds 3; Start-Process 'https://hormonal-shari-noncommodiously.ngrok-free.dev'"
 
-call npm run dev:ngrok
+if defined PHP_BIN (
+    set "PHP_EXEC=%PHP_BIN:\=/%/php.exe"
+) else (
+    set "PHP_EXEC=php"
+)
+
+call npx concurrently -k -n "SERVE,QUEUE,NGROK" -c "blue,magenta,cyan" "\"%PHP_EXEC%\" artisan serve" "\"%PHP_EXEC%\" artisan queue:work --tries=3" "ngrok http --url=hormonal-shari-noncommodiously.ngrok-free.dev 8000"
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
