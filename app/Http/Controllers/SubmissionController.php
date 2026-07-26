@@ -138,7 +138,10 @@ class SubmissionController extends Controller
         $unchecked = $editorialCycle?->template?->items?->filter(function ($item) use ($editorialCycle) {
             return ! $editorialCycle->results->firstWhere('checklist_item_id', $item->id)?->is_checked;
         })->map(fn ($item) => '• '.$item->title.($item->description ? ': '.$item->description : ''))->values() ?? collect();
-        $whatsappText = "Dear {$submission->corresponding_author_name},\n\nThis is {$submission->editor?->name} from the {$submission->conference->name} Publication Committee. Please address the following manuscript revisions:\n\n".($unchecked->isNotEmpty() ? $unchecked->implode("\n\n") : 'Please review the feedback available in your Paperflow author portal.')."\n\nPaper: {$submission->paper_id} - {$submission->title}\nThank you.";
+        $time = now('Asia/Jakarta')->format('d F Y, H:i \W\I\B');
+        $senderName = auth()->user()?->name ?? $submission->editor?->name ?? 'Publication Committee';
+        $conferenceName = $submission->conference->name;
+        $whatsappText = "Dear Author of Paper ID {$submission->paper_id} , just a gentle reminder to submit your paper revision. As of this {$time}, we haven't received your response.\n\nPlease check your email for the specific revision details. Please submit the final files via author portal; however, if you have any questions, you may contact me through this WhatsApp chat. Thanks!\n\n{$senderName}\nPublication Committee {$conferenceName}";
         $whatsappUrl = PhoneNumber::whatsappDigits($submission->corresponding_author_phone)
             ? 'https://wa.me/'.PhoneNumber::whatsappDigits($submission->corresponding_author_phone).'?text='.rawurlencode($whatsappText)
             : null;
