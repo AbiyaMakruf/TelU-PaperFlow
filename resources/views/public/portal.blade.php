@@ -32,7 +32,7 @@
                     <div x-show="!openEdit" class="mt-5 space-y-3 text-sm">
                         <div class="min-w-0">
                             <span class="text-xs font-bold text-muted">Paper ID:</span>
-                            <p class="mt-0.5 font-black text-navy font-mono text-xs">{{ $submission->paper_id }}</p>
+                            <p class="mt-0.5 font-semibold text-navy break-words">{{ $submission->paper_id }}</p>
                         </div>
                         <div class="min-w-0 pt-1">
                             <span class="text-xs font-bold text-muted">Paper Title:</span>
