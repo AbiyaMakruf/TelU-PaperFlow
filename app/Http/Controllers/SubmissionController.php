@@ -882,7 +882,7 @@ class SubmissionController extends Controller
             'label' => $file->label,
         ]);
 
-        return back()->with('success', 'Versi file v'.$file->version_number.' ('.$file->label.') berhasil ditandai sebagai versi Final.');
+        return back()->with('success', 'File version v'.$file->version_number.' ('.$file->label.') marked as Final Version.');
     }
 
     public function destroyFile(Request $request, Submission $submission, FileVersion $file, AuditLogger $auditLogger): RedirectResponse
@@ -909,6 +909,6 @@ class SubmissionController extends Controller
             'label' => $label,
         ]);
 
-        return back()->with('success', 'Versi file v'.$versionNumber.' ('.$label.') berhasil dihapus.');
+        return back()->with('success', 'File version v'.$versionNumber.' ('.$label.') successfully deleted.');
     }
 }

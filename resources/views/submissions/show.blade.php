@@ -772,27 +772,27 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-base font-black text-navy">Konfirmasi Hapus Berkas</h3>
-                                    <p class="text-xs text-muted">Tindakan ini tidak dapat dibatalkan</p>
+                                    <h3 class="text-base font-black text-navy">Confirm File Deletion</h3>
+                                    <p class="text-xs text-muted">This action cannot be undone</p>
                                 </div>
                             </div>
 
                             <p class="text-sm text-slate-700 leading-relaxed">
-                                Apakah Anda yakin ingin menghapus berkas versi <strong class="text-navy font-bold" x-text="deleteTarget?.version"></strong> (<span class="font-semibold text-slate-900" x-text="deleteTarget?.label"></span>)?
+                                Are you sure you want to delete file version <strong class="text-navy font-bold" x-text="deleteTarget?.version"></strong> (<span class="font-semibold text-slate-900" x-text="deleteTarget?.label"></span>)?
                             </p>
 
                             <div class="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-900 font-medium">
-                                <strong>Catatan:</strong> Berkas akan dihapus dari versi aktif. Penomoran versi berkas lainnya tidak akan berubah, dan unggahan berkas baru berikutnya akan melanjutkan nomor versi historis tertinggi.
+                                <strong>Note:</strong> The file will be removed from active versions. Existing version numbers of other files will remain unchanged, and future uploads will continue from the highest historical version.
                             </div>
 
                             <form method="POST" :action="deleteTarget?.url" class="flex items-center justify-end gap-3 pt-2">
                                 @csrf
                                 @method('DELETE')
                                 <button type="button" @click="deleteTarget = null" class="btn btn-secondary text-xs">
-                                    Batal
+                                    Cancel
                                 </button>
                                 <button type="submit" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition">
-                                    Ya, Hapus Berkas
+                                    Yes, Delete File
                                 </button>
                             </form>
                         </div>
