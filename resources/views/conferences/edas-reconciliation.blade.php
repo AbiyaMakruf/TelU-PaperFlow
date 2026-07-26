@@ -1,7 +1,7 @@
 <x-layouts.app title="EDAS CSV Reconciliation">
     <div class="mx-auto max-w-[1600px] space-y-6">
         <!-- Header Banner & Workspace Scoping -->
-        <div class="card p-6 sm:p-8 bg-gradient-to-r from-navy via-navy-light to-navy text-white shadow-xl">
+        <div class="rounded-2xl border border-navy/10 overflow-hidden p-6 sm:p-8 bg-gradient-to-r from-navy via-navy-light to-navy text-white shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="space-y-1.5 min-w-0">
                     <div class="flex items-center gap-2">
