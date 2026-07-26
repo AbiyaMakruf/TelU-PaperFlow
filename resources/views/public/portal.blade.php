@@ -229,10 +229,22 @@
                         <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
                             @foreach ($submission->feedback as $item)
                                 <div class="rounded-xl bg-warm p-4 text-sm leading-6 break-words border border-navy/8">
-                                    @if(str_contains($item->body, '<table') || str_contains($item->body, '<div') || str_contains($item->body, '<p'))
+                                    @if(str_contains($item->body, '<table'))
+                                        <div class="flex items-start gap-2.5 text-navy">
+                                            <span class="text-base shrink-0">📋</span>
+                                            <div>
+                                                <p class="font-extrabold text-navy text-xs sm:text-sm">Itemized Editorial Compliance Checklist</p>
+                                                <p class="mt-1 text-xs text-slate-700 leading-relaxed font-medium">
+                                                    The itemized checklist table sent for this revision request can be monitored in real-time under the 
+                                                    <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card above. 
+                                                    Please make sure to download and use the <strong>Latest Manuscript File</strong> for your revision.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    @elseif(str_contains($item->body, '<div') || str_contains($item->body, '<p'))
                                         <div class="prose prose-sm max-w-none text-navy leading-relaxed">{!! $item->body !!}</div>
                                     @else
-                                        <p class="whitespace-pre-line text-navy">{{ $item->body }}</p>
+                                        <p class="whitespace-pre-line text-navy text-xs sm:text-sm leading-relaxed">{{ $item->body }}</p>
                                     @endif
                                     <p class="mt-3 text-xs font-semibold text-muted border-t border-navy/8 pt-2">{{ $item->author?->name ?? 'Editorial Team' }} &middot; {{ $item->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
                                 </div>

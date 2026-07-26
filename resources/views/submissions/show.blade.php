@@ -944,17 +944,43 @@
     <script>
     function generateRevisionFeedback(stageValue, isEditorialActive) {
         if (!isEditorialActive) return;
-        const checklistForm = document.getElementById('checklist-form-' + stageValue);
-        if (!checklistForm) return;
-
+        let tableRowsHtml = '';
         let totalItems = 0;
         let failedCount = 0;
+
+        const checklistForm = document.getElementById('checklist-form-' + stageValue);
+        if (!checklistForm) return;
 
         checklistForm.querySelectorAll('table tbody tr').forEach((row) => {
             let checkInput = row.querySelector('.radio-check-input');
             if (!checkInput) return;
             totalItems++;
-            if (!checkInput.checked) failedCount++;
+
+            let isChecked = checkInput.checked;
+            if (isChecked) return;
+
+            failedCount++;
+            let title = checkInput.getAttribute('data-title') || '';
+            let guidance = checkInput.getAttribute('data-guidance') || '';
+            let noteEl = row.querySelector('.item-note-input');
+            let noteVal = noteEl ? noteEl.value.trim() : '';
+
+            let statusHtml = '<span style="color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;">✕ Needs Revision</span>';
+
+            let noteText = '';
+            if (noteVal) {
+                noteText = '<strong>Note:</strong> ' + noteVal;
+            } else if (guidance) {
+                noteText = guidance;
+            } else {
+                noteText = '-';
+            }
+
+            tableRowsHtml += '<tr style="background-color:#fff1f2; border-bottom:1px solid #e2e8f0;">' +
+                '<td style="padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;">' + failedCount + '. ' + title + '</td>' +
+                '<td style="padding:8px 12px; text-align:center; vertical-align:top;">' + statusHtml + '</td>' +
+                '<td style="padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;">' + noteText + '</td>' +
+            '</tr>';
         });
 
         if (totalItems === 0) {
@@ -967,15 +993,24 @@
             return;
         }
 
-        let templateHtml = 'Dear Authors,\n\n' +
-            'Thank you for your submission. Your manuscript requires revision for ' + failedCount + ' item(s) before proceeding to peer review.\n\n' +
-            '📌 REVISION INSTRUCTIONS:\n' +
-            '1. Please open your private Author Portal and inspect the "Editorial Compliance Checklist Monitoring (Live)" card for specific items marked with "✕ Revision Needed".\n' +
-            '2. ALWAYS USE THE LATEST MANUSCRIPT FILE available on your Author Portal as the base for your revisions, as the editorial team may have already performed initial formatting corrections on it.\n' +
-            '3. ONLY REVISE THE SPECIFIC SECTIONS REQUESTED FOR CORRECTION. Please leave all other already compliant sections untouched.\n\n' +
-            'Thank you for your cooperation.\n\n' +
-            'Best regards,\n' +
-            'Editorial Team';
+        let templateHtml = 'Dear Authors,\n\nThank you for your submission. Below are the checklist items requiring correction/revision for your manuscript:\n\n' +
+            '<table border="0" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;">\n' +
+            '    <thead>\n' +
+            '        <tr style="background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;">\n' +
+            '            <th style="padding:10px 12px; border:1px solid #102a43;">Checklist Criteria</th>\n' +
+            '            <th style="padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;">Status</th>\n' +
+            '            <th style="padding:10px 12px; border:1px solid #102a43;">Notes / Guidance</th>\n' +
+            '        </tr>\n' +
+            '    </thead>\n' +
+            '    <tbody>\n' +
+            '        ' + tableRowsHtml + '\n' +
+            '    </tbody>\n' +
+            '</table>\n\n' +
+            '📌 IMPORTANT INSTRUCTIONS FOR REVISION:\n' +
+            '1. Please download and use the LATEST MANUSCRIPT FILE available on your private Author Portal as the base for your revisions, as the editorial team may have already performed initial formatting corrections on it.\n' +
+            '2. ONLY REVISE THE SPECIFIC SECTIONS REQUESTED FOR CORRECTION. Please leave all other already compliant sections untouched.\n\n' +
+            'Please address all items listed above and upload your revised source files via your private author portal.\n\n' +
+            'Best regards,\nEditorial Team';
 
         let feedbackEl = document.getElementById('author-feedback-textarea');
         if (feedbackEl) {
