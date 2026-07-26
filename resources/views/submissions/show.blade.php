@@ -77,7 +77,7 @@
                         </a>
                     @endif
                     <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-orange hover:text-orange rounded-xl transition" title="Inspect author portal view exactly as seen by the author">
-                        Buka Portal Author ↗
+                        Open Author Portal ↗
                     </a>
                 </div>
 
@@ -220,7 +220,7 @@
                                 @if(!$isEditorialActive)
                                     <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
                                         <span class="text-base shrink-0">ℹ️</span>
-                                        <span>Checklist editorial dalam mode <strong>Lihat Saja (Read Only)</strong> karena status paper saat ini adalah <strong>{{ $submission->status->label() }}</strong>. Checklist hanya dapat diubah saat status Editorial Compliance Check.</span>
+                                        <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Compliance Check.</span>
                                     </div>
                                 @endif
 
@@ -368,7 +368,7 @@
                                 @if(!$isEditorialActive)
                                     <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
                                         <span class="text-base shrink-0">ℹ️</span>
-                                        <span>Komunikasi author &amp; tombol aksi berada dalam mode <strong>Lihat Saja (Read Only)</strong> karena status paper saat ini adalah <strong>{{ $submission->status->label() }}</strong>.</span>
+                                        <span>Author communication &amp; action buttons are in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>.</span>
                                     </div>
                                 @endif
 
@@ -376,13 +376,13 @@
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
                                         <label class="form-label text-xs mb-0">
                                             <span x-show="!allPassed">Revision Feedback / Message for Author <span class="text-rose-500">*</span></span>
-                                            <span x-show="allPassed" x-cloak style="display: none;">Catatan untuk Reviewer (Optional)</span>
+                                            <span x-show="allPassed" x-cloak style="display: none;">Reviewer Notes (Optional)</span>
                                         </label>
                                         <button type="button" x-show="!allPassed" @if(!$isEditorialActive) disabled @endif @click="generateRevisionFeedback('{{ $stage->value }}', {{ json_encode($isEditorialActive) }})" class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
                                             ⚡ Use Revision Template (Unchecked Items Only)
                                         </button>
                                     </div>
-                                    <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" :placeholder="!allPassed ? 'Write revision feedback for author...' : 'Tulis catatan atau instruksi khusus untuk Reviewer...'" @if(!$isEditorialActive) disabled @endif :required="!allPassed"></textarea>
+                                    <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" :placeholder="!allPassed ? 'Write revision feedback for author...' : 'Write notes or instructions for Reviewer...'" @if(!$isEditorialActive) disabled @endif :required="!allPassed"></textarea>
                                 </div>
 
                                 <!-- Interactive CC Tag Input -->
@@ -536,7 +536,7 @@
                         @if(!$isReviewerActive)
                             <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
                                 <span class="text-base shrink-0">ℹ️</span>
-                                <span>Pengaturan PDF eXpress &amp; EDAS dalam mode <strong>Lihat Saja (Read Only)</strong> karena status paper saat ini adalah <strong>{{ $submission->status->label() }}</strong>.</span>
+                                <span>PDF eXpress &amp; EDAS settings are in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>.</span>
                             </div>
                         @endif
                         <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" class="space-y-4 min-w-0" x-data="{

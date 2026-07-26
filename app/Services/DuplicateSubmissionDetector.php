@@ -21,19 +21,19 @@ class DuplicateSubmissionDetector
             $existingTitle = mb_strtolower(trim(preg_replace('/\s+/', ' ', $existing->title)));
             
             if ($normalizedTitle === $existingTitle) {
-                return "Judul paper identik dengan submission {$existing->paper_code}.";
+                return "Paper title is identical to submission {$existing->paper_code}.";
             }
 
             // String similarity > 85%
             similar_text($normalizedTitle, $existingTitle, $percent);
             if ($percent >= 85.0) {
-                return "Judul paper sangat mirip (" . round($percent, 1) . "%) dengan submission {$existing->paper_code}.";
+                return "Paper title is highly similar (" . round($percent, 1) . "%) to submission {$existing->paper_code}.";
             }
 
             // Same author email and title similarity > 70%
             if (mb_strtolower($authorEmail) === mb_strtolower($existing->corresponding_author_email)) {
                 if ($percent >= 70.0) {
-                    return "Author email ({$authorEmail}) sudah memiliki submission serupa {$existing->paper_code}.";
+                    return "Corresponding author email ({$authorEmail}) already has a similar submission {$existing->paper_code}.";
                 }
             }
         }
@@ -47,7 +47,7 @@ class DuplicateSubmissionDetector
                 ->first();
 
             if ($matchingFile && $matchingFile->submission) {
-                return "Berkas yang diunggah identik (hash cocok) dengan berkas pada submission {$matchingFile->submission->paper_code}.";
+                return "The uploaded manuscript file is identical (matching checksum hash) to submission {$matchingFile->submission->paper_code}.";
             }
         }
 
