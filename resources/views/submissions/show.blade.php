@@ -993,8 +993,7 @@
             return;
         }
 
-        let templateHtml = 'Dear Authors,\n\nThank you for your submission. Below are the checklist items requiring correction/revision for your manuscript:\n\n' +
-            '<table border="0" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;">\n' +
+        let templateHtml = '<table border="0" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;">\n' +
             '    <thead>\n' +
             '        <tr style="background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;">\n' +
             '            <th style="padding:10px 12px; border:1px solid #102a43;">Checklist Criteria</th>\n' +
@@ -1005,12 +1004,7 @@
             '    <tbody>\n' +
             '        ' + tableRowsHtml + '\n' +
             '    </tbody>\n' +
-            '</table>\n\n' +
-            '📌 IMPORTANT INSTRUCTIONS FOR REVISION:\n' +
-            '1. Please download and use the LATEST MANUSCRIPT FILE available on your private Author Portal as the base for your revisions, as the editorial team may have already performed initial formatting corrections on it.\n' +
-            '2. ONLY REVISE THE SPECIFIC SECTIONS REQUESTED FOR CORRECTION. Please leave all other already compliant sections untouched.\n\n' +
-            'Please address all items listed above and upload your revised source files via your private author portal.\n\n' +
-            'Best regards,\nEditorial Team';
+            '</table>';
 
         let feedbackEl = document.getElementById('author-feedback-textarea');
         if (feedbackEl) {
