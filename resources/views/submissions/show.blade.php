@@ -537,7 +537,7 @@
                         <h2 class="text-sm sm:text-base font-black text-navy">IEEE PDF eXpress &amp; EDAS Management</h2>
                         <p class="text-[11px] text-muted font-normal truncate">Reviewer PDF compliance status and EDAS upload error details.</p>
                     </div>
-                    <div class="flex items-center gap-3 shrink-0">
+                    <div class="flex items-center gap-3 shrink-0" id="pdf-express-badge-container">
                         @if(($submission->pdf_express_status ?? '') === 'passed')
                             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-800 border border-emerald-300">
                                 PDF eXpress: Passed
@@ -557,60 +557,57 @@
 
                 <div class="p-4 sm:p-6 bg-white space-y-4">
                     @can('reviewerReview', $submission)
-                        @if(!$isReviewerActive)
-                            <div class="rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none">
-                                <span class="text-base shrink-0">ℹ️</span>
-                                <span>PDF eXpress &amp; EDAS settings are in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>.</span>
-                            </div>
-                        @endif
-                        <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 min-w-0" x-data="{
+                        <div id="pdfexpress-edas-section" class="space-y-4 min-w-0" x-data="{
+                            isReviewerActive: {{ json_encode($isReviewerActive) }},
                             statusState: @js(old('pdf_express_status', $submission->pdf_express_status ?? 'pending')),
                             setError(msg) {
                                 let current = $refs.noteInput.value;
                                 $refs.noteInput.value = current ? current + '\n' + msg : msg;
                             }
                         }">
-                            @csrf
-                            <div>
-                                <label class="form-label text-xs">IEEE PDF eXpress / EDAS Upload Status *</label>
-                                <select class="form-input text-xs font-bold" name="pdf_express_status" x-model="statusState" @if(!$isReviewerActive || $submission->status->isTerminal()) disabled @endif>
-                                    <option value="pending">⏳ Pending Verification</option>
-                                    <option value="passed">✓ Passed &amp; EDAS Uploaded Successfully</option>
-                                    <option value="failed">✕ Failed / EDAS Error Encountered</option>
-                                </select>
+                            <div class="pdfexpress-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isReviewerActive ? 'display: none;' : '' }}">
+                                <span class="text-base shrink-0">ℹ️</span>
+                                <span>PDF eXpress &amp; EDAS settings are in <strong>Read Only</strong> mode because current paper status is <strong class="pdfexpress-status-name">{{ $submission->status->label() }}</strong>.</span>
                             </div>
-
-                            <div x-show="statusState === 'failed'" x-cloak style="display: none;">
-                                <div class="flex items-center justify-between mb-1">
-                                    <label class="form-label text-xs text-rose-800 font-extrabold">EDAS Error Notes (Reviewer Only) *</label>
+                            <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 min-w-0">
+                                @csrf
+                                <div>
+                                    <label class="form-label text-xs">IEEE PDF eXpress / EDAS Upload Status *</label>
+                                    <select class="form-input text-xs font-bold" name="pdf_express_status" x-model="statusState" :disabled="!isReviewerActive">
+                                        <option value="pending">⏳ Pending Verification</option>
+                                        <option value="passed">✓ Passed &amp; EDAS Uploaded Successfully</option>
+                                        <option value="failed">✕ Failed / EDAS Error Encountered</option>
+                                    </select>
                                 </div>
-                                @if($isReviewerActive && !$submission->status->isTerminal())
-                                    <div class="flex flex-wrap gap-1.5 mb-2">
-                                        <button type="button" @click="setError('pagesize: The page size is US letter size (8.5 by 11 inches), but only A4 size (210 x 297 mm) is allowed.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Page Size US Letter</button>
-                                        <button type="button" @click="setError('The final manuscript must have at least 5 filled pages, not just 4.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Min 5 Pages</button>
-                                        <button type="button" @click="setError('authorname: Doubleblind conference, but author names are visible on the first page.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Doubleblind Author Visible</button>
-                                        <button type="button" @click="setError('Authors must first upload or fill out the IEEE copyright form.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ IEEE Copyright Missing</button>
-                                    </div>
-                                @endif
-                                <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Write EDAS error details or click preset buttons above..." @if(!$isReviewerActive || $submission->status->isTerminal()) disabled @endif>{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
-                            </div>
 
-                            @if($isReviewerActive && !$submission->status->isTerminal())
-                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2 border-t border-navy/10">
-                                    <button type="submit" name="action" value="save_status" class="btn btn-secondary px-4 py-2 text-xs font-bold w-full sm:w-auto" x-show="statusState === 'pending'">
+                                <div x-show="statusState === 'failed'" x-cloak style="display: none;">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="form-label text-xs text-rose-800 font-extrabold">EDAS Error Notes (Reviewer Only) *</label>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1.5 mb-2" x-show="isReviewerActive">
+                                        <button type="button" :disabled="!isReviewerActive" @click="setError('pagesize: The page size is US letter size (8.5 by 11 inches), but only A4 size (210 x 297 mm) is allowed.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Page Size US Letter</button>
+                                        <button type="button" :disabled="!isReviewerActive" @click="setError('The final manuscript must have at least 5 filled pages, not just 4.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Min 5 Pages</button>
+                                        <button type="button" :disabled="!isReviewerActive" @click="setError('authorname: Doubleblind conference, but author names are visible on the first page.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ Doubleblind Author Visible</button>
+                                        <button type="button" :disabled="!isReviewerActive" @click="setError('Authors must first upload or fill out the IEEE copyright form.')" class="text-[10px] bg-rose-50 border border-rose-200 text-rose-800 px-2 py-1 rounded-lg hover:bg-rose-100 font-medium text-left leading-snug break-words shadow-2xs">+ IEEE Copyright Missing</button>
+                                    </div>
+                                    <textarea x-ref="noteInput" class="form-input text-xs min-h-20" name="edas_error_note" placeholder="Write EDAS error details or click preset buttons above..." :disabled="!isReviewerActive">{{ old('edas_error_note', $submission->edas_error_note) }}</textarea>
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2 border-t border-navy/10" x-show="isReviewerActive">
+                                    <button type="submit" name="action" value="save_status" :disabled="!isReviewerActive" class="btn btn-secondary px-4 py-2 text-xs font-bold w-full sm:w-auto" x-show="statusState === 'pending'">
                                         Save Reviewer Notes
                                     </button>
 
-                                    <button type="submit" name="action" value="reviewer_changes" class="btn bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition" x-show="statusState === 'failed'">
+                                    <button type="submit" name="action" value="reviewer_changes" :disabled="!isReviewerActive" class="btn bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition" x-show="statusState === 'failed'">
                                         ↩️ Save &amp; Return to Editorial (EDAS Error)
                                     </button>
 
-                                    <button type="submit" name="action" value="reviewer_approve" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition" x-show="statusState === 'passed'">
+                                    <button type="submit" name="action" value="reviewer_approve" :disabled="!isReviewerActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition" x-show="statusState === 'passed'">
                                         🏁 Mark Uploaded to EDAS (Complete Paper)
                                     </button>
                                 </div>
-                            @endif
-                        </form>
+                            </form>
+                        </div>
                     @else
                         <div class="space-y-3 text-xs min-w-0">
                             @if(($submission->pdf_express_status ?? '') === 'failed' && $submission->edas_error_note)
@@ -1228,6 +1225,19 @@
                         if (reviewerInput) reviewerInput.required = true;
                     }
                 }
+                if (data.pdf_express_status) {
+                    const pdfBadgeContainer = document.getElementById('pdf-express-badge-container');
+                    if (pdfBadgeContainer) {
+                        const color = data.pdf_express_color || (data.pdf_express_status === 'passed' ? 'emerald' : (data.pdf_express_status === 'failed' ? 'rose' : 'amber'));
+                        const label = data.pdf_express_label || (`PDF eXpress: ${data.pdf_express_status.charAt(0).toUpperCase() + data.pdf_express_status.slice(1)}`);
+                        pdfBadgeContainer.innerHTML = `
+                            <span class="inline-flex items-center gap-1 rounded-full bg-${color}-100 px-2.5 py-0.5 text-[10px] font-black text-${color}-800 border border-${color}-300">
+                                ${escapeHtml(label)}
+                            </span>
+                            <span class="text-xs text-muted">▼</span>
+                        `;
+                    }
+                }
                 if (data.status_change) {
                     const badgeContainer = document.getElementById('paper-status-badge-container');
                     if (badgeContainer) {
@@ -1265,6 +1275,31 @@
                         if (detailsCard) {
                             detailsCard.open = isEdActive;
                         }
+                    }
+                    const isRevActive = ['reviewer_review', 'edas_fix_required', 'ready_for_edas'].includes(data.status_change.status) && !data.status_change.is_terminal;
+                    const pdfExpressSection = document.getElementById('pdfexpress-edas-section');
+                    if (pdfExpressSection) {
+                        if (pdfExpressSection._x_dataStack) {
+                            pdfExpressSection._x_dataStack.forEach(stack => {
+                                stack.isReviewerActive = isRevActive;
+                            });
+                        }
+                        pdfExpressSection.querySelectorAll('.pdfexpress-status-name').forEach(el => {
+                            el.textContent = data.status_change.status_label;
+                        });
+                        pdfExpressSection.querySelectorAll('.pdfexpress-read-only-banner').forEach(b => {
+                            b.style.display = isRevActive ? 'none' : 'flex';
+                        });
+                        pdfExpressSection.querySelectorAll('button, input, select, textarea').forEach(el => {
+                            if (el.name !== '_token') {
+                                el.disabled = !isRevActive;
+                                if (!isRevActive) {
+                                    el.setAttribute('disabled', 'disabled');
+                                } else {
+                                    el.removeAttribute('disabled');
+                                }
+                            }
+                        });
                     }
                     if (data.status_change.is_terminal) {
                         document.querySelectorAll('button:not(.back-link), input, select, textarea').forEach(el => {

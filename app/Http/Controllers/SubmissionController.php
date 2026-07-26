@@ -447,7 +447,22 @@ class SubmissionController extends Controller
                 $this->reviewerChanges($request, $submission, $workflow, $validated['edas_error_note'] ?? 'EDAS upload error.', $mailer);
 
                 if ($request->expectsJson()) {
-                    return response()->json(['success' => true, 'message' => 'EDAS error recorded and paper returned to Editorial team for correction.']);
+                    $fresh = $submission->fresh();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'EDAS error recorded and paper returned to Editorial team for correction.',
+                        'pdf_express_status' => $fresh->pdf_express_status,
+                        'pdf_express_label' => 'PDF eXpress: Failed',
+                        'pdf_express_color' => 'rose',
+                        'status_change' => [
+                            'status' => $fresh->status->value,
+                            'status_label' => $fresh->status->label(),
+                            'status_color' => $fresh->status->color(),
+                            'is_terminal' => $fresh->status->isTerminal(),
+                        ],
+                        'timeline' => $this->formatStatusHistory($submission),
+                    ]);
                 }
 
                 return back()->with('success', 'EDAS error recorded and paper returned to Editorial team for correction.');
@@ -458,14 +473,52 @@ class SubmissionController extends Controller
             $this->reviewerApprove($request, $submission, $workflow, $validated['edas_error_note'] ?? 'Uploaded to EDAS without errors.', $mailer);
 
             if ($request->expectsJson()) {
-                return response()->json(['success' => true, 'message' => 'Paper marked as uploaded to EDAS and completed (Done).']);
+                $fresh = $submission->fresh();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Paper marked as uploaded to EDAS and completed (Done).',
+                    'pdf_express_status' => $fresh->pdf_express_status,
+                    'pdf_express_label' => 'PDF eXpress: Passed',
+                    'pdf_express_color' => 'emerald',
+                    'status_change' => [
+                        'status' => $fresh->status->value,
+                        'status_label' => $fresh->status->label(),
+                        'status_color' => $fresh->status->color(),
+                        'is_terminal' => $fresh->status->isTerminal(),
+                    ],
+                    'timeline' => $this->formatStatusHistory($submission),
+                ]);
             }
 
             return back()->with('success', 'Paper marked as uploaded to EDAS and completed (Done).');
         }
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Status IEEE PDF eXpress & catatan EDAS berhasil diperbarui.']);
+            $fresh = $submission->fresh();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status IEEE PDF eXpress & catatan EDAS berhasil diperbarui.',
+                'pdf_express_status' => $fresh->pdf_express_status,
+                'pdf_express_label' => match($fresh->pdf_express_status) {
+                    'passed' => 'PDF eXpress: Passed',
+                    'failed' => 'PDF eXpress: Failed',
+                    default => 'PDF eXpress: Pending',
+                },
+                'pdf_express_color' => match($fresh->pdf_express_status) {
+                    'passed' => 'emerald',
+                    'failed' => 'rose',
+                    default => 'amber',
+                },
+                'status_change' => [
+                    'status' => $fresh->status->value,
+                    'status_label' => $fresh->status->label(),
+                    'status_color' => $fresh->status->color(),
+                    'is_terminal' => $fresh->status->isTerminal(),
+                ],
+                'timeline' => $this->formatStatusHistory($submission),
+            ]);
         }
 
         return back()->with('success', 'Status IEEE PDF eXpress & catatan EDAS berhasil diperbarui.');
