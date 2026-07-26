@@ -875,12 +875,6 @@
                             <h3 class="font-extrabold text-xs text-navy">Administrative Actions</h3>
                             <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
                                 @csrf
-                                <input type="hidden" name="action" value="reject">
-                                <input class="form-input text-xs" name="note" placeholder="Rejection reason" required @if($submission->status->isTerminal()) disabled @endif>
-                                <button class="btn btn-secondary w-full text-xs font-bold" @if($submission->status->isTerminal()) disabled @endif>Reject Paper</button>
-                            </form>
-                            <form method="POST" action="{{ route('submissions.advance', $submission) }}" class="space-y-2">
-                                @csrf
                                 <input type="hidden" name="action" value="withdraw">
                                 <input class="form-input text-xs" name="note" placeholder="Withdrawal reason" required @if($submission->status->isTerminal()) disabled @endif>
                                 <button class="btn btn-secondary w-full text-xs font-bold" @if($submission->status->isTerminal()) disabled @endif>Withdraw Paper</button>
