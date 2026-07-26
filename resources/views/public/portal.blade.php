@@ -6,7 +6,15 @@
                 <h1 class="page-title break-words">{{ $submission->paper_code }}</h1>
                 <p class="page-subtitle break-words">{{ $submission->title }}</p>
             </div>
-            <span class="badge badge-{{ $submission->status->color() }} self-start shrink-0 sm:self-auto">{{ $submission->status->label() }}</span>
+            <div class="flex flex-col items-end gap-1.5 shrink-0 self-start sm:self-auto">
+                <span class="badge badge-{{ $submission->status->color() }}">{{ $submission->status->label() }}</span>
+                @if($submission->deadline_at)
+                    <span class="text-xs font-extrabold {{ $submission->isOverdue() ? 'text-rose-700 bg-rose-50 border-rose-200' : 'text-amber-900 bg-amber-50/90 border-amber-300' }} px-2.5 py-1 rounded-lg border flex items-center gap-1.5 shadow-2xs">
+                        <span>⏰ Deadline:</span>
+                        <span>{{ $submission->deadline_at->timezone('Asia/Jakarta')->format('d M Y, 23:59 \G\M\T+7') }}</span>
+                    </span>
+                @endif
+            </div>
         </div>
 
         <div class="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1.4fr_.6fr]">
@@ -58,12 +66,12 @@
 
                         @php $latestFile = $submission->files->sortByDesc('version_number')->first(); @endphp
                         @if($latestFile)
-                            <div class="mt-4 pt-3.5 border-t border-navy/10 flex flex-wrap items-center justify-between gap-3">
+                            <div class="mt-6 pt-4.5 border-t border-navy/10 flex flex-wrap items-center justify-between gap-3">
                                 <div class="min-w-0">
                                     <span class="text-xs font-extrabold text-navy">Latest Manuscript File:</span>
                                     <p class="text-xs text-muted truncate">v{{ $latestFile->version_number }} &middot; {{ $latestFile->original_name }}</p>
                                 </div>
-                                <a href="{{ route('author.files.download', [$token, $latestFile]) }}" class="btn text-xs py-2 px-3.5 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download latest manuscript version (v{{ $latestFile->version_number }})">
+                                <a href="{{ route('author.files.download', [$token, $latestFile]) }}" class="btn text-xs py-2.5 px-4 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download latest manuscript version (v{{ $latestFile->version_number }})">
                                     <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
                                         <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
                                     </svg>
@@ -198,10 +206,18 @@
                 @endif
 
                 @if (in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true))
-                    <div class="card p-4 sm:p-5 border-amber-300 bg-amber-50/80 text-xs text-amber-950 space-y-2.5 shadow-2xs">
-                        <div class="flex items-center gap-2 font-black text-sm text-amber-950">
-                            <span class="text-base shrink-0">📌</span>
-                            <span>Important Revision Instructions:</span>
+                    <div class="card p-4 sm:p-5 border-amber-300 bg-amber-50/80 text-xs text-amber-950 space-y-3 shadow-2xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 pb-2.5">
+                            <div class="flex items-center gap-2 font-black text-sm text-amber-950">
+                                <span class="text-base shrink-0">📌</span>
+                                <span>Important Revision Instructions:</span>
+                            </div>
+                            @if($submission->deadline_at)
+                                <span class="inline-flex items-center gap-1.5 text-xs font-extrabold text-rose-800 bg-rose-100/90 px-3 py-1 rounded-lg border border-rose-200 shrink-0 self-start sm:self-auto shadow-2xs">
+                                    <span>⏰ Deadline:</span>
+                                    <span class="font-mono font-black">{{ $submission->deadline_at->timezone('Asia/Jakarta')->format('d M Y, 23:59 \G\M\T+7') }}</span>
+                                </span>
+                            @endif
                         </div>
                         <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
                             <li>Please inspect the <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card above to see specific items requiring correction (marked with <strong class="text-rose-700 font-extrabold">✕ Revision Needed</strong>).</li>
