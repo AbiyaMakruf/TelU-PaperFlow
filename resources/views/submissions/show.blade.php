@@ -6,7 +6,7 @@
             <h1 class="page-title leading-tight break-words">{{ $submission->paper_id ?: $submission->paper_code }}</h1>
             <p class="page-subtitle leading-snug break-words max-w-full">{{ $submission->title }}</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto" id="paper-status-badge-container">
             @php
                 $portalToken = $submission->ensureValidAuthorToken();
                 $latestFile = $submission->files->first();
@@ -1227,11 +1227,18 @@
                         if (reviewerBlock) reviewerBlock.style.display = 'block';
                         if (reviewerInput) reviewerInput.required = true;
                     }
-                } else {
-                    // Refresh after 1 second for status or PIC changes so toast is clearly seen
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
+                } else if (data.status_change) {
+                    const badgeContainer = document.getElementById('paper-status-badge-container');
+                    if (badgeContainer) {
+                        badgeContainer.innerHTML = `<span class="badge badge-${escapeHtml(data.status_change.status_color)}">${escapeHtml(data.status_change.status_label)}</span>`;
+                    }
+                    if (data.status_change.is_terminal) {
+                        document.querySelectorAll('button:not(.back-link), input, select, textarea').forEach(el => {
+                            if (el.name === 'user_id' || el.name === 'manuscript_format' || el.name === 'note' || el.name === 'reassignment_reason') {
+                                el.disabled = true;
+                            }
+                        });
+                    }
                 }
             } else {
                 let errorMsg = data.message || 'An error occurred.';

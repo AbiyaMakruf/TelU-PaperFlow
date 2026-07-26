@@ -597,7 +597,19 @@ class SubmissionController extends Controller
         }
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Status paper berhasil diperbarui.']);
+            $fresh = $submission->fresh();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status paper berhasil diperbarui.',
+                'status_change' => [
+                    'status' => $fresh->status->value,
+                    'status_label' => $fresh->status->label(),
+                    'status_color' => $fresh->status->color(),
+                    'is_terminal' => $fresh->status->isTerminal(),
+                ],
+                'timeline' => $this->formatStatusHistory($submission),
+            ]);
         }
 
         return back()->with('success', 'Status paper berhasil diperbarui.');
