@@ -1084,7 +1084,8 @@
                 formData.set(event.submitter.name, event.submitter.value);
             }
 
-            const response = await fetch(form.action, {
+            const targetUrl = form.getAttribute('action') || (typeof form.action === 'string' ? form.action : '');
+            const response = await fetch(targetUrl, {
                 method: (form.getAttribute('method') || 'POST').toUpperCase(),
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
