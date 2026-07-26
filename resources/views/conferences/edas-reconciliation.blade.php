@@ -1,18 +1,18 @@
 <x-layouts.app title="EDAS CSV Reconciliation">
     <div class="mx-auto max-w-[1600px] space-y-6">
         <!-- Header Banner & Workspace Scoping -->
-        <div class="rounded-2xl border border-navy/10 overflow-hidden p-6 sm:p-8 bg-gradient-to-r from-navy via-navy-light to-navy text-white shadow-xl">
+        <div class="card p-6 sm:p-8 bg-white border border-slate-200 text-navy shadow-sm">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="space-y-1.5 min-w-0">
                     <div class="flex items-center gap-2">
                         <span class="badge bg-orange text-white text-xs font-black uppercase tracking-wider px-2.5 py-1">Conference Admin Feature</span>
                         @if($activeConference)
-                            <span class="badge bg-white/15 text-white text-xs font-bold px-2.5 py-1">📌 {{ $activeConference->name }}</span>
+                            <span class="badge bg-navy/10 text-navy text-xs font-bold px-2.5 py-1">📌 {{ $activeConference->name }}</span>
                         @endif
                     </div>
-                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">EDAS CSV Reconciliation</h1>
-                    <p class="text-xs sm:text-sm text-white/80 leading-relaxed max-w-3xl">
-                        Upload a manuscript CSV file exported from EDAS to automatically cross-check which papers have been <strong>Submitted</strong> and which are <strong>Missing</strong> in Paperflow.
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-navy">EDAS CSV Reconciliation</h1>
+                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-3xl">
+                        Upload a manuscript CSV file exported from EDAS to automatically cross-check which papers have been <strong class="text-navy font-black">Submitted</strong> and which are <strong class="text-rose-600 font-black">Missing</strong> in Paperflow.
                     </p>
                 </div>
 
@@ -20,7 +20,7 @@
                     <div class="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
                         <form method="POST" action="{{ route('conferences.edas-reconciliation.reset') }}">
                             @csrf
-                            <button type="submit" class="btn border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2.5 transition flex items-center gap-2" title="Clear current session data and upload a new CSV file">
+                            <button type="submit" class="btn border border-navy/20 bg-navy/5 hover:bg-navy/10 text-navy text-xs font-bold px-4 py-2.5 transition flex items-center gap-2" title="Clear current session data and upload a new CSV file">
                                 <span>🔄 Upload New CSV</span>
                             </button>
                         </form>
