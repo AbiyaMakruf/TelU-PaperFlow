@@ -254,6 +254,12 @@ class SubmissionController extends Controller
                     'has_editor' => (bool) $fresh->editor_id,
                     'has_reviewer' => (bool) $fresh->reviewer_id,
                 ],
+                'status_change' => [
+                    'status' => $fresh->status->value,
+                    'status_label' => $fresh->status->label(),
+                    'status_color' => $fresh->status->color(),
+                    'is_terminal' => $fresh->status->isTerminal(),
+                ],
                 'timeline' => $this->formatStatusHistory($submission),
             ]);
         }

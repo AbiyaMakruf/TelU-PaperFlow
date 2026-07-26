@@ -242,7 +242,7 @@
                                         @endif
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="
+                                        <button type="button" :disabled="!isEditorialActive" @click="
                                             if (!isEditorialActive) return;
                                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                                             if (!form) return;
@@ -255,7 +255,7 @@
                                         " class="btn text-xs py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-extrabold shadow-2xs transition disabled:opacity-50 disabled:cursor-not-allowed">
                                             ✓ Check All Passed
                                         </button>
-                                        <button type="button" @if(!$isEditorialActive) disabled @endif @click="
+                                        <button type="button" :disabled="!isEditorialActive" @click="
                                             if (!isEditorialActive) return;
                                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                                             if (!form) return;
@@ -319,21 +319,20 @@
                                                             <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" @if(!$isEditorialActive) disabled @endif @change="autoSaveChecklist()" @blur="autoSaveChecklist()" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $result?->note }}</textarea>
                                                         </div>
                                                     </td>
-                                                    <td class="p-3.5 sm:p-4 align-top text-center">
-                                                        <div class="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-navy/10 shadow-inner">
+                                                    <td class="p-3.                                                         <div class="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-navy/10 shadow-inner">
                                                             <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
                                                                    :class="!checked ? 'bg-rose-600 text-white border-rose-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-rose-100 hover:text-rose-600'"
                                                                    title="Unchecked / Reject">
-                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="0" :checked="!checked" :disabled="!isEditorialActive" @if(!$isEditorialActive) disabled @endif @change="checked = false; updateCheckedState()" class="sr-only radio-cross-input">
+                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="0" :checked="!checked" :disabled="!isEditorialActive" @change="checked = false; updateCheckedState()" class="sr-only radio-cross-input">
                                                                 <span>✕</span>
                                                             </label>
                                                             <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
                                                                 :class="checked ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-emerald-100 hover:text-emerald-600'"
                                                                 title="Checked / Complete">
-                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" :disabled="!isEditorialActive" @if(!$isEditorialActive) disabled @endif @change="checked = true; updateCheckedState()" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description ?? $item->guidance) }}">
+                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" :disabled="!isEditorialActive" @change="checked = true; updateCheckedState()" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description ?? $item->guidance) }}">
                                                                 <span>✓</span>
                                                             </label>
-                                                        </div>
+                                                        </div>                               </div>
                                                     </td>
                                                     @if($hasBeforeColumn)
                                                         <td class="p-3.5 sm:p-4 align-top text-center bg-slate-50/50 border-l border-navy/10">
@@ -360,7 +359,7 @@
 
                                 <div class="flex items-center justify-between pt-3 border-t border-navy/10">
                                     <span class="text-xs font-bold text-emerald-700" x-text="autoSaveStatus"></span>
-                                    <button type="submit" @if(!$isEditorialActive) disabled @endif class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <button type="submit" :disabled="!isEditorialActive" class="btn btn-primary px-5 py-2 text-xs font-extrabold w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed">
                                         <span x-show="!savingChecklist">Save Checklist</span>
                                         <span x-show="savingChecklist" x-cloak style="display:none;">Saving...</span>
                                     </button>
@@ -383,11 +382,11 @@
                                             <span x-show="!allPassed">Revision Feedback / Message for Author <span class="text-rose-500">*</span></span>
                                             <span x-show="allPassed" x-cloak style="display: none;">Reviewer Notes (Optional)</span>
                                         </label>
-                                        <button type="button" x-show="!allPassed" @if(!$isEditorialActive) disabled @endif @click="generateRevisionFeedback('{{ $stage->value }}', {{ json_encode($isEditorialActive) }})" class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <button type="button" x-show="!allPassed" :disabled="!isEditorialActive" @click="generateRevisionFeedback('{{ $stage->value }}', isEditorialActive)" class="btn text-xs py-1.5 px-3 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-extrabold shadow-sm transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
                                             ⚡ Use Revision Template (Unchecked Items Only)
                                         </button>
                                     </div>
-                                    <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" :placeholder="!allPassed ? 'Write revision feedback for author...' : 'Write notes or instructions for Reviewer...'" @if(!$isEditorialActive) disabled @endif :required="!allPassed"></textarea>
+                                    <textarea class="form-input min-h-28 py-2.5 text-xs font-mono" name="body" id="author-feedback-textarea" :placeholder="!allPassed ? 'Write revision feedback for author...' : 'Write notes or instructions for Reviewer...'" :disabled="!isEditorialActive" :required="!allPassed"></textarea>
                                 </div>
 
                                 <!-- Revision Deadline Counter (Days) -->
@@ -399,7 +398,7 @@
                                         <p class="text-[11px] text-amber-800 mt-0.5">Calculated automatically from today until 23:59 GMT+7 (Asia/Jakarta).</p>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
-                                        <select name="revision_days" @if(!$isEditorialActive) disabled @endif class="form-input text-xs font-extrabold py-1.5 px-3 bg-white border border-amber-300 rounded-lg text-amber-950 focus:ring-amber-500 shadow-2xs">
+                                        <select name="revision_days" :disabled="!isEditorialActive" class="form-input text-xs font-extrabold py-1.5 px-3 bg-white border border-amber-300 rounded-lg text-amber-950 focus:ring-amber-500 shadow-2xs">
                                             <option value="3">3 Days</option>
                                             <option value="5">5 Days</option>
                                             <option value="7" selected>7 Days (Default)</option>
@@ -414,30 +413,30 @@
                                     ccInput: '',
                                     tags: @js(old('cc') ? array_values(array_filter(preg_split('/[,;\s]+/', old('cc')))) : $defaultCc),
                                     addTag() {
-                                        if (!{{ json_encode($isEditorialActive) }}) return;
+                                        if (!this.isEditorialActive) return;
                                         let val = this.ccInput.trim().replace(/,$/, '');
                                         if (val && !this.tags.includes(val)) {
                                             this.tags.push(val);
+                                            this.ccInput = '';
                                         }
-                                        this.ccInput = '';
                                     },
                                     removeTag(index) {
-                                        if (!{{ json_encode($isEditorialActive) }}) return;
+                                        if (!this.isEditorialActive) return;
                                         this.tags.splice(index, 1);
                                     }
-                                }" class="min-w-0">
-                                    <label class="form-label text-xs mb-1 block">CC Email (Type email address and press comma / Enter)</label>
+                                }" class="space-y-1.5 min-w-0">
+                                    <label class="form-label text-xs mb-0">CC Email Notifications (Optional)</label>
                                     <input type="hidden" name="cc" :value="tags.join(',')">
-                                    <div class="flex flex-wrap items-center gap-1.5 rounded-xl border border-navy/20 bg-white p-2 min-h-11 focus-within:ring-2 focus-within:ring-orange max-w-full">
+                                    <div class="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-slate-50 border border-navy/10 focus-within:ring-2 focus-within:ring-orange/30 min-w-0">
                                         <template x-for="(tag, index) in tags" :key="index">
                                             <span class="inline-flex items-center gap-1 rounded-lg bg-navy text-white px-2 py-0.5 text-xs font-bold shadow-sm max-w-full truncate">
                                                 <span x-text="tag" class="truncate"></span>
-                                                <button type="button" @if(!$isEditorialActive) disabled @endif @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0 disabled:opacity-50">&times;</button>
+                                                <button type="button" :disabled="!isEditorialActive" @click="removeTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0 disabled:opacity-50">&times;</button>
                                             </span>
                                         </template>
                                         <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[120px]"
                                                x-model="ccInput"
-                                               @if(!$isEditorialActive) disabled @endif
+                                               :disabled="!isEditorialActive"
                                                @keydown.comma.prevent="addTag()"
                                                @keydown.enter.prevent="addTag()"
                                                @blur="addTag()"
@@ -448,7 +447,7 @@
                                 <!-- Action Buttons -->
                                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
                                     <template x-if="!allPassed">
-                                        <button type="submit" name="action" value="request_revision" @click="await prepareFeedbackSubmit()" @if(!$isEditorialActive) disabled @endif class="btn bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <button type="submit" name="action" value="request_revision" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                                             Request Author Revision &amp; Send Email Notification
                                         </button>
                                     </template>
@@ -456,7 +455,7 @@
                                     <template x-if="allPassed">
                                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
                                             <template x-if="hasReviewer">
-                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" @if(!$isEditorialActive) disabled @endif class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                                                     ✓ Approve &amp; Send to Reviewer
                                                 </button>
                                             </template>
@@ -1214,7 +1213,7 @@
                 } else if (data.deleted_file_id) {
                     const fileRow = document.getElementById(`file-row-${data.deleted_file_id}`);
                     if (fileRow) fileRow.remove();
-                } else if (data.assignment) {
+                if (data.assignment) {
                     if (data.assignment.role === 'editorial') {
                         const editorBlock = document.getElementById('editor-reassignment-reason-block');
                         const editorInput = document.getElementById('editor-reassignment-reason-input');
@@ -1226,7 +1225,8 @@
                         if (reviewerBlock) reviewerBlock.style.display = 'block';
                         if (reviewerInput) reviewerInput.required = true;
                     }
-                } else if (data.status_change) {
+                }
+                if (data.status_change) {
                     const badgeContainer = document.getElementById('paper-status-badge-container');
                     if (badgeContainer) {
                         badgeContainer.innerHTML = `<span class="badge badge-${escapeHtml(data.status_change.status_color)}">${escapeHtml(data.status_change.status_label)}</span>`;
@@ -1238,8 +1238,10 @@
                     if (data.status_change.status === 'editorial_review') {
                         const checklistContainer = document.getElementById('editorial-checklist-container');
                         if (checklistContainer) {
-                            if (checklistContainer._x_dataStack && checklistContainer._x_dataStack[0]) {
-                                checklistContainer._x_dataStack[0].isEditorialActive = true;
+                            if (checklistContainer._x_dataStack) {
+                                checklistContainer._x_dataStack.forEach(stack => {
+                                    stack.isEditorialActive = true;
+                                });
                             }
                             checklistContainer.querySelectorAll('.editorial-read-only-banner').forEach(b => b.style.display = 'none');
                             checklistContainer.querySelectorAll('button, input, select, textarea').forEach(el => {
