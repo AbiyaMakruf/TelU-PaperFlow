@@ -112,8 +112,8 @@ class EdasReconciliationTest extends TestCase
             ])
             ->get(route('conferences.edas-reconciliation.index'))
             ->assertOk()
-            ->assertSee('Sudah Submit')
-            ->assertSee('Belum Submit')
+            ->assertSee('Submitted')
+            ->assertSee('Missing')
             ->assertSee('1570990001')
             ->assertSee('1570990002');
     }

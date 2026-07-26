@@ -90,7 +90,7 @@ class EdasReconciliationController extends Controller
         }
 
         if (empty($rows)) {
-            return back()->withErrors(['csv_file' => 'File CSV yang diunggah kosong atau format tidak valid.']);
+            return back()->withErrors(['csv_file' => 'The uploaded CSV file is empty or has an invalid format.']);
         }
 
         $header = array_map(fn ($col) => strtolower(trim($col)), $rows[0]);
@@ -236,7 +236,7 @@ class EdasReconciliationController extends Controller
         ]);
 
         return redirect()->route('conferences.edas-reconciliation.index')
-            ->with('success', "File CSV EDAS ({$file->getClientOriginalName()}) berhasil diunggah & direkonsiliasi. {$submittedCount} dari {$totalEdasCount} paper EDAS telah submit di Paperflow ({$submissionRate}%).");
+            ->with('success', "EDAS CSV file ({$file->getClientOriginalName()}) successfully uploaded & reconciled. {$submittedCount} out of {$totalEdasCount} EDAS papers submitted in Paperflow ({$submissionRate}%).");
     }
 
     public function reset(Request $request): RedirectResponse
@@ -244,14 +244,14 @@ class EdasReconciliationController extends Controller
         $request->session()->forget('edas_reconciliation_data');
 
         return redirect()->route('conferences.edas-reconciliation.index')
-            ->with('success', 'Data rekonsiliasi EDAS berhasil direset. Silakan unggah file CSV baru.');
+            ->with('success', 'EDAS reconciliation data successfully reset. Please upload a new CSV file.');
     }
 
     public function exportMissing(Request $request)
     {
         $sessionData = $request->session()->get('edas_reconciliation_data');
         if (! $sessionData || empty($sessionData['items'])) {
-            return back()->withErrors(['csv_file' => 'Tidak ada data rekonsiliasi aktif untuk diexport.']);
+            return back()->withErrors(['csv_file' => 'No active reconciliation data available for export.']);
         }
 
         $missingItems = collect($sessionData['items'])->where('status_state', 'missing')->values();
@@ -264,7 +264,7 @@ class EdasReconciliationController extends Controller
                     $item['edas_paper_id'],
                     $item['edas_email'],
                     $item['edas_title'],
-                    'Belum Submit (Missing)',
+                    'Not Submitted (Missing)',
                 ]);
             }
             fclose($output);

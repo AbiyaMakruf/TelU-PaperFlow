@@ -12,7 +12,7 @@
                     </div>
                     <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">EDAS CSV Reconciliation</h1>
                     <p class="text-xs sm:text-sm text-white/80 leading-relaxed max-w-3xl">
-                        Unggah file CSV naskah dari EDAS untuk memeriksa secara otomatis paper mana saja yang <strong>Sudah Submit</strong> dan <strong>Belum Submit</strong> di Paperflow.
+                        Upload a manuscript CSV file exported from EDAS to automatically cross-check which papers have been <strong>Submitted</strong> and which are <strong>Missing</strong> in Paperflow.
                     </p>
                 </div>
 
@@ -37,7 +37,7 @@
                         <h2 class="text-lg font-black text-navy flex items-center gap-2">
                             <span>📄 Upload EDAS CSV File</span>
                         </h2>
-                        <p class="text-xs text-muted mt-0.5">Pilih atau seret file CSV daftar naskah yang diekspor dari EDAS.</p>
+                        <p class="text-xs text-muted mt-0.5">Select or drag and drop the manuscript list CSV exported from EDAS.</p>
                     </div>
 
                     <form method="POST" action="{{ route('conferences.edas-reconciliation.upload') }}" enctype="multipart/form-data" class="space-y-5">
@@ -49,8 +49,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                 </svg>
                             </div>
-                            <p class="text-sm font-extrabold text-navy group-hover:text-orange transition">Klik atau seret file CSV EDAS di sini</p>
-                            <p class="text-xs text-muted mt-1">Mendukung format <code>.csv</code>, <code>.txt</code> (maksimal 10 MB)</p>
+                            <p class="text-sm font-extrabold text-navy group-hover:text-orange transition">Click or drag the EDAS CSV file here</p>
+                            <p class="text-xs text-muted mt-1">Supports <code>.csv</code>, <code>.txt</code> formats (up to 10 MB)</p>
                             <p id="file-chosen-name" class="mt-3 text-xs font-bold text-orange"></p>
                         </div>
 
@@ -65,27 +65,27 @@
                 <!-- CSV Format Guide Card -->
                 <div class="card p-6 space-y-4 bg-slate-50/70 border border-slate-200">
                     <h3 class="text-sm font-extrabold text-navy flex items-center gap-1.5">
-                        <span>💡 Format CSV yang Didukung</span>
+                        <span>💡 Supported CSV Format</span>
                     </h3>
                     <p class="text-xs text-slate-600 leading-relaxed">
-                        Sistem secara otomatis mendeteksi kolom berdasarkan nama header CSV dari EDAS. Pastikan file CSV Anda memiliki kolom:
+                        The system automatically detects columns based on EDAS CSV header names. Ensure your CSV file includes:
                     </p>
                     <ul class="space-y-2 text-xs text-slate-700 font-medium">
                         <li class="flex items-start gap-2">
                             <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
-                            <span><strong>Paper ID:</strong> Header <code>paper_id</code>, <code>Paper ID</code>, <code>ID</code>, atau <code>Paper #</code></span>
+                            <span><strong>Paper ID:</strong> Header <code>paper_id</code>, <code>Paper ID</code>, <code>ID</code>, or <code>Paper #</code></span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
-                            <span><strong>Email Author:</strong> Header <code>email</code>, <code>Author Email</code>, <code>contact_email</code>, atau <code>Contact Email</code></span>
+                            <span><strong>Author Email:</strong> Header <code>email</code>, <code>Author Email</code>, <code>contact_email</code>, or <code>Contact Email</code></span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
-                            <span><strong>Judul Paper (Opsional):</strong> Header <code>title</code>, <code>Paper Title</code>, atau <code>Name</code></span>
+                            <span><strong>Paper Title (Optional):</strong> Header <code>title</code>, <code>Paper Title</code>, or <code>Name</code></span>
                         </li>
                     </ul>
                     <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-900 leading-normal">
-                        <strong>Catatan:</strong> Jika CSV tidak memiliki header, sistem akan otomatis membaca kolom pertama sebagai Paper ID dan kolom kedua sebagai Email Author.
+                        <strong>Note:</strong> If the CSV does not contain headers, the system automatically reads the first column as Paper ID and the second column as Author Email.
                     </div>
                 </div>
             </div>
@@ -97,42 +97,42 @@
                 copyEmails() {
                     const missingEmails = {{ Js::from(collect($sessionData['items'])->where('status_state', 'missing')->pluck('edas_email')->filter(fn($e)=>$e !== '-')->unique()->values()) }};
                     if (missingEmails.length === 0) {
-                        alert('Tidak ada email pada daftar Belum Submit.');
+                        alert('No email addresses found in the missing list.');
                         return;
                     }
                     navigator.clipboard.writeText(missingEmails.join(', '));
-                    alert('✓ ' + missingEmails.length + ' email penulis yang Belum Submit berhasil disalin ke clipboard!');
+                    alert('✓ ' + missingEmails.length + ' missing author email address(es) copied to clipboard!');
                 }
             }" class="space-y-6">
 
                 <!-- Stat Cards Grid -->
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div class="card p-5 bg-white space-y-2 border-l-4 border-l-navy">
-                        <p class="text-xs font-bold text-muted uppercase tracking-wider">Total Paper di EDAS</p>
+                        <p class="text-xs font-bold text-muted uppercase tracking-wider">Total EDAS Papers</p>
                         <p class="text-2xl sm:text-3xl font-black text-navy">{{ number_format($sessionData['total_edas_count']) }}</p>
                         <p class="text-[11px] text-muted truncate">File: {{ $sessionData['filename'] }}</p>
                     </div>
 
                     <div class="card p-5 bg-white space-y-2 border-l-4 border-l-emerald-500">
                         <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold text-muted uppercase tracking-wider">Sudah Submit di Paperflow</p>
+                            <p class="text-xs font-bold text-muted uppercase tracking-wider">Submitted in Paperflow</p>
                             <span class="badge badge-success text-[10px] font-bold">✓ {{ $sessionData['submission_rate_percent'] }}%</span>
                         </div>
                         <p class="text-2xl sm:text-3xl font-black text-emerald-700">{{ number_format($sessionData['submitted_count']) }}</p>
-                        <p class="text-[11px] text-emerald-800 font-semibold">Tercatat aktif di Paperflow</p>
+                        <p class="text-[11px] text-emerald-800 font-semibold">Recorded active in Paperflow</p>
                     </div>
 
                     <div class="card p-5 bg-white space-y-2 border-l-4 border-l-rose-500">
                         <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold text-muted uppercase tracking-wider">Belum Submit di Paperflow</p>
+                            <p class="text-xs font-bold text-muted uppercase tracking-wider">Missing in Paperflow</p>
                             <span class="badge badge-danger text-[10px] font-bold">✕ {{ number_format(100 - $sessionData['submission_rate_percent'], 1) }}%</span>
                         </div>
                         <p class="text-2xl sm:text-3xl font-black text-rose-700">{{ number_format($sessionData['missing_count']) }}</p>
-                        <p class="text-[11px] text-rose-800 font-semibold">Perlu diingatkan / tindak lanjut</p>
+                        <p class="text-[11px] text-rose-800 font-semibold">Requires reminder / follow-up</p>
                     </div>
 
                     <div class="card p-5 bg-white space-y-2 border-l-4 border-l-orange">
-                        <p class="text-xs font-bold text-muted uppercase tracking-wider">Tingkat Submission</p>
+                        <p class="text-xs font-bold text-muted uppercase tracking-wider">Submission Rate</p>
                         <div class="flex items-baseline justify-between">
                             <p class="text-2xl sm:text-3xl font-black text-navy">{{ $sessionData['submission_rate_percent'] }}%</p>
                             <span class="text-xs text-muted font-bold">{{ $sessionData['submitted_count'] }}/{{ $sessionData['total_edas_count'] }}</span>
@@ -149,31 +149,31 @@
                         <!-- Filter Tabs -->
                         <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl shrink-0">
                             <button type="button" @click="activeTab = 'all'" :class="activeTab === 'all' ? 'bg-white text-navy font-black shadow-xs' : 'text-slate-600 hover:text-navy font-bold'" class="px-3.5 py-2 text-xs rounded-lg transition">
-                                Semua EDAS ({{ $sessionData['total_edas_count'] }})
+                                All EDAS ({{ $sessionData['total_edas_count'] }})
                             </button>
                             <button type="button" @click="activeTab = 'missing'" :class="activeTab === 'missing' ? 'bg-rose-600 text-white font-black shadow-xs' : 'text-slate-600 hover:text-navy font-bold'" class="px-3.5 py-2 text-xs rounded-lg transition">
-                                Belum Submit ({{ $sessionData['missing_count'] }})
+                                Missing ({{ $sessionData['missing_count'] }})
                             </button>
                             <button type="button" @click="activeTab = 'submitted'" :class="activeTab === 'submitted' ? 'bg-emerald-600 text-white font-black shadow-xs' : 'text-slate-600 hover:text-navy font-bold'" class="px-3.5 py-2 text-xs rounded-lg transition">
-                                Sudah Submit ({{ $sessionData['submitted_count'] }})
+                                Submitted ({{ $sessionData['submitted_count'] }})
                             </button>
                             @if($sessionData['paperflow_only_count'] > 0)
                                 <button type="button" @click="activeTab = 'paperflow_only'" :class="activeTab === 'paperflow_only' ? 'bg-orange text-white font-black shadow-xs' : 'text-slate-600 hover:text-navy font-bold'" class="px-3.5 py-2 text-xs rounded-lg transition">
-                                    Hanya di Paperflow ({{ $sessionData['paperflow_only_count'] }})
+                                    Paperflow Only ({{ $sessionData['paperflow_only_count'] }})
                                 </button>
                             @endif
                         </div>
 
                         <!-- Actions & Search Box -->
                         <div class="flex flex-wrap items-center gap-2.5">
-                            <input type="text" x-model="searchQuery" placeholder="Cari ID, Email, atau Judul..." class="form-input text-xs py-2 px-3 min-w-[220px]">
+                            <input type="text" x-model="searchQuery" placeholder="Search ID, Email, or Title..." class="form-input text-xs py-2 px-3 min-w-[220px]">
                             
-                            <a href="{{ route('conferences.edas-reconciliation.export-missing') }}" class="btn btn-secondary text-xs font-bold py-2 px-3 flex items-center gap-1.5" title="Download file CSV naskah EDAS yang belum submit di Paperflow">
-                                📥 Export CSV Belum Submit
+                            <a href="{{ route('conferences.edas-reconciliation.export-missing') }}" class="btn btn-secondary text-xs font-bold py-2 px-3 flex items-center gap-1.5" title="Download CSV file of EDAS papers not yet submitted in Paperflow">
+                                📥 Export Missing CSV
                             </a>
                             
-                            <button type="button" @click="copyEmails()" class="btn bg-navy hover:bg-navy-light text-white text-xs font-bold py-2 px-3 flex items-center gap-1.5" title="Salin semua email penulis yang belum submit ke clipboard">
-                                📋 Copy Email Belum Submit
+                            <button type="button" @click="copyEmails()" class="btn bg-navy hover:bg-navy-light text-white text-xs font-bold py-2 px-3 flex items-center gap-1.5" title="Copy all missing author email addresses to clipboard">
+                                📋 Copy Missing Emails
                             </button>
                         </div>
                     </div>
@@ -186,7 +186,7 @@
                                     <th class="w-12 text-center">#</th>
                                     <th class="w-32">EDAS Paper ID</th>
                                     <th>EDAS Author Email</th>
-                                    <th>Status di Paperflow</th>
+                                    <th>Paperflow Status</th>
                                     <th>Matching Paperflow Submission</th>
                                     <th class="text-right">Action</th>
                                 </tr>
@@ -210,11 +210,11 @@
                                         <td class="whitespace-nowrap">
                                             @if($item['status_state'] === 'submitted')
                                                 <span class="badge badge-success text-[10px] font-extrabold inline-flex items-center gap-1">
-                                                    <span>✓ Sudah Submit</span>
+                                                    <span>✓ Submitted</span>
                                                 </span>
                                             @else
                                                 <span class="badge badge-danger text-[10px] font-extrabold inline-flex items-center gap-1">
-                                                    <span>✕ Belum Submit</span>
+                                                    <span>✕ Missing</span>
                                                 </span>
                                             @endif
                                         </td>
@@ -233,13 +233,13 @@
                                                     </div>
                                                 </div>
                                             @else
-                                                <span class="text-xs text-muted italic">Tidak ditemukan di Paperflow</span>
+                                                <span class="text-xs text-muted italic">Not found in Paperflow</span>
                                             @endif
                                         </td>
                                         <td class="text-right whitespace-nowrap">
                                             @if($item['paperflow_submission'])
                                                 <a href="{{ route('submissions.show', $item['paperflow_submission']['id']) }}" class="btn btn-secondary text-xs py-1 px-2.5 font-bold" target="_blank">
-                                                    Buka Paper ↗
+                                                    Open Paper ↗
                                                 </a>
                                             @else
                                                 <a href="mailto:{{ $item['edas_email'] }}?subject=Reminder: Submission for {{ urlencode($activeConference?->name ?? 'Conference') }} (Paper ID: {{ urlencode($item['edas_paper_id']) }})" class="btn bg-orange hover:bg-orange-dark text-white text-xs py-1 px-2.5 font-bold transition">
@@ -257,7 +257,7 @@
                     @if($sessionData['paperflow_only_count'] > 0)
                         <div x-show="activeTab === 'paperflow_only'" class="overflow-x-auto min-w-0">
                             <div class="p-3 mb-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium">
-                                <strong>Informasi:</strong> Berikut adalah {{ $sessionData['paperflow_only_count'] }} paper yang tercatat di Paperflow tetapi <strong>tidak ditemukan</strong> pada file CSV EDAS yang diunggah.
+                                <strong>Information:</strong> The following {{ $sessionData['paperflow_only_count'] }} papers are recorded in Paperflow but <strong>were not found</strong> in the uploaded EDAS CSV file.
                             </div>
                             <table class="data-table min-w-[700px]">
                                 <thead>
@@ -266,7 +266,7 @@
                                         <th>Title</th>
                                         <th>Author</th>
                                         <th>Email</th>
-                                        <th>Status di Paperflow</th>
+                                        <th>Paperflow Status</th>
                                         <th class="text-right">Action</th>
                                     </tr>
                                 </thead>
@@ -289,7 +289,7 @@
                                             </td>
                                             <td class="text-right whitespace-nowrap">
                                                 <a href="{{ route('submissions.show', $pfItem['id']) }}" class="btn btn-secondary text-xs py-1 px-2.5 font-bold" target="_blank">
-                                                    Buka Paper ↗
+                                                    Open Paper ↗
                                                 </a>
                                             </td>
                                         </tr>
