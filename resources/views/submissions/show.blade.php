@@ -228,7 +228,7 @@
 
                                 <div class="editorial-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isEditorialActive ? 'display: none;' : '' }}">
                                     <span class="text-base shrink-0">ℹ️</span>
-                                    <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Compliance Check.</span>
+                                    <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong class="editorial-status-name">{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Compliance Check.</span>
                                 </div>
 
                                 <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
@@ -316,10 +316,11 @@
                                                             </div>
                                                         @endif
                                                         <div x-show="openNote" x-cloak class="mt-2.5">
-                                                            <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" @if(!$isEditorialActive) disabled @endif @change="autoSaveChecklist()" @blur="autoSaveChecklist()" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $result?->note }}</textarea>
+                                                            <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" :disabled="!isEditorialActive" @change="autoSaveChecklist()" @blur="autoSaveChecklist()" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $result?->note }}</textarea>
                                                         </div>
                                                     </td>
-                                                    <td class="p-3.                                                         <div class="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-navy/10 shadow-inner">
+                                                    <td class="p-3.5 sm:p-4 align-top text-center">
+                                                        <div class="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-navy/10 shadow-inner" :class="!isEditorialActive ? 'opacity-60 pointer-events-none' : ''">
                                                             <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
                                                                    :class="!checked ? 'bg-rose-600 text-white border-rose-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-rose-100 hover:text-rose-600'"
                                                                    title="Unchecked / Reject">
@@ -332,7 +333,7 @@
                                                                 <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" :disabled="!isEditorialActive" @change="checked = true; updateCheckedState()" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description ?? $item->guidance) }}">
                                                                 <span>✓</span>
                                                             </label>
-                                                        </div>                               </div>
+                                                        </div>
                                                     </td>
                                                     @if($hasBeforeColumn)
                                                         <td class="p-3.5 sm:p-4 align-top text-center bg-slate-50/50 border-l border-navy/10">
@@ -373,7 +374,7 @@
 
                                 <div class="editorial-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isEditorialActive ? 'display: none;' : '' }}">
                                     <span class="text-base shrink-0">ℹ️</span>
-                                    <span>Author communication &amp; action buttons are in <strong>Read Only</strong> mode because current paper status is <strong>{{ $submission->status->label() }}</strong>.</span>
+                                    <span>Author communication &amp; action buttons are in <strong>Read Only</strong> mode because current paper status is <strong class="editorial-status-name">{{ $submission->status->label() }}</strong>.</span>
                                 </div>
 
                                 <div>
@@ -1236,21 +1237,33 @@
                     if (valBlock && data.status_change.status !== 'submitted') {
                         valBlock.style.display = 'none';
                     }
-                    if (data.status_change.status === 'editorial_review') {
-                        const checklistContainer = document.getElementById('editorial-checklist-container');
-                        if (checklistContainer) {
-                            if (checklistContainer._x_dataStack) {
-                                checklistContainer._x_dataStack.forEach(stack => {
-                                    stack.isEditorialActive = true;
-                                });
-                            }
-                            checklistContainer.querySelectorAll('.editorial-read-only-banner').forEach(b => b.style.display = 'none');
-                            checklistContainer.querySelectorAll('button, input, select, textarea').forEach(el => {
-                                el.disabled = false;
-                                el.removeAttribute('disabled');
+                    const checklistContainer = document.getElementById('editorial-checklist-container');
+                    if (checklistContainer) {
+                        const isEdActive = (data.status_change.status === 'editorial_review');
+                        if (checklistContainer._x_dataStack) {
+                            checklistContainer._x_dataStack.forEach(stack => {
+                                stack.isEditorialActive = isEdActive;
                             });
-                            const detailsCard = checklistContainer.querySelector('details');
-                            if (detailsCard) detailsCard.open = true;
+                        }
+                        checklistContainer.querySelectorAll('.editorial-status-name').forEach(el => {
+                            el.textContent = data.status_change.status_label;
+                        });
+                        checklistContainer.querySelectorAll('.editorial-read-only-banner').forEach(b => {
+                            b.style.display = isEdActive ? 'none' : 'flex';
+                        });
+                        checklistContainer.querySelectorAll('button, input, select, textarea').forEach(el => {
+                            if (el.name !== '_token') {
+                                el.disabled = !isEdActive;
+                                if (!isEdActive) {
+                                    el.setAttribute('disabled', 'disabled');
+                                } else {
+                                    el.removeAttribute('disabled');
+                                }
+                            }
+                        });
+                        const detailsCard = checklistContainer.querySelector('details');
+                        if (detailsCard) {
+                            detailsCard.open = isEdActive;
                         }
                     }
                     if (data.status_change.is_terminal) {

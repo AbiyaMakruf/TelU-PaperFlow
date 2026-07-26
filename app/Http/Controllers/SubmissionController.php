@@ -693,6 +693,22 @@ class SubmissionController extends Controller
                     $workflow->transition($submission, SubmissionStatus::WaitingAuthorRevision, $request->user(), $bodyText);
                 }
 
+                if ($request->expectsJson()) {
+                    $fresh = $submission->fresh();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => "Revision feedback sent to author with deadline {$deadlineFormatted}. Paper status updated to Waiting Author Revision.",
+                        'status_change' => [
+                            'status' => $fresh->status->value,
+                            'status_label' => $fresh->status->label(),
+                            'status_color' => $fresh->status->color(),
+                            'is_terminal' => $fresh->status->isTerminal(),
+                        ],
+                        'timeline' => $this->formatStatusHistory($submission),
+                    ]);
+                }
+
                 return back()->with('success', "Revision feedback sent to author with deadline {$deadlineFormatted}. Paper status updated to Waiting Author Revision.");
             }
 
@@ -723,7 +739,19 @@ class SubmissionController extends Controller
                 }
 
                 if ($request->expectsJson()) {
-                    return response()->json(['success' => true, 'message' => 'Editorial checklist approved and submission sent to Reviewer.']);
+                    $fresh = $submission->fresh();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Editorial checklist approved and submission sent to Reviewer.',
+                        'status_change' => [
+                            'status' => $fresh->status->value,
+                            'status_label' => $fresh->status->label(),
+                            'status_color' => $fresh->status->color(),
+                            'is_terminal' => $fresh->status->isTerminal(),
+                        ],
+                        'timeline' => $this->formatStatusHistory($submission),
+                    ]);
                 }
 
                 return back()->with('success', 'Editorial checklist approved and submission sent to Reviewer.');
