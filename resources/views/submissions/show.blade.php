@@ -976,10 +976,10 @@
                 noteText = '-';
             }
 
-            tableRowsHtml += '<tr style="background-color:#fff1f2; border-bottom:1px solid #e2e8f0;">' +
-                '<td style="padding:8px 12px; font-weight:bold; color:#1e293b; vertical-align:top;">' + failedCount + '. ' + title + '</td>' +
-                '<td style="padding:8px 12px; text-align:center; vertical-align:top;">' + statusHtml + '</td>' +
-                '<td style="padding:8px 12px; color:#475569; vertical-align:top; font-size:12px;">' + noteText + '</td>' +
+            tableRowsHtml += '<tr style="background-color:#fff1f2; border-bottom:1px solid #cbd5e1;">' +
+                '<td style="padding:10px 12px; font-weight:bold; color:#1e293b; vertical-align:top; border:1px solid #cbd5e1;">' + failedCount + '. ' + title + '</td>' +
+                '<td style="padding:10px 12px; text-align:center; vertical-align:top; border:1px solid #cbd5e1;">' + statusHtml + '</td>' +
+                '<td style="padding:10px 12px; color:#475569; vertical-align:top; font-size:12px; border:1px solid #cbd5e1;">' + noteText + '</td>' +
             '</tr>';
         });
 

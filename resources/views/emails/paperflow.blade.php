@@ -11,7 +11,7 @@
     <tr><td style="padding:38px 36px 24px">
         <div style="font-size:15px;line-height:1.75;color:#374151;">
             @if(str_contains($messageBody, '<table') || str_contains($messageBody, '<div') || str_contains($messageBody, '<p'))
-                {!! $messageBody !!}
+                {!! nl2br($messageBody) !!}
             @else
                 {!! nl2br(e($messageBody)) !!}
             @endif
