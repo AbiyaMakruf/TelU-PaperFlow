@@ -55,6 +55,22 @@
                                 </ul>
                             </div>
                         @endif
+
+                        @php $latestFile = $submission->files->sortByDesc('version_number')->first(); @endphp
+                        @if($latestFile)
+                            <div class="mt-4 pt-3.5 border-t border-navy/10 flex flex-wrap items-center justify-between gap-3">
+                                <div class="min-w-0">
+                                    <span class="text-xs font-extrabold text-navy">Latest Manuscript File:</span>
+                                    <p class="text-xs text-muted truncate">v{{ $latestFile->version_number }} &middot; {{ $latestFile->original_name }}</p>
+                                </div>
+                                <a href="{{ route('author.files.download', [$token, $latestFile]) }}" class="btn text-xs py-2 px-3.5 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download latest manuscript version (v{{ $latestFile->version_number }})">
+                                    <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
+                                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                                    </svg>
+                                    <span>Download Latest File (v{{ $latestFile->version_number }})</span>
+                                </a>
+                            </div>
+                        @endif
                     </div>
 
                     <form x-show="openEdit" x-cloak method="POST" action="{{ route('author.details.update', $token) }}" class="mt-5 space-y-4">
@@ -179,6 +195,20 @@
                             @endforeach
                         </div>
                     </details>
+                @endif
+
+                @if (in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true))
+                    <div class="card p-4 sm:p-5 border-amber-300 bg-amber-50/80 text-xs text-amber-950 space-y-2.5 shadow-2xs">
+                        <div class="flex items-center gap-2 font-black text-sm text-amber-950">
+                            <span class="text-base shrink-0">📌</span>
+                            <span>Important Revision Instructions:</span>
+                        </div>
+                        <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
+                            <li>Please inspect the <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card above to see specific items requiring correction (marked with <strong class="text-rose-700 font-extrabold">✕ Revision Needed</strong>).</li>
+                            <li><strong>Always use the Latest Manuscript File (v{{ $latestFile?->version_number ?? '1' }})</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it.</li>
+                            <li><strong>Only modify the specific items requested for correction</strong>. Please leave all other already compliant sections untouched.</li>
+                        </ul>
+                    </div>
                 @endif
 
                 @if ($submission->feedback->isNotEmpty())

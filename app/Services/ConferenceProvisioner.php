@@ -135,7 +135,7 @@ class ConferenceProvisioner
             [
                 'key' => 'revision_requested',
                 'subject' => '[{{conference}}] Revision Required for Submission {{paper_code}}',
-                'body' => "Dear Authors,\n\nThank you for your submission {{paper_code}} to {{conference}}.\n\nOur team has reviewed your submission. Action or revision is required based on the following feedback:\n\n{{feedback}}\n\nPlease submit your revision or update your details through your private portal:\n{{portal_url}}\n\nDeadline: {{deadline}}\n\nFor clarification, contact the team via WhatsApp: {{editor_whatsapp_url}}\n\nBest regards,\n{{editor_name}}\n{{editor_job_title}}\n{{editor_affiliation}}\n{{conference}} Committee",
+                'body' => "Dear Authors,\n\nThank you for your submission {{paper_code}} to {{conference}}.\n\nOur team has reviewed your submission and revision is required before proceeding to peer review.\n\n{{feedback}}\n\n📌 IMPORTANT INSTRUCTIONS:\n• Please download and use the LATEST MANUSCRIPT FILE from your private Author Portal as the base for your revisions, as the editorial team may have already performed initial formatting corrections on it.\n• For full checklist details and to upload your revised file, please visit your private Author Portal:\n{{portal_url}}\n\nRevision Deadline: {{deadline}}\n\nBest regards,\n{{editor_name}}\n{{editor_job_title}}\n{{editor_affiliation}}",
                 'is_enabled' => true,
             ],
             [

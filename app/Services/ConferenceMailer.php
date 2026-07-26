@@ -24,21 +24,34 @@ class ConferenceMailer
         }
 
         $sender ??= Auth::user();
+        $whatsappUrl = $sender?->whatsapp() ? 'https://wa.me/'.PhoneNumber::whatsappDigits($sender->whatsapp()) : '';
+
         $variables = [
             'conference' => $submission->conference->name,
             'paper_code' => $submission->paper_code,
             'author_name' => $submission->corresponding_author_name,
-            'deadline' => $submission->deadline_at?->timezone($submission->conference->timezone)->format('F j, Y \a\t H:i T') ?? 'Please follow the deadline communicated by the committee.',
+            'deadline' => $submission->deadline_at?->timezone('Asia/Jakarta')->format('d F Y, 23:59 \G\M\T+7') ?? 'Please follow the deadline communicated by the committee.',
             'editor_name' => $sender?->name ?? 'Editorial Team',
             'editor_job_title' => $sender?->job_title ?? 'Publication Committee',
             'editor_affiliation' => $sender?->affiliation ?? $submission->conference->name,
-            'editor_whatsapp' => $sender?->whatsapp() ?? '-',
-            'editor_whatsapp_url' => $sender?->whatsapp() ? 'https://wa.me/'.PhoneNumber::whatsappDigits($sender->whatsapp()) : '-',
+            'editor_whatsapp' => $sender?->whatsapp() ?? '',
+            'editor_whatsapp_url' => $whatsappUrl,
             ...$variables,
         ];
         $replace = collect($variables)->mapWithKeys(fn ($value, $key) => ['{{'.$key.'}}' => $value])->all();
         $subject = strtr($template->subject, $replace);
         $body = strtr($template->body, $replace);
+
+        if (empty($whatsappUrl)) {
+            $body = str_replace([
+                "For clarification, contact the team via WhatsApp: {{editor_whatsapp_url}}\n\n",
+                "For clarification, contact the team via WhatsApp: -\n\n",
+                "For clarification, contact the team via WhatsApp: {{editor_whatsapp_url}}\n",
+                "For clarification, contact the team via WhatsApp: -\n",
+                "For clarification, contact the team via WhatsApp: {{editor_whatsapp_url}}",
+                "For clarification, contact the team via WhatsApp: -",
+            ], '', $body);
+        }
         $coAuthorEmails = $submission->relationLoaded('authors')
             ? $submission->authors->reject(fn ($a) => mb_strtolower((string) $a->email) === mb_strtolower((string) $submission->corresponding_author_email))->pluck('email')->filter()->values()->all()
             : $submission->authors()->where('is_corresponding', false)->pluck('email')->filter()->values()->all();

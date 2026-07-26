@@ -549,6 +549,7 @@ class SubmissionController extends Controller
             'action' => ['nullable', 'string', Rule::in(['request_revision', 'approve_and_send_reviewer'])],
             'send_email' => ['nullable', 'boolean'],
             'cc' => ['nullable', 'string', 'max:2000'],
+            'revision_days' => ['nullable', 'integer', 'min:1', 'max:60'],
         ]);
 
         $bodyText = $validated['body']
@@ -566,19 +567,35 @@ class SubmissionController extends Controller
         if ($validated['visibility'] === 'author') {
             $cc = collect(preg_split('/[,;\s]+/', $validated['cc'] ?? ''))->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))->values()->all();
 
-            if (($validated['action'] ?? null) === 'request_revision' || $request->boolean('send_email')) {
+            if (($validated['action'] ?? null) === 'request_revision') {
+                $days = (int) ($validated['revision_days'] ?? 7);
+                $deadlineAt = now('Asia/Jakarta')->addDays($days)->setTime(23, 59, 59);
+                $submission->update(['deadline_at' => $deadlineAt]);
+                $deadlineFormatted = $deadlineAt->format('d F Y, 23:59 \G\M\T+7');
+
                 $mailer->queue($submission->load('conference'), 'revision_requested', [
                     'feedback' => $bodyText ?? '',
                     'portal_url' => route('author.portal', $this->authorToken($submission)),
+                    'deadline' => $deadlineFormatted,
                 ], $cc, $request->user(), true);
-            }
 
-            if (($validated['action'] ?? null) === 'request_revision') {
                 if ($submission->status === SubmissionStatus::EditorialReview) {
                     $workflow->transition($submission, SubmissionStatus::WaitingAuthorRevision, $request->user(), $bodyText);
                 }
 
-                return back()->with('success', 'Revision feedback sent to author and paper status updated to Waiting Author Revision.');
+                return back()->with('success', "Revision feedback sent to author with deadline {$deadlineFormatted}. Paper status updated to Waiting Author Revision.");
+            }
+
+            if ($request->boolean('send_email')) {
+                $deadlineFormatted = $submission->deadline_at
+                    ? $submission->deadline_at->timezone('Asia/Jakarta')->format('d F Y, 23:59 \G\M\T+7')
+                    : 'Please follow the deadline communicated by the committee.';
+
+                $mailer->queue($submission->load('conference'), 'revision_requested', [
+                    'feedback' => $bodyText ?? '',
+                    'portal_url' => route('author.portal', $this->authorToken($submission)),
+                    'deadline' => $deadlineFormatted,
+                ], $cc, $request->user(), true);
             }
 
             if (($validated['action'] ?? null) === 'approve_and_send_reviewer') {
