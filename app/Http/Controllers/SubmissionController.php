@@ -230,6 +230,7 @@ class SubmissionController extends Controller
                     'has_editor' => (bool) $fresh->editor_id,
                     'has_reviewer' => (bool) $fresh->reviewer_id,
                 ],
+                'timeline' => $this->formatStatusHistory($submission),
             ]);
         }
 
@@ -1044,5 +1045,18 @@ class SubmissionController extends Controller
         }
 
         return back()->with('success', 'File version v'.$versionNumber.' ('.$label.') successfully deleted.');
+    }
+
+    private function formatStatusHistory(Submission $submission): array
+    {
+        return $submission->fresh()->statusHistory()->with('actor')->orderBy('created_at')->get()->map(function ($history) {
+            return [
+                'id' => $history->id,
+                'status_label' => $history->to_status->label(),
+                'actor_name' => $history->actor?->name ?? 'System',
+                'created_at' => $history->created_at->format('d M H:i'),
+                'note' => $history->note ? Str::limit($history->note, 100) : null,
+            ];
+        })->all();
     }
 }

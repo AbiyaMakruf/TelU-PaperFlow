@@ -975,7 +975,7 @@
             <!-- Timeline Status Card -->
             <section class="card p-4 sm:p-6 max-w-full min-w-0">
                 <h2 class="font-black text-navy text-base mb-4">Status Timeline</h2>
-                <ol class="space-y-4 border-l-2 border-orange/40 pl-4">
+                <ol class="space-y-4 border-l-2 border-orange/40 pl-4" id="status-timeline-list">
                     @foreach($submission->statusHistory as $history)
                         <li class="relative">
                             <span class="absolute -left-[23px] top-1 size-3 rounded-full bg-orange ring-4 ring-warm"></span>
@@ -1105,6 +1105,21 @@
                 window.dispatchEvent(new CustomEvent('paperflow-toast', {
                     detail: { message: msg, type: 'success' }
                 }));
+
+                // Handle dynamic timeline updates
+                if (data.timeline && Array.isArray(data.timeline)) {
+                    const timelineList = document.getElementById('status-timeline-list');
+                    if (timelineList) {
+                        timelineList.innerHTML = data.timeline.map(item => `
+                            <li class="relative">
+                                <span class="absolute -left-[23px] top-1 size-3 rounded-full bg-orange ring-4 ring-warm"></span>
+                                <span class="text-xs sm:text-sm font-bold text-navy block leading-tight">${escapeHtml(item.status_label)}</span>
+                                <p class="mt-0.5 text-[11px] text-muted">${escapeHtml(item.actor_name)} &middot; ${escapeHtml(item.created_at)}</p>
+                                ${item.note ? `<p class="mt-1 text-xs text-slate-700 break-words leading-relaxed">${escapeHtml(item.note)}</p>` : ''}
+                            </li>
+                        `).join('');
+                    }
+                }
 
                 // Handle dynamic UI updates
                 if (data.feedback && data.feedback.visibility === 'internal') {
