@@ -6,15 +6,7 @@
                 <h1 class="page-title break-words">{{ $submission->paper_code }}</h1>
                 <p class="page-subtitle break-words">{{ $submission->title }}</p>
             </div>
-            <div class="flex flex-col items-end gap-1.5 shrink-0 self-start sm:self-auto">
-                <span class="badge badge-{{ $submission->status->color() }}">{{ $submission->status->label() }}</span>
-                @if($submission->deadline_at)
-                    <span class="text-xs font-extrabold {{ $submission->isOverdue() ? 'text-rose-700 bg-rose-50 border-rose-200' : 'text-amber-900 bg-amber-50/90 border-amber-300' }} px-2.5 py-1 rounded-lg border flex items-center gap-1.5 shadow-2xs">
-                        <span>⏰ Deadline:</span>
-                        <span>{{ $submission->deadline_at->timezone('Asia/Jakarta')->format('d M Y, 23:59 \G\M\T+7') }}</span>
-                    </span>
-                @endif
-            </div>
+            <span class="badge badge-{{ $submission->status->color() }} self-start shrink-0 sm:self-auto">{{ $submission->status->label() }}</span>
         </div>
 
         <div class="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1.4fr_.6fr]">
@@ -77,6 +69,20 @@
                                     </svg>
                                     <span>Download Latest File (v{{ $latestFile->version_number }})</span>
                                 </a>
+                            </div>
+                        @endif
+
+                        @if($submission->deadline_at)
+                            <div class="mt-4 pt-4 border-t border-navy/10 flex flex-wrap items-center justify-between gap-3" style="padding-top: 1rem; margin-top: 1rem;">
+                                <div class="min-w-0">
+                                    <span class="text-xs font-bold text-muted">Revision Deadline:</span>
+                                    <p class="mt-0.5 text-xs font-extrabold {{ $submission->isOverdue() ? 'text-rose-700' : 'text-navy' }}">
+                                        {{ $submission->deadline_at->timezone('Asia/Jakarta')->format('d F Y, 23:59 \G\M\T+7') }}
+                                    </p>
+                                </div>
+                                @if($submission->isOverdue())
+                                    <span class="badge badge-danger text-[11px] shrink-0">Overdue</span>
+                                @endif
                             </div>
                         @endif
                     </div>
@@ -206,19 +212,8 @@
                 @endif
 
                 @if (in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true))
-                    <div class="card p-4 sm:p-5 border-amber-300 bg-amber-50/80 text-xs text-amber-950 space-y-3 shadow-2xs">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 pb-2.5">
-                            <div class="flex items-center gap-2 font-black text-sm text-amber-950">
-                                <span class="text-base shrink-0">📌</span>
-                                <span>Important Revision Instructions:</span>
-                            </div>
-                            @if($submission->deadline_at)
-                                <span class="inline-flex items-center gap-1.5 text-xs font-extrabold text-rose-800 bg-rose-100/90 px-3 py-1 rounded-lg border border-rose-200 shrink-0 self-start sm:self-auto shadow-2xs">
-                                    <span>⏰ Deadline:</span>
-                                    <span class="font-mono font-black">{{ $submission->deadline_at->timezone('Asia/Jakarta')->format('d M Y, 23:59 \G\M\T+7') }}</span>
-                                </span>
-                            @endif
-                        </div>
+                    <div class="card p-4 sm:p-5 border-amber-300 bg-amber-50/80 text-xs text-amber-950 space-y-2.5 shadow-2xs">
+                        <h3 class="font-extrabold text-amber-950 text-sm">Important Revision Instructions</h3>
                         <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
                             <li>Please inspect the <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card above to see specific items requiring correction (marked with <strong class="text-rose-700 font-extrabold">✕ Revision Needed</strong>).</li>
                             <li><strong>Always use the Latest Manuscript File (v{{ $latestFile?->version_number ?? '1' }})</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it.</li>
@@ -246,16 +241,13 @@
                             @foreach ($submission->feedback as $item)
                                 <div class="rounded-xl bg-warm p-4 text-sm leading-6 break-words border border-navy/8">
                                     @if(str_contains($item->body, '<table'))
-                                        <div class="flex items-start gap-2.5 text-navy">
-                                            <span class="text-base shrink-0">📋</span>
-                                            <div>
-                                                <p class="font-extrabold text-navy text-xs sm:text-sm">Itemized Editorial Compliance Checklist</p>
-                                                <p class="mt-1 text-xs text-slate-700 leading-relaxed font-medium">
-                                                    The itemized checklist table sent for this revision request can be monitored in real-time under the 
-                                                    <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card above. 
-                                                    Please make sure to download and use the <strong>Latest Manuscript File</strong> for your revision.
-                                                </p>
-                                            </div>
+                                        <div>
+                                            <p class="font-extrabold text-navy text-xs sm:text-sm">Itemized Editorial Compliance Checklist</p>
+                                            <p class="mt-1 text-xs text-slate-700 leading-relaxed font-medium">
+                                                The itemized checklist table sent for this revision request can be monitored in real-time under the 
+                                                <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card above. 
+                                                Please make sure to download and use the <strong>Latest Manuscript File</strong> for your revision.
+                                            </p>
                                         </div>
                                     @elseif(str_contains($item->body, '<div') || str_contains($item->body, '<p'))
                                         <div class="prose prose-sm max-w-none text-navy leading-relaxed">{!! $item->body !!}</div>
