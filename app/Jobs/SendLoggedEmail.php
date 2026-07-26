@@ -20,6 +20,8 @@ class SendLoggedEmail implements ShouldQueue
         public EmailLog $emailLog,
         public string $body,
         public array $cc = [],
+        public ?string $actionUrl = null,
+        public ?string $actionLabel = null,
     ) {}
 
     public function handle(): void
@@ -27,17 +29,15 @@ class SendLoggedEmail implements ShouldQueue
         $this->emailLog->update(['status' => 'sending', 'attempts' => $this->attempts()]);
 
         try {
-            preg_match('/https?:\/\/[^\s]+/', $this->body, $matches);
-            $actionUrl = isset($matches[0]) ? rtrim($matches[0], '.,);') : null;
-            $cleanBody = $this->body;
-            if ($actionUrl !== null) {
-                $cleanBody = str_replace($actionUrl, '', $cleanBody);
-                $cleanBody = preg_replace('/(Please submit your revision or update your details through your private portal:\s*|You can track the progress of your paper and manage your submission via your private author portal:\s*|Please visit your author portal to review the requirements:\s*|Please log in to Paperflow to inspect the manuscript and complete the IEEE compliance checklist:\s*|Please log in to Paperflow to inspect the updated manuscript files and checklist:\s*|Please log in to Paperflow to inspect the manuscript, validate the submission, and assign the Editorial and Reviewer PICs:\s*|Please log in to Paperflow to record the EDAS manuscript upload:\s*)/i', '', $cleanBody);
-                $cleanBody = preg_replace("/\n{3,}/", "\n\n", trim((string) $cleanBody));
+            $actionUrl = $this->actionUrl;
+            if ($actionUrl === null) {
+                if (preg_match('/https?:\/\/[^\s<">]+/', $this->body, $matches)) {
+                    $actionUrl = rtrim($matches[0], '.,);');
+                }
             }
 
             $cleanKey = str_replace('test:', '', $this->emailLog->template_key);
-            $actionLabel = match ($cleanKey) {
+            $actionLabel = $this->actionLabel ?? match ($cleanKey) {
                 'revision_requested' => 'Open Portal & Upload Revision',
                 'submission_received' => 'Track Submission',
                 'paper_completed' => 'Open Author Portal',
@@ -50,7 +50,7 @@ class SendLoggedEmail implements ShouldQueue
             };
             $mail = new PaperflowMail(
                 mailSubject: $this->emailLog->subject,
-                messageBody: $cleanBody,
+                messageBody: $this->body,
                 senderName: $this->emailLog->sender_name ?: (string) config('mail.from.name'),
                 contextName: $this->emailLog->conference?->name ?: 'Paperflow',
                 actionUrl: $actionUrl,

@@ -330,7 +330,7 @@
                                                             <label class="cursor-pointer inline-flex items-center justify-center size-8 rounded-lg font-black text-xs transition border select-none"
                                                                 :class="checked ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'text-slate-400 border-transparent hover:bg-emerald-100 hover:text-emerald-600'"
                                                                 title="Checked / Complete">
-                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" :disabled="!isEditorialActive" @change="checked = true; updateCheckedState()" class="sr-only radio-check-input" data-title="{{ e($item->title) }}" data-guidance="{{ e($item->description ?? $item->guidance) }}">
+                                                                <input type="radio" name="items[{{ $item->id }}][checked]" value="1" :checked="checked" :disabled="!isEditorialActive" @change="checked = true; updateCheckedState()" class="sr-only radio-check-input" data-title="{{ $item->title }}" data-guidance="{{ $item->description ?? $item->guidance }}">
                                                                 <span>✓</span>
                                                             </label>
                                                         </div>
@@ -988,6 +988,16 @@
     </div>
 
     <script>
+    function escapeEmailHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     function generateRevisionFeedback(stageValue, isEditorialActive) {
         if (!isEditorialActive) return;
         let tableRowsHtml = '';
@@ -1013,17 +1023,11 @@
 
             let statusHtml = '<span style="color:#b91c1c; font-weight:bold; background-color:#ffe4e6; border:1px solid #fecdd3; padding:4px 8px; border-radius:6px; display:inline-block;">✕ Needs Revision</span>';
 
-            let noteText = '';
-            if (noteVal) {
-                noteText = '<strong>Note:</strong> ' + noteVal;
-            } else if (guidance) {
-                noteText = guidance;
-            } else {
-                noteText = '-';
-            }
+            let safeTitle = escapeEmailHtml(title);
+            let noteText = noteVal ? escapeEmailHtml(noteVal).replace(/\n/g, '<br>') : '-';
 
             tableRowsHtml += '<tr style="background-color:#fff1f2; border-bottom:1px solid #cbd5e1;">' +
-                '<td style="padding:10px 12px; font-weight:bold; color:#1e293b; vertical-align:top; border:1px solid #cbd5e1;">' + failedCount + '. ' + title + '</td>' +
+                '<td style="padding:10px 12px; font-weight:bold; color:#1e293b; vertical-align:top; border:1px solid #cbd5e1;">' + failedCount + '. ' + safeTitle + '</td>' +
                 '<td style="padding:10px 12px; text-align:center; vertical-align:top; border:1px solid #cbd5e1;">' + statusHtml + '</td>' +
                 '<td style="padding:10px 12px; color:#475569; vertical-align:top; font-size:12px; border:1px solid #cbd5e1;">' + noteText + '</td>' +
             '</tr>';
@@ -1039,18 +1043,20 @@
             return;
         }
 
-        let templateHtml = '<table border="0" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;">' +
+        let templateHtml = '<div style="margin:16px 0; clear:both;">' +
+            '<table border="0" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;">' +
             '<thead>' +
             '<tr style="background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;">' +
-            '<th style="padding:10px 12px; border:1px solid #102a43;">Checklist Criteria</th>' +
-            '<th style="padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;">Status</th>' +
-            '<th style="padding:10px 12px; border:1px solid #102a43;">Notes / Guidance</th>' +
+            '<th style="padding:10px 12px; border:1px solid #102a43; width:30%;">Checklist Criteria</th>' +
+            '<th style="padding:10px 12px; border:1px solid #102a43; text-align:center; width:20%;">Status</th>' +
+            '<th style="padding:10px 12px; border:1px solid #102a43; width:50%;">Notes</th>' +
             '</tr>' +
             '</thead>' +
             '<tbody>' +
             tableRowsHtml +
             '</tbody>' +
-            '</table>';
+            '</table>' +
+            '</div>';
 
         let feedbackEl = document.getElementById('author-feedback-textarea');
         if (feedbackEl) {

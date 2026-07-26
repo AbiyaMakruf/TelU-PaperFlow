@@ -71,7 +71,8 @@ class ConferenceMailer
             'body' => $body,
             'status' => 'queued',
         ]);
-        SendLoggedEmail::dispatch($log, $body, $recipients);
+        $actionUrl = $variables['action_url'] ?? $variables['portal_url'] ?? null;
+        SendLoggedEmail::dispatch($log, $body, $recipients, $actionUrl);
 
         return $log;
     }
@@ -94,7 +95,7 @@ class ConferenceMailer
             'cc' => $cc, 'subject' => $renderedSubject, 'body' => $renderedBody, 'sender_user_id' => $sender->id,
             'sender_name' => $conference->email_sender_name ?: $conference->name, 'status' => 'queued',
         ]);
-        SendLoggedEmail::dispatch($log, $renderedBody, $cc);
+        SendLoggedEmail::dispatch($log, $renderedBody, $cc, $replace['{{portal_url}}']);
 
         return $log;
     }
@@ -107,7 +108,11 @@ class ConferenceMailer
             'subject' => $original->subject, 'body' => $original->body, 'sender_user_id' => $sender->id,
             'sender_name' => $original->sender_name, 'status' => 'queued',
         ]);
-        SendLoggedEmail::dispatch($copy, (string) $copy->body, $copy->cc ?? []);
+        $actionUrl = null;
+        if (preg_match('/https?:\/\/[^\s<">]+/', (string) $copy->body, $matches)) {
+            $actionUrl = rtrim($matches[0], '.,);');
+        }
+        SendLoggedEmail::dispatch($copy, (string) $copy->body, $copy->cc ?? [], $actionUrl);
 
         return $copy;
     }
@@ -139,7 +144,11 @@ class ConferenceMailer
             'body' => $body,
             'status' => 'queued',
         ]);
-        SendLoggedEmail::dispatch($log, $body, $cc);
+        $actionUrl = null;
+        if (preg_match('/https?:\/\/[^\s<">]+/', $body, $matches)) {
+            $actionUrl = rtrim($matches[0], '.,);');
+        }
+        SendLoggedEmail::dispatch($log, $body, $cc, $actionUrl);
 
         return $log;
     }

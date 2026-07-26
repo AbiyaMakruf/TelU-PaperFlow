@@ -158,6 +158,17 @@
                     </form>
                 </div>
 
+                @if ($submission->status === \App\Enums\SubmissionStatus::WaitingAuthorRevision)
+                    <div class="card p-4 sm:p-5 border-amber-300 bg-amber-50/80 text-xs text-amber-950 space-y-2.5 shadow-2xs">
+                        <h3 class="font-extrabold text-amber-950 text-sm">Important Revision Instructions</h3>
+                        <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
+                            <li>Please inspect the <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card below to see specific items requiring correction (marked with <strong class="text-rose-700 font-extrabold">✕ Revision Needed</strong>).</li>
+                            <li><strong>Always use the Latest Manuscript File (v{{ $latestFile?->version_number ?? '1' }})</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it.</li>
+                            <li><strong>Only modify the specific items requested for correction</strong>. Please leave all other already compliant sections untouched.</li>
+                        </ul>
+                    </div>
+                @endif
+
                 {{-- Live Editorial Compliance Checklist Monitoring (Accordion) --}}
                 @php
                     $editorialTemplates = $submission->conference->checklistTemplates->filter(fn ($t) => strtolower($t->stage->value ?? $t->stage) === 'editorial');
@@ -221,17 +232,6 @@
                             @endforeach
                         </div>
                     </details>
-                @endif
-
-                @if ($submission->status === \App\Enums\SubmissionStatus::WaitingAuthorRevision)
-                    <div class="card p-4 sm:p-5 border-amber-300 bg-amber-50/80 text-xs text-amber-950 space-y-2.5 shadow-2xs">
-                        <h3 class="font-extrabold text-amber-950 text-sm">Important Revision Instructions</h3>
-                        <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
-                            <li>Please inspect the <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card above to see specific items requiring correction (marked with <strong class="text-rose-700 font-extrabold">✕ Revision Needed</strong>).</li>
-                            <li><strong>Always use the Latest Manuscript File (v{{ $latestFile?->version_number ?? '1' }})</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it.</li>
-                            <li><strong>Only modify the specific items requested for correction</strong>. Please leave all other already compliant sections untouched.</li>
-                        </ul>
-                    </div>
                 @endif
 
                 @if ($submission->feedback->isNotEmpty())
