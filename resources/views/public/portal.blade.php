@@ -33,7 +33,7 @@
                         <div class="grid gap-3 sm:grid-cols-3">
                             <div class="min-w-0">
                                 <span class="text-xs font-bold text-muted">Paper ID:</span>
-                                <p class="mt-0.5 font-black text-navy font-mono text-xs">{{ $submission->paper_code }}</p>
+                                <p class="mt-0.5 font-black text-navy font-mono text-xs">{{ $submission->paper_id }}</p>
                             </div>
                             <div class="min-w-0 sm:col-span-2">
                                 <span class="text-xs font-bold text-muted">Paper Title:</span>
