@@ -99,20 +99,23 @@
 
                 @can('assign', $submission)
                     @if($submission->status === \App\Enums\SubmissionStatus::Submitted)
-                        <div class="mt-6 border-t border-navy/10 pt-6 space-y-4" id="submission-validation-block" style="{{ $submission->status === \App\Enums\SubmissionStatus::Submitted ? '' : 'display: none;' }}" x-data="{ correctionText: '' }">
+                        <div class="mt-6 border-t border-navy/10 pt-6 space-y-4" id="submission-validation-block" style="{{ $submission->status === \App\Enums\SubmissionStatus::Submitted ? '' : 'display: none;' }}" x-data="{ correctionText: '', showError: false }">
                             <div>
-                                <label class="form-label text-xs font-extrabold text-navy">Correction Feedback / Notes for Author (Required if returning to author)</label>
-                                <textarea class="form-input min-h-20 py-2.5 text-xs" x-model="correctionText" placeholder="Describe the data needing correction before returning to author..."></textarea>
+                                <label class="form-label text-xs font-extrabold text-navy">Correction Feedback / Notes for Author (Required if returning to author) *</label>
+                                <textarea class="form-input min-h-20 py-2.5 text-xs transition-colors" :class="showError && !correctionText.trim() ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/50' : ''" x-model="correctionText" @input="showError = false" placeholder="Describe the data needing correction before returning to author..."></textarea>
+                                <p x-show="showError && !correctionText.trim()" class="mt-1.5 text-xs text-rose-600 font-extrabold flex items-center gap-1.5" x-cloak>
+                                    <span>⚠️ Correction feedback is required before returning paper to author. Please fill out the field above.</span>
+                                </p>
                             </div>
                             <div class="grid gap-3 sm:grid-cols-2">
                                 <form method="POST" action="{{ route('submissions.accept', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)">
                                     @csrf
                                     <button type="submit" class="btn btn-primary w-full text-xs py-2.5 font-extrabold">Data Valid &amp; Proceed to Assignment</button>
                                 </form>
-                                <form method="POST" action="{{ route('submissions.correction', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)">
+                                <form method="POST" action="{{ route('submissions.correction', $submission) }}" @submit.prevent="if (!correctionText.trim()) { showError = true; window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: 'Correction feedback is required before returning paper to author.', type: 'error' } })); } else { window.submitPaperflowForm($event); }">
                                     @csrf
                                     <input type="hidden" name="feedback" :value="correctionText">
-                                    <button type="submit" class="btn btn-secondary w-full text-xs py-2.5 font-bold" :disabled="!correctionText.trim()" title="Please describe the data needing correction above before returning to author">Return to Author</button>
+                                    <button type="submit" class="btn btn-secondary w-full text-xs py-2.5 font-bold" title="Return manuscript to author for data correction">Return to Author</button>
                                 </form>
                             </div>
                         </div>
