@@ -876,9 +876,8 @@ class SubmissionController extends Controller
         $submission->files()->update(['is_final' => false]);
         $file->update(['is_final' => true]);
 
-        $auditLogger->log($request->user(), 'file_version.set_final', $submission->conference, [
+        $auditLogger->record('file_version.set_final', $file, $submission->conference, newValues: [
             'submission_id' => $submission->id,
-            'file_version_id' => $file->id,
             'version_number' => $file->version_number,
             'label' => $file->label,
         ]);
@@ -904,7 +903,7 @@ class SubmissionController extends Controller
             }
         }
 
-        $auditLogger->log($request->user(), 'file_version.deleted', $submission->conference, [
+        $auditLogger->record('file_version.deleted', $file, $submission->conference, oldValues: [
             'submission_id' => $submission->id,
             'version_number' => $versionNumber,
             'label' => $label,
