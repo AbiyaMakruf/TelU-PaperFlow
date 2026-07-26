@@ -16,7 +16,7 @@
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="min-w-0">
                             <h2 class="text-lg font-black text-navy">Submission Details</h2>
-                            <p class="text-xs text-muted">Paper title, primary author contact information, and co-authors list.</p>
+                            <p class="text-xs text-muted">Paper ID, paper title, corresponding author contact information, and co-authors list.</p>
                         </div>
                         @if(in_array($submission->status, [\App\Enums\SubmissionStatus::Done, \App\Enums\SubmissionStatus::Withdrawn, \App\Enums\SubmissionStatus::Rejected], true))
                             <button type="button" disabled class="btn text-xs bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shrink-0 self-start sm:self-auto" title="Submission details cannot be edited after completion">
@@ -30,19 +30,17 @@
                     </div>
 
                     <div x-show="!openEdit" class="mt-5 space-y-3 text-sm">
-                        <div class="grid gap-3 sm:grid-cols-3">
-                            <div class="min-w-0">
-                                <span class="text-xs font-bold text-muted">Paper ID:</span>
-                                <p class="mt-0.5 font-black text-navy font-mono text-xs">{{ $submission->paper_id }}</p>
-                            </div>
-                            <div class="min-w-0 sm:col-span-2">
-                                <span class="text-xs font-bold text-muted">Paper Title:</span>
-                                <p class="mt-0.5 font-bold text-navy break-words">{{ $submission->title }}</p>
-                            </div>
+                        <div class="min-w-0">
+                            <span class="text-xs font-bold text-muted">Paper ID:</span>
+                            <p class="mt-0.5 font-black text-navy font-mono text-xs">{{ $submission->paper_id }}</p>
+                        </div>
+                        <div class="min-w-0 pt-1">
+                            <span class="text-xs font-bold text-muted">Paper Title:</span>
+                            <p class="mt-0.5 font-bold text-navy break-words">{{ $submission->title }}</p>
                         </div>
                         <div class="grid gap-3 pt-2 sm:grid-cols-2">
                             <div class="min-w-0">
-                                <span class="text-xs font-bold text-muted">Primary Author:</span>
+                                <span class="text-xs font-bold text-muted">Corresponding Author:</span>
                                 <p class="mt-0.5 font-semibold text-navy break-words">{{ $submission->corresponding_author_name }}</p>
                                 <p class="text-xs text-muted break-all">{{ $submission->corresponding_author_email }}</p>
                             </div>
@@ -102,11 +100,11 @@
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="min-w-0">
-                                <label class="form-label">Primary Author Name *</label>
+                                <label class="form-label">Corresponding Author Name *</label>
                                 <input class="form-input min-w-0" name="author_name" value="{{ old('author_name', $submission->corresponding_author_name) }}" required>
                             </div>
                             <div class="min-w-0">
-                                <label class="form-label">Primary Author Email *</label>
+                                <label class="form-label">Corresponding Author Email *</label>
                                 <input class="form-input min-w-0" type="email" name="author_email" value="{{ old('author_email', $submission->corresponding_author_email) }}" required>
                             </div>
                         </div>
