@@ -72,7 +72,7 @@
                             </div>
                         @endif
 
-                        @if($submission->deadline_at)
+                        @if($submission->deadline_at && in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true))
                             <div class="mt-4 pt-4 border-t border-navy/10 flex flex-wrap items-center justify-between gap-3" style="padding-top: 1rem; margin-top: 1rem;">
                                 <div class="min-w-0">
                                     <span class="text-xs font-bold text-muted">Revision Deadline:</span>
