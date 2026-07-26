@@ -993,17 +993,17 @@
             return;
         }
 
-        let templateHtml = '<table border="0" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;">\n' +
-            '    <thead>\n' +
-            '        <tr style="background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;">\n' +
-            '            <th style="padding:10px 12px; border:1px solid #102a43;">Checklist Criteria</th>\n' +
-            '            <th style="padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;">Status</th>\n' +
-            '            <th style="padding:10px 12px; border:1px solid #102a43;">Notes / Guidance</th>\n' +
-            '        </tr>\n' +
-            '    </thead>\n' +
-            '    <tbody>\n' +
-            '        ' + tableRowsHtml + '\n' +
-            '    </tbody>\n' +
+        let templateHtml = '<table border="0" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; margin:16px 0; border:1px solid #cbd5e1; font-size:13px; font-family:Inter, Arial, sans-serif;">' +
+            '<thead>' +
+            '<tr style="background-color:#102a43; color:#ffffff; text-align:left; font-size:12px; text-transform:uppercase;">' +
+            '<th style="padding:10px 12px; border:1px solid #102a43;">Checklist Criteria</th>' +
+            '<th style="padding:10px 12px; border:1px solid #102a43; text-align:center; width:140px;">Status</th>' +
+            '<th style="padding:10px 12px; border:1px solid #102a43;">Notes / Guidance</th>' +
+            '</tr>' +
+            '</thead>' +
+            '<tbody>' +
+            tableRowsHtml +
+            '</tbody>' +
             '</table>';
 
         let feedbackEl = document.getElementById('author-feedback-textarea');

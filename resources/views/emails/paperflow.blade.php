@@ -10,7 +10,14 @@
     </td></tr>
     <tr><td style="padding:38px 36px 24px">
         <div style="font-size:15px;line-height:1.75;color:#374151;">
-            @if(str_contains($messageBody, '<table') || str_contains($messageBody, '<div') || str_contains($messageBody, '<p'))
+            @if(str_contains($messageBody, '<table'))
+                @php
+                    $cleanBody = preg_replace_callback('/<table[^>]*>.*?<\/table>/is', function ($m) {
+                        return str_replace(["\r\n", "\r", "\n"], '', $m[0]);
+                    }, $messageBody);
+                @endphp
+                {!! nl2br($cleanBody) !!}
+            @elseif(str_contains($messageBody, '<div') || str_contains($messageBody, '<p'))
                 {!! nl2br($messageBody) !!}
             @else
                 {!! nl2br(e($messageBody)) !!}
