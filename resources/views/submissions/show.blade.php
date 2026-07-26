@@ -983,7 +983,7 @@
                         <li class="relative">
                             <span class="absolute -left-[23px] top-1 size-3 rounded-full bg-orange ring-4 ring-warm"></span>
                             <span class="text-xs sm:text-sm font-bold text-navy block leading-tight">{{ $history->to_status->label() }}</span>
-                            <p class="mt-0.5 text-[11px] text-muted">{{ $history->actor?->name ?? 'System' }} &middot; {{ $history->created_at->format('d M H:i') }}</p>
+                            <p class="mt-0.5 text-[11px] text-muted">{{ $history->actor?->name ?? 'System' }} &middot; {{ $history->created_at->timezone($submission->conference->timezone ?? 'Asia/Jakarta')->format('d M H:i') }}</p>
                             @if($history->note)
                                 <p class="mt-1 text-xs text-slate-700 break-words leading-relaxed">{{ Str::limit($history->note, 100) }}</p>
                             @endif
