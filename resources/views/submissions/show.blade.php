@@ -155,7 +155,7 @@
                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                             if (!form) return;
                             this.savingChecklist = true;
-                            this.autoSaveStatus = 'Saving...';
+                            this.autoSaveStatus = '';
                             try {
                                 const formData = new FormData(form);
                                 const response = await fetch(form.action, {
@@ -182,7 +182,7 @@
                             if (!this.isEditorialActive) return;
                             const form = document.getElementById('checklist-form-{{ $stage->value }}');
                             if (form) {
-                                this.autoSaveStatus = 'Saving checklist...';
+                                this.autoSaveStatus = '';
                                 try {
                                     await fetch(form.action, {
                                         method: 'POST',
