@@ -390,9 +390,6 @@ class SubmissionController extends Controller
         }
 
         if ($action === 'reviewer_approve') {
-            if (empty($submission->edas_reference) && empty($validated['edas_reference'])) {
-                return back()->withErrors(['edas_reference' => 'EDAS Reference / ID is required before marking paper uploaded to EDAS.']);
-            }
             $this->reviewerApprove($request, $submission, $workflow, $validated['edas_error_note'] ?? 'Uploaded to EDAS without errors.', $mailer);
 
             return back()->with('success', 'Paper marked as uploaded to EDAS and completed (Done).');
