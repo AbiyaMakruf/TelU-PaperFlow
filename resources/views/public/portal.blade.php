@@ -60,18 +60,26 @@
                             </div>
                         @endif
 
-                        @php $latestFile = $submission->files->sortByDesc('version_number')->first(); @endphp
+                        @php
+                            $finalFile = $submission->files->firstWhere('is_final', true);
+                            $latestFile = $finalFile ?? $submission->files->sortByDesc('version_number')->first();
+                        @endphp
                         @if($latestFile)
                             <div class="mt-6 pt-6 border-t border-navy/10 flex flex-wrap items-center justify-between gap-3.5" style="padding-top: 1.25rem; margin-top: 1.25rem;">
                                 <div class="min-w-0">
-                                    <span class="text-xs font-extrabold text-navy">Latest Manuscript File:</span>
-                                    <p class="text-xs text-muted truncate mt-0.5">v{{ $latestFile->version_number }} &middot; {{ $latestFile->original_name }}</p>
+                                    <span class="text-xs font-extrabold text-navy">{{ $finalFile ? 'Final Approved Manuscript File:' : 'Latest Manuscript File:' }}</span>
+                                    <p class="text-xs text-muted truncate mt-0.5">
+                                        v{{ $latestFile->version_number }} &middot; {{ $latestFile->original_name }}
+                                        @if($latestFile->is_final)
+                                            <span class="badge badge-success text-[10px] ml-1.5 font-bold">Final Version</span>
+                                        @endif
+                                    </p>
                                 </div>
-                                <a href="{{ route('author.files.download', [$token, $latestFile]) }}" class="btn text-xs py-2.5 px-4 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download latest manuscript version (v{{ $latestFile->version_number }})">
+                                <a href="{{ route('author.files.download', [$token, $latestFile]) }}" class="btn text-xs py-2.5 px-4 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download manuscript version (v{{ $latestFile->version_number }})">
                                     <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
                                         <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
                                     </svg>
-                                    <span>Download Latest File (v{{ $latestFile->version_number }})</span>
+                                    <span>Download {{ $latestFile->is_final ? 'Final File' : 'Latest File' }} (v{{ $latestFile->version_number }})</span>
                                 </a>
                             </div>
                         @endif
@@ -323,11 +331,18 @@
                             @foreach ($submission->files as $file)
                                 <div class="p-4 space-y-2.5">
                                     <div class="flex items-center justify-between gap-2">
-                                        <span class="badge badge-primary font-mono">v{{ $file->version_number }}</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="badge badge-primary font-mono">v{{ $file->version_number }}</span>
+                                            @if($file->is_final)
+                                                <span class="badge badge-success text-[10px] font-bold">Final Version</span>
+                                            @endif
+                                        </div>
                                         <span class="text-xs font-bold text-muted uppercase tracking-wider">{{ ucfirst($file->source) }}</span>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-navy break-words">{{ $file->label }}</p>
+                                        <p class="text-sm font-bold text-navy break-words flex items-center gap-1.5">
+                                            <span>{{ $file->label }}</span>
+                                        </p>
                                         <p class="text-xs text-muted break-all mt-0.5">{{ $file->original_name }}</p>
                                     </div>
                                     <div class="pt-1">
@@ -353,9 +368,19 @@
                                 <tbody>
                                     @foreach ($submission->files as $file)
                                         <tr>
-                                            <td class="whitespace-nowrap font-mono font-bold">v{{ $file->version_number }}</td>
+                                            <td class="whitespace-nowrap font-mono font-bold">
+                                                v{{ $file->version_number }}
+                                                @if($file->is_final)
+                                                    <span class="badge badge-success text-[10px] ml-1.5 font-bold">Final</span>
+                                                @endif
+                                            </td>
                                             <td class="min-w-[200px]">
-                                                <p class="font-bold text-navy break-words">{{ $file->label }}</p>
+                                                <p class="font-bold text-navy break-words inline-flex items-center gap-2">
+                                                    <span>{{ $file->label }}</span>
+                                                    @if($file->is_final)
+                                                        <span class="badge badge-success text-[10px] font-bold">Final Version</span>
+                                                    @endif
+                                                </p>
                                                 <p class="text-xs text-muted break-all">{{ $file->original_name }}</p>
                                             </td>
                                             <td class="whitespace-nowrap">{{ ucfirst($file->source) }}</td>
