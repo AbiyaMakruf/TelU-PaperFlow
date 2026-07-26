@@ -28,6 +28,6 @@ class VisibleEmailLogs
     public function canAccess(User $user): bool
     {
         return $user->isSuperAdmin() || $user->conferenceMemberships()->where('is_active', true)
-            ->whereIn('role', [ConferenceRole::Admin, ConferenceRole::Editorial])->exists();
+            ->where('role', ConferenceRole::Admin)->exists();
     }
 }

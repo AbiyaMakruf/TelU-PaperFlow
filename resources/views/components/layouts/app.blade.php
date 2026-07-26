@@ -104,7 +104,7 @@
                 <a href="{{ route('conferences.index') }}" class="nav-link {{ request()->routeIs('conferences.*') ? 'nav-link-active' : '' }}">Conferences</a>
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}">Editor Performance</a>
                 @auth
-                    @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->whereIn('role',[\App\Enums\ConferenceRole::Admin,\App\Enums\ConferenceRole::Editorial])->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}">Email Monitoring</a>@endif
+                    @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}">Email Monitoring</a>@endif
                     @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())
                         <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') || request()->routeIs('audit.*') ? 'nav-link-active' : '' }}">Monitoring &amp; Audit</a>
                     @endif
@@ -191,7 +191,7 @@
                 <a href="{{ route('conferences.index') }}" class="nav-link {{ request()->routeIs('conferences.*') ? 'nav-link-active' : '' }}"><span class="text-xs">CF</span><span>Conferences</span></a>
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}"><span class="text-xs">ST</span><span>Editor Performance</span></a>
                 @auth
-                    @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->whereIn('role',[\App\Enums\ConferenceRole::Admin,\App\Enums\ConferenceRole::Editorial])->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}"><span class="text-xs">EM</span><span>Email Monitoring</span></a>@endif
+                    @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())<a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}"><span class="text-xs">EM</span><span>Email Monitoring</span></a>@endif
                     @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())
                         <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') || request()->routeIs('audit.*') ? 'nav-link-active' : '' }}"><span class="text-xs">MO</span><span>Monitoring &amp; Audit</span></a>
                     @endif

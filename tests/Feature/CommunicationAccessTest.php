@@ -29,32 +29,29 @@ class CommunicationAccessTest extends TestCase
         $this->actingAs($editor)->get(route('admin.monitoring.index', ['tab' => 'audit']))->assertForbidden();
     }
 
-    public function test_editor_sees_only_own_email_while_admin_sees_conference_email(): void
+    public function test_only_conference_admin_and_superadmin_can_access_email_monitoring(): void
     {
         [$conference, $admin] = $this->member(ConferenceRole::Admin);
         [, $editor] = $this->member(ConferenceRole::Editorial, $conference);
-        [, $otherEditor] = $this->member(ConferenceRole::Editorial, $conference);
 
-        $own = $this->email($conference, $editor, 'Email milik editor');
-        $other = $this->email($conference, $otherEditor, 'Email editor lain');
+        $own = $this->email($conference, $admin, 'Email milik admin');
 
-        $this->actingAs($editor)->get(route('emails.index'))
-            ->assertOk()->assertSee($own->subject)->assertDontSee($other->subject);
+        $this->actingAs($editor)->get(route('emails.index'))->assertForbidden();
         $this->actingAs($admin)->get(route('emails.index'))
-            ->assertOk()->assertSee($own->subject)->assertSee($other->subject);
+            ->assertOk()->assertSee($own->subject);
     }
 
-    public function test_editor_can_resend_own_failed_email(): void
+    public function test_admin_can_resend_failed_email(): void
     {
         Queue::fake();
-        [$conference, $editor] = $this->member(ConferenceRole::Editorial);
-        $failed = $this->email($conference, $editor, 'Email gagal', 'failed');
+        [$conference, $admin] = $this->member(ConferenceRole::Admin);
+        $failed = $this->email($conference, $admin, 'Email gagal', 'failed');
 
-        $this->actingAs($editor)->post(route('emails.resend', $failed))->assertRedirect();
+        $this->actingAs($admin)->post(route('emails.resend', $failed))->assertRedirect();
 
         Queue::assertPushed(SendLoggedEmail::class);
         $this->assertDatabaseHas('email_logs', [
-            'sender_user_id' => $editor->id,
+            'sender_user_id' => $admin->id,
             'subject' => 'Email gagal',
             'status' => 'queued',
         ]);
