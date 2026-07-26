@@ -107,6 +107,11 @@ class AuthorPortalController extends Controller
                 ]);
             }
 
+            $submission->reviewCycles()->where('status', 'open')->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+
             $from = $submission->status;
             $to = $from === SubmissionStatus::NeedsAuthorCorrection
                 ? SubmissionStatus::Submitted

@@ -128,11 +128,39 @@
                 @php
                     $allowed = auth()->user()->can('editorialReview', $submission);
                     $template = $submission->conference->checklistTemplates->where('stage', $stage)->where('is_active', true)->first();
-                    $cycle = $submission->reviewCycles->where('stage', $stage)->where('status', 'open')->first() ?? $submission->reviewCycles->where('stage', $stage)->first();
-                    $requiredItemIds = $template ? $template->items->where('is_required', true)->pluck('id') : collect();
-                    $initialPassedCount = $template ? $template->items->where('is_required', true)->filter(fn($i) => (bool) $cycle?->results->firstWhere('checklist_item_id', $i->id)?->is_checked)->count() : 0;
                     $isEditorialActive = ($submission->status === \App\Enums\SubmissionStatus::EditorialReview);
                     $isReviewerActive = in_array($submission->status, [\App\Enums\SubmissionStatus::ReviewerReview, \App\Enums\SubmissionStatus::EdasFixRequired, \App\Enums\SubmissionStatus::ReadyForEdas], true);
+
+                    if ($isEditorialActive && $stage === \App\Enums\ReviewStage::Editorial && $template) {
+                        $cycle = $submission->reviewCycles()->where('stage', $stage)->where('status', 'open')->first();
+                        if (!$cycle) {
+                            $cycle = $submission->reviewCycles()->create([
+                                'checklist_template_id' => $template->id,
+                                'stage' => $stage,
+                                'cycle_number' => ($submission->reviewCycles()->where('stage', $stage)->max('cycle_number') ?? 0) + 1,
+                                'status' => 'open',
+                                'assigned_to' => auth()->id() ?? $submission->editor_id,
+                                'started_at' => now(),
+                            ]);
+                            $submission->unsetRelation('reviewCycles');
+                        }
+                    } else {
+                        $cycle = $submission->reviewCycles->where('stage', $stage)->where('status', 'open')->first()
+                            ?? $submission->reviewCycles->where('stage', $stage)->sortByDesc('cycle_number')->first();
+                    }
+
+                    $previousCycle = $submission->reviewCycles
+                        ->where('stage', $stage)
+                        ->reject(fn($c) => $c->id === $cycle?->id)
+                        ->sortByDesc('cycle_number')
+                        ->first();
+                    $hasBeforeColumn = (bool) $previousCycle;
+                    $requiredItemIds = $template ? $template->items->where('is_required', true)->pluck('id') : collect();
+                    $initialPassedCount = $template ? $template->items->where('is_required', true)->filter(function($i) use ($cycle, $previousCycle) {
+                        $res = $cycle?->results->firstWhere('checklist_item_id', $i->id);
+                        $prev = $previousCycle?->results->firstWhere('checklist_item_id', $i->id);
+                        return $res !== null ? (bool) $res->is_checked : (bool) ($prev?->is_checked ?? false);
+                    })->count() : 0;
                 @endphp
                 @if($allowed && $template)
                     <div x-data="{
@@ -217,15 +245,6 @@
                                 @csrf
                                 @method('PUT')
 
-                                @php
-                                    $previousCycle = $submission->reviewCycles
-                                        ->where('stage', $stage)
-                                        ->reject(fn($c) => $c->id === $cycle?->id)
-                                        ->sortByDesc('cycle_number')
-                                        ->first();
-                                    $hasBeforeColumn = (bool) $previousCycle;
-                                @endphp
-
                                 <div class="editorial-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isEditorialActive ? 'display: none;' : '' }}">
                                     <span class="text-base shrink-0">ℹ️</span>
                                     <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong class="editorial-status-name">{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Compliance Check.</span>
@@ -288,9 +307,11 @@
                                                 @php
                                                     $result = $cycle?->results->firstWhere('checklist_item_id', $item->id);
                                                     $prevResult = $previousCycle?->results->firstWhere('checklist_item_id', $item->id);
-                                                    $hasNote = !empty($result?->note);
+                                                    $isChecked = $result !== null ? (bool)$result->is_checked : (bool)($prevResult?->is_checked ?? false);
+                                                    $hasNote = !empty($result?->note) || (!empty($prevResult?->note) && $result === null);
+                                                    $noteValue = $result?->note ?? ($result === null ? ($prevResult?->note ?? '') : '');
                                                 @endphp
-                                                <tr class="hover:bg-slate-50/70 transition" x-data="{ openGuidance: false, openNote: {{ json_encode($hasNote) }}, checked: {{ json_encode((bool)($result?->is_checked)) }} }">
+                                                <tr class="hover:bg-slate-50/70 transition" x-data="{ openGuidance: false, openNote: {{ json_encode($hasNote) }}, checked: {{ json_encode($isChecked) }} }">
                                                     <td class="p-3.5 sm:p-4 align-top min-w-0">
                                                         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 min-w-0">
                                                             <div class="min-w-0">
@@ -316,7 +337,7 @@
                                                             </div>
                                                         @endif
                                                         <div x-show="openNote" x-cloak class="mt-2.5">
-                                                            <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" :disabled="!isEditorialActive" @change="autoSaveChecklist()" @blur="autoSaveChecklist()" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $result?->note }}</textarea>
+                                                            <textarea class="form-input min-h-14 py-2 text-xs item-note-input" name="items[{{ $item->id }}][note]" :disabled="!isEditorialActive" @change="autoSaveChecklist()" @blur="autoSaveChecklist()" placeholder="Specific item note (e.g. Abstract is only 120 words)...">{{ $noteValue }}</textarea>
                                                         </div>
                                                     </td>
                                                     <td class="p-3.5 sm:p-4 align-top text-center">

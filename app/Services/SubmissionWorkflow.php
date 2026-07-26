@@ -60,6 +60,22 @@ class SubmissionWorkflow
                 $changes['completed_at'] = null;
             }
 
+            if (in_array($to, [
+                SubmissionStatus::WaitingAuthorRevision,
+                SubmissionStatus::NeedsAuthorCorrection,
+                SubmissionStatus::ReviewerChangesRequested,
+                SubmissionStatus::ReadyForEdas,
+                SubmissionStatus::EdasFixRequired,
+                SubmissionStatus::Done,
+                SubmissionStatus::Rejected,
+                SubmissionStatus::Withdrawn,
+            ], true)) {
+                $locked->reviewCycles()->where('status', 'open')->update([
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                ]);
+            }
+
             $locked->update($changes);
             StatusHistory::create([
                 'submission_id' => $locked->id,

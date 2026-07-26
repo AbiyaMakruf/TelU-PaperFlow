@@ -100,6 +100,10 @@ Do not update `submissions.status` directly when a transition should be validate
 - **Asynchronous AJAX Actions with Top-Right High-Contrast Floating Toast**: Global `window.submitPaperflowForm(event)` form submit handler preventing full page reloads on paper detail page, providing button loading spinner states, dispatching `paperflow-toast` events to a high-contrast slate floating toast component (`x-teleport="body"`), and dynamically updating internal notes and file versioning table without page reload.
 - **HTML Dataset-Bound File Deletion Modal**: Refactored paper version delete modal bindings using HTML `$el.dataset` (`data-id`, `data-version`, `data-label`, `data-url`), completely eliminating quote escaping clashes and JavaScript syntax errors in Alpine directives.
 - **Role-Scoped User Manuals & Public Author Guide**: Dedicated public standalone author user manual (`/user-manual/author`) without staff sidebar, and authenticated role-scoped staff documentation hub (`/user-manual/{role}`) covering Superadmin, Conference Admin, Editorial, Reviewer, and Viewer roles with role ecosystem matrix.
+- **Automatic Review Cycle Completion & BEFORE Column Differential**: `SubmissionWorkflow` and `AuthorPortalController` automatically mark open `ReviewCycle` records as `completed` upon revision requests and author uploads. New cycles calculate a historical differential so the "BEFORE" column accurately displays previous cycle rejection/approval states (`✕` / `✓`) against newly submitted revisions.
+- **Favicon & Brand Assets**: Integrated SVG/PNG favicons, apple touch icons, and standard ICO branding across all Blade layouts (`app`, `guest`, `public`, `welcome`).
+- **Clean Status History Timeline Notes**: Replaced raw HTML table strings in `submission_status_histories.note` with sanitized plain text notes, and applied server-side Blade + API whitespace normalization & tag stripping.
+- **Ngrok Warning Bypass**: Global `SkipNgrokWarning` middleware and launcher request header `--request-header-add "ngrok-skip-browser-warning: true"` automatically bypass free ngrok interstitial warning pages.
 
 ## File storage design
 
@@ -178,6 +182,9 @@ Laravel migrations in `database/migrations` are the source of truth. Latest appl
 - `2026_07_24_000100_update_form_schema_notes_label_to_english.php`
 - `2026_07_24_000200_update_email_templates_to_english.php`
 - `2026_07_24_000300_update_revision_requested_email_template.php`
+- `2026_07_26_000100_add_soft_deletes_to_file_versions.php`
+- `2026_07_26_000100_update_revision_requested_email_deadline_bold.php`
+- `2026_07_27_000100_close_open_review_cycles_for_pending_revisions.php`
 
 Application tables are server-only. RLS is enabled without anon/authenticated policies because the browser does not use Supabase Data API for these tables. Laravel connects with the server database role.
 
@@ -285,8 +292,8 @@ php artisan migrate --force
 
 Current baseline:
 
-- **84 tests**
-- **397 assertions**
+- **85 tests**
+- **404 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
