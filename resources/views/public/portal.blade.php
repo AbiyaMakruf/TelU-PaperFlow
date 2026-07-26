@@ -66,10 +66,10 @@
 
                         @php $latestFile = $submission->files->sortByDesc('version_number')->first(); @endphp
                         @if($latestFile)
-                            <div class="mt-6 pt-4.5 border-t border-navy/10 flex flex-wrap items-center justify-between gap-3">
+                            <div class="mt-6 pt-6 border-t border-navy/10 flex flex-wrap items-center justify-between gap-3.5" style="padding-top: 1.25rem; margin-top: 1.25rem;">
                                 <div class="min-w-0">
                                     <span class="text-xs font-extrabold text-navy">Latest Manuscript File:</span>
-                                    <p class="text-xs text-muted truncate">v{{ $latestFile->version_number }} &middot; {{ $latestFile->original_name }}</p>
+                                    <p class="text-xs text-muted truncate mt-0.5">v{{ $latestFile->version_number }} &middot; {{ $latestFile->original_name }}</p>
                                 </div>
                                 <a href="{{ route('author.files.download', [$token, $latestFile]) }}" class="btn text-xs py-2.5 px-4 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download latest manuscript version (v{{ $latestFile->version_number }})">
                                     <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
