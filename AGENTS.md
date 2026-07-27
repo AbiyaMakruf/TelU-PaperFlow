@@ -104,6 +104,7 @@ Do not update `submissions.status` directly when a transition should be validate
 - **Favicon & Brand Assets**: Integrated SVG/PNG favicons, apple touch icons, and standard ICO branding across all Blade layouts (`app`, `guest`, `public`, `welcome`).
 - **Clean Status History Timeline Notes**: Replaced raw HTML table strings in `submission_status_histories.note` with sanitized plain text notes, and applied server-side Blade + API whitespace normalization & tag stripping.
 - **Ngrok Warning Bypass**: Global `SkipNgrokWarning` middleware and launcher request header `--request-header-add "ngrok-skip-browser-warning: true"` automatically bypass free ngrok interstitial warning pages.
+- **3-Script Launcher Suite & Auto-Database Switching**: Dedicated Windows batch launchers (`start-paperflow.bat` for local server + Supabase Cloud, `start-paperflow-ngrok.bat` for Ngrok + Supabase Cloud, and `start-paperflow-ngrok-local.bat` for Ngrok + Docker Local PostgreSQL on port 54322) integrated with `php artisan paperflow:switch-supabase {mode=local|cloud}` and orphaned `ngrok.exe` process cleanup.
 
 ## File storage design
 
@@ -302,10 +303,8 @@ Current baseline:
 - Ultrawide 34-inch monitor layout optimization verified across authenticated dashboard & public landing pages
 ## Pending Tasks & Feature Branches (TODO)
 
-- **[TODO] Merge Branch `feat/local-supabase`**:
-  - Implementasi Supabase Lokal (PostgreSQL `127.0.0.1:54322` via Docker), perintah `php artisan paperflow:switch-supabase {mode=local|cloud}`, 4 file launcher `.bat` (`start-paperflow-local.bat`, `start-paperflow-local-ngrok.bat`, `start-paperflow-cloud.bat`, `start-paperflow-cloud-ngrok.bat`), dan indikator status Superadmin di `/monitoring` sudah selesai dan teruji 100% pada branch `feat/local-supabase`.
-  - Branch ini sengaja belum di-merge ke branch utama `agent/build-paperflow` sesuai permintaan pengguna untuk pengerjaan fitur tambahan terlebih dahulu.
-  - Saat siap di-merge nanti, jalankan: `git merge feat/local-supabase`.
+- **[COMPLETED] Branch `feat/local-supabase-docker` Merged to `agent/build-paperflow`**:
+  - Implementasi Supabase Lokal / Docker PostgreSQL (`127.0.0.1:54322` via Docker), perintah `php artisan paperflow:switch-supabase {mode=local|cloud}`, 3 file launcher `.bat` (`start-paperflow.bat`, `start-paperflow-ngrok.bat`, `start-paperflow-ngrok-local.bat`), serta pembersihan otomatis proses `ngrok.exe` gantung telah di-merge secara penuh dan teruji 100% pada branch utama `agent/build-paperflow`.
 
 ## Git workflow
 
