@@ -726,12 +726,12 @@
                                     <td class="text-xs capitalize">{{ $manuscriptFile->source }}</td>
                                     <td class="text-xs truncate max-w-[120px]">{{ $manuscriptFile->uploader?->name ?? 'Author' }}</td>
                                     <td class="whitespace-nowrap">
-                                        <div class="flex items-center gap-1.5">
-                                            <a class="btn btn-secondary text-xs px-2.5 py-1 font-bold" href="{{ route('submissions.files.download', [$submission, $manuscriptFile]) }}">
+                                        <div class="flex flex-col items-start gap-1 py-1">
+                                            <a class="btn text-xs px-2.5 py-1 font-bold bg-orange hover:bg-orange-dark text-white shadow-2xs transition w-full text-center" href="{{ route('submissions.files.download', [$submission, $manuscriptFile]) }}">
                                                 Manuscript
                                             </a>
                                             @if($guidanceFile)
-                                                <a class="btn text-xs px-2.5 py-1 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition" href="{{ route('submissions.files.download', [$submission, $guidanceFile]) }}">
+                                                <a class="btn text-xs px-2.5 py-1 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition w-full text-center" href="{{ route('submissions.files.download', [$submission, $guidanceFile]) }}">
                                                     Revision Guide
                                                 </a>
                                             @endif
