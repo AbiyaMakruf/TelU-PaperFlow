@@ -48,8 +48,8 @@ class ConferenceMailer
                 "For clarification, contact the team via WhatsApp: -\n\n",
                 "For clarification, contact the team via WhatsApp: {{editor_whatsapp_url}}\n",
                 "For clarification, contact the team via WhatsApp: -\n",
-                "For clarification, contact the team via WhatsApp: {{editor_whatsapp_url}}",
-                "For clarification, contact the team via WhatsApp: -",
+                'For clarification, contact the team via WhatsApp: {{editor_whatsapp_url}}',
+                'For clarification, contact the team via WhatsApp: -',
             ], '', $body);
         }
         $coAuthorEmails = $submission->relationLoaded('authors')
@@ -120,14 +120,14 @@ class ConferenceMailer
     /** @param list<string> $cc */
     public function sendNotification(
         Submission $submission,
-        string $recipientEmail,
+        ?string $recipientEmail,
         string $subject,
         string $body,
         ?User $sender = null,
         array $cc = [],
         string $templateKey = 'staff_notification'
     ): ?EmailLog {
-        if (! filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+        if (! $recipientEmail || ! filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
             return null;
         }
 

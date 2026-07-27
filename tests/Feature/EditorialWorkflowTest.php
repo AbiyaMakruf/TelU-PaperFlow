@@ -10,6 +10,7 @@ use App\Models\FormVersion;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -270,7 +271,7 @@ class EditorialWorkflowTest extends TestCase
     public function test_editor_can_delete_file_version_and_set_final_version(): void
     {
         [$conference, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
-        $submission->update(['editor_id' => $editor->id, 'status' => \App\Enums\SubmissionStatus::EditorialReview]);
+        $submission->update(['editor_id' => $editor->id, 'status' => SubmissionStatus::EditorialReview]);
 
         $f1 = $submission->files()->create(['version_number' => 1, 'label' => 'V1 File', 'source' => 'author', 'disk' => 'local', 'storage_path' => 'p1', 'original_name' => 'v1.docx', 'is_final' => false]);
         $f2 = $submission->files()->create(['version_number' => 2, 'label' => 'V2 File', 'source' => 'author', 'disk' => 'local', 'storage_path' => 'p2', 'original_name' => 'v2.docx', 'is_final' => false]);
@@ -292,7 +293,7 @@ class EditorialWorkflowTest extends TestCase
         $this->assertSame(5, $f5->fresh()->version_number);
 
         // 3. New upload should become v6
-        $file = \Illuminate\Http\UploadedFile::fake()->create('v6.docx', 100);
+        $file = UploadedFile::fake()->create('v6.docx', 100);
         $this->actingAs($editor)->post(route('submissions.files.store', $submission), [
             'paper_file' => $file,
             'label' => 'V6 File',
@@ -300,6 +301,31 @@ class EditorialWorkflowTest extends TestCase
 
         $latestFile = $submission->files()->orderByDesc('version_number')->first();
         $this->assertSame(6, $latestFile->version_number);
+    }
+
+    public function test_can_assign_staff_user_without_email_address_without_throwing_exception(): void
+    {
+        [$conference, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+        $noEmailUser = User::create([
+            'name' => 'No Email Staff',
+            'username' => 'noemailstaff',
+            'password' => bcrypt('user1234'),
+            'email' => null,
+            'must_change_password' => true,
+        ]);
+        $conference->memberships()->create([
+            'user_id' => $noEmailUser->id,
+            'role' => ConferenceRole::Reviewer->value,
+        ]);
+
+        $this->actingAs($admin)->post(route('submissions.accept', $submission))->assertRedirect();
+
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), [
+            'user_id' => $noEmailUser->id,
+            'role' => ConferenceRole::Reviewer->value,
+        ])->assertRedirect();
+
+        $this->assertSame($noEmailUser->id, $submission->fresh()->reviewer_id);
     }
 
     private function submissionFor(Conference $conference, string $code, string $title, ?User $editor = null): Submission
