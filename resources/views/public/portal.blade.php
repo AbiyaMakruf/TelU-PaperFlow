@@ -325,7 +325,7 @@
                 @endif
 
                 <!-- Card File History (Accordion) -->
-                <details class="card group overflow-hidden transition">
+                <details class="card group overflow-hidden transition" x-data="{ activeNotesModal: null }">
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-6 list-none font-black text-navy focus:outline-none select-none bg-slate-50/50 hover:bg-slate-100/50 transition">
                         <div class="min-w-0">
                             <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
@@ -370,9 +370,12 @@
                                         </p>
                                         <p class="text-xs text-muted break-all">{{ $manuscriptFile->original_name }}</p>
                                         @if($manuscriptFile->notes)
-                                            <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
-                                                <span class="font-bold text-amber-950">Notes:</span> {{ $manuscriptFile->notes }}
-                                            </div>
+                                            <button type="button" data-label="{{ $manuscriptFile->label }} (v{{ $verNum }})" data-notes="{{ $manuscriptFile->notes }}" @click="activeNotesModal = { label: $el.dataset.label, text: $el.dataset.notes }" class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 border border-amber-300/70 text-[11px] font-bold text-amber-900 transition shadow-2xs">
+                                                <svg class="size-3 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                                </svg>
+                                                <span>Notes</span>
+                                            </button>
                                         @endif
                                     </div>
                                     <div class="pt-1 flex flex-col gap-2">
@@ -417,9 +420,12 @@
                                                 <p class="font-bold text-navy break-words">{{ $manuscriptFile->label }}</p>
                                                 <p class="text-xs text-muted break-all">{{ $manuscriptFile->original_name }}</p>
                                                 @if($manuscriptFile->notes)
-                                                    <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
-                                                        <span class="font-bold text-amber-950">Notes:</span> {{ $manuscriptFile->notes }}
-                                                    </div>
+                                                    <button type="button" data-label="{{ $manuscriptFile->label }} (v{{ $verNum }})" data-notes="{{ $manuscriptFile->notes }}" @click="activeNotesModal = { label: $el.dataset.label, text: $el.dataset.notes }" class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 border border-amber-300/70 text-[11px] font-bold text-amber-900 transition shadow-2xs">
+                                                        <svg class="size-3 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                                        </svg>
+                                                        <span>Notes</span>
+                                                    </button>
                                                 @endif
                                             </td>
                                             <td class="whitespace-nowrap">{{ ucfirst($manuscriptFile->source) }}</td>
@@ -435,6 +441,37 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- File Notes Modal -->
+                    <template x-teleport="body">
+                        <div x-show="activeNotesModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" @keydown.escape.window="activeNotesModal = null">
+                            <div class="card max-w-lg w-full p-5 sm:p-6 space-y-4 bg-white shadow-xl rounded-2xl border border-slate-200 min-w-0" @click.away="activeNotesModal = null">
+                                <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3 min-w-0">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <div class="size-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold shrink-0">
+                                            <svg class="size-5 text-amber-800" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                            </svg>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h3 class="font-black text-navy text-sm sm:text-base leading-tight truncate" x-text="activeNotesModal?.label || 'File Notes'"></h3>
+                                            <p class="text-xs text-muted">Catatan perbaikan &amp; keterangan berkas</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="activeNotesModal = null" class="text-muted hover:text-navy font-bold text-lg p-1 shrink-0">
+                                        &times;
+                                    </button>
+                                </div>
+                                <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200/70 text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line break-words max-h-[60vh] overflow-y-auto" x-text="activeNotesModal?.text">
+                                </div>
+                                <div class="flex justify-end pt-1">
+                                    <button type="button" @click="activeNotesModal = null" class="btn btn-secondary text-xs px-4 py-2 font-bold">
+                                        Tutup
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </details>
             </section>
 
