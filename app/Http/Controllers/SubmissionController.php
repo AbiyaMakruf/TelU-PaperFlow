@@ -836,6 +836,7 @@ class SubmissionController extends Controller
         $this->authorize('editorialReview', $submission);
         $validated = $request->validate([
             'paper_file' => ['required', File::types(['docx', 'zip', 'pdf'])->max('25mb')],
+            'guidance_pdf' => ['nullable', File::types(['pdf'])->max('25mb')],
             'label' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'is_final' => ['nullable', 'boolean'],
@@ -861,6 +862,7 @@ class SubmissionController extends Controller
         }
         $createdFile = $submission->files()->create([
             'version_number' => $version, 'label' => $validated['label'], 'source' => 'editorial',
+            'file_category' => 'editable_manuscript',
             'disk' => $storedFile['disk'], 'storage_path' => $storedFile['storage_path'],
             'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(), 'checksum' => hash_file('sha256', $file->getRealPath()),
@@ -869,6 +871,35 @@ class SubmissionController extends Controller
             'external_provider' => $storedFile['external_provider'], 'external_id' => $storedFile['external_id'],
             'external_url' => $storedFile['external_url'],
         ]);
+
+        if ($request->hasFile('guidance_pdf')) {
+            $guidance = $request->file('guidance_pdf');
+            $guidanceVersion = $version + 1;
+            $guidancePath = $submission->conference->slug.'/'.$submission->id.'/v'.$guidanceVersion.'-guidance-'.Str::slug(pathinfo($guidance->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$guidance->getClientOriginalExtension();
+            try {
+                $storedGuidance = $storage->put($submission->conference, $guidance, $guidancePath, $submission->paper_code.'-V'.$guidanceVersion.'-Guidance');
+                $submission->files()->create([
+                    'version_number' => $guidanceVersion,
+                    'label' => '[Visual Guidance] PDF Petunjuk Revisi v'.$guidanceVersion,
+                    'source' => 'editorial',
+                    'file_category' => 'revision_guidance_pdf',
+                    'disk' => $storedGuidance['disk'],
+                    'storage_path' => $storedGuidance['storage_path'],
+                    'original_name' => $guidance->getClientOriginalName(),
+                    'mime_type' => $guidance->getMimeType(),
+                    'size' => $guidance->getSize(),
+                    'checksum' => hash_file('sha256', $guidance->getRealPath()),
+                    'uploaded_by' => $request->user()->id,
+                    'notes' => 'File petunjuk visual revisi (screenshot, tanda panah, & catatan perbaikan).',
+                    'is_final' => false,
+                    'external_provider' => $storedGuidance['external_provider'],
+                    'external_id' => $storedGuidance['external_id'],
+                    'external_url' => $storedGuidance['external_url'],
+                ]);
+            } catch (Throwable $guidanceEx) {
+                report($guidanceEx);
+            }
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

@@ -169,6 +169,35 @@
                     </div>
                 @endif
 
+                @php
+                    $guidancePdf = $submission->files->firstWhere('file_category', 'revision_guidance_pdf');
+                @endphp
+                @if($guidancePdf)
+                    <div class="card p-4 sm:p-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50/90 via-purple-50/70 to-white text-indigo-950 space-y-3 shadow-md rounded-2xl">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="size-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl shrink-0 shadow-sm">
+                                    📸
+                                </div>
+                                <div>
+                                    <h3 class="font-black text-indigo-950 text-base leading-tight">Visual Revision Guidance PDF Available</h3>
+                                    <p class="text-xs text-indigo-800 mt-1 leading-relaxed">The editorial team has uploaded annotated visual screenshots (with red boxes, arrows, and specific correction notes) to help guide your revisions.</p>
+                                </div>
+                            </div>
+                            <span class="badge bg-indigo-100 text-indigo-900 border border-indigo-300 text-[10px] font-extrabold uppercase shrink-0">Visual Guide</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-indigo-200/80">
+                            <div class="min-w-0">
+                                <span class="text-xs font-bold text-indigo-950 truncate block">📄 {{ $guidancePdf->original_name }}</span>
+                                <span class="text-[11px] text-indigo-700 font-medium">Uploaded {{ $guidancePdf->created_at->format('d M Y H:i') }} &middot; {{ number_format($guidancePdf->size / (1024 * 1024), 1) }} MB</span>
+                            </div>
+                            <a href="{{ route('author.files.download', [$token, $guidancePdf]) }}" class="btn px-6 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition w-full sm:w-auto flex items-center justify-center gap-2">
+                                <span>📥 Download Visual Guidance PDF</span>
+                            </a>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Live Editorial Compliance Checklist Monitoring (Accordion) --}}
                 @php
                     $editorialTemplates = $submission->conference->checklistTemplates->filter(fn ($t) => strtolower($t->stage->value ?? $t->stage) === 'editorial');
@@ -328,7 +357,9 @@
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-1.5">
                                             <span class="badge badge-primary font-mono">v{{ $file->version_number }}</span>
-                                            @if($file->is_final)
+                                            @if($file->file_category === 'revision_guidance_pdf')
+                                                <span class="badge bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-bold">Visual Guidance PDF</span>
+                                            @elseif($file->is_final)
                                                 <span class="badge badge-success text-[10px] font-bold">Final Version</span>
                                             @endif
                                         </div>
@@ -370,7 +401,9 @@
                                         <tr>
                                             <td class="whitespace-nowrap font-mono font-bold">
                                                 v{{ $file->version_number }}
-                                                @if($file->is_final)
+                                                @if($file->file_category === 'revision_guidance_pdf')
+                                                    <span class="badge bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] ml-1.5 font-bold">Visual Guide</span>
+                                                @elseif($file->is_final)
                                                     <span class="badge badge-success text-[10px] ml-1.5 font-bold">Final</span>
                                                 @endif
                                             </td>

@@ -14,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class EditorialWorkflowTest extends TestCase
@@ -352,6 +353,52 @@ class EditorialWorkflowTest extends TestCase
 
         // Editor cannot access global Email Monitoring endpoint (403 Forbidden)
         $this->actingAs($editor)->get(route('emails.index'))->assertForbidden();
+    }
+
+    public function test_editor_can_upload_editable_manuscript_and_optional_visual_guidance_pdf_simultaneously(): void
+    {
+        [$conference, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+        $this->actingAs($admin)->post(route('submissions.accept', $submission))->assertRedirect();
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), [
+            'user_id' => $editor->id,
+            'role' => ConferenceRole::Editorial->value,
+            'manuscript_format' => 'docx',
+        ])->assertRedirect();
+
+        $manuscriptFile = UploadedFile::fake()->create('manuscript-edited.docx', 500, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        $guidancePdfFile = UploadedFile::fake()->create('visual-guidance.pdf', 800, 'application/pdf');
+
+        $response = $this->actingAs($editor)->post(route('submissions.files.store', $submission), [
+            'label' => 'Editorial Revision 1',
+            'paper_file' => $manuscriptFile,
+            'guidance_pdf' => $guidancePdfFile,
+            'notes' => 'Please follow visual annotations in the PDF guide.',
+        ]);
+
+        $response->assertRedirect();
+
+        $files = $submission->files()->orderBy('version_number')->get();
+        $this->assertCount(2, $files); // v1 editable manuscript + v2 guidance PDF
+
+        $manuscriptVersion = $files->firstWhere('file_category', 'editable_manuscript');
+        $guidanceVersion = $files->firstWhere('file_category', 'revision_guidance_pdf');
+
+        $this->assertNotNull($manuscriptVersion);
+        $this->assertNotNull($guidanceVersion);
+        $this->assertSame('manuscript-edited.docx', $manuscriptVersion->original_name);
+        $this->assertSame('visual-guidance.pdf', $guidanceVersion->original_name);
+
+        // Author portal presents visual guidance banner
+        $rawToken = Str::random(64);
+        $submission->update([
+            'author_token_hash' => hash('sha256', $rawToken),
+            'author_token_encrypted' => $rawToken,
+            'author_token_expires_at' => now()->addYear(),
+        ]);
+        $portalResponse = $this->get(route('author.portal', $rawToken));
+        $portalResponse->assertOk();
+        $portalResponse->assertSee('Visual Revision Guidance PDF Available');
+        $portalResponse->assertSee('visual-guidance.pdf');
     }
 
     private function submissionFor(Conference $conference, string $code, string $title, ?User $editor = null): Submission

@@ -757,17 +757,22 @@
 
                 @can('editorialReview', $submission)
                     <div class="border-t border-navy/10 p-4 sm:p-6 bg-slate-50/50">
-                        <h3 class="font-extrabold text-navy text-xs sm:text-sm mb-3">Upload New File Version</h3>
+                        <h3 class="font-extrabold text-navy text-xs sm:text-sm mb-3">Upload New File Version(s)</h3>
                         <form method="POST" action="{{ route('submissions.files.store', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" enctype="multipart/form-data" class="grid gap-4 grid-cols-1 sm:grid-cols-2">
                             @csrf
-                            <div>
-                                <label class="form-label text-xs">File Label *</label>
+                            <div class="sm:col-span-2">
+                                <label class="form-label text-xs">File Version Label *</label>
                                 <input class="form-input text-xs" name="label" placeholder="e.g. Editorial Revision 1 / Final Camera Ready" required>
                             </div>
                             <div>
-                                <label class="form-label text-xs">Select File *</label>
+                                <label class="form-label text-xs">File 1: Editable Manuscript File *</label>
                                 <input class="form-input text-xs py-2" type="file" name="paper_file" accept=".docx,.zip,.pdf" required onchange="if (this.files[0] && this.files[0].size > 25 * 1024 * 1024) { window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: 'Ukuran file ' + this.files[0].name + ' (' + (this.files[0].size / (1024 * 1024)).toFixed(1) + ' MB) melebihi batas maksimal 25MB.', type: 'error' } })); this.value = ''; }">
-                                <span class="mt-1 block text-[11px] text-muted">Format yang diizinkan: .docx, .zip, .pdf (Maksimal: 25MB)</span>
+                                <span class="mt-1 block text-[11px] text-muted">Format: .docx, .zip, atau .pdf (Maksimal: 25MB).</span>
+                            </div>
+                            <div>
+                                <label class="form-label text-xs">File 2: Visual Revision Guidance PDF (Optional)</label>
+                                <input class="form-input text-xs py-2" type="file" name="guidance_pdf" accept=".pdf" onchange="if (this.files[0] && this.files[0].size > 25 * 1024 * 1024) { window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: 'Ukuran file ' + this.files[0].name + ' (' + (this.files[0].size / (1024 * 1024)).toFixed(1) + ' MB) melebihi batas maksimal 25MB.', type: 'error' } })); this.value = ''; }">
+                                <span class="mt-1 block text-[11px] text-muted">PDF visual beranotasi (screenshot, kotak merah, panah, dll. Maksimal: 25MB).</span>
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="form-label text-xs">File Notes (Optional)</label>
@@ -779,7 +784,7 @@
                                     <span class="text-xs font-bold text-navy ml-2">🏁 Mark as final file version</span>
                                 </label>
                                 <button type="submit" class="btn btn-primary px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto">
-                                    ⬆️ Upload New Version
+                                    ⬆️ Upload File Version(s)
                                 </button>
                             </div>
                         </form>
