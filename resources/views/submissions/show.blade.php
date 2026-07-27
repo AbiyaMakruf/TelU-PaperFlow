@@ -837,6 +837,15 @@
                         </div>
                     </summary>
                     <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
+                        <style>
+                            .email-html-body table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.75rem; }
+                            .email-html-body th, .email-html-body td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; }
+                            .email-html-body th { background-color: #f1f5f9; font-weight: 700; color: #0f172a; }
+                            .email-html-body p { margin-bottom: 8px; }
+                            .email-html-body ul { list-style-type: disc; padding-left: 20px; margin-bottom: 8px; }
+                            .email-html-body ol { list-style-type: decimal; padding-left: 20px; margin-bottom: 8px; }
+                            .email-html-body a { color: #f47c20; text-decoration: underline; font-weight: 600; }
+                        </style>
                         <div class="flex items-center justify-between gap-3 pb-2 border-b border-navy/8">
                             <p class="text-xs text-slate-500 font-semibold">Dispatched email logs &amp; delivery status</p>
                             @if(app(\App\Services\VisibleEmailLogs::class)->canAccess(auth()->user()))
@@ -866,8 +875,16 @@
                                             <summary class="cursor-pointer text-[11px] font-bold text-orange hover:underline select-none inline-flex items-center gap-1">
                                                 <span>📄 View Email Body / Detailed Text</span>
                                             </summary>
-                                            <div class="mt-2 rounded-lg bg-white p-3 border border-navy/10 text-[11px] text-slate-700 whitespace-pre-wrap font-mono leading-relaxed max-h-60 overflow-y-auto shadow-inner">
-                                                {{ $email->body }}
+                                            <div class="mt-2 rounded-xl bg-white p-4 border border-navy/10 text-xs text-slate-800 leading-relaxed max-h-80 overflow-y-auto shadow-inner">
+                                                @if(str_contains($email->body, '<div') || str_contains($email->body, '<p') || str_contains($email->body, '<table') || str_contains($email->body, '<br') || str_contains($email->body, '<ul') || str_contains($email->body, '<ol') || str_contains($email->body, '<span') || str_contains($email->body, '<tr') || str_contains($email->body, '<td'))
+                                                    <div class="email-html-body text-navy leading-relaxed font-sans space-y-2">
+                                                        {!! $email->body !!}
+                                                    </div>
+                                                @else
+                                                    <div class="font-mono text-[11px] whitespace-pre-wrap leading-relaxed text-slate-700">
+                                                        {!! nl2br(e($email->body)) !!}
+                                                    </div>
+                                                @endif
                                             </div>
                                         </details>
                                     @endif
