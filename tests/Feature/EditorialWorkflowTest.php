@@ -6,6 +6,7 @@ use App\Enums\ConferenceRole;
 use App\Enums\ReviewStage;
 use App\Enums\SubmissionStatus;
 use App\Models\Conference;
+use App\Models\EmailLog;
 use App\Models\FormVersion;
 use App\Models\Submission;
 use App\Models\User;
@@ -326,6 +327,31 @@ class EditorialWorkflowTest extends TestCase
         ])->assertRedirect();
 
         $this->assertSame($noEmailUser->id, $submission->fresh()->reviewer_id);
+    }
+
+    public function test_editor_can_view_paper_email_history_on_detail_page_but_cannot_access_global_email_monitoring(): void
+    {
+        [$conference, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+
+        EmailLog::create([
+            'conference_id' => $conference->id,
+            'submission_id' => $submission->id,
+            'template_key' => 'revision_requested',
+            'recipient' => 'author@example.com',
+            'subject' => 'Please revise manuscript formatting',
+            'body' => 'Dear Author, please revise your paper.',
+            'status' => 'sent',
+        ]);
+
+        // Editor sees email history on paper detail page
+        $this->actingAs($editor)->get(route('submissions.show', $submission))
+            ->assertOk()
+            ->assertSee('Please revise manuscript formatting')
+            ->assertSee('Dear Author, please revise your paper.')
+            ->assertDontSee('View Full Email Monitoring');
+
+        // Editor cannot access global Email Monitoring endpoint (403 Forbidden)
+        $this->actingAs($editor)->get(route('emails.index'))->assertForbidden();
     }
 
     private function submissionFor(Conference $conference, string $code, string $title, ?User $editor = null): Submission

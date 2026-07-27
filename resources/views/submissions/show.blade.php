@@ -824,7 +824,7 @@
             </details>
 
             <!-- 4. Email & Communication History Section (Accordion) -->
-            @if($emailLogs->isNotEmpty() || app(\App\Services\VisibleEmailLogs::class)->canAccess(auth()->user()))
+            @if($emailLogs->isNotEmpty() || auth()->user()->can('view', $submission))
                 <details class="card overflow-hidden max-w-full min-w-0" id="email-history-accordion">
                     <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
                         <div class="min-w-0">
@@ -839,9 +839,11 @@
                     <div class="p-4 sm:p-6 border-t border-navy/8 space-y-4 bg-white">
                         <div class="flex items-center justify-between gap-3 pb-2 border-b border-navy/8">
                             <p class="text-xs text-slate-500 font-semibold">Dispatched email logs &amp; delivery status</p>
-                            <a class="text-xs font-bold text-orange hover:underline flex items-center gap-1" href="{{ route('emails.index') }}">
-                                View Full Email Monitoring ↗
-                            </a>
+                            @if(app(\App\Services\VisibleEmailLogs::class)->canAccess(auth()->user()))
+                                <a class="text-xs font-bold text-orange hover:underline flex items-center gap-1" href="{{ route('emails.index') }}">
+                                    View Full Email Monitoring ↗
+                                </a>
+                            @endif
                         </div>
                         <div class="space-y-3">
                             @forelse($emailLogs as $email)
@@ -859,6 +861,16 @@
                                         <span class="text-[11px] text-slate-500 shrink-0 font-medium">{{ $email->created_at->format('d M Y H:i:s') }}</span>
                                     </div>
                                     <p class="font-bold text-navy leading-snug break-words text-xs sm:text-sm">{{ $email->subject }}</p>
+                                    @if($email->body)
+                                        <details class="mt-2.5 group/body">
+                                            <summary class="cursor-pointer text-[11px] font-bold text-orange hover:underline select-none inline-flex items-center gap-1">
+                                                <span>📄 View Email Body / Detailed Text</span>
+                                            </summary>
+                                            <div class="mt-2 rounded-lg bg-white p-3 border border-navy/10 text-[11px] text-slate-700 whitespace-pre-wrap font-mono leading-relaxed max-h-60 overflow-y-auto shadow-inner">
+                                                {{ $email->body }}
+                                            </div>
+                                        </details>
+                                    @endif
                                     @if($email->error)
                                         <p class="mt-2 text-[11px] text-rose-700 bg-rose-50 p-2.5 rounded-lg border border-rose-200 leading-relaxed break-words font-medium">{{ Str::limit($email->error, 250) }}</p>
                                     @endif

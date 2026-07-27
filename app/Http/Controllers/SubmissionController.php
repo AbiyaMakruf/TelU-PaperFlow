@@ -6,6 +6,7 @@ use App\Enums\ConferenceRole;
 use App\Enums\ReviewStage;
 use App\Enums\SubmissionStatus;
 use App\Models\Conference;
+use App\Models\EmailLog;
 use App\Models\FileVersion;
 use App\Models\ReviewCycle;
 use App\Models\Submission;
@@ -130,8 +131,9 @@ class SubmissionController extends Controller
         ]);
         $editors = $submission->conference->memberships()->with('user')->where('role', ConferenceRole::Editorial)->where('is_active', true)->get();
         $reviewers = $submission->conference->memberships()->with('user')->where('role', ConferenceRole::Reviewer)->where('is_active', true)->get();
-        $emailLogs = $visibleEmailLogs->canAccess(request()->user())
-            ? $visibleEmailLogs->for(request()->user())->where('submission_id', $submission->id)->latest()->get()
+        $canViewEmailHistory = request()->user()->can('view', $submission);
+        $emailLogs = $canViewEmailHistory
+            ? EmailLog::where('submission_id', $submission->id)->latest()->get()
             : collect();
         $revisionTemplate = $submission->conference->emailTemplates()->where('key', 'revision_requested')->first();
         $defaultCc = array_values(array_unique([...$submission->conference->defaultCc(), ...($revisionTemplate?->default_cc ?? [])]));
