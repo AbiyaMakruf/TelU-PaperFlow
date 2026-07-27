@@ -684,6 +684,7 @@
                                 <th>Category</th>
                                 <th>Source</th>
                                 <th>Uploaded By</th>
+                                <th>Download</th>
                                 <th class="text-right">Action</th>
                             </tr>
                         </thead>
@@ -724,12 +725,20 @@
                                     </td>
                                     <td class="text-xs capitalize">{{ $manuscriptFile->source }}</td>
                                     <td class="text-xs truncate max-w-[120px]">{{ $manuscriptFile->uploader?->name ?? 'Author' }}</td>
+                                    <td class="whitespace-nowrap">
+                                        <div class="flex items-center gap-1.5">
+                                            <a class="btn btn-secondary text-xs px-2.5 py-1 font-bold" href="{{ route('submissions.files.download', [$submission, $manuscriptFile]) }}">
+                                                Manuscript
+                                            </a>
+                                            @if($guidanceFile)
+                                                <a class="btn text-xs px-2.5 py-1 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition" href="{{ route('submissions.files.download', [$submission, $guidanceFile]) }}">
+                                                    Revision Guide
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </td>
                                     <td class="text-right space-x-2 whitespace-nowrap">
                                         <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.preview', [$submission, $manuscriptFile]) }}">Preview</a>
-                                        <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $manuscriptFile]) }}">Download Manuscript</a>
-                                        @if($guidanceFile)
-                                            <a class="font-bold text-indigo-700 hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $guidanceFile]) }}">Download Revision Guide</a>
-                                        @endif
                                         @can('editorialReview', $submission)
                                             <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $manuscriptFile]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form" style="{{ $manuscriptFile->is_final ? 'display: none;' : '' }}">
                                                 @csrf
