@@ -872,12 +872,13 @@ class SubmissionController extends Controller
             'external_url' => $storedFile['external_url'],
         ]);
 
+        $createdGuidanceFile = null;
         if ($request->hasFile('guidance_pdf')) {
             $guidance = $request->file('guidance_pdf');
             $guidancePath = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-guidance-'.Str::slug(pathinfo($guidance->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$guidance->getClientOriginalExtension();
             try {
                 $storedGuidance = $storage->put($submission->conference, $guidance, $guidancePath, $submission->paper_code.'-V'.$version.'-Guidance');
-                $submission->files()->create([
+                $createdGuidanceFile = $submission->files()->create([
                     'version_number' => $version,
                     'label' => $validated['label'].' (Visual Guidance PDF)',
                     'source' => 'editorial',
@@ -921,6 +922,11 @@ class SubmissionController extends Controller
                     'destroy_url' => route('submissions.files.destroy', [$submission, $createdFile]),
                     'can_editorial' => $request->user()->can('editorialReview', $submission),
                     'csrf_token' => csrf_token(),
+                    'guidance' => $createdGuidanceFile ? [
+                        'id' => $createdGuidanceFile->id,
+                        'original_name' => $createdGuidanceFile->original_name,
+                        'download_url' => route('submissions.files.download', [$submission, $createdGuidanceFile]),
+                    ] : null,
                 ],
             ]);
         }

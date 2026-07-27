@@ -1248,6 +1248,17 @@
                     if (tbody) {
                         let setFinalBtnHtml = '';
                         let deleteBtnHtml = '';
+                        let guidanceBadgeHtml = '';
+                        let guidanceBtnHtml = '';
+
+                        if (data.file.guidance) {
+                            guidanceBadgeHtml = ' <span class="badge bg-indigo-100 text-indigo-900 border border-indigo-300 text-[10px] ml-1">+ Visual Guide</span>';
+                            guidanceBtnHtml = `
+                                <a class="btn text-xs px-2.5 py-1 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition w-full text-center" href="${data.file.guidance.download_url}">
+                                    Revision Guide
+                                </a>
+                            `;
+                        }
 
                         if (data.file.can_editorial) {
                             if (data.file.file_category !== 'revision_guidance_pdf') {
@@ -1276,18 +1287,24 @@
                                 <td class="min-w-[180px]">
                                     <p class="font-bold text-navy text-xs sm:text-sm break-all leading-snug">${escapeHtml(data.file.label)}</p>
                                     <p class="text-xs text-muted break-all mt-0.5">${escapeHtml(data.file.original_name)} &middot; ${data.file.size_kb} KB</p>
-                                    ${data.file.notes ? `<div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words"><span class="font-bold text-amber-950">📝 Notes:</span> ${escapeHtml(data.file.notes)}</div>` : ''}
+                                    ${data.file.notes ? `<div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words"><span class="font-bold text-amber-950">Notes:</span> ${escapeHtml(data.file.notes)}</div>` : ''}
                                 </td>
                                 <td>
-                                    <span class="badge ${data.file.file_category === 'revision_guidance_pdf' ? 'badge-warning' : 'badge-neutral'} text-[10px]">
-                                        ${data.file.file_category === 'revision_guidance_pdf' ? 'Revision Guidance PDF' : 'Editable Manuscript'}
-                                    </span>
+                                    <span class="badge badge-neutral text-[10px]">Editable Manuscript</span>
+                                    ${guidanceBadgeHtml}
                                 </td>
                                 <td class="text-xs capitalize">${escapeHtml(data.file.source)}</td>
                                 <td class="text-xs truncate max-w-[120px]">${escapeHtml(data.file.uploader_name)}</td>
+                                <td class="whitespace-nowrap">
+                                    <div class="flex flex-col items-start gap-1 py-1">
+                                        <a class="btn text-xs px-2.5 py-1 font-bold bg-orange hover:bg-orange-dark text-white shadow-2xs transition w-full text-center" href="${data.file.download_url}">
+                                            Manuscript
+                                        </a>
+                                        ${guidanceBtnHtml}
+                                    </div>
+                                </td>
                                 <td class="text-right space-x-2 whitespace-nowrap">
                                     <a class="font-bold text-orange hover:underline text-xs" href="${data.file.preview_url}">Preview</a>
-                                    <a class="font-bold text-orange hover:underline text-xs" href="${data.file.download_url}">Download</a>
                                     ${setFinalBtnHtml}
                                     ${deleteBtnHtml}
                                 </td>
