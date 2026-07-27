@@ -67,29 +67,39 @@
                                 ?? $submission->files->firstWhere('file_category', 'revision_guidance_pdf');
                         @endphp
                         @if($latestManuscript)
-                            <div class="mt-6 pt-6 border-t border-navy/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5" style="padding-top: 1.25rem; margin-top: 1.25rem;">
-                                <div class="min-w-0">
-                                    <span class="text-xs font-extrabold text-navy">{{ $finalFile ? 'Final Approved Manuscript File:' : 'Latest Manuscript File:' }}</span>
-                                    <p class="text-xs text-muted truncate mt-0.5">
-                                        v{{ $latestManuscript->version_number }} &middot; {{ $latestManuscript->original_name }}
-                                        @if($latestManuscript->is_final)
-                                            <span class="badge badge-success text-[10px] ml-1.5 font-bold">Final Version</span>
-                                        @endif
-                                    </p>
+                            <div class="mt-5 pt-5 border-t border-navy/10 space-y-3" style="padding-top: 1.25rem; margin-top: 1.25rem;">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-xs font-extrabold text-navy uppercase tracking-wider">
+                                        {{ $finalFile ? 'Final Approved Manuscript Files' : 'Latest Manuscript Files (v'.$latestManuscript->version_number.')' }}
+                                    </span>
+                                    @if($latestManuscript->is_final)
+                                        <span class="badge badge-success text-[10px] font-bold">Final Version</span>
+                                    @endif
                                 </div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <a href="{{ route('author.files.download', [$token, $latestManuscript]) }}" class="btn text-xs py-2.5 px-4 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download manuscript version (v{{ $latestManuscript->version_number }})">
-                                        <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
-                                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                                        </svg>
-                                        <span>Download {{ $latestManuscript->is_final ? 'Final File' : 'Latest Manuscript' }} (v{{ $latestManuscript->version_number }})</span>
+                                <div class="grid gap-3 {{ $latestGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
+                                    <!-- Manuscript Download Card -->
+                                    <a href="{{ route('author.files.download', [$token, $latestManuscript]) }}" class="group p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 to-amber-50/50 hover:border-orange/40 hover:bg-orange/10 transition flex items-center justify-between gap-3 shadow-2xs">
+                                        <div class="min-w-0 space-y-0.5">
+                                            <span class="text-[10px] font-extrabold text-orange uppercase tracking-wider block">Editable Manuscript</span>
+                                            <p class="text-xs font-bold text-navy truncate" title="{{ $latestManuscript->original_name }}">{{ $latestManuscript->original_name }}</p>
+                                            <span class="text-[11px] text-muted font-medium block">v{{ $latestManuscript->version_number }} &middot; {{ number_format($latestManuscript->size / 1024, 0) }} KB</span>
+                                        </div>
+                                        <span class="btn text-xs py-2 px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition">
+                                            <span>📥 Download</span>
+                                        </span>
                                     </a>
+
                                     @if($latestGuidancePdf)
-                                        <a href="{{ route('author.files.download', [$token, $latestGuidancePdf]) }}" class="btn text-xs py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download PDF Visual Guidance for revision">
-                                            <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
-                                                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                                            </svg>
-                                            <span>Download Guidance PDF (v{{ $latestGuidancePdf->version_number }})</span>
+                                        <!-- Visual Guidance PDF Download Card -->
+                                        <a href="{{ route('author.files.download', [$token, $latestGuidancePdf]) }}" class="group p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:border-indigo-300 hover:bg-indigo-100/70 transition flex items-center justify-between gap-3 shadow-2xs">
+                                            <div class="min-w-0 space-y-0.5">
+                                                <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Visual Revision Guide</span>
+                                                <p class="text-xs font-bold text-indigo-950 truncate" title="{{ $latestGuidancePdf->original_name }}">{{ $latestGuidancePdf->original_name }}</p>
+                                                <span class="text-[11px] text-indigo-700 font-medium block">v{{ $latestGuidancePdf->version_number }} &middot; PDF Guide</span>
+                                            </div>
+                                            <span class="btn text-xs py-2 px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition">
+                                                <span>📸 Download</span>
+                                            </span>
                                         </a>
                                     @endif
                                 </div>
