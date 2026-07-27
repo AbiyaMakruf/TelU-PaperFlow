@@ -865,7 +865,7 @@
                                     </div>
                                     <div class="min-w-0">
                                         <h3 class="font-black text-navy text-sm sm:text-base leading-tight truncate" x-text="activeNotesModal?.label || 'File Notes'"></h3>
-                                        <p class="text-xs text-muted">Catatan perbaikan &amp; keterangan berkas</p>
+                                        <p class="text-xs text-muted">Revision notes &amp; file description</p>
                                     </div>
                                 </div>
                                 <button type="button" @click="activeNotesModal = null" class="text-muted hover:text-navy font-bold text-lg p-1 shrink-0">
@@ -876,7 +876,7 @@
                             </div>
                             <div class="flex justify-end pt-1">
                                 <button type="button" @click="activeNotesModal = null" class="btn btn-secondary text-xs px-4 py-2 font-bold">
-                                    Tutup
+                                    Close
                                 </button>
                             </div>
                         </div>
