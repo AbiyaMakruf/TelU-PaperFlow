@@ -368,13 +368,10 @@
                                         <p class="text-sm font-bold text-navy break-words">
                                             {{ $manuscriptFile->label }}
                                         </p>
-                                        <p class="text-xs text-muted break-all">📄 {{ $manuscriptFile->original_name }}</p>
-                                        @if($guidanceFile)
-                                            <p class="text-xs text-indigo-900 font-bold break-all">📸 {{ $guidanceFile->original_name }} (Visual Guidance PDF)</p>
-                                        @endif
+                                        <p class="text-xs text-muted break-all">{{ $manuscriptFile->original_name }}</p>
                                         @if($manuscriptFile->notes)
                                             <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
-                                                <span class="font-bold text-amber-950">📝 Notes:</span> {{ $manuscriptFile->notes }}
+                                                <span class="font-bold text-amber-950">Notes:</span> {{ $manuscriptFile->notes }}
                                             </div>
                                         @endif
                                     </div>
@@ -418,16 +415,10 @@
                                             </td>
                                             <td class="min-w-[220px]">
                                                 <p class="font-bold text-navy break-words">{{ $manuscriptFile->label }}</p>
-                                                <p class="text-xs text-muted break-all">📄 {{ $manuscriptFile->original_name }}</p>
-                                                @if($guidanceFile)
-                                                    <div class="mt-1 flex items-center gap-1.5 text-xs text-indigo-900 font-semibold bg-indigo-50/80 p-1.5 rounded border border-indigo-200/80">
-                                                        <span>📸 Guidance PDF:</span>
-                                                        <span class="truncate">{{ $guidanceFile->original_name }}</span>
-                                                    </div>
-                                                @endif
+                                                <p class="text-xs text-muted break-all">{{ $manuscriptFile->original_name }}</p>
                                                 @if($manuscriptFile->notes)
                                                     <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
-                                                        <span class="font-bold text-amber-950">📝 Notes:</span> {{ $manuscriptFile->notes }}
+                                                        <span class="font-bold text-amber-950">Notes:</span> {{ $manuscriptFile->notes }}
                                                     </div>
                                                 @endif
                                             </td>
