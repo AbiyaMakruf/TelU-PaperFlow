@@ -501,12 +501,12 @@ class SubmissionController extends Controller
                 'success' => true,
                 'message' => 'Status IEEE PDF eXpress & catatan EDAS berhasil diperbarui.',
                 'pdf_express_status' => $fresh->pdf_express_status,
-                'pdf_express_label' => match($fresh->pdf_express_status) {
+                'pdf_express_label' => match ($fresh->pdf_express_status) {
                     'passed' => 'PDF eXpress: Passed',
                     'failed' => 'PDF eXpress: Failed',
                     default => 'PDF eXpress: Pending',
                 },
-                'pdf_express_color' => match($fresh->pdf_express_status) {
+                'pdf_express_color' => match ($fresh->pdf_express_status) {
                     'passed' => 'emerald',
                     'failed' => 'rose',
                     default => 'amber',
@@ -833,7 +833,7 @@ class SubmissionController extends Controller
     {
         $this->authorize('editorialReview', $submission);
         $validated = $request->validate([
-            'paper_file' => ['required', File::types($submission->conference->allowedFileExtensions(true))->max($submission->conference->maxFileSizeMb().'mb')],
+            'paper_file' => ['required', File::types(['docx', 'zip', 'pdf'])->max('25mb')],
             'label' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'is_final' => ['nullable', 'boolean'],

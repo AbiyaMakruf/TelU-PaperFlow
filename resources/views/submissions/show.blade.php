@@ -766,7 +766,8 @@
                             </div>
                             <div>
                                 <label class="form-label text-xs">Select File *</label>
-                                <input class="form-input text-xs py-2" type="file" name="paper_file" required>
+                                <input class="form-input text-xs py-2" type="file" name="paper_file" accept=".docx,.zip,.pdf" required>
+                                <span class="mt-1 block text-[11px] text-muted">Format yang diizinkan: .docx, .zip, .pdf (Maksimal: 25MB)</span>
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="form-label text-xs">File Notes (Optional)</label>
