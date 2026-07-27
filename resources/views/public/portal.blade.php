@@ -65,40 +65,41 @@
                             $latestManuscript = $finalFile ?? $submission->files->where('file_category', 'editable_manuscript')->sortByDesc('version_number')->first() ?? $submission->files->sortByDesc('version_number')->first();
                             $latestGuidancePdf = $submission->files->where('version_number', $latestManuscript?->version_number)->firstWhere('file_category', 'revision_guidance_pdf')
                                 ?? $submission->files->firstWhere('file_category', 'revision_guidance_pdf');
+                            $statusLabel = $latestManuscript?->is_final ? 'Final' : 'Latest';
                         @endphp
                         @if($latestManuscript)
                             <div class="mt-5 pt-5 border-t border-navy/10 space-y-3" style="padding-top: 1.25rem; margin-top: 1.25rem;">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-xs font-extrabold text-navy uppercase tracking-wider">
-                                        {{ $finalFile ? 'Final Approved Manuscript Files' : 'Latest Manuscript Files (v'.$latestManuscript->version_number.')' }}
+                                        {{ $statusLabel }} Manuscript Files
                                     </span>
-                                    @if($latestManuscript->is_final)
-                                        <span class="badge badge-success text-[10px] font-bold">Final Version</span>
-                                    @endif
+                                    <span class="badge {{ $latestManuscript->is_final ? 'badge-success' : 'badge-neutral' }} text-[10px] font-bold">
+                                        {{ $statusLabel }}
+                                    </span>
                                 </div>
                                 <div class="grid gap-3 {{ $latestGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
                                     <!-- Manuscript Download Card -->
                                     <a href="{{ route('author.files.download', [$token, $latestManuscript]) }}" class="group p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 to-amber-50/50 hover:border-orange/40 hover:bg-orange/10 transition flex items-center justify-between gap-3 shadow-2xs">
                                         <div class="min-w-0 space-y-0.5">
-                                            <span class="text-[10px] font-extrabold text-orange uppercase tracking-wider block">Editable Manuscript</span>
+                                            <span class="text-[10px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Manuscript</span>
                                             <p class="text-xs font-bold text-navy truncate" title="{{ $latestManuscript->original_name }}">{{ $latestManuscript->original_name }}</p>
-                                            <span class="text-[11px] text-muted font-medium block">v{{ $latestManuscript->version_number }} &middot; {{ number_format($latestManuscript->size / 1024, 0) }} KB</span>
+                                            <span class="text-[11px] text-muted font-medium block">{{ number_format($latestManuscript->size / 1024, 0) }} KB</span>
                                         </div>
-                                        <span class="btn text-xs py-2 px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition">
-                                            <span>📥 Download</span>
+                                        <span class="btn text-xs py-2 px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                            Download
                                         </span>
                                     </a>
 
                                     @if($latestGuidancePdf)
-                                        <!-- Visual Guidance PDF Download Card -->
+                                        <!-- Revision Guide Download Card -->
                                         <a href="{{ route('author.files.download', [$token, $latestGuidancePdf]) }}" class="group p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:border-indigo-300 hover:bg-indigo-100/70 transition flex items-center justify-between gap-3 shadow-2xs">
                                             <div class="min-w-0 space-y-0.5">
-                                                <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Visual Revision Guide</span>
+                                                <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Revision Guide</span>
                                                 <p class="text-xs font-bold text-indigo-950 truncate" title="{{ $latestGuidancePdf->original_name }}">{{ $latestGuidancePdf->original_name }}</p>
-                                                <span class="text-[11px] text-indigo-700 font-medium block">v{{ $latestGuidancePdf->version_number }} &middot; PDF Guide</span>
+                                                <span class="text-[11px] text-indigo-700 font-medium block">PDF Guide &middot; {{ number_format($latestGuidancePdf->size / 1024, 0) }} KB</span>
                                             </div>
-                                            <span class="btn text-xs py-2 px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition">
-                                                <span>📸 Download</span>
+                                            <span class="btn text-xs py-2 px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                                Download
                                             </span>
                                         </a>
                                     @endif
@@ -379,11 +380,11 @@
                                     </div>
                                     <div class="pt-1 flex flex-col gap-2">
                                         <a class="btn btn-secondary text-xs w-full py-2.5 flex items-center justify-center gap-2" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}">
-                                            <span>📥 Download Manuscript (v{{ $verNum }})</span>
+                                            <span>Download Manuscript (v{{ $verNum }})</span>
                                         </a>
                                         @if($guidanceFile)
                                             <a class="btn text-xs w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition" href="{{ route('author.files.download', [$token, $guidanceFile]) }}">
-                                                <span>📸 Download Guidance PDF (v{{ $verNum }})</span>
+                                                <span>Download Revision Guide (v{{ $verNum }})</span>
                                             </a>
                                         @endif
                                     </div>
@@ -434,7 +435,7 @@
                                             <td class="whitespace-nowrap text-right space-x-3">
                                                 <a class="font-bold text-orange hover:underline text-xs" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}">Download Manuscript</a>
                                                 @if($guidanceFile)
-                                                    <a class="font-bold text-indigo-700 hover:underline text-xs" href="{{ route('author.files.download', [$token, $guidanceFile]) }}">Download Guidance PDF</a>
+                                                    <a class="font-bold text-indigo-700 hover:underline text-xs" href="{{ route('author.files.download', [$token, $guidanceFile]) }}">Download Revision Guide</a>
                                                 @endif
                                             </td>
                                         </tr>

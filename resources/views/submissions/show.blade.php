@@ -734,7 +734,7 @@
                                         <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.preview', [$submission, $manuscriptFile]) }}">Preview</a>
                                         <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $manuscriptFile]) }}">Download Manuscript</a>
                                         @if($guidanceFile)
-                                            <a class="font-bold text-indigo-700 hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $guidanceFile]) }}">Download Guidance PDF</a>
+                                            <a class="font-bold text-indigo-700 hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $guidanceFile]) }}">Download Revision Guide</a>
                                         @endif
                                         @can('editorialReview', $submission)
                                             <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $manuscriptFile]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form" style="{{ $manuscriptFile->is_final ? 'display: none;' : '' }}">

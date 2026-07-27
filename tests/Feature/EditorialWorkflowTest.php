@@ -399,7 +399,7 @@ class EditorialWorkflowTest extends TestCase
         ]);
         $portalResponse = $this->get(route('author.portal', $rawToken));
         $portalResponse->assertOk();
-        $portalResponse->assertSee('Download Guidance PDF');
+        $portalResponse->assertSee('Download Revision Guide');
         $portalResponse->assertDontSee('Visual Revision Guidance PDF Available');
     }
 
