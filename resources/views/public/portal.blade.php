@@ -293,11 +293,6 @@
                             <input class="form-input min-w-0 py-3" type="file" name="paper_file" accept=".docx,.zip" required>
                             <span class="mt-2 block text-xs text-muted">Use DOCX or ZIP containing all LaTeX sources.</span>
                         </label>
-                        <label class="mt-4 block min-w-0">
-                            <span class="form-label">Revision Guidance PDF / Response Form (Optional)</span>
-                            <input class="form-input min-w-0 py-2 text-xs" type="file" name="guidance_pdf" accept=".pdf">
-                            <span class="mt-1 block text-xs text-muted">Upload author revision explanation or response form PDF if applicable.</span>
-                        </label>
                         <label class="mt-5 block min-w-0">
                             <span class="form-label">Revision Notes</span>
                             <textarea class="form-input min-w-0 min-h-24 py-3" name="notes" placeholder="Explain the changes made..."></textarea>
@@ -313,7 +308,7 @@
                             <h2 class="text-base sm:text-lg font-black text-navy inline-flex items-center gap-2">
                                 <span>File Version History</span>
                             </h2>
-                            <p class="mt-0.5 text-xs text-muted font-normal">History of uploaded manuscript versions (.docx / .zip) and revision response PDFs.</p>
+                            <p class="mt-0.5 text-xs text-muted font-normal">History of uploaded manuscript versions (.docx / .zip).</p>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
                             <span class="badge badge-primary text-[10px]">{{ $submission->files->count() }} {{ Str::plural('file', $submission->files->count()) }}</span>
