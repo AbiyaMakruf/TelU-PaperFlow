@@ -17,7 +17,7 @@
                 <p class="mt-2 text-sm text-slate-600">The conference administrator needs to configure file storage first.</p>
             </div>
         @else
-        <form method="POST" action="{{ route('public.submission.store', $conference->slug) }}" enctype="multipart/form-data" class="space-y-5" x-data="{ coAuthors: @js(old('co_authors', [])) }">
+        <form method="POST" action="{{ route('public.submission.store', $conference->slug) }}" enctype="multipart/form-data" class="space-y-5" x-data="{ coAuthors: @js(old('co_authors', [])) }" onsubmit="const fileInput = this.querySelector('input[type=file]'); const maxBytes = {{ ($conference->maxFileSizeMb() ?: 25) * 1024 * 1024 }}; if (fileInput && fileInput.files[0] && fileInput.files[0].size > maxBytes) { alert('Ukuran file ' + fileInput.files[0].name + ' (' + (fileInput.files[0].size / (1024*1024)).toFixed(1) + ' MB) melebihi batas maksimal {{ $conference->maxFileSizeMb() ?: 25 }}MB. Silakan pilih file yang lebih kecil.'); fileInput.value = ''; return false; } const btn = this.querySelector('button[type=submit]'); if (btn) { btn.disabled = true; btn.innerHTML = 'Processing...'; }">
             @csrf
 
             <!-- 1. Google Form Header Card -->
@@ -177,7 +177,7 @@
 
                 <label class="block">
                     <span class="form-label">Editable Manuscript File <span class="text-rose-600">*</span></span>
-                    <input class="form-input py-3" type="file" name="paper_file" accept=".docx,.zip" required>
+                    <input class="form-input py-3" type="file" name="paper_file" accept=".docx,.zip" required onchange="const maxBytes = {{ ($conference->maxFileSizeMb() ?: 25) * 1024 * 1024 }}; if (this.files[0] && this.files[0].size > maxBytes) { alert('Ukuran file ' + this.files[0].name + ' (' + (this.files[0].size / (1024*1024)).toFixed(1) + ' MB) melebihi batas maksimal {{ $conference->maxFileSizeMb() ?: 25 }}MB.'); this.value = ''; }">
                     <span class="mt-2 block text-xs leading-relaxed text-slate-500">Upload an editable source file: <strong>.docx</strong> for Microsoft Word or a <strong>.zip</strong> archive containing LaTeX sources, images, and bibliography. Do not upload PDF only. Maximum {{ $conference->maxFileSizeMb() }} MB.</span>
                 </label>
 

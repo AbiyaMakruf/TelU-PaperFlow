@@ -285,19 +285,19 @@
                 @endforeach
 
                 @if (in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true))
-                    <form method="POST" action="{{ route('author.revision', $token) }}" enctype="multipart/form-data" class="card p-4 sm:p-6">
+                    <form method="POST" action="{{ route('author.revision', $token) }}" enctype="multipart/form-data" class="card p-4 sm:p-6" onsubmit="const fileInput = this.querySelector('input[type=file]'); const maxBytes = {{ ($submission->conference->maxFileSizeMb() ?: 25) * 1024 * 1024 }}; if (fileInput && fileInput.files[0] && fileInput.files[0].size > maxBytes) { alert('Ukuran file ' + fileInput.files[0].name + ' (' + (fileInput.files[0].size / (1024*1024)).toFixed(1) + ' MB) melebihi batas maksimal {{ $submission->conference->maxFileSizeMb() ?: 25 }}MB. Silakan pilih file yang lebih kecil.'); fileInput.value = ''; return false; } const btn = this.querySelector('button[type=submit]'); if (btn) { btn.disabled = true; btn.innerHTML = 'Processing...'; }">
                         @csrf
                         <h2 class="text-lg font-black text-navy">Upload Revision</h2>
                         <label class="mt-5 block min-w-0">
                             <span class="form-label">New Editable Source File *</span>
-                            <input class="form-input min-w-0 py-3" type="file" name="paper_file" accept=".docx,.zip" required>
-                            <span class="mt-2 block text-xs text-muted">Use DOCX or ZIP containing all LaTeX sources.</span>
+                            <input class="form-input min-w-0 py-3" type="file" name="paper_file" accept=".docx,.zip" required onchange="const maxBytes = {{ ($submission->conference->maxFileSizeMb() ?: 25) * 1024 * 1024 }}; if (this.files[0] && this.files[0].size > maxBytes) { alert('Ukuran file ' + this.files[0].name + ' (' + (this.files[0].size / (1024*1024)).toFixed(1) + ' MB) melebihi batas maksimal {{ $submission->conference->maxFileSizeMb() ?: 25 }}MB.'); this.value = ''; }">
+                            <span class="mt-2 block text-xs text-muted">Use DOCX or ZIP containing all LaTeX sources (Max {{ $submission->conference->maxFileSizeMb() ?: 25 }} MB).</span>
                         </label>
                         <label class="mt-5 block min-w-0">
                             <span class="form-label">Revision Notes</span>
                             <textarea class="form-input min-w-0 min-h-24 py-3" name="notes" placeholder="Explain the changes made..."></textarea>
                         </label>
-                        <button class="btn btn-primary mt-5 w-full sm:w-auto">Submit Revision</button>
+                        <button class="btn btn-primary mt-5 w-full sm:w-auto" type="submit">Submit Revision</button>
                     </form>
                 @endif
 
