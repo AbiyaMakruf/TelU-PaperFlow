@@ -398,9 +398,9 @@
                                 <thead>
                                     <tr>
                                         <th>Version</th>
-                                        <th>Manuscript & Guidance Files</th>
+                                        <th>File</th>
                                         <th>Source</th>
-                                        <th class="text-right">Action</th>
+                                        <th>Download</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -429,11 +429,17 @@
                                                 @endif
                                             </td>
                                             <td class="whitespace-nowrap">{{ ucfirst($manuscriptFile->source) }}</td>
-                                            <td class="whitespace-nowrap text-right space-x-3">
-                                                <a class="font-bold text-orange hover:underline text-xs" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}">Download Manuscript</a>
-                                                @if($guidanceFile)
-                                                    <a class="font-bold text-indigo-700 hover:underline text-xs" href="{{ route('author.files.download', [$token, $guidanceFile]) }}">Download Revision Guide</a>
-                                                @endif
+                                            <td class="whitespace-nowrap">
+                                                <div class="flex flex-col items-start gap-1 py-1">
+                                                    <a class="btn text-xs px-2.5 py-1 font-bold bg-orange hover:bg-orange-dark text-white shadow-2xs transition w-full text-center" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}">
+                                                        Manuscript
+                                                    </a>
+                                                    @if($guidanceFile)
+                                                        <a class="btn text-xs px-2.5 py-1 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition w-full text-center" href="{{ route('author.files.download', [$token, $guidanceFile]) }}">
+                                                            Revision Guide
+                                                        </a>
+                                                    @endif
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
