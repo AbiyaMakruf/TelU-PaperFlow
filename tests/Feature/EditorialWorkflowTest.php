@@ -286,6 +286,13 @@ class EditorialWorkflowTest extends TestCase
         $this->assertTrue($f3->fresh()->is_final);
         $this->assertFalse($f5->fresh()->is_final);
 
+        // 1b. Unfinal v3
+        $this->actingAs($editor)->post(route('submissions.files.set-final', [$submission, $f3]))->assertRedirect();
+        $this->assertFalse($f3->fresh()->is_final);
+
+        // Re-set v3 as Final
+        $this->actingAs($editor)->post(route('submissions.files.set-final', [$submission, $f3]))->assertRedirect();
+
         // 2. Delete v3
         $this->actingAs($editor)->delete(route('submissions.files.destroy', [$submission, $f3]))->assertRedirect();
         $this->assertSoftDeleted('file_versions', ['id' => $f3->id]);

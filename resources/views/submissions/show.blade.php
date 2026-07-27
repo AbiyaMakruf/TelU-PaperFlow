@@ -743,10 +743,10 @@
                                     <td class="text-right space-x-2 whitespace-nowrap">
                                         <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.preview', [$submission, $manuscriptFile]) }}">Preview</a>
                                         @can('editorialReview', $submission)
-                                            <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $manuscriptFile]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form" style="{{ $manuscriptFile->is_final ? 'display: none;' : '' }}">
+                                            <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $manuscriptFile]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form">
                                                 @csrf
-                                                <button type="submit" class="font-bold text-emerald-600 hover:underline text-xs" title="Tandai berkas ini sebagai versi final">
-                                                    Set Final
+                                                <button type="submit" class="font-bold {{ $manuscriptFile->is_final ? 'text-amber-700 hover:underline' : 'text-emerald-600 hover:underline' }} text-xs set-final-btn" title="{{ $manuscriptFile->is_final ? 'Batalkan status versi final untuk berkas ini' : 'Tandai berkas ini sebagai versi final' }}">
+                                                    {{ $manuscriptFile->is_final ? 'Unfinal' : 'Set Final' }}
                                                 </button>
                                             </form>
                                             <button type="button" data-id="{{ $manuscriptFile->id }}" data-version="v{{ $verNum }}" data-label="{{ $manuscriptFile->label }}" data-url="{{ route('submissions.files.destroy', [$submission, $manuscriptFile]) }}" @click="deleteTarget = { id: $el.dataset.id, version: $el.dataset.version, label: $el.dataset.label, url: $el.dataset.url }" class="font-bold text-rose-600 hover:underline text-xs" title="Hapus berkas versi v{{ $verNum }}">
@@ -1297,10 +1297,10 @@
                         if (data.file.can_editorial) {
                             if (data.file.file_category !== 'revision_guidance_pdf') {
                                 setFinalBtnHtml = `
-                                    <form method="POST" action="${data.file.set_final_url}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form" style="${data.file.is_final ? 'display: none;' : ''}">
+                                    <form method="POST" action="${data.file.set_final_url}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form">
                                         <input type="hidden" name="_token" value="${data.file.csrf_token}">
-                                        <button type="submit" class="font-bold text-emerald-600 hover:underline text-xs" title="Tandai berkas ini sebagai versi final">
-                                            Set Final
+                                        <button type="submit" class="font-bold ${data.file.is_final ? 'text-amber-700 hover:underline' : 'text-emerald-600 hover:underline'} text-xs set-final-btn" title="${data.file.is_final ? 'Batalkan status versi final untuk berkas ini' : 'Tandai berkas ini sebagai versi final'}">
+                                            ${data.file.is_final ? 'Unfinal' : 'Set Final'}
                                         </button>
                                     </form>
                                 `;
@@ -1321,7 +1321,7 @@
                                 <td class="min-w-[180px]">
                                     <p class="font-bold text-navy text-xs sm:text-sm break-all leading-snug">${escapeHtml(data.file.label)}</p>
                                     <p class="text-xs text-muted break-all mt-0.5">${escapeHtml(data.file.original_name)} &middot; ${data.file.size_kb} KB</p>
-                                    ${data.file.notes ? `<div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words"><span class="font-bold text-amber-950">Notes:</span> ${escapeHtml(data.file.notes)}</div>` : ''}
+                                    ${data.file.notes ? `<button type="button" data-label="${escapeHtml(data.file.label)} (v${data.file.version_number})" data-notes="${escapeHtml(data.file.notes)}" @click="activeNotesModal = { label: $el.dataset.label, text: $el.dataset.notes }" class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 border border-amber-300/70 text-[11px] font-bold text-amber-900 transition shadow-2xs"><svg class="size-3 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span>Notes</span></button>` : ''}
                                 </td>
                                 <td>
                                     <span class="badge badge-neutral text-[10px]">Editable Manuscript</span>
@@ -1347,11 +1347,25 @@
                         tbody.insertAdjacentHTML('afterbegin', newRowHtml);
                     }
                     form.reset();
+                } else if (data.is_unfinal) {
+                    const tbody = document.getElementById('file-version-table-body');
+                    if (tbody) {
+                        tbody.querySelectorAll('.badge-success').forEach(badge => badge.remove());
+                        tbody.querySelectorAll('.set-final-btn').forEach(btn => {
+                            btn.className = 'font-bold text-emerald-600 hover:underline text-xs set-final-btn';
+                            btn.textContent = 'Set Final';
+                            btn.title = 'Tandai berkas ini sebagai versi final';
+                        });
+                    }
                 } else if (data.set_final_file_id) {
                     const tbody = document.getElementById('file-version-table-body');
                     if (tbody) {
                         tbody.querySelectorAll('.badge-success').forEach(badge => badge.remove());
-                        tbody.querySelectorAll('.set-final-form').forEach(form => form.style.display = 'inline');
+                        tbody.querySelectorAll('.set-final-btn').forEach(btn => {
+                            btn.className = 'font-bold text-emerald-600 hover:underline text-xs set-final-btn';
+                            btn.textContent = 'Set Final';
+                            btn.title = 'Tandai berkas ini sebagai versi final';
+                        });
 
                         const targetRow = document.getElementById(`file-row-${data.set_final_file_id}`);
                         if (targetRow) {
@@ -1359,9 +1373,11 @@
                             if (versionCell && !versionCell.querySelector('.badge-success')) {
                                 versionCell.insertAdjacentHTML('beforeend', ' <span class="badge badge-success text-[10px] ml-1">Final</span>');
                             }
-                            const targetSetFinalForm = targetRow.querySelector('.set-final-form');
-                            if (targetSetFinalForm) {
-                                targetSetFinalForm.style.display = 'none';
+                            const targetBtn = targetRow.querySelector('.set-final-btn');
+                            if (targetBtn) {
+                                targetBtn.className = 'font-bold text-amber-700 hover:underline text-xs set-final-btn';
+                                targetBtn.textContent = 'Unfinal';
+                                targetBtn.title = 'Batalkan status versi final untuk berkas ini';
                             }
                         }
                     }

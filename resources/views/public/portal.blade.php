@@ -61,42 +61,50 @@
                         @endif
 
                         @php
-                            $finalFile = $submission->files->firstWhere('is_final', true);
-                            $latestManuscript = $finalFile ?? $submission->files->where('file_category', 'editable_manuscript')->sortByDesc('version_number')->first() ?? $submission->files->sortByDesc('version_number')->first();
-                            $latestGuidancePdf = $submission->files->where('version_number', $latestManuscript?->version_number)->firstWhere('file_category', 'revision_guidance_pdf')
-                                ?? $submission->files->firstWhere('file_category', 'revision_guidance_pdf');
-                            $statusLabel = $latestManuscript?->is_final ? 'Final' : 'Latest';
+                            $finalVersionFile = $submission->files->firstWhere('is_final', true);
+                            if ($finalVersionFile) {
+                                $targetVersion = $finalVersionFile->version_number;
+                                $isFinalVersion = true;
+                            } else {
+                                $targetVersion = $submission->files->max('version_number');
+                                $isFinalVersion = false;
+                            }
+
+                            $filesInTargetVersion = $submission->files->where('version_number', $targetVersion);
+                            $targetManuscript = $filesInTargetVersion->firstWhere('file_category', 'editable_manuscript') ?? $filesInTargetVersion->first();
+                            $targetGuidancePdf = $filesInTargetVersion->firstWhere('file_category', 'revision_guidance_pdf');
+                            $statusLabel = $isFinalVersion ? 'Final' : 'Latest';
                         @endphp
-                        @if($latestManuscript)
+                        @if($targetManuscript)
                             <div class="mt-5 pt-5 border-t border-navy/10 space-y-3" style="padding-top: 1.25rem; margin-top: 1.25rem;">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-xs font-extrabold text-navy uppercase tracking-wider">
                                         {{ $statusLabel }} Manuscript Files
                                     </span>
-                                    <span class="badge {{ $latestManuscript->is_final ? 'badge-success' : 'badge-neutral' }} text-[10px] font-bold">
+                                    <span class="badge {{ $isFinalVersion ? 'badge-success' : 'badge-neutral' }} text-[10px] font-bold">
                                         {{ $statusLabel }}
                                     </span>
                                 </div>
-                                <div class="grid gap-3 {{ $latestGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
+                                <div class="grid gap-3 {{ $targetGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
                                     <!-- Manuscript Download Card -->
-                                    <a href="{{ route('author.files.download', [$token, $latestManuscript]) }}" class="group p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 to-amber-50/50 hover:border-orange/40 hover:bg-orange/10 transition flex items-center justify-between gap-3 shadow-2xs">
+                                    <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 to-amber-50/50 hover:border-orange/40 hover:bg-orange/10 transition flex items-center justify-between gap-3 shadow-2xs">
                                         <div class="min-w-0 space-y-0.5">
                                             <span class="text-[10px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Manuscript</span>
-                                            <p class="text-xs font-bold text-navy truncate" title="{{ $latestManuscript->original_name }}">{{ $latestManuscript->original_name }}</p>
-                                            <span class="text-[11px] text-muted font-medium block">{{ number_format($latestManuscript->size / 1024, 0) }} KB</span>
+                                            <p class="text-xs font-bold text-navy truncate" title="{{ $targetManuscript->original_name }}">{{ $targetManuscript->original_name }}</p>
+                                            <span class="text-[11px] text-muted font-medium block">{{ number_format($targetManuscript->size / 1024, 0) }} KB</span>
                                         </div>
                                         <span class="btn text-xs py-2 px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
                                             Download
                                         </span>
                                     </a>
 
-                                    @if($latestGuidancePdf)
+                                    @if($targetGuidancePdf)
                                         <!-- Revision Guide Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $latestGuidancePdf]) }}" class="group p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:border-indigo-300 hover:bg-indigo-100/70 transition flex items-center justify-between gap-3 shadow-2xs">
+                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:border-indigo-300 hover:bg-indigo-100/70 transition flex items-center justify-between gap-3 shadow-2xs">
                                             <div class="min-w-0 space-y-0.5">
                                                 <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Revision Guide</span>
-                                                <p class="text-xs font-bold text-indigo-950 truncate" title="{{ $latestGuidancePdf->original_name }}">{{ $latestGuidancePdf->original_name }}</p>
-                                                <span class="text-[11px] text-indigo-700 font-medium block">PDF Guide &middot; {{ number_format($latestGuidancePdf->size / 1024, 0) }} KB</span>
+                                                <p class="text-xs font-bold text-indigo-950 truncate" title="{{ $targetGuidancePdf->original_name }}">{{ $targetGuidancePdf->original_name }}</p>
+                                                <span class="text-[11px] text-indigo-700 font-medium block">PDF Guide &middot; {{ number_format($targetGuidancePdf->size / 1024, 0) }} KB</span>
                                             </div>
                                             <span class="btn text-xs py-2 px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
                                                 Download

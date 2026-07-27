@@ -1154,6 +1154,29 @@ class SubmissionController extends Controller
         $this->authorize('editorialReview', $submission);
         abort_unless($file->submission_id === $submission->id, 404);
 
+        if ($file->is_final) {
+            $file->update(['is_final' => false]);
+
+            $auditLogger->record('file_version.unset_final', $file, $submission->conference, newValues: [
+                'submission_id' => $submission->id,
+                'version_number' => $file->version_number,
+                'label' => $file->label,
+            ]);
+
+            $msg = 'Status Final untuk file version v'.$file->version_number.' ('.$file->label.') berhasil dibatalkan.';
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'is_unfinal' => true,
+                    'file_id' => $file->id,
+                ]);
+            }
+
+            return back()->with('success', $msg);
+        }
+
         $submission->files()->update(['is_final' => false]);
         $file->update(['is_final' => true]);
 
@@ -1163,15 +1186,18 @@ class SubmissionController extends Controller
             'label' => $file->label,
         ]);
 
+        $msg = 'File version v'.$file->version_number.' ('.$file->label.') marked as Final Version.';
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'File version v'.$file->version_number.' ('.$file->label.') marked as Final Version.',
+                'message' => $msg,
                 'set_final_file_id' => $file->id,
+                'file_id' => $file->id,
             ]);
         }
 
-        return back()->with('success', 'File version v'.$file->version_number.' ('.$file->label.') marked as Final Version.');
+        return back()->with('success', $msg);
     }
 
     public function destroyFile(Request $request, Submission $submission, FileVersion $file, AuditLogger $auditLogger): RedirectResponse|JsonResponse
