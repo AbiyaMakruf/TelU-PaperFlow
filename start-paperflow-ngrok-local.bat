@@ -4,11 +4,11 @@ cmd /k ""%~f0" RUNNING_IN_PERSISTENT_CMD"
 exit /b
 
 :MAIN
-title Paperflow Dev (Local Server + Supabase Cloud DB)
+title Paperflow Ngrok Local (Ngrok + Docker Local DB)
 cls
 
 echo ========================================================
-echo   PAPERFLOW LAUNCHER 1: LOCAL SERVER + SUPABASE CLOUD
+echo   PAPERFLOW LAUNCHER 3: NGROK + DOCKER LOCAL DB
 echo ========================================================
 echo.
 echo  [1/3] Memeriksa instalasi PHP dan Node.js...
@@ -68,11 +68,18 @@ if %ERRORLEVEL% NEQ 0 (
 
 php bootstrap/enable-pgsql.php
 
-:: 3. Switch database connection to Supabase Cloud
-echo  [DATABASE] Menghubungkan ke Supabase Cloud (AWS Pooler)...
-php artisan paperflow:switch-supabase cloud >nul 2>nul
+:: 3. Ensure Docker PostgreSQL container is up & switch DB to Local
+where docker >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    echo  [DOCKER] Memastikan container PostgreSQL local [port 54322] berjalan...
+    docker compose up -d >nul 2>nul
+)
 
-:: Free port 8000 if previously locked by an orphaned process
+echo  [DATABASE] Menghubungkan ke Docker Local PostgreSQL (127.0.0.1:54322)...
+php artisan paperflow:switch-supabase local >nul 2>nul
+
+:: Free port 8000 & kill orphaned ngrok process
+taskkill /F /IM ngrok.exe >nul 2>nul
 for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8000" ^| findstr "LISTENING"') do (
     echo  [FIX] Membebaskan port 8000 yang terpakai oleh PID %%a...
     taskkill /F /PID %%a >nul 2>nul
@@ -80,7 +87,7 @@ for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8000" ^| findstr "LI
 
 echo  PHP      : OK
 echo  Node.js  : OK
-echo  Database : Supabase Cloud (AWS Pooler)
+echo  Database : Docker PostgreSQL Local (127.0.0.1:54322)
 echo.
 
 echo  [2/3] Membersihkan cache hot-reload dan kompilasi CSS/JS...
@@ -97,17 +104,18 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo  [3/3] Menjalankan layanan Paperflow lokal (Cloud DB):
+echo  [3/3] Menjalankan layanan Paperflow dan Ngrok (Local DB):
 echo   [SERVE] http://127.0.0.1:8000
 echo   [QUEUE] php artisan queue:work --tries=3
-echo   [VITE]  Vite Dev Server
+echo   [NGROK] https://hormonal-shari-noncommodiously.ngrok-free.dev
 echo.
-echo  Membuka browser ke http://127.0.0.1:8000 dalam 3 detik...
+echo  Membuka browser ke https://hormonal-shari-noncommodiously.ngrok-free.dev dalam 3 detik...
+echo  Akses dari HP dan laptop lain kini 100%% memuat CSS tanpa popup!
 echo  Tekan Ctrl + C di jendela ini untuk menghentikan semua service.
 echo ========================================================
 echo.
 
-start "" powershell -Command "Start-Sleep -Seconds 3; Start-Process 'http://127.0.0.1:8000'"
+start "" powershell -Command "Start-Sleep -Seconds 3; Start-Process 'https://hormonal-shari-noncommodiously.ngrok-free.dev'"
 
 if defined PHP_BIN (
     set "PHP_EXEC=%PHP_BIN:\=/%/php.exe"
@@ -115,7 +123,7 @@ if defined PHP_BIN (
     set "PHP_EXEC=php"
 )
 
-call npx concurrently -k -n "SERVE,QUEUE,VITE" -c "blue,magenta,yellow" "\"%PHP_EXEC%\" artisan serve" "\"%PHP_EXEC%\" artisan queue:work --tries=3" "npx vite"
+call npx concurrently -k -n "SERVE,QUEUE,NGROK" -c "blue,magenta,cyan" "\"%PHP_EXEC%\" artisan serve" "\"%PHP_EXEC%\" artisan queue:work --tries=3" "ngrok http --url=hormonal-shari-noncommodiously.ngrok-free.dev 8000"
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

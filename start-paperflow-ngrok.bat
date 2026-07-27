@@ -4,11 +4,11 @@ cmd /k ""%~f0" RUNNING_IN_PERSISTENT_CMD"
 exit /b
 
 :MAIN
-title Paperflow Ngrok Server (Mobile dan HP Compatible)
+title Paperflow Ngrok (Ngrok + Supabase Cloud DB)
 cls
 
 echo ========================================================
-echo        PAPERFLOW NGROK LAUNCHER (UNTUK HP DAN LAPTOP LAIN)
+echo   PAPERFLOW LAUNCHER 2: NGROK + SUPABASE CLOUD
 echo ========================================================
 echo.
 echo  [1/3] Memeriksa instalasi PHP dan Node.js...
@@ -68,12 +68,9 @@ if %ERRORLEVEL% NEQ 0 (
 
 php bootstrap/enable-pgsql.php
 
-:: 3. Ensure Docker PostgreSQL container is up
-where docker >nul 2>nul
-if %ERRORLEVEL% EQU 0 (
-    echo  [DOCKER] Memastikan container PostgreSQL local (port 54322) berjalan...
-    docker compose up -d >nul 2>nul
-)
+:: 3. Switch database connection to Supabase Cloud
+echo  [DATABASE] Menghubungkan ke Supabase Cloud (AWS Pooler)...
+php artisan paperflow:switch-supabase cloud >nul 2>nul
 
 :: Free port 8000 & kill orphaned ngrok process
 taskkill /F /IM ngrok.exe >nul 2>nul
@@ -84,7 +81,7 @@ for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8000" ^| findstr "LI
 
 echo  PHP      : OK
 echo  Node.js  : OK
-echo  Database : Docker PostgreSQL Local (127.0.0.1:54322)
+echo  Database : Supabase Cloud (AWS Pooler)
 echo.
 
 echo  [2/3] Membersihkan cache hot-reload dan kompilasi CSS/JS...
@@ -101,7 +98,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo  [3/3] Menjalankan layanan Paperflow dan Ngrok:
+echo  [3/3] Menjalankan layanan Paperflow dan Ngrok (Cloud DB):
 echo   [SERVE] http://127.0.0.1:8000
 echo   [QUEUE] php artisan queue:work --tries=3
 echo   [NGROK] https://hormonal-shari-noncommodiously.ngrok-free.dev

@@ -46,33 +46,25 @@ class SwitchSupabase extends Command
 
     private function switchToLocal(string $envContent, string $envFile): void
     {
-        $this->info('Mengkonfigurasi koneksi ke Local Supabase (Docker)...');
+        $this->info('Mengkonfigurasi koneksi ke Local Supabase / PostgreSQL (Docker)...');
 
         $envContent = $this->preserveCloudValues($envContent);
-
-        $localServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
 
         $updates = [
             'PAPERFLOW_SUPABASE_MODE' => 'local',
             'DB_CONNECTION' => 'pgsql',
             'DB_HOST' => '127.0.0.1',
             'DB_PORT' => '54322',
-            'DB_DATABASE' => 'postgres',
+            'DB_DATABASE' => 'paperflow',
             'DB_USERNAME' => 'postgres',
             'DB_PASSWORD' => 'postgres',
-            'DB_SSLMODE' => 'disable',
-            'PAPERFLOW_STORAGE_DRIVER' => 'supabase',
-            'SUPABASE_URL' => 'http://127.0.0.1:54321',
-            'SUPABASE_SECRET_KEY' => $localServiceRoleKey,
-            'SUPABASE_STORAGE_BUCKET' => 'paperflow-private',
+            'DB_SSLMODE' => 'prefer',
         ];
 
         $envContent = $this->updateEnvKeys($envContent, $updates);
         file_put_contents($envFile, $envContent);
 
-        $this->ensureLocalStorageBucket($localServiceRoleKey);
-
-        $this->info('✅ Berhasil beralih ke LOCAL SUPABASE (127.0.0.1:54322).');
+        $this->info('✅ Berhasil beralih ke LOCAL DOCKER POSTGRESQL (127.0.0.1:54322).');
     }
 
     private function switchToCloud(string $envContent, string $envFile): void
@@ -83,10 +75,8 @@ class SwitchSupabase extends Command
         $cloudPort = $this->getEnvValue($envContent, 'CLOUD_DB_PORT') ?: '5432';
         $cloudDatabase = $this->getEnvValue($envContent, 'CLOUD_DB_DATABASE') ?: 'postgres';
         $cloudUsername = $this->getEnvValue($envContent, 'CLOUD_DB_USERNAME') ?: 'postgres.rbwkivxgmadvtlcefrie';
-        $cloudPassword = $this->getEnvValue($envContent, 'CLOUD_DB_PASSWORD') ?: '';
+        $cloudPassword = $this->getEnvValue($envContent, 'CLOUD_DB_PASSWORD') ?: '@AbiyaNugrohoRafly123';
         $cloudSslMode = $this->getEnvValue($envContent, 'CLOUD_DB_SSLMODE') ?: 'require';
-        $cloudSupabaseUrl = $this->getEnvValue($envContent, 'CLOUD_SUPABASE_URL') ?: 'https://rbwkivxgmadvtlcefrie.supabase.co';
-        $cloudSecretKey = $this->getEnvValue($envContent, 'CLOUD_SUPABASE_SECRET_KEY') ?: '';
 
         $updates = [
             'PAPERFLOW_SUPABASE_MODE' => 'cloud',
@@ -97,10 +87,6 @@ class SwitchSupabase extends Command
             'DB_USERNAME' => $cloudUsername,
             'DB_PASSWORD' => $cloudPassword,
             'DB_SSLMODE' => $cloudSslMode,
-            'PAPERFLOW_STORAGE_DRIVER' => 'supabase',
-            'SUPABASE_URL' => $cloudSupabaseUrl,
-            'SUPABASE_SECRET_KEY' => $cloudSecretKey,
-            'SUPABASE_STORAGE_BUCKET' => 'paperflow-private',
         ];
 
         $envContent = $this->updateEnvKeys($envContent, $updates);
