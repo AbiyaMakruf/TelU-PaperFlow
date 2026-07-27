@@ -97,6 +97,10 @@ Do not update `submissions.status` directly when a transition should be validate
 - **International Phone and WhatsApp**: public/author profile forms use country-code selectors and normalized numbers; Editorial gets a `wa.me` action with checklist-derived draft text.
 - **Staff Communication Profiles**: every authenticated role can update name, email, WhatsApp, committee title, and affiliation. These fields populate dynamic email signatures.
 - **Conference Default CC**: Conference Admin configures conference and per-template defaults; Editorial receives them as removable CC chips before sending.
+- **Dedicated File Download Column & Stacked Action Buttons**: Dedicated `Download` table column in both internal staff (`show.blade.php`) and author portal (`portal.blade.php`) featuring vertically stacked orange `Manuscript` (`bg-orange`) and indigo `Revision Guide` (`bg-indigo-600`) action buttons.
+- **Interactive File Version Notes Modal**: Clean, compact clickable `Notes` button replacing inline table note text, opening an English Alpine.js popup modal (`x-teleport="body"`) with dataset-driven HTML bindings (`data-label`, `data-notes`).
+- **Dynamic Target Version Selection in Author Portal**: Author Portal's Submission Details section automatically locks onto any version explicitly marked `Final` (or falls back to the highest version number overall if no final version exists), displaying only manuscript and guidance PDF files belonging strictly to that locked version.
+- **Revertible "Unfinal" File Versioning Toggle**: Staff can toggle `Set Final` and `Unfinal` on any file version. Unfinalizing a file version clears the `is_final` flag and dynamically updates table buttons and Author Portal views via AJAX without full page reloads.
 - **Asynchronous AJAX Actions with Top-Right High-Contrast Floating Toast**: Global `window.submitPaperflowForm(event)` form submit handler preventing full page reloads on paper detail page, providing button loading spinner states, dispatching `paperflow-toast` events to a high-contrast slate floating toast component (`x-teleport="body"`), and dynamically updating internal notes and file versioning table without page reload.
 - **HTML Dataset-Bound File Deletion Modal**: Refactored paper version delete modal bindings using HTML `$el.dataset` (`data-id`, `data-version`, `data-label`, `data-url`), completely eliminating quote escaping clashes and JavaScript syntax errors in Alpine directives.
 - **Role-Scoped User Manuals & Public Author Guide**: Dedicated public standalone author user manual (`/user-manual/author`) without staff sidebar, and authenticated role-scoped staff documentation hub (`/user-manual/{role}`) covering Superadmin, Conference Admin, Editorial, Reviewer, and Viewer roles with role ecosystem matrix.
@@ -294,7 +298,7 @@ php artisan migrate --force
 Current baseline:
 
 - **88 tests**
-- **425 assertions**
+- **428 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
