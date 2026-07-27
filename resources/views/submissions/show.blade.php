@@ -766,7 +766,7 @@
                             </div>
                             <div>
                                 <label class="form-label text-xs">Select File *</label>
-                                <input class="form-input text-xs py-2" type="file" name="paper_file" accept=".docx,.zip,.pdf" required>
+                                <input class="form-input text-xs py-2" type="file" name="paper_file" accept=".docx,.zip,.pdf" required onchange="if (this.files[0] && this.files[0].size > 25 * 1024 * 1024) { window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: 'Ukuran file ' + this.files[0].name + ' (' + (this.files[0].size / (1024 * 1024)).toFixed(1) + ' MB) melebihi batas maksimal 25MB.', type: 'error' } })); this.value = ''; }">
                                 <span class="mt-1 block text-[11px] text-muted">Format yang diizinkan: .docx, .zip, .pdf (Maksimal: 25MB)</span>
                             </div>
                             <div class="sm:col-span-2">
@@ -1101,6 +1101,23 @@
 
         const submitBtn = event.submitter || form.querySelector('button[type="submit"]') || form.querySelector('button');
         const originalHtml = submitBtn ? submitBtn.innerHTML : '';
+
+        // Client-side File Size Check (Max 25MB)
+        const fileInputs = form.querySelectorAll('input[type="file"]');
+        for (const fileInput of fileInputs) {
+            if (fileInput.files && fileInput.files.length > 0) {
+                for (const file of fileInput.files) {
+                    if (file.size > 25 * 1024 * 1024) {
+                        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                        window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                            detail: { message: `Ukuran file "${file.name}" (${sizeMb} MB) melebihi batas maksimal 25MB. Silakan pilih file yang lebih kecil.`, type: 'error' }
+                        }));
+                        fileInput.value = '';
+                        return; // Prevent form submit & upload
+                    }
+                }
+            }
+        }
 
         if (submitBtn) {
             submitBtn.disabled = true;
