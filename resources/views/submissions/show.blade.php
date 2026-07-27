@@ -688,43 +688,62 @@
                             </tr>
                         </thead>
                         <tbody id="file-version-table-body">
-                            @foreach($submission->files as $file)
-                                <tr id="file-row-{{ $file->id }}">
+                            @php
+                                $groupedStaffFiles = $submission->files->groupBy('version_number')->sortByDesc(fn($files, $v) => $v);
+                            @endphp
+                            @foreach($groupedStaffFiles as $verNum => $filesInVer)
+                                @php
+                                    $manuscriptFile = $filesInVer->firstWhere('file_category', 'editable_manuscript') ?? $filesInVer->first();
+                                    $guidanceFile = $filesInVer->firstWhere('file_category', 'revision_guidance_pdf');
+                                @endphp
+                                <tr id="file-row-{{ $manuscriptFile->id }}">
                                     <td class="whitespace-nowrap font-bold text-xs">
-                                        v{{ $file->version_number }}
-                                        @if($file->is_final)
+                                        v{{ $verNum }}
+                                        @if($manuscriptFile->is_final)
                                             <span class="badge badge-success text-[10px] ml-1">Final</span>
                                         @endif
                                     </td>
                                     <td class="min-w-[180px]">
-                                        <p class="font-bold text-navy text-xs sm:text-sm break-all leading-snug">{{ $file->label }}</p>
-                                        <p class="text-xs text-muted break-all mt-0.5">{{ $file->original_name }} &middot; {{ number_format($file->size / 1024, 0) }} KB</p>
-                                        @if($file->notes)
+                                        <p class="font-bold text-navy text-xs sm:text-sm break-all leading-snug">{{ $manuscriptFile->label }}</p>
+                                        <p class="text-xs text-muted break-all mt-0.5">📄 {{ $manuscriptFile->original_name }} &middot; {{ number_format($manuscriptFile->size / 1024, 0) }} KB</p>
+                                        @if($guidanceFile)
+                                            <div class="mt-1 flex items-center gap-1.5 text-xs text-indigo-900 font-semibold bg-indigo-50/80 p-1.5 rounded border border-indigo-200/80">
+                                                <span>📸 Guidance PDF:</span>
+                                                <span class="truncate">{{ $guidanceFile->original_name }} ({{ number_format($guidanceFile->size / 1024, 0) }} KB)</span>
+                                            </div>
+                                        @endif
+                                        @if($manuscriptFile->notes)
                                             <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
-                                                <span class="font-bold text-amber-950">📝 Notes:</span> {{ $file->notes }}
+                                                <span class="font-bold text-amber-950">📝 Notes:</span> {{ $manuscriptFile->notes }}
                                             </div>
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge {{ $file->file_category === 'revision_guidance_pdf' ? 'badge-warning' : 'badge-neutral' }} text-[10px]">
-                                            {{ $file->file_category === 'revision_guidance_pdf' ? 'Revision Guidance PDF' : 'Editable Manuscript' }}
+                                        <span class="badge badge-neutral text-[10px]">
+                                            Editable Manuscript
                                         </span>
+                                        @if($guidanceFile)
+                                            <span class="badge bg-indigo-100 text-indigo-900 border border-indigo-300 text-[10px] ml-1">
+                                                + Visual Guide
+                                            </span>
+                                        @endif
                                     </td>
-                                    <td class="text-xs capitalize">{{ $file->source }}</td>
-                                    <td class="text-xs truncate max-w-[120px]">{{ $file->uploader?->name ?? 'Author' }}</td>
+                                    <td class="text-xs capitalize">{{ $manuscriptFile->source }}</td>
+                                    <td class="text-xs truncate max-w-[120px]">{{ $manuscriptFile->uploader?->name ?? 'Author' }}</td>
                                     <td class="text-right space-x-2 whitespace-nowrap">
-                                        <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.preview', [$submission, $file]) }}">Preview</a>
-                                        <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $file]) }}">Download</a>
+                                        <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.preview', [$submission, $manuscriptFile]) }}">Preview</a>
+                                        <a class="font-bold text-orange hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $manuscriptFile]) }}">Download Manuscript</a>
+                                        @if($guidanceFile)
+                                            <a class="font-bold text-indigo-700 hover:underline text-xs" href="{{ route('submissions.files.download', [$submission, $guidanceFile]) }}">Download Guidance PDF</a>
+                                        @endif
                                         @can('editorialReview', $submission)
-                                            @if($file->file_category !== 'revision_guidance_pdf')
-                                                <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $file]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form" style="{{ $file->is_final ? 'display: none;' : '' }}">
-                                                    @csrf
-                                                    <button type="submit" class="font-bold text-emerald-600 hover:underline text-xs" title="Tandai berkas ini sebagai versi final">
-                                                        Set Final
-                                                    </button>
-                                                </form>
-                                            @endif
-                                            <button type="button" data-id="{{ $file->id }}" data-version="v{{ $file->version_number }}" data-label="{{ $file->label }}" data-url="{{ route('submissions.files.destroy', [$submission, $file]) }}" @click="deleteTarget = { id: $el.dataset.id, version: $el.dataset.version, label: $el.dataset.label, url: $el.dataset.url }" class="font-bold text-rose-600 hover:underline text-xs" title="Hapus berkas versi v{{ $file->version_number }}">
+                                            <form method="POST" action="{{ route('submissions.files.set-final', [$submission, $manuscriptFile]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="inline set-final-form" style="{{ $manuscriptFile->is_final ? 'display: none;' : '' }}">
+                                                @csrf
+                                                <button type="submit" class="font-bold text-emerald-600 hover:underline text-xs" title="Tandai berkas ini sebagai versi final">
+                                                    Set Final
+                                                </button>
+                                            </form>
+                                            <button type="button" data-id="{{ $manuscriptFile->id }}" data-version="v{{ $verNum }}" data-label="{{ $manuscriptFile->label }}" data-url="{{ route('submissions.files.destroy', [$submission, $manuscriptFile]) }}" @click="deleteTarget = { id: $el.dataset.id, version: $el.dataset.version, label: $el.dataset.label, url: $el.dataset.url }" class="font-bold text-rose-600 hover:underline text-xs" title="Hapus berkas versi v{{ $verNum }}">
                                                 Delete
                                             </button>
                                         @endcan

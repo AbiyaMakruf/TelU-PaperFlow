@@ -378,17 +378,19 @@ class EditorialWorkflowTest extends TestCase
         $response->assertRedirect();
 
         $files = $submission->files()->orderBy('version_number')->get();
-        $this->assertCount(2, $files); // v1 editable manuscript + v2 guidance PDF
+        $this->assertCount(2, $files);
 
         $manuscriptVersion = $files->firstWhere('file_category', 'editable_manuscript');
         $guidanceVersion = $files->firstWhere('file_category', 'revision_guidance_pdf');
 
         $this->assertNotNull($manuscriptVersion);
         $this->assertNotNull($guidanceVersion);
+        $this->assertSame(1, $manuscriptVersion->version_number);
+        $this->assertSame(1, $guidanceVersion->version_number);
         $this->assertSame('manuscript-edited.docx', $manuscriptVersion->original_name);
         $this->assertSame('visual-guidance.pdf', $guidanceVersion->original_name);
 
-        // Author portal presents visual guidance banner
+        // Author portal presents integrated download button for guidance PDF in Submission Details
         $rawToken = Str::random(64);
         $submission->update([
             'author_token_hash' => hash('sha256', $rawToken),
@@ -397,8 +399,8 @@ class EditorialWorkflowTest extends TestCase
         ]);
         $portalResponse = $this->get(route('author.portal', $rawToken));
         $portalResponse->assertOk();
-        $portalResponse->assertSee('Visual Revision Guidance PDF Available');
-        $portalResponse->assertSee('visual-guidance.pdf');
+        $portalResponse->assertSee('Download Guidance PDF');
+        $portalResponse->assertDontSee('Visual Revision Guidance PDF Available');
     }
 
     private function submissionFor(Conference $conference, string $code, string $title, ?User $editor = null): Submission

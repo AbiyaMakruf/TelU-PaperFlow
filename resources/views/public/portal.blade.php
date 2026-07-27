@@ -62,25 +62,37 @@
 
                         @php
                             $finalFile = $submission->files->firstWhere('is_final', true);
-                            $latestFile = $finalFile ?? $submission->files->sortByDesc('version_number')->first();
+                            $latestManuscript = $finalFile ?? $submission->files->where('file_category', 'editable_manuscript')->sortByDesc('version_number')->first() ?? $submission->files->sortByDesc('version_number')->first();
+                            $latestGuidancePdf = $submission->files->where('version_number', $latestManuscript?->version_number)->firstWhere('file_category', 'revision_guidance_pdf')
+                                ?? $submission->files->firstWhere('file_category', 'revision_guidance_pdf');
                         @endphp
-                        @if($latestFile)
-                            <div class="mt-6 pt-6 border-t border-navy/10 flex flex-wrap items-center justify-between gap-3.5" style="padding-top: 1.25rem; margin-top: 1.25rem;">
+                        @if($latestManuscript)
+                            <div class="mt-6 pt-6 border-t border-navy/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5" style="padding-top: 1.25rem; margin-top: 1.25rem;">
                                 <div class="min-w-0">
                                     <span class="text-xs font-extrabold text-navy">{{ $finalFile ? 'Final Approved Manuscript File:' : 'Latest Manuscript File:' }}</span>
                                     <p class="text-xs text-muted truncate mt-0.5">
-                                        v{{ $latestFile->version_number }} &middot; {{ $latestFile->original_name }}
-                                        @if($latestFile->is_final)
+                                        v{{ $latestManuscript->version_number }} &middot; {{ $latestManuscript->original_name }}
+                                        @if($latestManuscript->is_final)
                                             <span class="badge badge-success text-[10px] ml-1.5 font-bold">Final Version</span>
                                         @endif
                                     </p>
                                 </div>
-                                <a href="{{ route('author.files.download', [$token, $latestFile]) }}" class="btn text-xs py-2.5 px-4 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download manuscript version (v{{ $latestFile->version_number }})">
-                                    <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
-                                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                                    </svg>
-                                    <span>Download {{ $latestFile->is_final ? 'Final File' : 'Latest File' }} (v{{ $latestFile->version_number }})</span>
-                                </a>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <a href="{{ route('author.files.download', [$token, $latestManuscript]) }}" class="btn text-xs py-2.5 px-4 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download manuscript version (v{{ $latestManuscript->version_number }})">
+                                        <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
+                                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                                        </svg>
+                                        <span>Download {{ $latestManuscript->is_final ? 'Final File' : 'Latest Manuscript' }} (v{{ $latestManuscript->version_number }})</span>
+                                    </a>
+                                    @if($latestGuidancePdf)
+                                        <a href="{{ route('author.files.download', [$token, $latestGuidancePdf]) }}" class="btn text-xs py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl flex items-center gap-1.5 shrink-0 transition" title="Download PDF Visual Guidance for revision">
+                                            <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
+                                                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                                            </svg>
+                                            <span>Download Guidance PDF (v{{ $latestGuidancePdf->version_number }})</span>
+                                        </a>
+                                    @endif
+                                </div>
                             </div>
                         @endif
 
@@ -163,38 +175,9 @@
                         <h3 class="font-extrabold text-amber-950 text-sm">Important Revision Instructions</h3>
                         <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
                             <li>Please inspect the <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card below to see specific items requiring correction (marked with <strong class="text-rose-700 font-extrabold">✕ Revision Needed</strong>).</li>
-                            <li><strong>Always use the Latest Manuscript File (v{{ $latestFile?->version_number ?? '1' }})</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it.</li>
+                            <li><strong>Always use the Latest Manuscript File (v{{ $latestManuscript?->version_number ?? '1' }})</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it.</li>
                             <li><strong>Only modify the specific items requested for correction</strong>. Please leave all other already compliant sections untouched.</li>
                         </ul>
-                    </div>
-                @endif
-
-                @php
-                    $guidancePdf = $submission->files->firstWhere('file_category', 'revision_guidance_pdf');
-                @endphp
-                @if($guidancePdf)
-                    <div class="card p-4 sm:p-6 border-2 border-indigo-300 bg-gradient-to-br from-indigo-50/90 via-purple-50/70 to-white text-indigo-950 space-y-3 shadow-md rounded-2xl">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-3">
-                                <div class="size-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl shrink-0 shadow-sm">
-                                    📸
-                                </div>
-                                <div>
-                                    <h3 class="font-black text-indigo-950 text-base leading-tight">Visual Revision Guidance PDF Available</h3>
-                                    <p class="text-xs text-indigo-800 mt-1 leading-relaxed">The editorial team has uploaded annotated visual screenshots (with red boxes, arrows, and specific correction notes) to help guide your revisions.</p>
-                                </div>
-                            </div>
-                            <span class="badge bg-indigo-100 text-indigo-900 border border-indigo-300 text-[10px] font-extrabold uppercase shrink-0">Visual Guide</span>
-                        </div>
-                        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-indigo-200/80">
-                            <div class="min-w-0">
-                                <span class="text-xs font-bold text-indigo-950 truncate block">📄 {{ $guidancePdf->original_name }}</span>
-                                <span class="text-[11px] text-indigo-700 font-medium">Uploaded {{ $guidancePdf->created_at->format('d M Y H:i') }} &middot; {{ number_format($guidancePdf->size / (1024 * 1024), 1) }} MB</span>
-                            </div>
-                            <a href="{{ route('author.files.download', [$token, $guidancePdf]) }}" class="btn px-6 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition w-full sm:w-auto flex items-center justify-center gap-2">
-                                <span>📥 Download Visual Guidance PDF</span>
-                            </a>
-                        </div>
                     </div>
                 @endif
 
@@ -349,37 +332,50 @@
                         </div>
                     </summary>
 
+                    @php
+                        $groupedAuthorFiles = $submission->files->groupBy('version_number')->sortByDesc(fn($files, $v) => $v);
+                    @endphp
                     <div class="border-t border-navy/8">
                         <!-- Mobile Card View (sm:hidden) -->
                         <div class="divide-y divide-navy/8 sm:hidden">
-                            @foreach ($submission->files as $file)
+                            @foreach ($groupedAuthorFiles as $verNum => $filesInVer)
+                                @php
+                                    $manuscriptFile = $filesInVer->firstWhere('file_category', 'editable_manuscript') ?? $filesInVer->first();
+                                    $guidanceFile = $filesInVer->firstWhere('file_category', 'revision_guidance_pdf');
+                                @endphp
                                 <div class="p-4 space-y-2.5">
                                     <div class="flex items-center justify-between gap-2">
                                         <div class="flex items-center gap-1.5">
-                                            <span class="badge badge-primary font-mono">v{{ $file->version_number }}</span>
-                                            @if($file->file_category === 'revision_guidance_pdf')
-                                                <span class="badge bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-bold">Visual Guidance PDF</span>
-                                            @elseif($file->is_final)
+                                            <span class="badge badge-primary font-mono">v{{ $verNum }}</span>
+                                            @if($manuscriptFile->is_final)
                                                 <span class="badge badge-success text-[10px] font-bold">Final Version</span>
                                             @endif
                                         </div>
-                                        <span class="text-xs font-bold text-muted uppercase tracking-wider">{{ ucfirst($file->source) }}</span>
+                                        <span class="text-xs font-bold text-muted uppercase tracking-wider">{{ ucfirst($manuscriptFile->source) }}</span>
                                     </div>
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-bold text-navy break-words flex items-center gap-1.5">
-                                            <span>{{ $file->label }}</span>
+                                    <div class="min-w-0 space-y-1">
+                                        <p class="text-sm font-bold text-navy break-words">
+                                            {{ $manuscriptFile->label }}
                                         </p>
-                                        <p class="text-xs text-muted break-all mt-0.5">{{ $file->original_name }}</p>
-                                        @if($file->notes)
+                                        <p class="text-xs text-muted break-all">📄 {{ $manuscriptFile->original_name }}</p>
+                                        @if($guidanceFile)
+                                            <p class="text-xs text-indigo-900 font-bold break-all">📸 {{ $guidanceFile->original_name }} (Visual Guidance PDF)</p>
+                                        @endif
+                                        @if($manuscriptFile->notes)
                                             <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
-                                                <span class="font-bold text-amber-950">📝 Notes:</span> {{ $file->notes }}
+                                                <span class="font-bold text-amber-950">📝 Notes:</span> {{ $manuscriptFile->notes }}
                                             </div>
                                         @endif
                                     </div>
-                                    <div class="pt-1">
-                                        <a class="btn btn-secondary text-xs w-full py-2.5 flex items-center justify-center gap-2" href="{{ route('author.files.download', [$token, $file]) }}">
-                                            <span>📥 Download File</span>
+                                    <div class="pt-1 flex flex-col gap-2">
+                                        <a class="btn btn-secondary text-xs w-full py-2.5 flex items-center justify-center gap-2" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}">
+                                            <span>📥 Download Manuscript (v{{ $verNum }})</span>
                                         </a>
+                                        @if($guidanceFile)
+                                            <a class="btn text-xs w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition" href="{{ route('author.files.download', [$token, $guidanceFile]) }}">
+                                                <span>📸 Download Guidance PDF (v{{ $verNum }})</span>
+                                            </a>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
@@ -391,34 +387,45 @@
                                 <thead>
                                     <tr>
                                         <th>Version</th>
-                                        <th>File</th>
+                                        <th>Manuscript & Guidance Files</th>
                                         <th>Source</th>
                                         <th class="text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($submission->files as $file)
+                                    @foreach ($groupedAuthorFiles as $verNum => $filesInVer)
+                                        @php
+                                            $manuscriptFile = $filesInVer->firstWhere('file_category', 'editable_manuscript') ?? $filesInVer->first();
+                                            $guidanceFile = $filesInVer->firstWhere('file_category', 'revision_guidance_pdf');
+                                        @endphp
                                         <tr>
                                             <td class="whitespace-nowrap font-mono font-bold">
-                                                v{{ $file->version_number }}
-                                                @if($file->file_category === 'revision_guidance_pdf')
-                                                    <span class="badge bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] ml-1.5 font-bold">Visual Guide</span>
-                                                @elseif($file->is_final)
+                                                v{{ $verNum }}
+                                                @if($manuscriptFile->is_final)
                                                     <span class="badge badge-success text-[10px] ml-1.5 font-bold">Final</span>
                                                 @endif
                                             </td>
-                                            <td class="min-w-[200px]">
-                                                <p class="font-bold text-navy break-words">{{ $file->label }}</p>
-                                                <p class="text-xs text-muted break-all">{{ $file->original_name }}</p>
-                                                @if($file->notes)
+                                            <td class="min-w-[220px]">
+                                                <p class="font-bold text-navy break-words">{{ $manuscriptFile->label }}</p>
+                                                <p class="text-xs text-muted break-all">📄 {{ $manuscriptFile->original_name }}</p>
+                                                @if($guidanceFile)
+                                                    <div class="mt-1 flex items-center gap-1.5 text-xs text-indigo-900 font-semibold bg-indigo-50/80 p-1.5 rounded border border-indigo-200/80">
+                                                        <span>📸 Guidance PDF:</span>
+                                                        <span class="truncate">{{ $guidanceFile->original_name }}</span>
+                                                    </div>
+                                                @endif
+                                                @if($manuscriptFile->notes)
                                                     <div class="mt-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 p-2 text-xs text-amber-900 leading-snug break-words">
-                                                        <span class="font-bold text-amber-950">📝 Notes:</span> {{ $file->notes }}
+                                                        <span class="font-bold text-amber-950">📝 Notes:</span> {{ $manuscriptFile->notes }}
                                                     </div>
                                                 @endif
                                             </td>
-                                            <td class="whitespace-nowrap">{{ ucfirst($file->source) }}</td>
-                                            <td class="whitespace-nowrap text-right">
-                                                <a class="font-bold text-orange hover:underline text-xs" href="{{ route('author.files.download', [$token, $file]) }}">Download</a>
+                                            <td class="whitespace-nowrap">{{ ucfirst($manuscriptFile->source) }}</td>
+                                            <td class="whitespace-nowrap text-right space-x-3">
+                                                <a class="font-bold text-orange hover:underline text-xs" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}">Download Manuscript</a>
+                                                @if($guidanceFile)
+                                                    <a class="font-bold text-indigo-700 hover:underline text-xs" href="{{ route('author.files.download', [$token, $guidanceFile]) }}">Download Guidance PDF</a>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach

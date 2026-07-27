@@ -874,13 +874,12 @@ class SubmissionController extends Controller
 
         if ($request->hasFile('guidance_pdf')) {
             $guidance = $request->file('guidance_pdf');
-            $guidanceVersion = $version + 1;
-            $guidancePath = $submission->conference->slug.'/'.$submission->id.'/v'.$guidanceVersion.'-guidance-'.Str::slug(pathinfo($guidance->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$guidance->getClientOriginalExtension();
+            $guidancePath = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-guidance-'.Str::slug(pathinfo($guidance->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$guidance->getClientOriginalExtension();
             try {
-                $storedGuidance = $storage->put($submission->conference, $guidance, $guidancePath, $submission->paper_code.'-V'.$guidanceVersion.'-Guidance');
+                $storedGuidance = $storage->put($submission->conference, $guidance, $guidancePath, $submission->paper_code.'-V'.$version.'-Guidance');
                 $submission->files()->create([
-                    'version_number' => $guidanceVersion,
-                    'label' => '[Visual Guidance] PDF Petunjuk Revisi v'.$guidanceVersion,
+                    'version_number' => $version,
+                    'label' => $validated['label'].' (Visual Guidance PDF)',
                     'source' => 'editorial',
                     'file_category' => 'revision_guidance_pdf',
                     'disk' => $storedGuidance['disk'],
