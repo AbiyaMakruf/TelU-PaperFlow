@@ -1190,7 +1190,7 @@
         if (!form) return;
 
         const submitBtn = event.submitter || form.querySelector('button[type="submit"]') || form.querySelector('button');
-        const originalHtml = submitBtn ? submitBtn.innerHTML : '';
+        let originalHtml = submitBtn ? submitBtn.innerHTML : '';
 
         // Client-side File Size Check (Max 25MB)
         const fileInputs = form.querySelectorAll('input[type="file"]');
@@ -1357,6 +1357,9 @@
                             btn.title = 'Tandai berkas ini sebagai versi final';
                         });
                     }
+                    if (submitBtn) {
+                        originalHtml = submitBtn.innerHTML;
+                    }
                 } else if (data.set_final_file_id) {
                     const tbody = document.getElementById('file-version-table-body');
                     if (tbody) {
@@ -1380,6 +1383,9 @@
                                 targetBtn.title = 'Batalkan status versi final untuk berkas ini';
                             }
                         }
+                    }
+                    if (submitBtn) {
+                        originalHtml = submitBtn.innerHTML;
                     }
                 } else if (data.deleted_file_id) {
                     const fileRow = document.getElementById(`file-row-${data.deleted_file_id}`);
