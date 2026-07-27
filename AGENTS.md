@@ -293,8 +293,8 @@ php artisan migrate --force
 
 Current baseline:
 
-- **87 tests**
-- **412 assertions**
+- **88 tests**
+- **425 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
