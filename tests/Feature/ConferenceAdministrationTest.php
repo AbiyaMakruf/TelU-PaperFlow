@@ -156,7 +156,7 @@ class ConferenceAdministrationTest extends TestCase
 
         $response = $this->actingAs($superadmin)->delete(route('conferences.destroy', $conference));
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('conferences.index'));
         $this->assertSoftDeleted('conferences', ['id' => $conference->id]);
     }
 

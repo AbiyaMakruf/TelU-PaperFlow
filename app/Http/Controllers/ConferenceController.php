@@ -146,7 +146,7 @@ class ConferenceController extends Controller
 
         $conference->delete();
 
-        return redirect()->route('dashboard')->with('success', "Conference \"{$name}\" deleted successfully.");
+        return redirect()->route('conferences.index')->with('success', "Conference \"{$name}\" has been deleted successfully.");
     }
 
     /** @return array<string, mixed> */
