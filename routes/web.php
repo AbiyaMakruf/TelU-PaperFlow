@@ -30,6 +30,31 @@ use App\Http\Controllers\SubmissionExportController;
 use App\Http\Controllers\UserManualController;
 use App\Http\Controllers\WorkspaceController;
 use App\Models\Conference;
+Route::get('/deploy-purge-cache', function (\Illuminate\Http\Request $request) {
+    $expectedToken = md5((string) config('app.key'));
+    $token = $request->query('token');
+
+    if (! $token || ! hash_equals($expectedToken, (string) $token)) {
+        abort(403, 'Unauthorized deploy purge token.');
+    }
+
+    if (function_exists('opcache_reset')) {
+        @opcache_reset();
+    }
+
+    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Web OPcache & all application caches purged successfully.',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
+
 Route::post('/api/webhooks/google-form/{conference:slug}', [GoogleFormWebhookController::class, 'handle'])->name('api.webhooks.google-form');
 
 Route::get('/', function () {

@@ -60,7 +60,11 @@ jobs:
             php artisan event:clear
             php artisan migrate --force
 
-            echo "🧹 [5/5] All application caches cleared cleanly."
+            # Purge Web OPcache via HTTP curl request
+            TOKEN=$(php artisan eval "echo md5((string) config('app.key'));")
+            curl -s -k "http://127.0.0.1/deploy-purge-cache?token=${TOKEN}" || curl -s -k "https://paperflow.info/deploy-purge-cache?token=${TOKEN}" || true
+
+            echo "🧹 [5/5] All application & Web OPcache caches cleared cleanly."
 
             # 7. Restart Queue Workers
             echo "🔄 Restarting queue workers..."
