@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
         $middleware->append(SkipNgrokWarning::class);
+        $middleware->validateCsrfTokens(except: [
+            'api/webhooks/*',
+        ]);
         $middleware->appendToGroup('web', EnsureUserIsActive::class);
         $middleware->alias([
             'password.changed' => ForcePasswordChange::class,

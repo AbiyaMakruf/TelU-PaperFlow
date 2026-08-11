@@ -3,6 +3,7 @@
 use App\Enums\ConferenceStatus;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Api\GoogleFormWebhookController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -29,7 +30,7 @@ use App\Http\Controllers\SubmissionExportController;
 use App\Http\Controllers\UserManualController;
 use App\Http\Controllers\WorkspaceController;
 use App\Models\Conference;
-use Illuminate\Support\Facades\Route;
+Route::post('/api/webhooks/google-form/{conference:slug}', [GoogleFormWebhookController::class, 'handle'])->name('api.webhooks.google-form');
 
 Route::get('/', function () {
     $conferences = Conference::query()
