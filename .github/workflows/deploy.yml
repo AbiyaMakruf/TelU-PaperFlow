@@ -14,11 +14,14 @@ jobs:
     steps:
       - name: Execute Remote SSH Commands for Deployment
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          envs: ENV_FILE
           script: |
             echo "========================================================"
             echo "🚀 Starting Paperflow Deployment on Hostinger..."
@@ -28,16 +31,22 @@ jobs:
             cd ${{ secrets.TARGET_DIR }} || exit 1
 
             # 2. Pull latest changes from main branch
-            echo "📦 [1/5] Fetching latest code from origin/main..."
+            echo "📦 [1/6] Fetching latest code from origin/main..."
             git fetch origin main
             git reset --hard origin/main
 
-            # 3. Install PHP Dependencies (No Dev)
-            echo "⚡ [2/5] Installing Composer dependencies..."
+            # 3. Sync .env file from GitHub Secret ENV_FILE if provided
+            if [ -n "$ENV_FILE" ]; then
+              echo "⚙️ [2/6] Syncing .env configuration from GitHub Secrets..."
+              echo "$ENV_FILE" > .env
+            fi
+
+            # 4. Install PHP Dependencies (No Dev)
+            echo "⚡ [3/6] Installing Composer dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-            # 4. Install Node Dependencies & Build Frontend Assets
-            echo "🎨 [3/5] Building frontend assets..."
+            # 5. Install Node Dependencies & Build Frontend Assets
+            echo "🎨 [4/6] Building frontend assets..."
             if command -v pnpm &> /dev/null; then
               pnpm install
               pnpm build
@@ -46,18 +55,19 @@ jobs:
               npm run build
             fi
 
-            # 5. Run Database Migrations
-            echo "🗄️ [4/5] Running database migrations..."
+            # 6. Run Database Migrations
+            echo "🗄️ [5/6] Running database migrations..."
             php artisan migrate --force
 
-            # 6. Clear & Optimize Production Caches
-            echo "🧹 [5/5] Caching routes, views, and configuration..."
+            # 7. Clear & Optimize Production Caches
+            echo "🧹 [6/6] Caching routes, views, and configuration..."
+            php artisan optimize:clear
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
             php artisan event:cache
 
-            # 7. Restart Queue Workers & Clear Old Optimizations
+            # 8. Restart Queue Workers & Clear Old Optimizations
             echo "🔄 Restarting queue workers..."
             php artisan queue:restart || true
 
