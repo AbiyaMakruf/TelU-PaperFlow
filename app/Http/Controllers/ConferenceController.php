@@ -120,11 +120,13 @@ class ConferenceController extends Controller
     public function duplicate(Request $request, Conference $conference, ConferenceProvisioner $provisioner, AuditLogger $audit): RedirectResponse
     {
         $this->authorize('update', $conference);
+        if ($request->has('slug')) {
+            $request->merge(['slug' => Str::lower((string) $request->input('slug'))]);
+        }
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:80', 'alpha_dash', Rule::notIn(self::RESERVED_SLUGS), 'unique:conferences,slug'],
+            'slug' => ['required', 'string', 'max:80', 'alpha_dash', Rule::notIn(self::RESERVED_SLUGS), Rule::unique('conferences', 'slug')],
         ]);
-        $validated['slug'] = Str::lower($validated['slug']);
         $copy = $provisioner->duplicate($conference, $validated, $request->user());
         $audit->record('conference.duplicated', $copy, $copy, newValues: ['source_id' => $conference->id]);
 
@@ -144,6 +146,7 @@ class ConferenceController extends Controller
 
         $audit->record('conference.deleted', $conference, $conference, oldValues: $oldValues);
 
+        $conference->update(['slug' => $conference->slug . '-deleted-' . time()]);
         $conference->delete();
 
         return redirect()->route('conferences.index')->with('success', "Conference \"{$name}\" has been deleted successfully.");
@@ -152,9 +155,13 @@ class ConferenceController extends Controller
     /** @return array<string, mixed> */
     private function validateConference(Request $request, ?Conference $conference = null): array
     {
+        if ($request->has('slug')) {
+            $request->merge(['slug' => Str::lower((string) $request->input('slug'))]);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:80', 'alpha_dash', Rule::notIn(self::RESERVED_SLUGS), Rule::unique('conferences')->ignore($conference)],
+            'slug' => ['required', 'string', 'max:80', 'alpha_dash', Rule::notIn(self::RESERVED_SLUGS), Rule::unique('conferences', 'slug')->ignore($conference)],
             'description' => ['nullable', 'string', 'max:3000'],
             'status' => ['required', Rule::enum(ConferenceStatus::class)],
             'timezone' => ['required', 'timezone:all'],
@@ -173,7 +180,6 @@ class ConferenceController extends Controller
             'google_form_mapping' => ['nullable', 'array'],
         ]);
         unset($validated['allowed_extensions'], $validated['max_file_mb'], $validated['brand_primary'], $validated['brand_accent'], $validated['brand_tagline'], $validated['brand_logo'], $validated['brand_banner'], $validated['form_title'], $validated['form_description'], $validated['submission_mode'], $validated['google_form_mapping']);
-        $validated['slug'] = Str::lower($validated['slug']);
 
         return $validated;
     }

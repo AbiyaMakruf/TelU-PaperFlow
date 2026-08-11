@@ -170,6 +170,25 @@ class ConferenceAdministrationTest extends TestCase
         $this->assertDatabaseHas('conferences', ['id' => $conference->id]);
     }
 
+    public function test_create_conference_validates_case_insensitive_duplicate_slug_gracefully(): void
+    {
+        $admin = User::factory()->create(['is_super_admin' => true]);
+        Conference::create([
+            'name' => 'Existing Conference',
+            'slug' => 'icoseit',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($admin)->post('/conferences', [
+            'name' => 'Duplicate Conference',
+            'slug' => 'ICoSEIT', // Mixed case
+            'status' => 'active',
+            'timezone' => 'Asia/Jakarta',
+        ]);
+
+        $response->assertSessionHasErrors(['slug']);
+    }
+
     /** @return array{Conference, User} */
     private function conferenceWithAdmin(): array
     {
