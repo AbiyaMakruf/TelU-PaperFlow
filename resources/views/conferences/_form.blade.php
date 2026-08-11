@@ -111,26 +111,14 @@ document.addEventListener('alpine:init', () => {
             </label>
         </div>
 
-        <!-- Google Form / Spreadsheet CSV Upload Section -->
-        <div x-show="submissionMode === 'google_form_external'" class="mt-6 rounded-2xl border border-orange/20 bg-orange/5 p-5 space-y-4">
-            <div>
-                <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
-                    <span>📥</span> Smart CSV / Excel Import Mode Active
-                </h4>
-                <p class="text-xs text-navy/80 mt-1 leading-relaxed">
-                    Paperflow will automatically detect header columns from your Google Form or Google Sheets CSV export file.
-                </p>
-            </div>
-
-            <div class="border-t border-orange/15 pt-4 space-y-3">
-                <label class="form-label text-xs font-bold text-navy">
-                    📄 Initial Submissions CSV / Excel File <span class="text-muted font-normal">(Optional — Can be skipped)</span>
-                </label>
-                <input type="file" name="initial_csv_file" accept=".csv,.tsv,.txt" class="form-input text-xs py-2.5 bg-white">
-                <p class="text-xs text-muted leading-relaxed">
-                    You can attach a Google Form CSV export file right now to immediately import initial papers upon creation. Or leave this blank to skip and create the conference first.
-                </p>
-            </div>
+        <!-- Google Form / Spreadsheet CSV Information Section -->
+        <div x-show="submissionMode === 'google_form_external'" class="mt-6 rounded-2xl border border-orange/20 bg-orange/5 p-5 space-y-2">
+            <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
+                <span>📥</span> Smart CSV / Excel Import Mode Active
+            </h4>
+            <p class="text-xs text-navy/80 leading-relaxed">
+                Paperflow will automatically detect header columns from your Google Form or Google Sheets CSV export file. You can upload and import CSV files anytime directly from the conference detail page after creating this conference.
+            </p>
         </div>
     </div>
 

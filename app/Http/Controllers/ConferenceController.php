@@ -42,29 +42,14 @@ class ConferenceController extends Controller
         $this->authorize('create', Conference::class);
         $validated = $this->validateConference($request);
 
-        $initialCsv = $request->file('initial_csv_file');
-        unset($validated['initial_csv_file']);
-
         $settings = [];
         $settings['submission_mode'] = $request->input('submission_mode', 'paperflow_native');
         $validated['settings'] = $settings;
 
         $conference = $provisioner->create($validated, $request->user());
-
-        $notice = '';
-        if ($initialCsv && $initialCsv->isValid()) {
-            $tempPath = $initialCsv->store('csv-imports', 'local');
-            $fullPath = Storage::disk('local')->path($tempPath);
-
-            $stats = app(SubmissionImportController::class)->importFileDirectly($conference, $fullPath);
-            Storage::disk('local')->delete($tempPath);
-
-            $notice = " Initial CSV imported: {$stats['new']} new papers created, {$stats['updated']} updated.";
-        }
-
         $audit->record('conference.created', $conference, $conference, newValues: $validated);
 
-        return redirect()->route('conferences.show', $conference)->with('success', 'Conference created successfully.'.$notice);
+        return redirect()->route('conferences.show', $conference)->with('success', 'Conference created successfully.');
     }
 
     public function show(Conference $conference): View
@@ -204,7 +189,6 @@ class ConferenceController extends Controller
             'form_description' => ['nullable', 'string', 'max:5000'],
             'submission_mode' => ['nullable', 'string', Rule::in(['paperflow_native', 'google_form_external'])],
             'google_form_mapping' => ['nullable', 'array'],
-            'initial_csv_file' => ['nullable', 'file', 'max:20480'],
         ]);
         $validated['submission_opens_at'] = $validated['submission_opens_at'] ?? ($validated['starts_at'] ?? null);
         $validated['submission_closes_at'] = $validated['submission_closes_at'] ?? ($validated['ends_at'] ?? null);
