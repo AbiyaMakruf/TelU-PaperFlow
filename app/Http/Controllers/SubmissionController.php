@@ -1258,4 +1258,20 @@ class SubmissionController extends Controller
             ];
         })->all();
     }
+
+    public function sendPortalLink(Request $request, Submission $submission, ConferenceMailer $mailer, AuditLogger $audit): RedirectResponse
+    {
+        $this->authorize('view', $submission);
+
+        try {
+            $token = $submission->ensureValidAuthorToken();
+            $portalUrl = url("/submission/access/{$token}");
+            $mailer->queue($submission->fresh(['conference', 'authors']), 'submission_received', ['portal_url' => $portalUrl]);
+            $audit->record('submission.portal_link_sent', $submission, $submission->conference);
+
+            return back()->with('success', 'Author Portal link email sent successfully to '.$submission->corresponding_author_email);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['email' => 'Failed to send Author Portal link email: '.$e->getMessage()]);
+        }
+    }
 }

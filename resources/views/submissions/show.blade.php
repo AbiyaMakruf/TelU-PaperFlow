@@ -19,6 +19,15 @@
                 }
             @endphp
             <x-status-badge :status="$submission->status" />
+            @if($submission->submission_source === 'google_form')
+                <span class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700">
+                    <span>📑</span> Google Form
+                </span>
+            @else
+                <span class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-600">
+                    <span>🌐</span> Paperflow Form
+                </span>
+            @endif
         </div>
     </div>
 
@@ -79,6 +88,13 @@
                     <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-orange hover:text-orange rounded-xl transition" title="Inspect author portal view exactly as seen by the author">
                         Open Author Portal ↗
                     </a>
+                    <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
+                        @csrf
+                        <button type="submit" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-indigo-600 hover:text-indigo-600 rounded-xl transition" title="Send Author Portal link email to author">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            Send Author Portal Link
+                        </button>
+                    </form>
                 </div>
 
                 @if($submission->authors->count() > 1)

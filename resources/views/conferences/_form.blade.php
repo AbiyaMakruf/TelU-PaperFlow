@@ -43,6 +43,92 @@
         <label class="form-label" for="submission_closes_at">Submission Closes At</label>
         <input class="form-input" id="submission_closes_at" type="datetime-local" name="submission_closes_at" value="{{ old('submission_closes_at', $conference?->submission_closes_at?->format('Y-m-d\TH:i')) }}">
     </div>
+    <div class="md:col-span-2 border-t border-navy/10 pt-5" x-data="{ submissionMode: '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}' }">
+        <h3 class="font-black text-navy">Submission Workflow Mode</h3>
+        <p class="text-xs text-muted mt-1">Select how authors submit their papers for this conference.</p>
+        <div class="grid gap-3 sm:grid-cols-2 mt-3">
+            <label class="check-row rounded-xl border border-navy/10 p-4 cursor-pointer" :class="submissionMode === 'paperflow_native' ? 'border-orange bg-orange/5' : ''">
+                <input type="radio" name="submission_mode" value="paperflow_native" x-model="submissionMode" @checked(old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') === 'paperflow_native')>
+                <span>
+                    <strong class="block text-navy">Paperflow Native Form (Default)</strong>
+                    <small class="text-muted block mt-0.5">Authors submit directly via the conference's public Paperflow webpage.</small>
+                </span>
+            </label>
+            <label class="check-row rounded-xl border border-navy/10 p-4 cursor-pointer" :class="submissionMode === 'google_form_external' ? 'border-orange bg-orange/5' : ''">
+                <input type="radio" name="submission_mode" value="google_form_external" x-model="submissionMode" @checked(old('submission_mode', $conference?->submissionMode()) === 'google_form_external')>
+                <span>
+                    <strong class="block text-navy">Google Form External Sync</strong>
+                    <small class="text-muted block mt-0.5">Authors submit via Google Form; submissions sync to Paperflow in real-time.</small>
+                </span>
+            </label>
+        </div>
+
+        @if($conference)
+            <!-- Google Form Setup Instructions & Custom Column Header Mapping Card -->
+            <div x-show="submissionMode === 'google_form_external'" class="mt-6 rounded-2xl border border-orange/20 bg-orange/5 p-5 space-y-6">
+                <div>
+                    <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
+                        <span>🔗</span> Google Form Real-Time Sync Setup Guide
+                    </h4>
+                    <p class="text-xs text-muted mt-1">Follow these steps to automatically sync submissions from your existing Google Form or Spreadsheet into Paperflow:</p>
+                    <ol class="mt-3 list-decimal list-inside text-xs text-navy/80 space-y-1.5 font-medium">
+                        <li>Open your Google Form or its connected Google Sheets spreadsheet.</li>
+                        <li>Go to <strong>Extensions &gt; Apps Script</strong> (or Click <strong>&vellip; &gt; Script Editor</strong>).</li>
+                        <li>Paste the Google Apps Script integration code into the editor.</li>
+                        <li>Set the Webhook URL to: <code class="font-mono bg-white px-2 py-0.5 rounded border border-navy/10 text-orange font-bold">{{ url('/api/webhooks/google-form/'.$conference->slug) }}</code></li>
+                        <li>Set the Secret Token header <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-navy/10 text-navy">X-Paperflow-Secret</code> to: <code class="font-mono bg-white px-2 py-0.5 rounded border border-navy/10 text-navy font-bold">{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}</code></li>
+                        <li>Add an <strong>On form submit</strong> trigger under Apps Script Triggers (&num;1 Event Source: <em>From form / From spreadsheet</em>).</li>
+                    </ol>
+                </div>
+
+                @php($mapping = $conference->googleFormMapping())
+                <div class="border-t border-orange/15 pt-5">
+                    <h4 class="font-extrabold text-navy text-sm">Google Form / Spreadsheet Column Header Mapping</h4>
+                    <p class="text-xs text-muted mt-0.5">Enter the exact question or column header text used in your Google Form so Paperflow knows how to read your entries.</p>
+                    
+                    <div class="grid gap-4 sm:grid-cols-2 mt-4 text-xs">
+                        <div>
+                            <label class="form-label text-xs">Paper ID Column Header</label>
+                            <input class="form-input text-xs" name="google_form_mapping[paper_id_column]" value="{{ old('google_form_mapping.paper_id_column', $mapping['paper_id_column']) }}" placeholder="ID Papers (#)">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs">Paper Title Column Header</label>
+                            <input class="form-input text-xs" name="google_form_mapping[title_column]" value="{{ old('google_form_mapping.title_column', $mapping['title_column']) }}" placeholder="Paper's Title">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs">Registered Author Name Column Header</label>
+                            <input class="form-input text-xs" name="google_form_mapping[author_name_column]" value="{{ old('google_form_mapping.author_name_column', $mapping['author_name_column']) }}" placeholder="Registered Author's Name">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs">Registered Author Email Column Header</label>
+                            <input class="form-input text-xs" name="google_form_mapping[author_email_column]" value="{{ old('google_form_mapping.author_email_column', $mapping['author_email_column']) }}" placeholder="Registered Author's Email Address">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs">Registered Author Phone Column Header</label>
+                            <input class="form-input text-xs" name="google_form_mapping[author_phone_column]" value="{{ old('google_form_mapping.author_phone_column', $mapping['author_phone_column']) }}" placeholder="Registered Author's Phone Number">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs">Presenter Name Column Header</label>
+                            <input class="form-input text-xs" name="google_form_mapping[presenter_name_column]" value="{{ old('google_form_mapping.presenter_name_column', $mapping['presenter_name_column']) }}" placeholder="Name of Presenter">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs">Manuscript Source Upload Column Header</label>
+                            <input class="form-input text-xs" name="google_form_mapping[manuscript_file_column]" value="{{ old('google_form_mapping.manuscript_file_column', $mapping['manuscript_file_column']) }}" placeholder="Upload the Manuscript Source">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs">Revision Form Upload Column Header</label>
+                            <input class="form-input text-xs" name="google_form_mapping[revision_form_column]" value="{{ old('google_form_mapping.revision_form_column', $mapping['revision_form_column']) }}" placeholder="Upload the Revision Form">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="form-label text-xs">Similarity Report Upload Column Header</label>
+                            <input class="form-input text-xs" name="google_form_mapping[similarity_report_column]" value="{{ old('google_form_mapping.similarity_report_column', $mapping['similarity_report_column']) }}" placeholder="Upload the Simmilarity Report">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
+
     @if($conference)
         <div class="md:col-span-2 border-t border-navy/10 pt-5">
             <h3 class="font-black text-navy">File Upload Rules</h3>

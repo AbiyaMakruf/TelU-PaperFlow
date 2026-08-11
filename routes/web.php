@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/papers/bulk-download', [SubmissionController::class, 'bulkDownload'])->name('submissions.bulk-download');
         Route::get('/papers-export.csv', SubmissionExportController::class)->name('submissions.export');
         Route::get('/papers/{submission}', [SubmissionController::class, 'show'])->name('submissions.show');
+        Route::post('/papers/{submission}/send-portal-link', [SubmissionController::class, 'sendPortalLink'])->name('submissions.send-portal-link');
         Route::post('/papers/{submission}/accept', [SubmissionController::class, 'accept'])->name('submissions.accept');
         Route::post('/papers/{submission}/correction', [SubmissionController::class, 'requestCorrection'])->name('submissions.correction');
         Route::post('/papers/{submission}/assign', [SubmissionController::class, 'assign'])->name('submissions.assign');

@@ -68,6 +68,10 @@ class ConferenceController extends Controller
         $this->authorize('update', $conference);
         $validated = $this->validateConference($request, $conference);
         $settings = $conference->settings ?? [];
+        $settings['submission_mode'] = $request->input('submission_mode', 'paperflow_native');
+        if ($request->has('google_form_mapping')) {
+            $settings['google_form_mapping'] = array_map('trim', (array) $request->input('google_form_mapping', []));
+        }
         $settings['allowed_extensions'] = $request->input('allowed_extensions', ['doc', 'docx', 'tex', 'zip']);
         $settings['max_file_mb'] = $request->integer('max_file_mb', 25);
         $settings['brand_primary'] = $request->input('brand_primary', '#102a43');
@@ -129,8 +133,10 @@ class ConferenceController extends Controller
             'brand_banner' => ['nullable', 'image', 'max:4096'],
             'form_title' => ['nullable', 'string', 'max:500'],
             'form_description' => ['nullable', 'string', 'max:5000'],
+            'submission_mode' => ['nullable', 'string', Rule::in(['paperflow_native', 'google_form_external'])],
+            'google_form_mapping' => ['nullable', 'array'],
         ]);
-        unset($validated['allowed_extensions'], $validated['max_file_mb'], $validated['brand_primary'], $validated['brand_accent'], $validated['brand_tagline'], $validated['brand_logo'], $validated['brand_banner'], $validated['form_title'], $validated['form_description']);
+        unset($validated['allowed_extensions'], $validated['max_file_mb'], $validated['brand_primary'], $validated['brand_accent'], $validated['brand_tagline'], $validated['brand_logo'], $validated['brand_banner'], $validated['form_title'], $validated['form_description'], $validated['submission_mode'], $validated['google_form_mapping']);
         $validated['slug'] = Str::lower($validated['slug']);
 
         return $validated;

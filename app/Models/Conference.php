@@ -149,4 +149,32 @@ class Conference extends Model
     {
         return array_values(array_filter($this->settings['default_cc'] ?? [], fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL)));
     }
+
+    public function submissionMode(): string
+    {
+        return $this->settings['submission_mode'] ?? 'paperflow_native';
+    }
+
+    public function isGoogleFormMode(): bool
+    {
+        return $this->submissionMode() === 'google_form_external';
+    }
+
+    /** @return array<string, string> */
+    public function googleFormMapping(): array
+    {
+        $defaults = [
+            'paper_id_column' => 'ID Papers (#)',
+            'title_column' => "Paper's Title",
+            'author_name_column' => "Registered Author's Name",
+            'author_email_column' => "Registered Author's Email Address",
+            'author_phone_column' => "Registered Author's Phone Number",
+            'presenter_name_column' => 'Name of Presenter',
+            'manuscript_file_column' => 'Upload the Manuscript Source',
+            'revision_form_column' => 'Upload the Revision Form',
+            'similarity_report_column' => 'Upload the Simmilarity Report',
+        ];
+
+        return array_merge($defaults, $this->settings['google_form_mapping'] ?? []);
+    }
 }
