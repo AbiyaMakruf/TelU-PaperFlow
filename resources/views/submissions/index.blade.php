@@ -170,7 +170,7 @@
                                 <a href="{{ route('submissions.show', $submission) }}" @click.stop class="font-black text-navy hover:text-orange hover:underline block">
                                     {{ $submission->paper_id ?: $submission->paper_code }}
                                 </a>
-                                <p class="mt-1 text-xs text-muted">{{ $submission->conference->name }}</p>
+                                <p class="mt-1 text-xs text-muted">{{ $submission->conference?->name ?? 'Unknown Conference' }}</p>
                                 @if($submission->is_flagged_duplicate)
                                     <span class="mt-1 inline-block rounded bg-rose-100 px-2 py-0.5 text-[10px] font-extrabold text-rose-700" title="{{ $submission->duplicate_notes }}">⚠️ Potential Duplicate</span>
                                 @endif
@@ -274,7 +274,7 @@
                             <a href="{{ route('submissions.show', $submission) }}" @click.stop class="block font-bold text-navy hover:text-orange text-sm leading-snug">
                                 {{ $submission->title }}
                             </a>
-                            <p class="mt-1 text-xs text-muted truncate">{{ $submission->conference->name }}</p>
+                            <p class="mt-1 text-xs text-muted truncate">{{ $submission->conference?->name ?? 'Unknown Conference' }}</p>
                             @if($submission->is_flagged_duplicate)
                                 <span class="mt-1 inline-block rounded bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">⚠️ Potential Duplicate</span>
                             @endif

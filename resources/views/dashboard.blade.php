@@ -163,7 +163,7 @@
                                 <a href="{{ route('submissions.show', $submission) }}" class="font-bold text-navy hover:text-orange">{{ $submission->paper_id ?: $submission->paper_code ?: 'Unassigned ID' }}</a>
                                 <p class="max-w-xs truncate text-xs text-muted">{{ $submission->title }}</p>
                             </td>
-                            <td>{{ $submission->conference->name }}</td>
+                            <td>{{ $submission->conference?->name ?? 'Unknown Conference' }}</td>
                             <td><x-status-badge :status="$submission->status" /></td>
                             <td>{{ $submission->editor?->name ?? $submission->reviewer?->name ?? 'Unassigned' }}</td>
                         </tr>
@@ -186,7 +186,7 @@
                             <x-status-badge :status="$submission->status" />
                         </div>
                         <div class="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
-                            <span class="truncate">{{ $submission->conference->name }}</span>
+                            <span class="truncate">{{ $submission->conference?->name ?? 'Unknown Conference' }}</span>
                             <span class="shrink-0">PIC: {{ $submission->editor?->name ?? $submission->reviewer?->name ?? 'Unassigned' }}</span>
                         </div>
                     </a>

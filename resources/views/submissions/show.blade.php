@@ -2,7 +2,7 @@
     <a class="back-link" href="{{ route('submissions.index') }}">&larr; Back to papers</a>
         <div class="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start min-w-0">
         <div class="min-w-0">
-            <p class="eyebrow truncate">{{ $submission->conference->name }} &middot; internal code {{ $submission->paper_code }}</p>
+            <p class="eyebrow truncate">{{ $submission->conference?->name ?? 'Conference' }} &middot; internal code {{ $submission->paper_code }}</p>
             <h1 class="page-title leading-tight break-words">{{ $submission->paper_id ?: $submission->paper_code }}</h1>
             <p class="page-subtitle leading-snug break-words max-w-full">{{ $submission->title }}</p>
         </div>
@@ -54,7 +54,7 @@
             <section class="card p-4 sm:p-6 max-w-full min-w-0">
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-navy/8 pb-3">
                     <h2 class="text-base sm:text-lg font-black text-navy">Submission Details</h2>
-                    <span class="text-xs text-muted font-medium">{{ $submission->submitted_at?->timezone($submission->conference->timezone)->format('d M Y H:i') }}</span>
+                    <span class="text-xs text-muted font-medium">{{ $submission->submitted_at?->timezone($submission->conference?->timezone ?? 'UTC')->format('d M Y H:i') }}</span>
                 </div>
                 <dl class="mt-5 grid gap-4 sm:grid-cols-2 text-xs sm:text-sm">
                     <div class="min-w-0">
