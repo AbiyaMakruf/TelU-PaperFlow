@@ -14,18 +14,24 @@
         ],
     ];
 @endphp
-<div class="grid gap-5 md:grid-cols-2" x-data="{ 
-    slug: '{{ old('slug', $conference?->slug ?? '') }}', 
-    submissionMode: '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}',
-    baseUrl: window.location.origin,
-    copiedCode: false,
-    customFields: {{ json_encode(old('google_form_mapping.custom_fields', $mapping['custom_fields'] ?? [])) }},
-    getAppsScriptCode() {
-        const webhookUrl = this.baseUrl + '/api/webhooks/google-form/' + (this.slug.trim() || '{your-slug}');
-        const secretToken = '{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}';
-        return `/**\n * PAPERFLOW REAL-TIME GOOGLE FORM WEBHOOK INTEGRATION\n */\nconst PAPERFLOW_WEBHOOK_URL = \"${webhookUrl}\";\nconst SECRET_TOKEN = \"${secretToken}\";\n\nfunction onFormSubmit(e) {\n  try {\n    let payload = {};\n    if (e && e.namedValues) {\n      for (let key in e.namedValues) {\n        payload[key.trim()] = e.namedValues[key][0] || \"\";\n      }\n    } else if (e && e.response) {\n      let itemResponses = e.response.getItemResponses();\n      for (let i = 0; i < itemResponses.length; i++) {\n        let itemResponse = itemResponses[i];\n        let title = itemResponse.getItem().getTitle().trim();\n        let response = itemResponse.getResponse();\n        payload[title] = Array.isArray(response) ? response.join(\", \") : response;\n      }\n    } else {\n      return;\n    }\n\n    let options = {\n      \"method\": \"post\",\n      \"contentType\": \"application/json\",\n      \"headers\": {\n        \"X-Paperflow-Secret\": SECRET_TOKEN\n      },\n      \"payload\": JSON.stringify(payload),\n      \"muteHttpExceptions\": true\n    };\n\n    UrlFetchApp.fetch(PAPERFLOW_WEBHOOK_URL, options);\n  } catch (error) {\n    Logger.log(\"Paperflow Webhook Error: \" + error.toString());\n  }\n}`;
-    }
-}">
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('conferenceForm', (initialSlug, initialMode, initialCustomFields, secretToken) => ({
+        slug: initialSlug || '',
+        submissionMode: initialMode || 'paperflow_native',
+        baseUrl: window.location.origin,
+        copiedCode: false,
+        customFields: initialCustomFields || [],
+        getAppsScriptCode() {
+            const webhookUrl = this.baseUrl + '/api/webhooks/google-form/' + (this.slug && this.slug.trim() ? this.slug.trim() : '{your-slug}');
+            return `/**\n * PAPERFLOW REAL-TIME GOOGLE FORM WEBHOOK INTEGRATION\n */\nconst PAPERFLOW_WEBHOOK_URL = "${webhookUrl}";\nconst SECRET_TOKEN = "${secretToken}";\n\nfunction onFormSubmit(e) {\n  try {\n    let payload = {};\n    if (e && e.namedValues) {\n      for (let key in e.namedValues) {\n        payload[key.trim()] = e.namedValues[key][0] || "";\n      }\n    } else if (e && e.response) {\n      let itemResponses = e.response.getItemResponses();\n      for (let i = 0; i < itemResponses.length; i++) {\n        let itemResponse = itemResponses[i];\n        let title = itemResponse.getItem().getTitle().trim();\n        let response = itemResponse.getResponse();\n        payload[title] = Array.isArray(response) ? response.join(", ") : response;\n      }\n    } else {\n      return;\n    }\n\n    let options = {\n      "method": "post",\n      "contentType": "application/json",\n      "headers": {\n        "X-Paperflow-Secret": SECRET_TOKEN\n      },\n      "payload": JSON.stringify(payload),\n      "muteHttpExceptions": true\n    };\n\n    UrlFetchApp.fetch(PAPERFLOW_WEBHOOK_URL, options);\n  } catch (error) {\n    Logger.log("Paperflow Webhook Error: " + error.toString());\n  }\n}`;
+        }
+    }));
+});
+</script>
+
+<div class="grid gap-5 md:grid-cols-2" x-data="conferenceForm('{{ old('slug', $conference?->slug ?? '') }}', '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}', {{ json_encode(old('google_form_mapping.custom_fields', $mapping['custom_fields'] ?? [])) }}, '{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}')">
     <div class="md:col-span-2">
         <label class="form-label" for="name">Conference Name</label>
         <input class="form-input" id="name" name="name" value="{{ old('name', $conference?->name) }}" required placeholder="e.g. International Conference on Science and Technology">
