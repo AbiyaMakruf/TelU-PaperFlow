@@ -135,9 +135,35 @@ class SubmissionImportTest extends TestCase
         // Submission count should remain 1 (no duplicate creation)
         $this->assertEquals(1, Submission::where('paper_id', 'PAPER-202')->count());
 
-        // File versions count should now be 2
         $this->assertEquals(2, $submission->files()->count());
         $latestFile = $submission->files()->orderByDesc('version_number')->first();
         $this->assertEquals('Editable Manuscript (v2)', $latestFile->label);
+    }
+
+    public function test_non_conference_admin_roles_cannot_import_csv(): void
+    {
+        Storage::fake('local');
+        $conference = Conference::create([
+            'name' => 'ICST 2026',
+            'slug' => 'icst-2026',
+            'status' => 'active',
+            'timezone' => 'Asia/Jakarta',
+        ]);
+
+        foreach (['editorial', 'reviewer', 'viewer'] as $role) {
+            $user = User::factory()->create(['must_change_password' => false]);
+            $user->conferences()->attach($conference->id, ['role' => $role]);
+
+            $file = UploadedFile::fake()->createWithContent('submissions.csv', "ID,Title,Name,Email\nP1,Test,Author,a@example.com");
+
+            $previewRes = $this->actingAs($user)->postJson(route('conferences.import.preview', $conference), ['file' => $file]);
+            $previewRes->assertForbidden();
+
+            $processRes = $this->actingAs($user)->postJson(route('conferences.import.process', $conference), [
+                'temp_file_id' => 'dummy',
+                'mapping' => ['paper_id_column' => 'ID', 'title_column' => 'Title', 'author_name_column' => 'Name', 'author_email_column' => 'Email'],
+            ]);
+            $processRes->assertForbidden();
+        }
     }
 }

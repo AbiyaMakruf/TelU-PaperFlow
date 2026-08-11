@@ -21,6 +21,8 @@ class SubmissionImportController extends Controller
      */
     public function preview(Request $request, Conference $conference): JsonResponse
     {
+        $this->authorize('update', $conference);
+
         $request->validate([
             'file' => ['required', 'file', 'max:20480'], // max 20MB
         ]);
@@ -114,6 +116,8 @@ class SubmissionImportController extends Controller
      */
     public function process(Request $request, Conference $conference, SubmissionWorkflow $workflow, ConferenceMailer $mailer): JsonResponse
     {
+        $this->authorize('update', $conference);
+
         $request->validate([
             'temp_file_id' => ['required', 'string'],
             'mapping' => ['required', 'array'],
