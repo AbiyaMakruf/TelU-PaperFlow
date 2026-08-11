@@ -13,9 +13,9 @@ enum ConferenceStatus: string
     {
         return match ($this) {
             self::Draft => 'Draft',
-            self::Active => 'Aktif',
-            self::Closed => 'Ditutup',
-            self::Archived => 'Diarsipkan',
+            self::Active => 'Active',
+            self::Closed => 'Closed',
+            self::Archived => 'Archived',
         };
     }
 }

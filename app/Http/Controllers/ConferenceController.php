@@ -41,10 +41,30 @@ class ConferenceController extends Controller
     {
         $this->authorize('create', Conference::class);
         $validated = $this->validateConference($request);
+
+        $initialCsv = $request->file('initial_csv_file');
+        unset($validated['initial_csv_file']);
+
+        $settings = [];
+        $settings['submission_mode'] = $request->input('submission_mode', 'paperflow_native');
+        $validated['settings'] = $settings;
+
         $conference = $provisioner->create($validated, $request->user());
+
+        $notice = '';
+        if ($initialCsv && $initialCsv->isValid()) {
+            $tempPath = $initialCsv->store('csv-imports', 'local');
+            $fullPath = Storage::disk('local')->path($tempPath);
+
+            $stats = app(SubmissionImportController::class)->importFileDirectly($conference, $fullPath);
+            Storage::disk('local')->delete($tempPath);
+
+            $notice = " Initial CSV imported: {$stats['new']} new papers created, {$stats['updated']} updated.";
+        }
+
         $audit->record('conference.created', $conference, $conference, newValues: $validated);
 
-        return redirect()->route('conferences.show', $conference)->with('success', 'Conference created successfully.');
+        return redirect()->route('conferences.show', $conference)->with('success', 'Conference created successfully.'.$notice);
     }
 
     public function show(Conference $conference): View
@@ -158,6 +178,12 @@ class ConferenceController extends Controller
         if ($request->has('slug')) {
             $request->merge(['slug' => Str::lower((string) $request->input('slug'))]);
         }
+        if (! $request->filled('submission_opens_at') && $request->filled('starts_at')) {
+            $request->merge(['submission_opens_at' => $request->input('starts_at')]);
+        }
+        if (! $request->filled('submission_closes_at') && $request->filled('ends_at')) {
+            $request->merge(['submission_closes_at' => $request->input('ends_at')]);
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -178,7 +204,11 @@ class ConferenceController extends Controller
             'form_description' => ['nullable', 'string', 'max:5000'],
             'submission_mode' => ['nullable', 'string', Rule::in(['paperflow_native', 'google_form_external'])],
             'google_form_mapping' => ['nullable', 'array'],
+            'initial_csv_file' => ['nullable', 'file', 'max:20480'],
         ]);
+        $validated['submission_opens_at'] = $validated['submission_opens_at'] ?? ($validated['starts_at'] ?? null);
+        $validated['submission_closes_at'] = $validated['submission_closes_at'] ?? ($validated['ends_at'] ?? null);
+
         unset($validated['allowed_extensions'], $validated['max_file_mb'], $validated['brand_primary'], $validated['brand_accent'], $validated['brand_tagline'], $validated['brand_logo'], $validated['brand_banner'], $validated['form_title'], $validated['form_description'], $validated['submission_mode'], $validated['google_form_mapping']);
 
         return $validated;

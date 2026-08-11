@@ -51,7 +51,37 @@ document.addEventListener('alpine:init', () => {
     </div>
     <div>
         <label class="form-label" for="timezone">Timezone</label>
-        <input class="form-input" id="timezone" name="timezone" value="{{ old('timezone', $conference?->timezone ?? 'Asia/Jakarta') }}" required>
+        <select class="form-input" id="timezone" name="timezone" required>
+            @php
+                $timezones = [
+                    'Asia/Jakarta' => 'Asia/Jakarta (GMT+7 - WIB)',
+                    'Asia/Makassar' => 'Asia/Makassar (GMT+8 - WITA)',
+                    'Asia/Jayapura' => 'Asia/Jayapura (GMT+9 - WIT)',
+                    'Asia/Singapore' => 'Asia/Singapore (GMT+8)',
+                    'Asia/Bangkok' => 'Asia/Bangkok (GMT+7)',
+                    'Asia/Kuala_Lumpur' => 'Asia/Kuala_Lumpur (GMT+8)',
+                    'Asia/Tokyo' => 'Asia/Tokyo (GMT+9)',
+                    'Asia/Riyadh' => 'Asia/Riyadh (GMT+3)',
+                    'Asia/Dubai' => 'Asia/Dubai (GMT+4)',
+                    'UTC' => 'UTC (GMT+0)',
+                    'Europe/London' => 'Europe/London (GMT+0/+1)',
+                    'Europe/Paris' => 'Europe/Paris (GMT+1/+2)',
+                    'Europe/Berlin' => 'Europe/Berlin (GMT+1/+2)',
+                    'America/New_York' => 'America/New_York (GMT-5/-4)',
+                    'America/Chicago' => 'America/Chicago (GMT-6/-5)',
+                    'America/Denver' => 'America/Denver (GMT-7/-6)',
+                    'America/Los_Angeles' => 'America/Los_Angeles (GMT-8/-7)',
+                    'Australia/Sydney' => 'Australia/Sydney (GMT+10/+11)',
+                ];
+                $currentTimezone = old('timezone', $conference?->timezone ?? 'Asia/Jakarta');
+                if (!isset($timezones[$currentTimezone])) {
+                    $timezones[$currentTimezone] = $currentTimezone;
+                }
+            @endphp
+            @foreach($timezones as $tzValue => $tzLabel)
+                <option value="{{ $tzValue }}" @selected($currentTimezone === $tzValue)>{{ $tzLabel }}</option>
+            @endforeach
+        </select>
     </div>
     <div>
         <label class="form-label" for="starts_at">Start Date</label>
@@ -60,14 +90,6 @@ document.addEventListener('alpine:init', () => {
     <div>
         <label class="form-label" for="ends_at">End Date</label>
         <input class="form-input" id="ends_at" type="datetime-local" name="ends_at" value="{{ old('ends_at', $conference?->ends_at?->format('Y-m-d\TH:i')) }}">
-    </div>
-    <div>
-        <label class="form-label" for="submission_opens_at">Submission Opens At</label>
-        <input class="form-input" id="submission_opens_at" type="datetime-local" name="submission_opens_at" value="{{ old('submission_opens_at', $conference?->submission_opens_at?->format('Y-m-d\TH:i')) }}">
-    </div>
-    <div>
-        <label class="form-label" for="submission_closes_at">Submission Closes At</label>
-        <input class="form-input" id="submission_closes_at" type="datetime-local" name="submission_closes_at" value="{{ old('submission_closes_at', $conference?->submission_closes_at?->format('Y-m-d\TH:i')) }}">
     </div>
     <div class="md:col-span-2 border-t border-navy/10 pt-5">
         <h3 class="font-black text-navy">Submission Workflow Mode</h3>
@@ -89,90 +111,28 @@ document.addEventListener('alpine:init', () => {
             </label>
         </div>
 
-        <!-- Google Form Setup Instructions & Custom Column Header Mapping Card -->
-        <div x-show="submissionMode === 'google_form_external'" class="mt-6 rounded-2xl border border-orange/20 bg-orange/5 p-5 space-y-6">
+        <!-- Google Form / Spreadsheet CSV Upload Section -->
+        <div x-show="submissionMode === 'google_form_external'" class="mt-6 rounded-2xl border border-orange/20 bg-orange/5 p-5 space-y-4">
             <div>
                 <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
                     <span>📥</span> Smart CSV / Excel Import Mode Active
                 </h4>
                 <p class="text-xs text-navy/80 mt-1 leading-relaxed">
-                    You can download responses from your Google Form or Google Sheets spreadsheet as a CSV/Excel file, then click <strong>"Import CSV/Excel"</strong> on the Papers page. Paperflow will automatically detect header columns and safely update submissions without creating duplicates.
+                    Paperflow will automatically detect header columns from your Google Form or Google Sheets CSV export file.
                 </p>
             </div>
 
-            <div class="border-t border-orange/15 pt-5 space-y-6">
-                <div>
-                    <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
-                        <span>📌</span> Mandatory Column Header Mapping <span class="text-rose-600 font-bold text-xs">* Required</span>
-                    </h4>
-                    <p class="text-xs text-muted mt-0.5">These 6 core fields are required so Paperflow can properly index papers and author details.</p>
-                    
-                    <div class="grid gap-4 sm:grid-cols-2 mt-4 text-xs">
-                        <div>
-                            <label class="form-label text-xs font-bold">Paper ID Column Header <span class="text-rose-500">*</span></label>
-                            <input class="form-input text-xs" name="google_form_mapping[paper_id_column]" value="{{ old('google_form_mapping.paper_id_column', $mapping['paper_id_column']) }}" required placeholder="ID Papers (#)">
-                        </div>
-                        <div>
-                            <label class="form-label text-xs font-bold">Paper Title Column Header <span class="text-rose-500">*</span></label>
-                            <input class="form-input text-xs" name="google_form_mapping[title_column]" value="{{ old('google_form_mapping.title_column', $mapping['title_column']) }}" required placeholder="Paper's Title">
-                        </div>
-                        <div>
-                            <label class="form-label text-xs font-bold">Registered Author Name Column Header <span class="text-rose-500">*</span></label>
-                            <input class="form-input text-xs" name="google_form_mapping[author_name_column]" value="{{ old('google_form_mapping.author_name_column', $mapping['author_name_column']) }}" required placeholder="Registered Author's Name">
-                        </div>
-                        <div>
-                            <label class="form-label text-xs font-bold">Registered Author Email Column Header <span class="text-rose-500">*</span></label>
-                            <input class="form-input text-xs" name="google_form_mapping[author_email_column]" value="{{ old('google_form_mapping.author_email_column', $mapping['author_email_column']) }}" required placeholder="Registered Author's Email Address">
-                        </div>
-                        <div>
-                            <label class="form-label text-xs font-bold">Registered Author Phone Column Header <span class="text-rose-500">*</span></label>
-                            <input class="form-input text-xs" name="google_form_mapping[author_phone_column]" value="{{ old('google_form_mapping.author_phone_column', $mapping['author_phone_column']) }}" required placeholder="Registered Author's Phone Number">
-                        </div>
-                        <div>
-                            <label class="form-label text-xs font-bold">Manuscript Source Upload Column Header <span class="text-rose-500">*</span></label>
-                            <input class="form-input text-xs" name="google_form_mapping[manuscript_file_column]" value="{{ old('google_form_mapping.manuscript_file_column', $mapping['manuscript_file_column']) }}" required placeholder="Upload the Manuscript Source">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border-t border-orange/15 pt-5">
-                    <div class="flex items-center justify-between gap-3 flex-wrap">
-                        <div>
-                            <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
-                                <span>✨</span> Custom / Optional Additional Fields Mapping
-                            </h4>
-                            <p class="text-xs text-muted mt-0.5">Add any additional Google Form questions or spreadsheet columns you want Paperflow to capture.</p>
-                        </div>
-                        <button type="button" @click="customFields.push({ label: '', column: '' })" class="btn btn-secondary text-xs py-1.5 px-3 font-bold inline-flex items-center gap-1 shadow-2xs hover:border-orange hover:text-orange">
-                            <span>➕</span> Add Optional Field
-                        </button>
-                    </div>
-
-                    <div class="mt-4 space-y-3">
-                        <template x-for="(field, index) in customFields" :key="index">
-                            <div class="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-navy/10 text-xs shadow-2xs">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 min-w-0">
-                                    <div>
-                                        <label class="block text-[11px] font-bold text-navy/70 mb-1">Field Label in Paperflow</label>
-                                        <input class="form-input text-xs py-1.5" :name="`google_form_mapping[custom_fields][${index}][label]`" x-model="field.label" placeholder="e.g. Presenter Name" required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[11px] font-bold text-navy/70 mb-1">Google Form / Spreadsheet Column Header</label>
-                                        <input class="form-input text-xs py-1.5" :name="`google_form_mapping[custom_fields][${index}][column]`" x-model="field.column" placeholder="e.g. Name of Presenter" required>
-                                    </div>
-                                </div>
-                                <button type="button" @click="customFields.splice(index, 1)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition shrink-0 self-end mb-0.5 font-bold" title="Remove optional field">
-                                    🗑️ Remove
-                                </button>
-                            </div>
-                        </template>
-                        
-                        <div x-show="customFields.length === 0" class="text-xs text-muted italic bg-white p-4 rounded-xl border border-dashed border-navy/15 text-center">
-                            No optional custom fields added yet. Click "+ Add Optional Field" above to capture extra Google Form questions.
-                        </div>
-                    </div>
-                </div>
+            <div class="border-t border-orange/15 pt-4 space-y-3">
+                <label class="form-label text-xs font-bold text-navy">
+                    📄 Initial Submissions CSV / Excel File <span class="text-muted font-normal">(Optional — Can be skipped)</span>
+                </label>
+                <input type="file" name="initial_csv_file" accept=".csv,.tsv,.txt" class="form-input text-xs py-2.5 bg-white">
+                <p class="text-xs text-muted leading-relaxed">
+                    You can attach a Google Form CSV export file right now to immediately import initial papers upon creation. Or leave this blank to skip and create the conference first.
+                </p>
             </div>
+        </div>
+    </div>
         </div>
     </div>
 

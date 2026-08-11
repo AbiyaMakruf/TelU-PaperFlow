@@ -4,7 +4,7 @@
         <h1 class="page-title mt-4">Create Conference</h1>
         <p class="page-subtitle">Initial submission form, review checklists, and email templates will be generated automatically.</p>
         <x-flash />
-        <form method="POST" action="{{ route('conferences.store') }}" class="card mt-7 space-y-6 p-6">
+        <form method="POST" action="{{ route('conferences.store') }}" enctype="multipart/form-data" class="card mt-7 space-y-6 p-6">
             @csrf
             @include('conferences._form')
             <div class="flex justify-end gap-3">

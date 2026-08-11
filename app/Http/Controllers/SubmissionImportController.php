@@ -134,16 +134,89 @@ class SubmissionImportController extends Controller
         $fullPath = Storage::disk('local')->path($tempPath);
         $userMapping = $request->input('mapping');
 
-        $paperIdCol = $userMapping['paper_id_column'];
-        $titleCol = $userMapping['title_column'];
-        $nameCol = $userMapping['author_name_column'];
-        $emailCol = $userMapping['author_email_column'];
+        $stats = $this->executeImportLoop($conference, $fullPath, $userMapping, $workflow, $mailer);
+
+        // Delete temporary file
+        Storage::disk('local')->delete($tempPath);
+
+        return response()->json([
+            'success' => true,
+            'message' => "CSV Import Completed: {$stats['new']} new papers created, {$stats['updated']} existing papers updated with new file versions, {$stats['skipped']} skipped.",
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Directly import CSV file with auto-detected or provided mapping.
+     *
+     * @return array{new: int, updated: int, skipped: int}
+     */
+    public function importFileDirectly(Conference $conference, string $fullPath, ?array $userMapping = null, ?SubmissionWorkflow $workflow = null, ?ConferenceMailer $mailer = null): array
+    {
+        $workflow = $workflow ?? app(SubmissionWorkflow::class);
+        $mailer = $mailer ?? app(ConferenceMailer::class);
+
+        $headers = [];
+        if (($handle = fopen($fullPath, 'r')) !== false) {
+            $firstLine = fgets($handle);
+            rewind($handle);
+            $delimiter = ',';
+            if (substr_count($firstLine, ';') > substr_count($firstLine, ',')) {
+                $delimiter = ';';
+            } elseif (substr_count($firstLine, "\t") > substr_count($firstLine, ',')) {
+                $delimiter = "\t";
+            }
+
+            $headerRow = fgetcsv($handle, 0, $delimiter);
+            if ($headerRow) {
+                if (isset($headerRow[0])) {
+                    $headerRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $headerRow[0]);
+                }
+                $headers = array_map(fn ($h) => trim((string) $h), $headerRow);
+            }
+            fclose($handle);
+        }
+
+        if (empty($headers)) {
+            return ['new' => 0, 'updated' => 0, 'skipped' => 0];
+        }
+
+        if (! $userMapping) {
+            $savedMapping = $conference->googleFormMapping();
+            $userMapping = [
+                'paper_id_column' => $this->autoMatchColumn($headers, [$savedMapping['paper_id_column'] ?? null, 'ID Papers (#)', 'Paper ID', 'ID Paper', 'Paper Code', 'Code', 'ID']),
+                'title_column' => $this->autoMatchColumn($headers, [$savedMapping['title_column'] ?? null, "Paper's Title", 'Paper Title', 'Title', 'Judul']),
+                'author_name_column' => $this->autoMatchColumn($headers, [$savedMapping['author_name_column'] ?? null, "Registered Author's Name", 'Author Name', 'Registered Author', 'Corresponding Author', 'Nama']),
+                'author_email_column' => $this->autoMatchColumn($headers, [$savedMapping['author_email_column'] ?? null, "Registered Author's Email Address", 'Author Email', 'Registered Author Email', 'Email Address', 'Email']),
+                'author_phone_column' => $this->autoMatchColumn($headers, [$savedMapping['author_phone_column'] ?? null, "Registered Author's Phone Number", 'Author Phone', 'Registered Author Phone', 'Phone Number', 'Phone', 'WhatsApp', 'No HP']),
+                'manuscript_file_column' => $this->autoMatchColumn($headers, [$savedMapping['manuscript_file_column'] ?? null, 'Upload the Manuscript Source', 'Manuscript Source', 'Manuscript', 'File Link', 'Editable Manuscript', 'Upload Manuscript', 'File']),
+            ];
+        }
+
+        return $this->executeImportLoop($conference, $fullPath, $userMapping, $workflow, $mailer);
+    }
+
+    /**
+     * Core CSV parsing and deduplication import loop.
+     *
+     * @return array{new: int, updated: int, skipped: int}
+     */
+    private function executeImportLoop(Conference $conference, string $fullPath, array $userMapping, SubmissionWorkflow $workflow, ConferenceMailer $mailer): array
+    {
+        $paperIdCol = $userMapping['paper_id_column'] ?? null;
+        $titleCol = $userMapping['title_column'] ?? null;
+        $nameCol = $userMapping['author_name_column'] ?? null;
+        $emailCol = $userMapping['author_email_column'] ?? null;
         $phoneCol = $userMapping['author_phone_column'] ?? null;
         $fileCol = $userMapping['manuscript_file_column'] ?? null;
 
         $newCount = 0;
         $updatedCount = 0;
         $skippedCount = 0;
+
+        if (! $paperIdCol || ! $titleCol || ! $nameCol || ! $emailCol) {
+            return ['new' => 0, 'updated' => 0, 'skipped' => 0];
+        }
 
         if (($handle = fopen($fullPath, 'r')) !== false) {
             $firstLine = fgets($handle);
@@ -311,18 +384,7 @@ class SubmissionImportController extends Controller
             fclose($handle);
         }
 
-        // Delete temporary file
-        Storage::disk('local')->delete($tempPath);
-
-        return response()->json([
-            'success' => true,
-            'message' => "CSV Import Completed: {$newCount} new papers created, {$updatedCount} existing papers updated with new file versions, {$skippedCount} skipped.",
-            'stats' => [
-                'new' => $newCount,
-                'updated' => $updatedCount,
-                'skipped' => $skippedCount,
-            ],
-        ]);
+        return ['new' => $newCount, 'updated' => $updatedCount, 'skipped' => $skippedCount];
     }
 
     /**

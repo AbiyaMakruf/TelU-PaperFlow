@@ -189,6 +189,43 @@ class ConferenceAdministrationTest extends TestCase
         $response->assertSessionHasErrors(['slug']);
     }
 
+    public function test_admin_can_create_conference_with_optional_initial_csv_import(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->create(['is_super_admin' => true]);
+
+        $csvContent = "ID Papers (#),Paper's Title,Registered Author's Name,Registered Author's Email Address,Registered Author's Phone Number,Upload the Manuscript Source\n".
+                      "INIT-101,Initial Paper Title,Initial Author,author@example.com,+6281111111,https://drive.google.com/init.docx\n";
+
+        $file = UploadedFile::fake()->createWithContent('initial.csv', $csvContent);
+
+        $response = $this->actingAs($admin)->post('/conferences', [
+            'name' => 'Initial Import Conf',
+            'slug' => 'init-conf',
+            'status' => 'active',
+            'timezone' => 'Asia/Jakarta',
+            'starts_at' => '2026-09-01T08:00',
+            'ends_at' => '2026-09-30T17:00',
+            'submission_mode' => 'google_form_external',
+            'initial_csv_file' => $file,
+        ]);
+
+        $conference = Conference::where('slug', 'init-conf')->firstOrFail();
+        $response->assertRedirect(route('conferences.show', $conference));
+
+        // Verify dates auto-populated
+        $this->assertEquals('2026-09-01 08:00:00', $conference->submission_opens_at->format('Y-m-d H:i:s'));
+        $this->assertEquals('2026-09-30 17:00:00', $conference->submission_closes_at->format('Y-m-d H:i:s'));
+
+        // Verify paper imported
+        $this->assertDatabaseHas('submissions', [
+            'conference_id' => $conference->id,
+            'paper_id' => 'INIT-101',
+            'title' => 'Initial Paper Title',
+            'corresponding_author_email' => 'author@example.com',
+        ]);
+    }
+
     /** @return array{Conference, User} */
     private function conferenceWithAdmin(): array
     {
