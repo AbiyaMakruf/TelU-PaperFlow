@@ -157,8 +157,8 @@
                             <th><a href="{{ $sortUrl('title') }}">Title ↕</a></th>
                             <th>Format</th>
                             <th><a href="{{ $sortUrl('pic') }}">PIC ↕</a></th>
-                            <th><a href="{{ $sortUrl('status') }}">Status ↕</a></th>
-                            <th>Portal Link</th>
+                            <th class="text-center"><a href="{{ $sortUrl('status') }}">Status ↕</a></th>
+                            <th class="text-center">Portal Link</th>
                             <th><a href="{{ $sortUrl('submitted_at') }}">Submitted ↕</a></th>
                         </tr>
                     </thead>
@@ -184,9 +184,9 @@
                             </td>
                             <td>
                                 @if($submission->manuscript_format === 'latex')
-                                    <span class="badge badge-warning text-[11px] font-black">LaTeX (ZIP)</span>
+                                    <span class="badge badge-warning text-[11px] font-black">LaTeX</span>
                                 @elseif($submission->manuscript_format === 'docx')
-                                    <span class="badge badge-info text-[11px] font-black">DOCX (Word)</span>
+                                    <span class="badge badge-info text-[11px] font-black">DOCX</span>
                                 @else
                                     <span class="badge badge-neutral text-[11px] text-muted">-</span>
                                 @endif
@@ -204,22 +204,22 @@
                                         🔍 Reviewer: {{ $submission->reviewer->name }}
                                     </button>
                                 @else
-                                    <p class="mt-1 text-xs text-muted">Reviewer: Unassigned</p>
+                                    <p class="mt-1 text-xs text-muted">No reviewer assigned</p>
                                 @endif
                             </td>
-                            <td><x-status-badge :status="$submission->status" /></td>
-                            <td @click.stop>
+                            <td class="text-center"><x-status-badge :status="$submission->status" /></td>
+                            <td @click.stop class="text-center">
                                 @if($submission->portalLinkSent())
-                                    <div class="flex flex-col gap-0.5">
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-extrabold text-emerald-700 border border-emerald-200" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y H:i') }}">
-                                            <span>✓ Sent</span>
+                                    <div class="inline-flex flex-col items-center gap-0.5">
+                                        <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700 border border-emerald-200" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y H:i') }}">
+                                            ✓ Sent
                                         </span>
-                                        <small class="text-[10px] text-muted">{{ $submission->portalLinkSentAt()?->format('d M H:i') }}</small>
+                                        <span class="text-[10px] text-slate-400 font-medium">{{ $submission->portalLinkSentAt()?->format('d M H:i') }}</span>
                                     </div>
                                 @else
-                                    <div class="flex flex-col gap-1">
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200/80">
-                                            <span>⏳ Not Sent</span>
+                                    <div class="inline-flex flex-col items-center gap-1">
+                                        <span class="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200">
+                                            ⏳ Not Sent
                                         </span>
                                         <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
                                             @csrf
@@ -233,16 +233,36 @@
                             <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->deadline_at->format('d M Y') }}</p>@endif</td>
                         </tr>
                         <tr x-show="open" x-cloak>
-                            <td colspan="8" class="bg-warm/70 p-5">
-                                <div class="grid gap-4 text-sm md:grid-cols-5">
-                                    <div><p class="form-label">Internal Code</p><p class="font-bold text-navy">{{ $submission->paper_code }}</p></div>
-                                    <div><p class="form-label">Primary Author</p><p class="font-bold text-navy">{{ $submission->corresponding_author_name }}</p><p class="text-muted">{{ $submission->corresponding_author_email }}</p></div>
-                                    <div><p class="form-label">Editable Format</p><p class="font-bold text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Not confirmed by admin') }}</p></div>
-                                    <div><p class="form-label">Page Count</p><p class="font-bold text-navy">{{ $submission->initial_page_count ? $submission->initial_page_count.' pp' : '-' }} → {{ $submission->final_page_count ? $submission->final_page_count.' pp' : '-' }}</p></div>
-                                    <div><p class="form-label">Author Count</p><p class="font-bold text-navy">{{ $submission->authors->count() }}</p></div>
-                                </div>
-                                <div class="mt-4 flex flex-wrap gap-3">
-                                    <a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-4 py-2 text-xs">Open full details</a>
+                            <td colspan="8" class="bg-slate-50/90 px-6 py-3.5 border-y border-slate-200">
+                                <div class="flex flex-wrap items-center justify-between gap-4 text-xs">
+                                    <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Internal Code:</span>
+                                            <span class="font-black text-navy">{{ $submission->paper_code }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Author:</span>
+                                            <span class="font-black text-navy">{{ $submission->corresponding_author_name }}</span>
+                                            <span class="text-slate-500 text-[11px]">({{ $submission->corresponding_author_email }})</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Format:</span>
+                                            <span class="font-black text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX' : ($submission->manuscript_format === 'docx' ? 'DOCX' : 'Unconfirmed') }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Pages:</span>
+                                            <span class="font-black text-navy">{{ $submission->initial_page_count ? $submission->initial_page_count.' pp' : '-' }} → {{ $submission->final_page_count ? $submission->final_page_count.' pp' : '-' }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Co-Authors:</span>
+                                            <span class="font-black text-navy">{{ $submission->authors->count() }} author(s)</span>
+                                        </div>
+                                    </div>
+                                    <div @click.stop>
+                                        <a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-3 py-1.5 text-xs font-extrabold text-navy hover:text-orange shrink-0 shadow-2xs">
+                                            Open Full Details ↗
+                                        </a>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -309,7 +329,7 @@
                                             🔍 {{ $submission->reviewer->name }}
                                         </button>
                                     @else
-                                        <p class="mt-0.5 text-muted">Reviewer: Unassigned</p>
+                                        <p class="mt-0.5 text-muted">No reviewer assigned</p>
                                     @endif
                                 </div>
                             </div>
@@ -348,7 +368,7 @@
 
                         <div x-cloak x-show="open" x-collapse class="rounded-xl bg-warm p-4 text-xs space-y-2.5">
                             <div><span class="text-muted font-bold block">Primary Author</span><p class="font-semibold text-navy">{{ $submission->corresponding_author_name }} ({{ $submission->corresponding_author_email }})</p></div>
-                            <div><span class="text-muted font-bold block">Manuscript Format</span><p class="font-semibold text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Not confirmed') }}</p></div>
+                            <div><span class="text-muted font-bold block">Manuscript Format</span><p class="font-semibold text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX' : ($submission->manuscript_format === 'docx' ? 'DOCX' : 'Not confirmed') }}</p></div>
                             @if($submission->deadline_at)
                                 <div><span class="text-muted font-bold block">Deadline</span><p class="font-semibold {{ $submission->isOverdue() ? 'text-danger font-bold' : 'text-navy' }}">{{ $submission->deadline_at->format('d M Y') }}</p></div>
                             @endif
