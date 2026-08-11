@@ -50,15 +50,42 @@ class ConferenceFileStorage
 
     public function download(FileVersion $file): RedirectResponse|BinaryFileResponse
     {
+        $externalUrl = $file->external_url ?: (str_starts_with((string) $file->storage_path, 'http') ? $file->storage_path : null);
+
         if ($file->disk === 'google_drive') {
             $file->loadMissing('submission.conference');
-            abort_unless($file->submission?->conference, 404);
+            $conference = $file->submission?->conference;
+
+            if ($conference && $file->external_id && $this->googleDrive->connected($conference)) {
+                try {
+                    return $this->googleDrive->download(
+                        $conference,
+                        $file->external_id,
+                        $file->original_name,
+                    );
+                } catch (\Throwable $e) {
+                    if ($externalUrl) {
+                        return redirect()->away($externalUrl);
+                    }
+                    throw $e;
+                }
+            }
+
+            if ($externalUrl) {
+                return redirect()->away($externalUrl);
+            }
+
+            abort_unless($conference, 404);
 
             return $this->googleDrive->download(
-                $file->submission->conference,
+                $conference,
                 $file->external_id ?: $file->storage_path,
                 $file->original_name,
             );
+        }
+
+        if ($externalUrl) {
+            return redirect()->away($externalUrl);
         }
 
         if ($url = $this->privateStorage->temporaryUrl($file->storage_path)) {
@@ -74,12 +101,48 @@ class ConferenceFileStorage
         if ($file->disk === 'local') {
             return ['path' => $this->privateStorage->localPath($file->storage_path), 'cleanup' => false];
         }
+
+        $externalUrl = $file->external_url ?: (str_starts_with((string) $file->storage_path, 'http') ? $file->storage_path : null);
+
         if ($file->disk === 'google_drive') {
             $file->loadMissing('submission.conference');
+            $conference = $file->submission?->conference;
+
+            if ($conference && $file->external_id && $this->googleDrive->connected($conference)) {
+                try {
+                    $response = $this->googleDrive->download($conference, $file->external_id, $file->original_name);
+
+                    return ['path' => $response->getFile()->getPathname(), 'cleanup' => true];
+                } catch (\Throwable $e) {
+                    if (! $externalUrl) {
+                        throw $e;
+                    }
+                }
+            }
+
+            if ($externalUrl) {
+                $directory = storage_path('app/private/previews');
+                File::ensureDirectoryExists($directory);
+                $path = tempnam($directory, 'preview-');
+                Http::withOptions(['sink' => $path])->get($externalUrl)->throw();
+
+                return ['path' => $path, 'cleanup' => true];
+            }
+
             $response = $this->googleDrive->download($file->submission->conference, $file->external_id ?: $file->storage_path, $file->original_name);
 
             return ['path' => $response->getFile()->getPathname(), 'cleanup' => true];
         }
+
+        if ($externalUrl) {
+            $directory = storage_path('app/private/previews');
+            File::ensureDirectoryExists($directory);
+            $path = tempnam($directory, 'preview-');
+            Http::withOptions(['sink' => $path])->get($externalUrl)->throw();
+
+            return ['path' => $path, 'cleanup' => true];
+        }
+
         $url = $this->privateStorage->temporaryUrl($file->storage_path) ?: throw new \RuntimeException('Signed URL file tidak tersedia.');
         $directory = storage_path('app/private/previews');
         File::ensureDirectoryExists($directory);
