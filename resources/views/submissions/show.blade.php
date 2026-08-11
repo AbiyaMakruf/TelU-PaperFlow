@@ -287,7 +287,7 @@
 
                                 <div class="editorial-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isEditorialActive ? 'display: none;' : '' }}">
                                     <span class="text-base shrink-0">ℹ️</span>
-                                    <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong class="editorial-status-name">{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Compliance Check.</span>
+                                    <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong class="editorial-status-name">{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Review in Progress.</span>
                                 </div>
 
                                 <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
@@ -1113,8 +1113,8 @@
                                         <label class="form-label text-xs">Revert Target Stage *</label>
                                         <select class="form-input text-xs" name="action" required>
                                             <option value="">Select target stage...</option>
-                                            <option value="revert_done_to_editorial">🔙 Return to Editorial Compliance Check</option>
-                                            <option value="revert_done_to_reviewer">🔙 Return to Peer &amp; Technical Review</option>
+                                            <option value="revert_done_to_editorial">🔙 Return to Editorial Review in Progress</option>
+                                            <option value="revert_done_to_reviewer">🔙 Return to Pre-EDAS Technical Review</option>
                                             <option value="revert_done_to_edas">🔙 Return to Ready for EDAS Upload</option>
                                         </select>
                                     </div>

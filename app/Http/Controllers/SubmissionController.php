@@ -594,10 +594,10 @@ class SubmissionController extends Controller
 
         if ($stage === ReviewStage::Editorial && $submission->status !== SubmissionStatus::EditorialReview) {
             if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['error' => 'Checklist editorial hanya dapat diubah saat status paper berada pada Editorial Compliance Check.'], 422);
+                return response()->json(['error' => 'Checklist editorial hanya dapat diubah saat status paper berada pada Editorial Review in Progress.'], 422);
             }
 
-            return back()->with('error', 'Checklist editorial hanya dapat diubah saat status paper berada pada Editorial Compliance Check.');
+            return back()->with('error', 'Checklist editorial hanya dapat diubah saat status paper berada pada Editorial Review in Progress.');
         }
 
         $template = $submission->conference->checklistTemplates()->with('items')->where('stage', $stage)->where('is_active', true)->firstOrFail();

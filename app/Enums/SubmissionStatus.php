@@ -22,10 +22,10 @@ enum SubmissionStatus: string
         return match ($this) {
             self::Submitted => 'Submission Received',
             self::NeedsAuthorCorrection => 'Author Correction Required',
-            self::ReadyForAssignment => 'Pending Staff Assignment',
-            self::EditorialReview => 'Editorial Compliance Check',
+            self::ReadyForAssignment => 'Waiting for Editor Assignment',
+            self::EditorialReview => 'Editorial Review in Progress',
             self::WaitingAuthorRevision => 'Waiting for Author Revision',
-            self::ReviewerReview => 'Peer & Technical Review',
+            self::ReviewerReview => 'Pre-EDAS Technical Review',
             self::ReviewerChangesRequested => 'Reviewer Revision Requested',
             self::ReadyForEdas => 'Ready for EDAS Upload',
             self::EdasFixRequired => 'EDAS Correction Required',
