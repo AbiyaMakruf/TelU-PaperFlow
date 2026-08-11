@@ -138,8 +138,17 @@ class ConferenceController extends Controller
         return redirect()->route('conferences.show', $copy)->with('success', 'Conference duplicated successfully with default forms and checklists.');
     }
 
-    public function destroy(Conference $conference, AuditLogger $audit): RedirectResponse
+    public function destroy(string $conferenceId, AuditLogger $audit): RedirectResponse
     {
+        $conference = Conference::withTrashed()->find($conferenceId);
+        if (! $conference) {
+            return redirect()->route('conferences.index')->with('info', 'Conference has already been removed.');
+        }
+
+        if ($conference->trashed()) {
+            return redirect()->route('conferences.index')->with('info', "Conference \"{$conference->name}\" was already deleted.");
+        }
+
         $this->authorize('delete', $conference);
 
         $oldValues = $conference->only(['id', 'name', 'slug']);
