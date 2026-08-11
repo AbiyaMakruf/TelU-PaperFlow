@@ -93,8 +93,12 @@ class User extends Authenticatable
         return $this->is_super_admin && $this->is_active;
     }
 
-    public function hasConferenceRole(Conference|string $conference, ConferenceRole|string ...$roles): bool
+    public function hasConferenceRole(Conference|string|null $conference, ConferenceRole|string ...$roles): bool
     {
+        if (! $conference) {
+            return false;
+        }
+
         if ($this->isSuperAdmin()) {
             return true;
         }
@@ -103,19 +107,29 @@ class User extends Authenticatable
             ? $conference->id
             : (Conference::where('id', $conference)->orWhere('slug', $conference)->value('id') ?? $conference);
 
+        if (! $conferenceId) {
+            return false;
+        }
+
         $roleValues = collect($roles)->flatMap(function (ConferenceRole|string $role) {
-            $val = $role instanceof ConferenceRole ? $role->value : (string) $role;
-            if ($val === 'conference_admin' || $val === 'admin') {
-                return ['conference_admin', 'admin'];
+            $val = strtolower(trim($role instanceof ConferenceRole ? $role->value : (string) $role));
+            if (in_array($val, ['conference_admin', 'admin', 'conference admin', 'conference-admin'], true)) {
+                return ['conference_admin', 'admin', 'conference admin', 'conference-admin'];
             }
 
             return [$val];
-        })->unique()->values();
+        })->unique()->values()->all();
 
         return $this->conferenceMemberships()
             ->where('conference_id', $conferenceId)
-            ->where('is_active', true)
-            ->whereIn('role', $roleValues)
+            ->where(function ($q) {
+                $q->where('is_active', true)->orWhere('is_active', 1);
+            })
+            ->where(function ($query) use ($roleValues) {
+                foreach ($roleValues as $rv) {
+                    $query->orWhereRaw('LOWER(CAST(role AS TEXT)) = ?', [strtolower($rv)]);
+                }
+            })
             ->exists();
     }
 
