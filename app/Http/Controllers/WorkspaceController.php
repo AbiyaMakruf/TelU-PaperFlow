@@ -18,7 +18,7 @@ class WorkspaceController extends Controller
 
         if ($conferenceId === 'all' || empty($conferenceId)) {
             session()->forget('active_conference_id');
-            return back()->with('status', 'Workspace diubah ke Semua Conference.');
+            return back()->with('status', 'Active workspace switched to All Conferences.');
         }
 
         /** @var \App\Models\User $user */
@@ -31,13 +31,13 @@ class WorkspaceController extends Controller
                 ->exists();
 
             if (! $hasAccess) {
-                return back()->withErrors(['conference_id' => 'Anda tidak memiliki akses ke conference tersebut.']);
+                return back()->withErrors(['conference_id' => 'You do not have access to the requested conference workspace.']);
             }
         }
 
         $conference = Conference::findOrFail($conferenceId);
         session(['active_conference_id' => $conference->id]);
 
-        return back()->with('status', "Workspace aktif diubah ke {$conference->name}.");
+        return back()->with('status', "Active workspace switched to {$conference->name}.");
     }
 }

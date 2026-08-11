@@ -233,34 +233,35 @@
                             <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->deadline_at->format('d M Y') }}</p>@endif</td>
                         </tr>
                         <tr x-show="open" x-cloak>
-                            <td colspan="8" class="bg-slate-50/90 px-6 py-3.5 border-y border-slate-200">
+                            <td colspan="8" class="bg-gradient-to-r from-slate-50 via-indigo-50/30 to-slate-50 px-6 py-4 border-y border-indigo-100/80 shadow-inner">
                                 <div class="flex flex-wrap items-center justify-between gap-4 text-xs">
-                                    <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Internal Code:</span>
+                                    <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                                        <div class="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 border border-slate-200/80 shadow-2xs">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Code</span>
                                             <span class="font-black text-navy">{{ $submission->paper_code }}</span>
                                         </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Author:</span>
+                                        <div class="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 border border-slate-200/80 shadow-2xs">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Author</span>
                                             <span class="font-black text-navy">{{ $submission->corresponding_author_name }}</span>
-                                            <span class="text-slate-500 text-[11px]">({{ $submission->corresponding_author_email }})</span>
+                                            <span class="text-slate-400 text-[11px]">({{ $submission->corresponding_author_email }})</span>
                                         </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Format:</span>
+                                        <div class="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 border border-slate-200/80 shadow-2xs">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Format</span>
                                             <span class="font-black text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX' : ($submission->manuscript_format === 'docx' ? 'DOCX' : 'Unconfirmed') }}</span>
                                         </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Pages:</span>
+                                        <div class="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 border border-slate-200/80 shadow-2xs">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Pages</span>
                                             <span class="font-black text-navy">{{ $submission->initial_page_count ? $submission->initial_page_count.' pp' : '-' }} → {{ $submission->final_page_count ? $submission->final_page_count.' pp' : '-' }}</span>
                                         </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Co-Authors:</span>
+                                        <div class="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 border border-slate-200/80 shadow-2xs">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Co-Authors</span>
                                             <span class="font-black text-navy">{{ $submission->authors->count() }} author(s)</span>
                                         </div>
                                     </div>
                                     <div @click.stop>
-                                        <a href="{{ route('submissions.show', $submission) }}" class="btn btn-secondary px-3 py-1.5 text-xs font-extrabold text-navy hover:text-orange shrink-0 shadow-2xs">
-                                            Open Full Details ↗
+                                        <a href="{{ route('submissions.show', $submission) }}" class="btn btn-primary px-3.5 py-1.5 text-xs font-black shrink-0 shadow-xs flex items-center gap-1.5">
+                                            <span>📄 Open Full Workspace</span>
+                                            <span class="text-[10px]">↗</span>
                                         </a>
                                     </div>
                                 </div>
