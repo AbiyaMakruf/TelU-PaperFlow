@@ -1,5 +1,11 @@
 @php($conference = $conference ?? null)
-<div class="grid gap-5 md:grid-cols-2">
+<div class="grid gap-5 md:grid-cols-2" x-data="{ 
+    slug: '{{ old('slug', $conference?->slug ?? '') }}', 
+    submissionMode: '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}',
+    baseUrl: window.location.origin,
+    copiedUrl: false,
+    copiedSecret: false
+}">
     <div class="md:col-span-2">
         <label class="form-label" for="name">Conference Name</label>
         <input class="form-input" id="name" name="name" value="{{ old('name', $conference?->name) }}" required placeholder="e.g. International Conference on Science and Technology">
@@ -8,7 +14,7 @@
         <label class="form-label" for="slug">Public URL Slug</label>
         <div class="flex items-center rounded-xl border border-navy/15 bg-white focus-within:border-orange focus-within:ring-4 focus-within:ring-orange/10">
             <span class="pl-4 text-sm text-muted">/</span>
-            <input class="min-h-12 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none" id="slug" name="slug" value="{{ old('slug', $conference?->slug) }}" required placeholder="icoseit-2026">
+            <input class="min-h-12 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none" id="slug" name="slug" x-model="slug" value="{{ old('slug', $conference?->slug) }}" required placeholder="icoseit-2026">
         </div>
     </div>
     <div>
@@ -43,7 +49,7 @@
         <label class="form-label" for="submission_closes_at">Submission Closes At</label>
         <input class="form-input" id="submission_closes_at" type="datetime-local" name="submission_closes_at" value="{{ old('submission_closes_at', $conference?->submission_closes_at?->format('Y-m-d\TH:i')) }}">
     </div>
-    <div class="md:col-span-2 border-t border-navy/10 pt-5" x-data="{ submissionMode: '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}' }">
+    <div class="md:col-span-2 border-t border-navy/10 pt-5">
         <h3 class="font-black text-navy">Submission Workflow Mode</h3>
         <p class="text-xs text-muted mt-1">Select how authors submit their papers for this conference.</p>
         <div class="grid gap-3 sm:grid-cols-2 mt-3">
@@ -70,12 +76,30 @@
                     <span>🔗</span> Google Form Real-Time Sync Setup Guide
                 </h4>
                 <p class="text-xs text-muted mt-1">Follow these steps to automatically sync submissions from your existing Google Form or Spreadsheet into Paperflow:</p>
-                <ol class="mt-3 list-decimal list-inside text-xs text-navy/80 space-y-1.5 font-medium">
+                <ol class="mt-3 list-decimal list-inside text-xs text-navy/80 space-y-2.5 font-medium">
                     <li>Open your Google Form or its connected Google Sheets spreadsheet.</li>
                     <li>Go to <strong>Extensions &gt; Apps Script</strong> (or Click <strong>&vellip; &gt; Script Editor</strong>).</li>
                     <li>Paste the Google Apps Script integration code into the editor.</li>
-                    <li>Set the Webhook URL to: <code class="font-mono bg-white px-2 py-0.5 rounded border border-navy/10 text-orange font-bold">{{ url('/api/webhooks/google-form/'.($conference?->slug ?? '{your-slug}')) }}</code></li>
-                    <li>Set the Secret Token header <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-navy/10 text-navy">X-Paperflow-Secret</code> to: <code class="font-mono bg-white px-2 py-0.5 rounded border border-navy/10 text-navy font-bold">{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}</code></li>
+                    <li>
+                        <span class="block mb-1">Set the Webhook URL to:</span>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <code class="font-mono bg-white px-2.5 py-1 rounded-lg border border-navy/10 text-orange font-bold break-all select-all text-xs" x-text="baseUrl + '/api/webhooks/google-form/' + (slug.trim() || '{your-slug}')">
+                                {{ url('/api/webhooks/google-form/'.($conference?->slug ?? '{your-slug}')) }}
+                            </code>
+                            <button type="button" @click="navigator.clipboard.writeText(baseUrl + '/api/webhooks/google-form/' + (slug.trim() || '{your-slug}')); copiedUrl = true; setTimeout(() => copiedUrl = false, 2000)" class="btn text-xs py-1 px-3 bg-white border border-navy/15 hover:border-orange hover:text-orange text-navy rounded-lg transition inline-flex items-center gap-1 font-bold shadow-2xs">
+                                <span x-text="copiedUrl ? 'Copied! ✓' : '📋 Copy Webhook URL'">📋 Copy Webhook URL</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="block mb-1">Set the Secret Token header (<code class="font-mono text-navy font-bold">X-Paperflow-Secret</code>) to:</span>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <code class="font-mono bg-white px-2.5 py-1 rounded-lg border border-navy/10 text-navy font-bold text-xs select-all">{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}</code>
+                            <button type="button" @click="navigator.clipboard.writeText('{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}'); copiedSecret = true; setTimeout(() => copiedSecret = false, 2000)" class="btn text-xs py-1 px-3 bg-white border border-navy/15 hover:border-orange hover:text-orange text-navy rounded-lg transition inline-flex items-center gap-1 font-bold shadow-2xs">
+                                <span x-text="copiedSecret ? 'Copied! ✓' : '📋 Copy Secret Token'">📋 Copy Secret Token</span>
+                            </button>
+                        </div>
+                    </li>
                     <li>Add an <strong>On form submit</strong> trigger under Apps Script Triggers (&num;1 Event Source: <em>From form / From spreadsheet</em>).</li>
                 </ol>
             </div>
