@@ -19,7 +19,7 @@ class SubmissionImportController extends Controller
     /**
      * Preview uploaded CSV file, extract headers, auto-detect column mappings, and return preview payload.
      */
-    public function preview(Request $request): JsonResponse
+    public function preview(Request $request, Conference $conference): JsonResponse
     {
         $request->validate([
             'file' => ['required', 'file', 'max:20480'], // max 20MB
@@ -88,10 +88,7 @@ class SubmissionImportController extends Controller
             ], 422);
         }
 
-        // Active conference default mapping fallback
-        $activeConferenceId = session('active_conference_id');
-        $activeConference = $activeConferenceId ? Conference::find($activeConferenceId) : null;
-        $savedMapping = $activeConference ? $activeConference->googleFormMapping() : [];
+        $savedMapping = $conference->googleFormMapping();
 
         $detectedMapping = [
             'paper_id_column' => $this->autoMatchColumn($headers, [$savedMapping['paper_id_column'] ?? null, 'ID Papers (#)', 'Paper ID', 'ID Paper', 'Paper Code', 'Code', 'ID']),
@@ -115,7 +112,7 @@ class SubmissionImportController extends Controller
     /**
      * Process confirmed CSV import file, smart deduplicate, and upsert papers.
      */
-    public function process(Request $request, SubmissionWorkflow $workflow, ConferenceMailer $mailer): JsonResponse
+    public function process(Request $request, Conference $conference, SubmissionWorkflow $workflow, ConferenceMailer $mailer): JsonResponse
     {
         $request->validate([
             'temp_file_id' => ['required', 'string'],
@@ -131,15 +128,6 @@ class SubmissionImportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Temporary import file expired or missing. Please upload your CSV file again.',
-            ], 422);
-        }
-
-        $activeConferenceId = session('active_conference_id');
-        $conference = $activeConferenceId ? Conference::find($activeConferenceId) : Conference::first();
-        if (! $conference) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No active conference selected.',
             ], 422);
         }
 

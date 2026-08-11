@@ -33,8 +33,7 @@ class SubmissionImportTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('submissions.csv', $csvContent);
 
         $response = $this->actingAs($user)
-            ->withSession(['active_conference_id' => $conference->id])
-            ->postJson(route('submissions.import.preview'), [
+            ->postJson(route('conferences.import.preview', $conference), [
                 'file' => $file,
             ]);
 
@@ -71,8 +70,7 @@ class SubmissionImportTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('submissions.csv', $csvContent);
 
         $previewResponse = $this->actingAs($user)
-            ->withSession(['active_conference_id' => $conference->id])
-            ->postJson(route('submissions.import.preview'), [
+            ->postJson(route('conferences.import.preview', $conference), [
                 'file' => $file,
             ]);
 
@@ -81,8 +79,7 @@ class SubmissionImportTest extends TestCase
 
         // 1. Process Initial Import
         $processResponse = $this->actingAs($user)
-            ->withSession(['active_conference_id' => $conference->id])
-            ->postJson(route('submissions.import.process'), [
+            ->postJson(route('conferences.import.process', $conference), [
                 'temp_file_id' => $tempFileId,
                 'mapping' => $mapping,
             ]);
@@ -113,12 +110,10 @@ class SubmissionImportTest extends TestCase
 
         $fileV2 = UploadedFile::fake()->createWithContent('submissions_v2.csv', $csvContentV2);
         $previewV2 = $this->actingAs($user)
-            ->withSession(['active_conference_id' => $conference->id])
-            ->postJson(route('submissions.import.preview'), ['file' => $fileV2]);
+            ->postJson(route('conferences.import.preview', $conference), ['file' => $fileV2]);
 
         $processV2 = $this->actingAs($user)
-            ->withSession(['active_conference_id' => $conference->id])
-            ->postJson(route('submissions.import.process'), [
+            ->postJson(route('conferences.import.process', $conference), [
                 'temp_file_id' => $previewV2->json('temp_file_id'),
                 'mapping' => $previewV2->json('detected_mapping'),
             ]);

@@ -80,8 +80,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/editor-performance', EditorPerformanceController::class)->name('editor-performance.index');
 
         Route::get('/papers', [SubmissionController::class, 'index'])->name('submissions.index');
-        Route::post('/papers/import/preview', [\App\Http\Controllers\SubmissionImportController::class, 'preview'])->name('submissions.import.preview');
-        Route::post('/papers/import/process', [\App\Http\Controllers\SubmissionImportController::class, 'process'])->name('submissions.import.process');
         Route::post('/papers/bulk-assign', [SubmissionController::class, 'bulkAssign'])->name('submissions.bulk-assign');
         Route::post('/papers/bulk-status', [SubmissionController::class, 'bulkStatusUpdate'])->name('submissions.bulk-status');
         Route::post('/papers/bulk-download', [SubmissionController::class, 'bulkDownload'])->name('submissions.bulk-download');
@@ -107,6 +105,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/conferences/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
         Route::get('/conferences/edas-reconciliation/export-missing', [EdasReconciliationController::class, 'exportMissing'])->name('conferences.edas-reconciliation.export-missing');
         Route::resource('conferences', ConferenceController::class);
+        Route::post('/conferences/{conference}/import/preview', [\App\Http\Controllers\SubmissionImportController::class, 'preview'])->name('conferences.import.preview');
+        Route::post('/conferences/{conference}/import/process', [\App\Http\Controllers\SubmissionImportController::class, 'process'])->name('conferences.import.process');
         Route::post('/conferences/{conference}/duplicate', [ConferenceController::class, 'duplicate'])->name('conferences.duplicate');
         Route::get('/conferences/{conference}/members', [ConferenceMemberController::class, 'index'])->name('conferences.members.index');
         Route::post('/conferences/{conference}/members', [ConferenceMemberController::class, 'store'])->name('conferences.members.store');
