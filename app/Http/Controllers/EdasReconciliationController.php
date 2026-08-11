@@ -11,8 +11,23 @@ use Illuminate\View\View;
 
 class EdasReconciliationController extends Controller
 {
-    public function index(Request $request, Conference $conference): View
+    public function index(Request $request, ?Conference $conference = null): View|RedirectResponse
     {
+        if (! $conference || ! $conference->exists) {
+            $queryConfId = $request->query('conference') ?: (array_keys($request->query())[0] ?? null);
+            $activeId = $queryConfId ?: $request->session()->get('active_conference_id');
+            $found = $activeId ? Conference::find($activeId) : null;
+            if (! $found && $activeId) {
+                $found = Conference::where('slug', $activeId)->first();
+            }
+            $conference = $found ?: Conference::orderBy('name')->first();
+            if (! $conference) {
+                return redirect()->route('conferences.index');
+            }
+
+            return redirect()->route('conferences.edas-reconciliation.index', $conference);
+        }
+
         $this->authorize('update', $conference);
         $request->session()->put('active_conference_id', $conference->id);
 

@@ -9,8 +9,8 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2.5">
                     <h1 class="page-title text-xl sm:text-2xl font-black text-navy truncate">{{ $conference->name }}</h1>
-                    <span class="badge badge-{{ $conference->status === \App\Enums\ConferenceStatus::Active ? 'success' : 'neutral' }} text-xs font-extrabold px-3 py-1">
-                        {{ $conference->status->label() }}
+                    <span class="badge badge-{{ ($conference->status ?? null) === \App\Enums\ConferenceStatus::Active ? 'success' : 'neutral' }} text-xs font-extrabold px-3 py-1">
+                        {{ $conference->status?->label() ?? 'Active' }}
                     </span>
                 </div>
                 <p class="text-xs text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
