@@ -124,7 +124,7 @@ class GoogleFormWebhookTest extends TestCase
         $this->assertEquals(1, Submission::where('conference_id', $conference->id)->count());
         $this->assertEquals(2, $submission->fresh()->files()->count());
 
-        $latestFile = $submission->fresh()->files()->where('is_final', true)->first();
+        $latestFile = $submission->fresh()->files()->orderByDesc('version_number')->first();
         $this->assertEquals(2, $latestFile->version_number);
         $this->assertEquals('Editable Manuscript (v2)', $latestFile->label);
     }

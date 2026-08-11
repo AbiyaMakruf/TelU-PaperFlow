@@ -137,7 +137,7 @@ class SubmissionImportTest extends TestCase
 
         // File versions count should now be 2
         $this->assertEquals(2, $submission->files()->count());
-        $latestFile = $submission->files()->where('is_final', true)->first();
+        $latestFile = $submission->files()->orderByDesc('version_number')->first();
         $this->assertEquals('Editable Manuscript (v2)', $latestFile->label);
     }
 }

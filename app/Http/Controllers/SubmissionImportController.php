@@ -300,8 +300,6 @@ class SubmissionImportController extends Controller
                             ->exists();
 
                         if (! $alreadyUploaded) {
-                            $existing->files()->where('file_category', 'editable_manuscript')->update(['is_final' => false]);
-
                             FileVersion::create([
                                 'submission_id' => $existing->id,
                                 'version_number' => $nextVersion,
@@ -314,7 +312,7 @@ class SubmissionImportController extends Controller
                                 'file_category' => 'editable_manuscript',
                                 'mime_type' => $manuscriptFormat === 'zip' ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                 'size' => 0,
-                                'is_final' => true,
+                                'is_final' => false,
                                 'uploaded_by' => null,
                             ]);
                             $fileUpdated = true;
@@ -368,7 +366,7 @@ class SubmissionImportController extends Controller
                             'file_category' => 'editable_manuscript',
                             'mime_type' => $manuscriptFormat === 'zip' ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                             'size' => 0,
-                            'is_final' => true,
+                            'is_final' => false,
                             'uploaded_by' => null,
                         ]);
                     }
