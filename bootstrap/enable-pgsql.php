@@ -1,6 +1,10 @@
 <?php
 
-// Auto-enable required extensions in php.ini if commented out
+// Auto-enable required extensions in php.ini if commented out (Windows only)
+if (PHP_OS_FAMILY !== 'Windows') {
+    return;
+}
+
 $ini = php_ini_loaded_file();
 if ($ini && file_exists($ini)) {
     $content = file_get_contents($ini);
