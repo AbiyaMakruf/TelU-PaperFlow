@@ -80,6 +80,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/editor-performance', EditorPerformanceController::class)->name('editor-performance.index');
 
         Route::get('/papers', [SubmissionController::class, 'index'])->name('submissions.index');
+        Route::post('/papers/import/preview', [\App\Http\Controllers\SubmissionImportController::class, 'preview'])->name('submissions.import.preview');
+        Route::post('/papers/import/process', [\App\Http\Controllers\SubmissionImportController::class, 'process'])->name('submissions.import.process');
         Route::post('/papers/bulk-assign', [SubmissionController::class, 'bulkAssign'])->name('submissions.bulk-assign');
         Route::post('/papers/bulk-status', [SubmissionController::class, 'bulkStatusUpdate'])->name('submissions.bulk-status');
         Route::post('/papers/bulk-download', [SubmissionController::class, 'bulkDownload'])->name('submissions.bulk-download');

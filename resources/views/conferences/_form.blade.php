@@ -17,21 +17,15 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('conferenceForm', (initialSlug, initialMode, initialCustomFields, secretToken) => ({
+    Alpine.data('conferenceForm', (initialSlug, initialMode, initialCustomFields) => ({
         slug: initialSlug || '',
         submissionMode: initialMode || 'paperflow_native',
-        baseUrl: window.location.origin,
-        copiedCode: false,
-        customFields: initialCustomFields || [],
-        getAppsScriptCode() {
-            const webhookUrl = this.baseUrl + '/api/webhooks/google-form/' + (this.slug && this.slug.trim() ? this.slug.trim() : '{your-slug}');
-            return `/**\n * PAPERFLOW REAL-TIME GOOGLE FORM WEBHOOK INTEGRATION\n */\nconst PAPERFLOW_WEBHOOK_URL = "${webhookUrl}";\nconst SECRET_TOKEN = "${secretToken}";\n\nfunction onFormSubmit(e) {\n  try {\n    let payload = {};\n    if (e && e.namedValues) {\n      for (let key in e.namedValues) {\n        payload[key.trim()] = e.namedValues[key][0] || "";\n      }\n    } else if (e && e.response) {\n      let itemResponses = e.response.getItemResponses();\n      for (let i = 0; i < itemResponses.length; i++) {\n        let itemResponse = itemResponses[i];\n        let title = itemResponse.getItem().getTitle().trim();\n        let response = itemResponse.getResponse();\n        payload[title] = Array.isArray(response) ? response.join(", ") : response;\n      }\n    } else {\n      return;\n    }\n\n    let options = {\n      "method": "post",\n      "contentType": "application/json",\n      "headers": {\n        "X-Paperflow-Secret": SECRET_TOKEN\n      },\n      "payload": JSON.stringify(payload),\n      "muteHttpExceptions": true\n    };\n\n    UrlFetchApp.fetch(PAPERFLOW_WEBHOOK_URL, options);\n  } catch (error) {\n    Logger.log("Paperflow Webhook Error: " + error.toString());\n  }\n}`;
-        }
+        customFields: initialCustomFields || []
     }));
 });
 </script>
 
-<div class="grid gap-5 md:grid-cols-2" x-data="conferenceForm('{{ old('slug', $conference?->slug ?? '') }}', '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}', {{ json_encode(old('google_form_mapping.custom_fields', $mapping['custom_fields'] ?? [])) }}, '{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}')">
+<div class="grid gap-5 md:grid-cols-2" x-data="conferenceForm('{{ old('slug', $conference?->slug ?? '') }}', '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}', {{ json_encode(old('google_form_mapping.custom_fields', $mapping['custom_fields'] ?? [])) }})">
     <div class="md:col-span-2">
         <label class="form-label" for="name">Conference Name</label>
         <input class="form-input" id="name" name="name" value="{{ old('name', $conference?->name) }}" required placeholder="e.g. International Conference on Science and Technology">
@@ -89,8 +83,8 @@ document.addEventListener('alpine:init', () => {
             <label class="check-row rounded-xl border border-navy/10 p-4 cursor-pointer" :class="submissionMode === 'google_form_external' ? 'border-orange bg-orange/5' : ''">
                 <input type="radio" name="submission_mode" value="google_form_external" x-model="submissionMode" @checked(old('submission_mode', $conference?->submissionMode()) === 'google_form_external')>
                 <span>
-                    <strong class="block text-navy">Google Form External Sync</strong>
-                    <small class="text-muted block mt-0.5">Authors submit via Google Form; submissions sync to Paperflow in real-time.</small>
+                    <strong class="block text-navy">Google Form / Spreadsheet CSV Import Mode</strong>
+                    <small class="text-muted block mt-0.5">Authors submit via Google Form; staff import CSV exports anytime with auto-detection.</small>
                 </span>
             </label>
         </div>
@@ -99,35 +93,11 @@ document.addEventListener('alpine:init', () => {
         <div x-show="submissionMode === 'google_form_external'" class="mt-6 rounded-2xl border border-orange/20 bg-orange/5 p-5 space-y-6">
             <div>
                 <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
-                    <span>🔗</span> Google Form Real-Time Sync Setup Guide
+                    <span>📥</span> Smart CSV / Excel Import Mode Active
                 </h4>
-                <p class="text-xs text-muted mt-1">Follow these exact step-by-step instructions to connect your Google Form / Spreadsheet to Paperflow:</p>
-                <ol class="mt-3 list-decimal list-inside text-xs text-navy/90 space-y-3 font-medium">
-                    <li>Open your Google Form (or its connected Google Sheets spreadsheet).</li>
-                    <li>Click <strong>Extensions &gt; Apps Script</strong> (or click <strong>&vellip; &gt; Script Editor</strong>) to open the <code class="font-mono text-purple-950 bg-purple-100 px-1.5 py-0.5 rounded">script.google.com</code> editor.</li>
-                    <li>
-                        Clear any default code in <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-navy/10">Code.gs</code>, then click <strong>"📋 Copy Complete Apps Script Code"</strong> below and paste it into the editor:
-                        <div class="mt-2.5 bg-navy text-slate-100 p-4 rounded-xl font-mono text-[11px] leading-relaxed relative overflow-x-auto border border-navy/20 shadow-xs">
-                            <div class="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-white/10 flex-wrap">
-                                <span class="text-xs text-orange font-bold font-sans">Google Apps Script Code (Code.gs)</span>
-                                <button type="button" @click="navigator.clipboard.writeText(getAppsScriptCode()); copiedCode = true; setTimeout(() => copiedCode = false, 2000)" class="btn text-xs py-1 px-3 bg-orange hover:bg-orange-dark text-white font-sans font-bold rounded-lg transition shrink-0 shadow-2xs">
-                                    <span x-text="copiedCode ? 'Copied to Clipboard! ✓' : '📋 Copy Complete Apps Script Code'">📋 Copy Complete Apps Script Code</span>
-                                </button>
-                            </div>
-                            <pre class="whitespace-pre overflow-x-auto text-[11px] text-emerald-300" x-text="getAppsScriptCode()"></pre>
-                        </div>
-                    </li>
-                    <li>Click <strong>Save 💾</strong> (or press <kbd class="px-1.5 py-0.5 bg-white border border-navy/20 rounded text-[10px]">Ctrl+S</kbd> / <kbd class="px-1.5 py-0.5 bg-white border border-navy/20 rounded text-[10px]">Cmd+S</kbd>).</li>
-                    <li>
-                        On the left sidebar of <code class="font-mono text-purple-950 bg-purple-100 px-1.5 py-0.5 rounded">script.google.com</code>, click <strong>Triggers ⏰</strong> (alarm clock icon) &rarr; Click <strong>+ Add Trigger</strong> (at bottom right):
-                        <ul class="mt-1.5 ml-5 list-disc space-y-1 text-xs text-navy/80 font-normal">
-                            <li>Choose function to run: <strong><code class="font-mono text-navy font-bold">onFormSubmit</code></strong></li>
-                            <li>Select event source: <strong><code class="font-mono text-navy font-bold">From form</code></strong> (or <em>From spreadsheet</em>)</li>
-                            <li>Select event type: <strong><code class="font-mono text-navy font-bold">On form submit</code></strong></li>
-                        </ul>
-                    </li>
-                    <li>Click <strong>Save</strong> and grant Google permissions if prompted. Submissions will now sync instantly into Paperflow!</li>
-                </ol>
+                <p class="text-xs text-navy/80 mt-1 leading-relaxed">
+                    You can download responses from your Google Form or Google Sheets spreadsheet as a CSV/Excel file, then click <strong>"Import CSV/Excel"</strong> on the Papers page. Paperflow will automatically detect header columns and safely update submissions without creating duplicates.
+                </p>
             </div>
 
             <div class="border-t border-orange/15 pt-5 space-y-6">

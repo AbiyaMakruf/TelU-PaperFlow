@@ -5,7 +5,10 @@
             <h1 class="page-title">All Papers</h1>
             <p class="page-subtitle">Monitor submissions, PIC assignments, and review stages in a single unified table.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto" x-data="csvImportModal()">
+            <button type="button" @click="openModal = true" class="btn btn-primary w-full sm:w-auto font-bold inline-flex items-center gap-1.5 shadow-xs">
+                <span>📥</span> Import CSV / Excel
+            </button>
             <div x-data="{ open: false }" class="relative w-full sm:w-auto">
                 <button type="button" @click="open = !open" class="btn btn-secondary w-full sm:w-auto">
                     Export Report ▾
@@ -16,6 +19,134 @@
                     <a class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg" target="_blank" href="{{ route('submissions.export', array_merge(request()->query(), ['format' => 'pdf'])) }}">PDF Report (Print)</a>
                 </div>
             </div>
+
+            <!-- Modal Portal -->
+            <template x-teleport="body">
+                <div x-show="openModal" class="fixed inset-0 z-50 overflow-y-auto bg-navy/60 backdrop-blur-xs flex items-center justify-center p-4" x-cloak>
+                    <div @click.away="resetModal()" class="card w-full max-w-2xl bg-white p-6 shadow-2xl rounded-2xl space-y-5 border border-navy/10 relative">
+                        <div class="flex items-center justify-between border-b border-navy/10 pb-3">
+                            <h3 class="text-base font-extrabold text-navy flex items-center gap-2">
+                                <span>📥</span> Smart CSV / Excel Submissions Import
+                            </h3>
+                            <button type="button" @click="resetModal()" class="text-muted hover:text-navy text-lg font-bold">✕</button>
+                        </div>
+
+                        <div x-show="errorMessage" class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 font-bold" x-cloak x-text="errorMessage"></div>
+
+                        <!-- Step 1: Upload File -->
+                        <div x-show="step === 1" class="space-y-4">
+                            <p class="text-xs text-muted leading-relaxed">
+                                Upload your Google Form or Google Sheets export file (.csv). Paperflow will automatically detect header columns and safely update submissions without creating duplicates.
+                            </p>
+                            <label class="border-2 border-dashed border-navy/20 hover:border-orange bg-slate-50/50 hover:bg-orange/5 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition">
+                                <span class="text-3xl mb-2">📄</span>
+                                <strong class="text-navy text-sm font-bold">Choose a CSV file or drag it here</strong>
+                                <small class="text-muted text-xs mt-1">Supports .csv, .tsv, or .txt files up to 20MB</small>
+                                <input type="file" accept=".csv,.tsv,.txt" @change="handleFileSelect($event)" class="hidden">
+                            </label>
+                            <div x-show="loading" class="flex items-center justify-center gap-2 text-xs font-bold text-orange py-2">
+                                <span class="animate-spin">⏳</span> Reading CSV header columns...
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Auto-Detected Header Column Mapping Confirmation -->
+                        <div x-show="step === 2" class="space-y-4">
+                            <div class="flex items-center justify-between bg-orange/10 p-3 rounded-xl border border-orange/20">
+                                <span class="text-xs font-bold text-navy">Headers Detected Successfully!</span>
+                                <span class="text-xs font-black text-orange" x-text="`${totalRows} data rows found`"></span>
+                            </div>
+
+                            <p class="text-xs text-muted">Confirm or adjust how CSV columns map to Paperflow fields:</p>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div>
+                                    <label class="form-label text-xs font-bold">Paper ID Column <span class="text-rose-500">*</span></label>
+                                    <select class="form-input text-xs" x-model="mapping.paper_id_column">
+                                        <template x-for="h in headers" :key="h">
+                                            <option :value="h" x-text="h" :selected="h === mapping.paper_id_column"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label text-xs font-bold">Paper Title Column <span class="text-rose-500">*</span></label>
+                                    <select class="form-input text-xs" x-model="mapping.title_column">
+                                        <template x-for="h in headers" :key="h">
+                                            <option :value="h" x-text="h" :selected="h === mapping.title_column"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label text-xs font-bold">Author Name Column <span class="text-rose-500">*</span></label>
+                                    <select class="form-input text-xs" x-model="mapping.author_name_column">
+                                        <template x-for="h in headers" :key="h">
+                                            <option :value="h" x-text="h" :selected="h === mapping.author_name_column"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label text-xs font-bold">Author Email Column <span class="text-rose-500">*</span></label>
+                                    <select class="form-input text-xs" x-model="mapping.author_email_column">
+                                        <template x-for="h in headers" :key="h">
+                                            <option :value="h" x-text="h" :selected="h === mapping.author_email_column"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label text-xs font-bold">Author Phone Column</label>
+                                    <select class="form-input text-xs" x-model="mapping.author_phone_column">
+                                        <option value="">(None)</option>
+                                        <template x-for="h in headers" :key="h">
+                                            <option :value="h" x-text="h" :selected="h === mapping.author_phone_column"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label text-xs font-bold">Manuscript File URL Column</label>
+                                    <select class="form-input text-xs" x-model="mapping.manuscript_file_column">
+                                        <option value="">(None)</option>
+                                        <template x-for="h in headers" :key="h">
+                                            <option :value="h" x-text="h" :selected="h === mapping.manuscript_file_column"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-3 pt-3 border-t border-navy/10">
+                                <button type="button" @click="step = 1" class="btn btn-secondary text-xs">Back</button>
+                                <button type="button" @click="processImport()" :disabled="loading" class="btn btn-primary text-xs font-bold inline-flex items-center gap-1.5">
+                                    <span x-show="loading" class="animate-spin">⏳</span>
+                                    <span x-text="loading ? 'Processing Import...' : 'Confirm & Process Import'"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Success Summary Statistics -->
+                        <div x-show="step === 3" class="space-y-4 text-center py-4">
+                            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 text-2xl font-black mx-auto">✓</div>
+                            <h4 class="text-base font-extrabold text-navy">CSV Import Completed Successfully!</h4>
+                            
+                            <div class="grid grid-cols-3 gap-3 text-xs mt-3">
+                                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                                    <span class="block font-black text-lg text-emerald-700" x-text="successStats?.new || 0"></span>
+                                    <span class="text-muted font-bold text-[11px]">New Papers</span>
+                                </div>
+                                <div class="p-3 bg-purple-50 rounded-xl border border-purple-200">
+                                    <span class="block font-black text-lg text-purple-700" x-text="successStats?.updated || 0"></span>
+                                    <span class="text-muted font-bold text-[11px]">Updated (v2/v3)</span>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                    <span class="block font-black text-lg text-slate-700" x-text="successStats?.skipped || 0"></span>
+                                    <span class="text-muted font-bold text-[11px]">Unchanged/Skipped</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-navy/10">
+                                <button type="button" @click="window.location.reload()" class="btn btn-primary text-xs font-bold w-full">Done & Refresh Table</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
         </div>
     </div>
 
@@ -446,6 +577,100 @@
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('csvImportModal', () => ({
+        openModal: false,
+        step: 1,
+        loading: false,
+        tempFileId: '',
+        headers: [],
+        totalRows: 0,
+        mapping: {
+            paper_id_column: '',
+            title_column: '',
+            author_name_column: '',
+            author_email_column: '',
+            author_phone_column: '',
+            manuscript_file_column: ''
+        },
+        errorMessage: '',
+        successStats: null,
+
+        handleFileSelect(e) {
+            const files = e.target.files || e.dataTransfer.files;
+            if (!files || !files.length) return;
+            this.uploadAndPreview(files[0]);
+        },
+
+        async uploadAndPreview(file) {
+            this.loading = true;
+            this.errorMessage = '';
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('_token', '{{ csrf_token() }}');
+
+            try {
+                const res = await fetch('{{ route("submissions.import.preview") }}', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to preview CSV file.');
+                }
+                this.tempFileId = data.temp_file_id;
+                this.headers = data.headers || [];
+                this.totalRows = data.total_rows || 0;
+                this.mapping = data.detected_mapping || {};
+                this.step = 2;
+            } catch (err) {
+                this.errorMessage = err.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async processImport() {
+            this.loading = true;
+            this.errorMessage = '';
+            try {
+                const res = await fetch('{{ route("submissions.import.process") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        temp_file_id: this.tempFileId,
+                        mapping: this.mapping
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to process CSV import.');
+                }
+                this.successStats = data.stats;
+                this.step = 3;
+            } catch (err) {
+                this.errorMessage = err.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        resetModal() {
+            this.openModal = false;
+            this.step = 1;
+            this.loading = false;
+            this.tempFileId = '';
+            this.headers = [];
+            this.errorMessage = '';
+            this.successStats = null;
+        }
+    }));
+});
+</script>
 </x-layouts.app>
