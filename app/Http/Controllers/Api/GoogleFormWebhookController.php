@@ -12,6 +12,7 @@ use App\Services\ConferenceMailer;
 use App\Services\SubmissionWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class GoogleFormWebhookController extends Controller
 {
@@ -71,12 +72,6 @@ class GoogleFormWebhookController extends Controller
             'author_phone',
         ]);
 
-        $presenterName = $this->extractField($data, [
-            $mapping['presenter_name_column'] ?? 'Name of Presenter',
-            'Name of Presenter',
-            'presenter_name',
-        ]);
-
         $manuscriptUrl = $this->extractField($data, [
             $mapping['manuscript_file_column'] ?? 'Upload the Manuscript Source',
             "Upload the Manuscript Source \nYour file should be in .docx or .zip format",
@@ -85,18 +80,33 @@ class GoogleFormWebhookController extends Controller
             'manuscript_file_url',
         ]);
 
-        $revisionFormUrl = $this->extractField($data, [
-            $mapping['revision_form_column'] ?? 'Upload the Revision Form',
-            'Upload the Revision Form',
-            'revision_form_url',
-        ]);
+        // Dynamically extract custom optional fields configured by admin
+        $customAnswers = [];
+        foreach ($mapping['custom_fields'] ?? [] as $cf) {
+            if (is_array($cf) && filled($cf['label'] ?? null) && filled($cf['column'] ?? null)) {
+                $val = $this->extractField($data, [$cf['column']]);
+                if (filled($val)) {
+                    $customAnswers[$cf['label']] = $val;
+                    $key = Str::slug($cf['label'], '_');
+                    $customAnswers[$key] = $val;
+                }
+            }
+        }
 
-        $similarityReportUrl = $this->extractField($data, [
-            $mapping['similarity_report_column'] ?? 'Upload the Simmilarity Report',
-            "Upload the Simmilarity Report \n(Turnitin / Authenticate) ",
-            'Upload the Simmilarity Report',
-            'similarity_report_url',
-        ]);
+        // Fallback checks for legacy preset optional keys if not already in custom_fields
+        $presenterName = $this->extractField($data, ['Name of Presenter', 'presenter_name']);
+        $revisionFormUrl = $this->extractField($data, ['Upload the Revision Form', 'revision_form_url']);
+        $similarityReportUrl = $this->extractField($data, ["Upload the Simmilarity Report \n(Turnitin / Authenticate) ", 'Upload the Simmilarity Report', 'similarity_report_url']);
+
+        if (filled($presenterName) && ! isset($customAnswers['presenter_name'])) {
+            $customAnswers['presenter_name'] = $presenterName;
+        }
+        if (filled($revisionFormUrl) && ! isset($customAnswers['revision_form_url'])) {
+            $customAnswers['revision_form_url'] = $revisionFormUrl;
+        }
+        if (filled($similarityReportUrl) && ! isset($customAnswers['similarity_report_url'])) {
+            $customAnswers['similarity_report_url'] = $similarityReportUrl;
+        }
 
         if (blank($title) || blank($authorEmail)) {
             return response()->json([
@@ -124,12 +134,11 @@ class GoogleFormWebhookController extends Controller
 
         if ($existing) {
             $submission = $existing;
-            $updatedAnswers = array_merge($submission->answers ?? [], array_filter([
-                'presenter_name' => $presenterName ?: ($submission->answers['presenter_name'] ?? null),
-                'similarity_report_url' => $similarityReportUrl ?: ($submission->answers['similarity_report_url'] ?? null),
-                'revision_form_url' => $revisionFormUrl ?: ($submission->answers['revision_form_url'] ?? null),
-                'latest_google_form_timestamp' => $data['Timestamp'] ?? now()->toDateTimeString(),
-            ]));
+            $updatedAnswers = array_merge(
+                $submission->answers ?? [],
+                $customAnswers,
+                array_filter(['latest_google_form_timestamp' => $data['Timestamp'] ?? now()->toDateTimeString()])
+            );
 
             // Flag duplicate warning if paper_id differs but title matches
             $isDuplicateFlag = ($submission->paper_id !== $paperId);
@@ -193,12 +202,10 @@ class GoogleFormWebhookController extends Controller
                 'status' => SubmissionStatus::Submitted,
                 'submission_source' => 'google_form',
                 'submitted_at' => now(),
-                'answers' => array_filter([
-                    'presenter_name' => $presenterName,
-                    'similarity_report_url' => $similarityReportUrl,
-                    'revision_form_url' => $revisionFormUrl,
-                    'google_form_timestamp' => $data['Timestamp'] ?? null,
-                ]),
+                'answers' => array_merge(
+                    $customAnswers,
+                    array_filter(['google_form_timestamp' => $data['Timestamp'] ?? null])
+                ),
             ]);
 
             SubmissionAuthor::create([

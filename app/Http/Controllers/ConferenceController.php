@@ -70,7 +70,25 @@ class ConferenceController extends Controller
         $settings = $conference->settings ?? [];
         $settings['submission_mode'] = $request->input('submission_mode', 'paperflow_native');
         if ($request->has('google_form_mapping')) {
-            $settings['google_form_mapping'] = array_map('trim', (array) $request->input('google_form_mapping', []));
+            $mappingInput = (array) $request->input('google_form_mapping', []);
+            $cleanMapping = [];
+            foreach ($mappingInput as $k => $v) {
+                if ($k === 'custom_fields' && is_array($v)) {
+                    $cleanCustom = [];
+                    foreach ($v as $cf) {
+                        if (is_array($cf) && filled($cf['label'] ?? null) && filled($cf['column'] ?? null)) {
+                            $cleanCustom[] = [
+                                'label' => trim((string) $cf['label']),
+                                'column' => trim((string) $cf['column']),
+                            ];
+                        }
+                    }
+                    $cleanMapping['custom_fields'] = $cleanCustom;
+                } elseif (is_string($v)) {
+                    $cleanMapping[$k] = trim($v);
+                }
+            }
+            $settings['google_form_mapping'] = $cleanMapping;
         }
         $settings['allowed_extensions'] = $request->input('allowed_extensions', ['doc', 'docx', 'tex', 'zip']);
         $settings['max_file_mb'] = $request->integer('max_file_mb', 25);

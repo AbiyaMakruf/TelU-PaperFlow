@@ -1,10 +1,26 @@
-@php($conference = $conference ?? null)
+@php
+    $conference = $conference ?? null;
+    $mapping = $conference?->googleFormMapping() ?? [
+        'paper_id_column' => 'ID Papers (#)',
+        'title_column' => "Paper's Title",
+        'author_name_column' => "Registered Author's Name",
+        'author_email_column' => "Registered Author's Email Address",
+        'author_phone_column' => "Registered Author's Phone Number",
+        'manuscript_file_column' => 'Upload the Manuscript Source',
+        'custom_fields' => [
+            ['label' => 'Presenter Name', 'column' => 'Name of Presenter'],
+            ['label' => 'Revision Form Link', 'column' => 'Upload the Revision Form'],
+            ['label' => 'Similarity Report Link', 'column' => 'Upload the Simmilarity Report'],
+        ],
+    ];
+@endphp
 <div class="grid gap-5 md:grid-cols-2" x-data="{ 
     slug: '{{ old('slug', $conference?->slug ?? '') }}', 
     submissionMode: '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}',
     baseUrl: window.location.origin,
     copiedUrl: false,
-    copiedSecret: false
+    copiedSecret: false,
+    customFields: {{ json_encode(old('google_form_mapping.custom_fields', $mapping['custom_fields'] ?? [])) }}
 }">
     <div class="md:col-span-2">
         <label class="form-label" for="name">Conference Name</label>
@@ -104,57 +120,76 @@
                 </ol>
             </div>
 
-            @php($mapping = $conference?->googleFormMapping() ?? [
-                'paper_id_column' => 'ID Papers (#)',
-                'title_column' => "Paper's Title",
-                'author_name_column' => "Registered Author's Name",
-                'author_email_column' => "Registered Author's Email Address",
-                'author_phone_column' => "Registered Author's Phone Number",
-                'presenter_name_column' => 'Name of Presenter',
-                'manuscript_file_column' => 'Upload the Manuscript Source',
-                'revision_form_column' => 'Upload the Revision Form',
-                'similarity_report_column' => 'Upload the Simmilarity Report',
-            ])
-            <div class="border-t border-orange/15 pt-5">
-                <h4 class="font-extrabold text-navy text-sm">Google Form / Spreadsheet Column Header Mapping</h4>
-                <p class="text-xs text-muted mt-0.5">Enter the exact question or column header text used in your Google Form so Paperflow knows how to read your entries.</p>
-                
-                <div class="grid gap-4 sm:grid-cols-2 mt-4 text-xs">
-                    <div>
-                        <label class="form-label text-xs">Paper ID Column Header</label>
-                        <input class="form-input text-xs" name="google_form_mapping[paper_id_column]" value="{{ old('google_form_mapping.paper_id_column', $mapping['paper_id_column']) }}" placeholder="ID Papers (#)">
+            <div class="border-t border-orange/15 pt-5 space-y-6">
+                <div>
+                    <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
+                        <span>📌</span> Mandatory Column Header Mapping <span class="text-rose-600 font-bold text-xs">* Required</span>
+                    </h4>
+                    <p class="text-xs text-muted mt-0.5">These 6 core fields are required so Paperflow can properly index papers and author details.</p>
+                    
+                    <div class="grid gap-4 sm:grid-cols-2 mt-4 text-xs">
+                        <div>
+                            <label class="form-label text-xs font-bold">Paper ID Column Header <span class="text-rose-500">*</span></label>
+                            <input class="form-input text-xs" name="google_form_mapping[paper_id_column]" value="{{ old('google_form_mapping.paper_id_column', $mapping['paper_id_column']) }}" required placeholder="ID Papers (#)">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs font-bold">Paper Title Column Header <span class="text-rose-500">*</span></label>
+                            <input class="form-input text-xs" name="google_form_mapping[title_column]" value="{{ old('google_form_mapping.title_column', $mapping['title_column']) }}" required placeholder="Paper's Title">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs font-bold">Registered Author Name Column Header <span class="text-rose-500">*</span></label>
+                            <input class="form-input text-xs" name="google_form_mapping[author_name_column]" value="{{ old('google_form_mapping.author_name_column', $mapping['author_name_column']) }}" required placeholder="Registered Author's Name">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs font-bold">Registered Author Email Column Header <span class="text-rose-500">*</span></label>
+                            <input class="form-input text-xs" name="google_form_mapping[author_email_column]" value="{{ old('google_form_mapping.author_email_column', $mapping['author_email_column']) }}" required placeholder="Registered Author's Email Address">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs font-bold">Registered Author Phone Column Header <span class="text-rose-500">*</span></label>
+                            <input class="form-input text-xs" name="google_form_mapping[author_phone_column]" value="{{ old('google_form_mapping.author_phone_column', $mapping['author_phone_column']) }}" required placeholder="Registered Author's Phone Number">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs font-bold">Manuscript Source Upload Column Header <span class="text-rose-500">*</span></label>
+                            <input class="form-input text-xs" name="google_form_mapping[manuscript_file_column]" value="{{ old('google_form_mapping.manuscript_file_column', $mapping['manuscript_file_column']) }}" required placeholder="Upload the Manuscript Source">
+                        </div>
                     </div>
-                    <div>
-                        <label class="form-label text-xs">Paper Title Column Header</label>
-                        <input class="form-input text-xs" name="google_form_mapping[title_column]" value="{{ old('google_form_mapping.title_column', $mapping['title_column']) }}" placeholder="Paper's Title">
+                </div>
+
+                <div class="border-t border-orange/15 pt-5">
+                    <div class="flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                            <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
+                                <span>✨</span> Custom / Optional Additional Fields Mapping
+                            </h4>
+                            <p class="text-xs text-muted mt-0.5">Add any additional Google Form questions or spreadsheet columns you want Paperflow to capture.</p>
+                        </div>
+                        <button type="button" @click="customFields.push({ label: '', column: '' })" class="btn btn-secondary text-xs py-1.5 px-3 font-bold inline-flex items-center gap-1 shadow-2xs hover:border-orange hover:text-orange">
+                            <span>➕</span> Add Optional Field
+                        </button>
                     </div>
-                    <div>
-                        <label class="form-label text-xs">Registered Author Name Column Header</label>
-                        <input class="form-input text-xs" name="google_form_mapping[author_name_column]" value="{{ old('google_form_mapping.author_name_column', $mapping['author_name_column']) }}" placeholder="Registered Author's Name">
-                    </div>
-                    <div>
-                        <label class="form-label text-xs">Registered Author Email Column Header</label>
-                        <input class="form-input text-xs" name="google_form_mapping[author_email_column]" value="{{ old('google_form_mapping.author_email_column', $mapping['author_email_column']) }}" placeholder="Registered Author's Email Address">
-                    </div>
-                    <div>
-                        <label class="form-label text-xs">Registered Author Phone Column Header</label>
-                        <input class="form-input text-xs" name="google_form_mapping[author_phone_column]" value="{{ old('google_form_mapping.author_phone_column', $mapping['author_phone_column']) }}" placeholder="Registered Author's Phone Number">
-                    </div>
-                    <div>
-                        <label class="form-label text-xs">Presenter Name Column Header</label>
-                        <input class="form-input text-xs" name="google_form_mapping[presenter_name_column]" value="{{ old('google_form_mapping.presenter_name_column', $mapping['presenter_name_column']) }}" placeholder="Name of Presenter">
-                    </div>
-                    <div>
-                        <label class="form-label text-xs">Manuscript Source Upload Column Header</label>
-                        <input class="form-input text-xs" name="google_form_mapping[manuscript_file_column]" value="{{ old('google_form_mapping.manuscript_file_column', $mapping['manuscript_file_column']) }}" placeholder="Upload the Manuscript Source">
-                    </div>
-                    <div>
-                        <label class="form-label text-xs">Revision Form Upload Column Header</label>
-                        <input class="form-input text-xs" name="google_form_mapping[revision_form_column]" value="{{ old('google_form_mapping.revision_form_column', $mapping['revision_form_column']) }}" placeholder="Upload the Revision Form">
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label class="form-label text-xs">Similarity Report Upload Column Header</label>
-                        <input class="form-input text-xs" name="google_form_mapping[similarity_report_column]" value="{{ old('google_form_mapping.similarity_report_column', $mapping['similarity_report_column']) }}" placeholder="Upload the Simmilarity Report">
+
+                    <div class="mt-4 space-y-3">
+                        <template x-for="(field, index) in customFields" :key="index">
+                            <div class="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-navy/10 text-xs shadow-2xs">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 min-w-0">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-navy/70 mb-1">Field Label in Paperflow</label>
+                                        <input class="form-input text-xs py-1.5" :name="`google_form_mapping[custom_fields][${index}][label]`" x-model="field.label" placeholder="e.g. Presenter Name" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-navy/70 mb-1">Google Form / Spreadsheet Column Header</label>
+                                        <input class="form-input text-xs py-1.5" :name="`google_form_mapping[custom_fields][${index}][column]`" x-model="field.column" placeholder="e.g. Name of Presenter" required>
+                                    </div>
+                                </div>
+                                <button type="button" @click="customFields.splice(index, 1)" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition shrink-0 self-end mb-0.5 font-bold" title="Remove optional field">
+                                    🗑️ Remove
+                                </button>
+                            </div>
+                        </template>
+                        
+                        <div x-show="customFields.length === 0" class="text-xs text-muted italic bg-white p-4 rounded-xl border border-dashed border-navy/15 text-center">
+                            No optional custom fields added yet. Click "+ Add Optional Field" above to capture extra Google Form questions.
+                        </div>
                     </div>
                 </div>
             </div>

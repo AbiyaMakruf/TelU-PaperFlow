@@ -160,7 +160,7 @@ class Conference extends Model
         return $this->submissionMode() === 'google_form_external';
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, mixed> */
     public function googleFormMapping(): array
     {
         $defaults = [
@@ -169,12 +169,23 @@ class Conference extends Model
             'author_name_column' => "Registered Author's Name",
             'author_email_column' => "Registered Author's Email Address",
             'author_phone_column' => "Registered Author's Phone Number",
-            'presenter_name_column' => 'Name of Presenter',
             'manuscript_file_column' => 'Upload the Manuscript Source',
-            'revision_form_column' => 'Upload the Revision Form',
-            'similarity_report_column' => 'Upload the Simmilarity Report',
+            'custom_fields' => [
+                ['label' => 'Presenter Name', 'column' => 'Name of Presenter'],
+                ['label' => 'Revision Form Link', 'column' => 'Upload the Revision Form'],
+                ['label' => 'Similarity Report Link', 'column' => 'Upload the Simmilarity Report'],
+            ],
         ];
 
-        return array_merge($defaults, $this->settings['google_form_mapping'] ?? []);
+        $saved = $this->settings['google_form_mapping'] ?? [];
+        $mapping = array_merge($defaults, $saved);
+
+        if (isset($saved['custom_fields']) && is_array($saved['custom_fields'])) {
+            $mapping['custom_fields'] = array_values(array_filter($saved['custom_fields'], function ($item) {
+                return is_array($item) && filled($item['label'] ?? null) && filled($item['column'] ?? null);
+            }));
+        }
+
+        return $mapping;
     }
 }
