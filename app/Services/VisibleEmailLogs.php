@@ -25,7 +25,7 @@ class VisibleEmailLogs
 
         $adminConferenceIds = $user->conferenceMemberships()
             ->where('is_active', true)
-            ->where('role', ConferenceRole::Admin)
+            ->whereIn('role', [ConferenceRole::Admin, 'admin', 'conference_admin'])
             ->pluck('conference_id');
 
         if ($activeWorkspaceId && $adminConferenceIds->contains($activeWorkspaceId)) {
@@ -45,7 +45,7 @@ class VisibleEmailLogs
 
         $adminConferenceIds = $user->conferenceMemberships()
             ->where('is_active', true)
-            ->where('role', ConferenceRole::Admin)
+            ->whereIn('role', [ConferenceRole::Admin, 'admin', 'conference_admin'])
             ->pluck('conference_id');
 
         if ($activeWorkspaceId) {

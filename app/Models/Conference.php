@@ -39,6 +39,11 @@ class Conference extends Model
         ];
     }
 
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('id', $value)->orWhere('slug', $value)->firstOrFail();
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

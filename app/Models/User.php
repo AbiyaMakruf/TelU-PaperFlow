@@ -99,7 +99,10 @@ class User extends Authenticatable
             return true;
         }
 
-        $conferenceId = $conference instanceof Conference ? $conference->getKey() : $conference;
+        $conferenceId = $conference instanceof Conference
+            ? $conference->id
+            : (Conference::where('id', $conference)->orWhere('slug', $conference)->value('id') ?? $conference);
+
         $roleValues = collect($roles)->flatMap(function (ConferenceRole|string $role) {
             $val = $role instanceof ConferenceRole ? $role->value : (string) $role;
             if ($val === 'conference_admin' || $val === 'admin') {
