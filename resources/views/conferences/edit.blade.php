@@ -42,7 +42,7 @@
                                 Are you sure you want to permanently delete conference <strong class="text-navy font-black">&quot;{{ $conference->name }}&quot;</strong>? All associated submissions, checklist items, assigned staff, and settings will be permanently removed.
                             </p>
 
-                            <form x-ref="deleteForm" method="POST" action="{{ url('/conferences/'.$conference->id.'/delete') }}" 
+                            <form x-ref="deleteForm" method="POST" action="{{ route('conferences.destroy', $conference) }}" 
                                   @submit.prevent="
                                       deleting = true;
                                       fetch($el.action, {

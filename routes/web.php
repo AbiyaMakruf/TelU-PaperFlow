@@ -174,6 +174,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/conferences/{conference}/drive/connect', [GoogleDriveController::class, 'connect'])->name('conferences.drive.connect');
         Route::delete('/conferences/{conference}/drive', [GoogleDriveController::class, 'disconnect'])->name('conferences.drive.disconnect');
         Route::get('/google-drive/callback', [GoogleDriveController::class, 'callback'])->name('google-drive.callback');
+        Route::delete('/conferences/{conference}/delete', [ConferenceController::class, 'destroy'])->name('conferences.delete.legacy');
+        Route::post('/conferences/{conference}/delete', [ConferenceController::class, 'destroy']);
 
         Route::resource('conferences', ConferenceController::class);
 
