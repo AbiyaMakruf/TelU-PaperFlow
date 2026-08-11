@@ -28,7 +28,20 @@ class ConferencePolicy
 
     public function update(User $user, Conference $conference): bool
     {
-        return $user->hasConferenceRole($conference, ConferenceRole::Admin);
+        $allowed = $user->hasConferenceRole($conference, ConferenceRole::Admin);
+        if (! $allowed) {
+            \Illuminate\Support\Facades\Log::warning('[Paperflow Authorization] 403 Forbidden on Conference Update/EDAS', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'is_super_admin' => $user->is_super_admin,
+                'is_active' => $user->is_active,
+                'conference_id' => $conference->id,
+                'conference_name' => $conference->name,
+                'memberships' => $user->conferenceMemberships()->get(['conference_id', 'role', 'is_active'])->toArray(),
+            ]);
+        }
+
+        return $allowed;
     }
 
     public function delete(User $user, Conference $conference): bool
