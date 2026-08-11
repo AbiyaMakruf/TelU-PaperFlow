@@ -109,7 +109,6 @@
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}">Editor Performance</a>
                 @auth
                     @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())
-                        <a href="{{ route('conferences.edas-reconciliation.index') }}" class="nav-link {{ request()->routeIs('conferences.edas-reconciliation.*') ? 'nav-link-active' : '' }}">EDAS Reconciliation</a>
                         <a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}">Email Monitoring</a>
                     @endif
                     @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())
@@ -198,7 +197,6 @@
                 <a href="{{ route('editor-performance.index') }}" class="nav-link {{ request()->routeIs('editor-performance.*') ? 'nav-link-active' : '' }}"><span class="text-xs">ST</span><span>Editor Performance</span></a>
                 @auth
                     @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())
-                        <a href="{{ route('conferences.edas-reconciliation.index') }}" class="nav-link {{ request()->routeIs('conferences.edas-reconciliation.*') ? 'nav-link-active' : '' }}"><span class="text-xs">ER</span><span>EDAS Reconciliation</span></a>
                         <a href="{{ route('emails.index') }}" class="nav-link {{ request()->routeIs('emails.*') ? 'nav-link-active' : '' }}"><span class="text-xs">EM</span><span>Email Monitoring</span></a>
                     @endif
                     @if(auth()->user()->isSuperAdmin() || auth()->user()->conferenceMemberships()->where('is_active',true)->where('role',\App\Enums\ConferenceRole::Admin)->exists())

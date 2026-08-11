@@ -32,7 +32,10 @@ class EditorialWorkflowTest extends TestCase
             'user_id' => $editor->id,
             'role' => ConferenceRole::Editorial->value,
             'manuscript_format' => 'docx',
+            'initial_page_count' => 8,
         ])->assertRedirect();
+        $this->assertEquals(8, $submission->fresh()->initial_page_count);
+
         $this->actingAs($admin)->post(route('submissions.assign', $submission), [
             'user_id' => $reviewer->id,
             'role' => ConferenceRole::Reviewer->value,
@@ -43,8 +46,12 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($editor)->put(route('submissions.checklist', [$submission, ReviewStage::Editorial->value]), [
             'items' => [$editorialItem->id => ['checked' => '1', 'note' => 'Sesuai']],
         ])->assertRedirect();
-        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer'])->assertRedirect();
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), [
+            'action' => 'send_reviewer',
+            'final_page_count' => 6,
+        ])->assertRedirect();
         $this->assertSame(SubmissionStatus::ReviewerReview, $submission->fresh()->status);
+        $this->assertEquals(6, $submission->fresh()->final_page_count);
 
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'reviewer_approve'])->assertRedirect();
         $this->assertSame(SubmissionStatus::Done, $submission->fresh()->status);

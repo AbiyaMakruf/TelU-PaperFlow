@@ -1,5 +1,31 @@
-@php($conference = $conference ?? null)
-<div class="grid gap-5 md:grid-cols-2">
+@php
+    $conference = $conference ?? null;
+    $mapping = $conference?->googleFormMapping() ?? [
+        'paper_id_column' => 'ID Papers (#)',
+        'title_column' => "Paper's Title",
+        'author_name_column' => "Registered Author's Name",
+        'author_email_column' => "Registered Author's Email Address",
+        'author_phone_column' => "Registered Author's Phone Number",
+        'manuscript_file_column' => 'Upload the Manuscript Source',
+        'custom_fields' => [
+            ['label' => 'Presenter Name', 'column' => 'Name of Presenter'],
+            ['label' => 'Revision Form Link', 'column' => 'Upload the Revision Form'],
+            ['label' => 'Similarity Report Link', 'column' => 'Upload the Simmilarity Report'],
+        ],
+    ];
+@endphp
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('conferenceForm', (initialSlug, initialMode, initialCustomFields) => ({
+        slug: initialSlug || '',
+        submissionMode: initialMode || 'paperflow_native',
+        customFields: initialCustomFields || []
+    }));
+});
+</script>
+
+<div class="grid gap-5 md:grid-cols-2" x-data="conferenceForm('{{ old('slug', $conference?->slug ?? '') }}', '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}', {{ json_encode(old('google_form_mapping.custom_fields', $mapping['custom_fields'] ?? [])) }})">
     <div class="md:col-span-2">
         <label class="form-label" for="name">Conference Name</label>
         <input class="form-input" id="name" name="name" value="{{ old('name', $conference?->name) }}" required placeholder="e.g. International Conference on Science and Technology">
@@ -8,7 +34,7 @@
         <label class="form-label" for="slug">Public URL Slug</label>
         <div class="flex items-center rounded-xl border border-navy/15 bg-white focus-within:border-orange focus-within:ring-4 focus-within:ring-orange/10">
             <span class="pl-4 text-sm text-muted">/</span>
-            <input class="min-h-12 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none" id="slug" name="slug" value="{{ old('slug', $conference?->slug) }}" required placeholder="icoseit-2026">
+            <input class="min-h-12 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none" id="slug" name="slug" x-model="slug" value="{{ old('slug', $conference?->slug) }}" required placeholder="icoseit-2026">
         </div>
     </div>
     <div>
@@ -25,7 +51,37 @@
     </div>
     <div>
         <label class="form-label" for="timezone">Timezone</label>
-        <input class="form-input" id="timezone" name="timezone" value="{{ old('timezone', $conference?->timezone ?? 'Asia/Jakarta') }}" required>
+        <select class="form-input" id="timezone" name="timezone" required>
+            @php
+                $timezones = [
+                    'Asia/Jakarta' => 'Asia/Jakarta (GMT+7 - WIB)',
+                    'Asia/Makassar' => 'Asia/Makassar (GMT+8 - WITA)',
+                    'Asia/Jayapura' => 'Asia/Jayapura (GMT+9 - WIT)',
+                    'Asia/Singapore' => 'Asia/Singapore (GMT+8)',
+                    'Asia/Bangkok' => 'Asia/Bangkok (GMT+7)',
+                    'Asia/Kuala_Lumpur' => 'Asia/Kuala_Lumpur (GMT+8)',
+                    'Asia/Tokyo' => 'Asia/Tokyo (GMT+9)',
+                    'Asia/Riyadh' => 'Asia/Riyadh (GMT+3)',
+                    'Asia/Dubai' => 'Asia/Dubai (GMT+4)',
+                    'UTC' => 'UTC (GMT+0)',
+                    'Europe/London' => 'Europe/London (GMT+0/+1)',
+                    'Europe/Paris' => 'Europe/Paris (GMT+1/+2)',
+                    'Europe/Berlin' => 'Europe/Berlin (GMT+1/+2)',
+                    'America/New_York' => 'America/New_York (GMT-5/-4)',
+                    'America/Chicago' => 'America/Chicago (GMT-6/-5)',
+                    'America/Denver' => 'America/Denver (GMT-7/-6)',
+                    'America/Los_Angeles' => 'America/Los_Angeles (GMT-8/-7)',
+                    'Australia/Sydney' => 'Australia/Sydney (GMT+10/+11)',
+                ];
+                $currentTimezone = old('timezone', $conference?->timezone ?? 'Asia/Jakarta');
+                if (!isset($timezones[$currentTimezone])) {
+                    $timezones[$currentTimezone] = $currentTimezone;
+                }
+            @endphp
+            @foreach($timezones as $tzValue => $tzLabel)
+                <option value="{{ $tzValue }}" @selected($currentTimezone === $tzValue)>{{ $tzLabel }}</option>
+            @endforeach
+        </select>
     </div>
     <div>
         <label class="form-label" for="starts_at">Start Date</label>
@@ -35,14 +91,37 @@
         <label class="form-label" for="ends_at">End Date</label>
         <input class="form-input" id="ends_at" type="datetime-local" name="ends_at" value="{{ old('ends_at', $conference?->ends_at?->format('Y-m-d\TH:i')) }}">
     </div>
-    <div>
-        <label class="form-label" for="submission_opens_at">Submission Opens At</label>
-        <input class="form-input" id="submission_opens_at" type="datetime-local" name="submission_opens_at" value="{{ old('submission_opens_at', $conference?->submission_opens_at?->format('Y-m-d\TH:i')) }}">
+    <div class="md:col-span-2 border-t border-navy/10 pt-5">
+        <h3 class="font-black text-navy">Submission Workflow Mode</h3>
+        <p class="text-xs text-muted mt-1">Select how authors submit their papers for this conference.</p>
+        <div class="grid gap-3 sm:grid-cols-2 mt-3">
+            <label class="check-row rounded-xl border border-navy/10 p-4 cursor-pointer" :class="submissionMode === 'paperflow_native' ? 'border-orange bg-orange/5' : ''">
+                <input type="radio" name="submission_mode" value="paperflow_native" x-model="submissionMode" @checked(old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') === 'paperflow_native')>
+                <span>
+                    <strong class="block text-navy">Paperflow Native Form (Default)</strong>
+                    <small class="text-muted block mt-0.5">Authors submit directly via the conference's public Paperflow webpage.</small>
+                </span>
+            </label>
+            <label class="check-row rounded-xl border border-navy/10 p-4 cursor-pointer" :class="submissionMode === 'google_form_external' ? 'border-orange bg-orange/5' : ''">
+                <input type="radio" name="submission_mode" value="google_form_external" x-model="submissionMode" @checked(old('submission_mode', $conference?->submissionMode()) === 'google_form_external')>
+                <span>
+                    <strong class="block text-navy">Google Form / Spreadsheet CSV Import Mode</strong>
+                    <small class="text-muted block mt-0.5">Authors submit via Google Form; staff import CSV exports anytime with auto-detection.</small>
+                </span>
+            </label>
+        </div>
+
+        <!-- Google Form / Spreadsheet CSV Information Section -->
+        <div x-show="submissionMode === 'google_form_external'" class="mt-6 rounded-2xl border border-orange/20 bg-orange/5 p-5 space-y-2">
+            <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
+                <span>📥</span> Smart CSV / Excel Import Mode Active
+            </h4>
+            <p class="text-xs text-navy/80 leading-relaxed">
+                Paperflow will automatically detect header columns from your Google Form or Google Sheets CSV export file. You can upload and import CSV files anytime directly from the conference detail page after creating this conference.
+            </p>
+        </div>
     </div>
-    <div>
-        <label class="form-label" for="submission_closes_at">Submission Closes At</label>
-        <input class="form-input" id="submission_closes_at" type="datetime-local" name="submission_closes_at" value="{{ old('submission_closes_at', $conference?->submission_closes_at?->format('Y-m-d\TH:i')) }}">
-    </div>
+
     @if($conference)
         <div class="md:col-span-2 border-t border-navy/10 pt-5">
             <h3 class="font-black text-navy">File Upload Rules</h3>

@@ -145,6 +145,73 @@ class ConferenceAdministrationTest extends TestCase
         $this->assertNotNull($conference->brandBannerUrl());
     }
 
+    public function test_superadmin_can_delete_a_conference(): void
+    {
+        $superadmin = User::factory()->create(['is_super_admin' => true]);
+        $conference = Conference::create([
+            'name' => 'To Be Deleted Conference',
+            'slug' => 'to-be-deleted',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($superadmin)->delete(route('conferences.destroy', $conference));
+
+        $response->assertRedirect(route('conferences.index'));
+        $this->assertSoftDeleted('conferences', ['id' => $conference->id]);
+    }
+
+    public function test_non_superadmin_cannot_delete_a_conference(): void
+    {
+        [$conference, $admin] = $this->conferenceWithAdmin();
+
+        $response = $this->actingAs($admin)->delete(route('conferences.destroy', $conference));
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('conferences', ['id' => $conference->id]);
+    }
+
+    public function test_create_conference_validates_case_insensitive_duplicate_slug_gracefully(): void
+    {
+        $admin = User::factory()->create(['is_super_admin' => true]);
+        Conference::create([
+            'name' => 'Existing Conference',
+            'slug' => 'icoseit',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($admin)->post('/conferences', [
+            'name' => 'Duplicate Conference',
+            'slug' => 'ICoSEIT', // Mixed case
+            'status' => 'active',
+            'timezone' => 'Asia/Jakarta',
+        ]);
+
+        $response->assertSessionHasErrors(['slug']);
+    }
+
+    public function test_admin_can_create_conference_with_csv_import_submission_mode(): void
+    {
+        $admin = User::factory()->create(['is_super_admin' => true]);
+
+        $response = $this->actingAs($admin)->post('/conferences', [
+            'name' => 'Initial Import Conf',
+            'slug' => 'init-conf',
+            'status' => 'active',
+            'timezone' => 'Asia/Jakarta',
+            'starts_at' => '2026-09-01T08:00',
+            'ends_at' => '2026-09-30T17:00',
+            'submission_mode' => 'google_form_external',
+        ]);
+
+        $conference = Conference::where('slug', 'init-conf')->firstOrFail();
+        $response->assertRedirect(route('conferences.show', $conference));
+
+        // Verify dates auto-populated
+        $this->assertEquals('2026-09-01 08:00:00', $conference->submission_opens_at->format('Y-m-d H:i:s'));
+        $this->assertEquals('2026-09-30 17:00:00', $conference->submission_closes_at->format('Y-m-d H:i:s'));
+        $this->assertEquals('google_form_external', $conference->submissionMode());
+    }
+
     /** @return array{Conference, User} */
     private function conferenceWithAdmin(): array
     {

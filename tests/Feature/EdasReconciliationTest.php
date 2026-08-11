@@ -44,12 +44,12 @@ class EdasReconciliationTest extends TestCase
     {
         [$conference, $admin, $editor] = $this->createConferenceWithAdmin();
 
-        $this->get(route('conferences.edas-reconciliation.index'))
+        $this->get(route('conferences.edas-reconciliation.index', $conference))
             ->assertRedirect(route('login'));
 
         $this->actingAs($editor)
             ->withSession(['active_conference_id' => $conference->id])
-            ->get(route('conferences.edas-reconciliation.index'))
+            ->get(route('conferences.edas-reconciliation.index', $conference))
             ->assertForbidden();
     }
 
@@ -59,7 +59,7 @@ class EdasReconciliationTest extends TestCase
 
         $this->actingAs($admin)
             ->withSession(['active_conference_id' => $conference->id])
-            ->get(route('conferences.edas-reconciliation.index'))
+            ->get(route('conferences.edas-reconciliation.index', $conference))
             ->assertOk()
             ->assertSee('EDAS CSV Reconciliation');
     }
@@ -81,24 +81,24 @@ class EdasReconciliationTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        // Create fake EDAS CSV content (1 submitted, 1 missing)
-        $csvContent = "Paper ID,Author Email,Title\n".
-            "1570990001,john.doe@example.com,AI Deep Learning Workflow in Academic Publishing\n".
-            '1570990002,missing.author@example.com,Unsubmitted Paper Title';
+        // Create fake EDAS CSV content (1 submitted, 1 missing) with only Paper ID and optional Title
+        $csvContent = "Paper ID,Title\n".
+            "1570990001,AI Deep Learning Workflow in Academic Publishing\n".
+            '1570990002,Unsubmitted Paper Title';
 
         $csvFile = UploadedFile::fake()->createWithContent('edas_export.csv', $csvContent);
 
         $response = $this->actingAs($admin)
             ->withSession(['active_conference_id' => $conference->id])
-            ->post(route('conferences.edas-reconciliation.upload'), [
+            ->post(route('conferences.edas-reconciliation.upload', $conference), [
                 'csv_file' => $csvFile,
             ]);
 
-        $response->assertRedirect(route('conferences.edas-reconciliation.index'));
+        $response->assertRedirect(route('conferences.edas-reconciliation.index', $conference));
         $response->assertSessionHas('success');
 
         // Verify session data
-        $sessionData = session('edas_reconciliation_data');
+        $sessionData = session('edas_reconciliation_data_'.$conference->id);
         $this->assertNotNull($sessionData);
         $this->assertEquals(2, $sessionData['total_edas_count']);
         $this->assertEquals(1, $sessionData['submitted_count']);
@@ -108,9 +108,9 @@ class EdasReconciliationTest extends TestCase
         $this->actingAs($admin)
             ->withSession([
                 'active_conference_id' => $conference->id,
-                'edas_reconciliation_data' => $sessionData,
+                'edas_reconciliation_data_'.$conference->id => $sessionData,
             ])
-            ->get(route('conferences.edas-reconciliation.index'))
+            ->get(route('conferences.edas-reconciliation.index', $conference))
             ->assertOk()
             ->assertSee('Submitted')
             ->assertSee('Missing')
@@ -127,7 +127,6 @@ class EdasReconciliationTest extends TestCase
             'items' => [
                 [
                     'edas_paper_id' => '1570990002',
-                    'edas_email' => 'missing@example.com',
                     'edas_title' => 'Missing Paper',
                     'status_state' => 'missing',
                 ],
@@ -137,13 +136,13 @@ class EdasReconciliationTest extends TestCase
         $response = $this->actingAs($admin)
             ->withSession([
                 'active_conference_id' => $conference->id,
-                'edas_reconciliation_data' => $sessionData,
+                'edas_reconciliation_data_'.$conference->id => $sessionData,
             ])
-            ->get(route('conferences.edas-reconciliation.export-missing'));
+            ->get(route('conferences.edas-reconciliation.export-missing', $conference));
 
         $response->assertOk();
         $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
         $this->assertStringContainsString('1570990002', $response->streamedContent());
-        $this->assertStringContainsString('missing@example.com', $response->streamedContent());
+        $this->assertStringContainsString('Missing Paper', $response->streamedContent());
     }
 }

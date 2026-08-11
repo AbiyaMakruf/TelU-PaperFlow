@@ -99,14 +99,14 @@ class EmailMonitoringController extends Controller
 
     public function resend(Request $request, EmailLog $emailLog, VisibleEmailLogs $visible, ConferenceMailer $mailer): RedirectResponse|JsonResponse
     {
-        abort_unless($emailLog->status === 'failed' && filled($emailLog->body), 422, 'Hanya email gagal yang memiliki isi tersimpan yang dapat dikirim ulang.');
+        abort_unless($emailLog->status === 'failed' && filled($emailLog->body), 422, 'Only failed emails with saved body content can be re-sent.');
         abort_unless($visible->for($request->user())->whereKey($emailLog->id)->exists(), 403);
         $mailer->resend($emailLog, $request->user());
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Email dimasukkan kembali ke antrean.']);
+            return response()->json(['success' => true, 'message' => 'Email re-queued successfully.']);
         }
 
-        return back()->with('success', 'Email dimasukkan kembali ke antrean.');
+        return back()->with('success', 'Email re-queued successfully.');
     }
 }

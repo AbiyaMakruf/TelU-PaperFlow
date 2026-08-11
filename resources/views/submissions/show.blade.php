@@ -2,7 +2,7 @@
     <a class="back-link" href="{{ route('submissions.index') }}">&larr; Back to papers</a>
         <div class="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start min-w-0">
         <div class="min-w-0">
-            <p class="eyebrow truncate">{{ $submission->conference->name }} &middot; internal code {{ $submission->paper_code }}</p>
+            <p class="eyebrow truncate">{{ $submission->conference?->name ?? 'Conference' }} &middot; internal code {{ $submission->paper_code }}</p>
             <h1 class="page-title leading-tight break-words">{{ $submission->paper_id ?: $submission->paper_code }}</h1>
             <p class="page-subtitle leading-snug break-words max-w-full">{{ $submission->title }}</p>
         </div>
@@ -19,6 +19,15 @@
                 }
             @endphp
             <x-status-badge :status="$submission->status" />
+            @if($submission->submission_source === 'google_form')
+                <span class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700">
+                    <span>📑</span> Google Form
+                </span>
+            @else
+                <span class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-600">
+                    <span>🌐</span> Paperflow Form
+                </span>
+            @endif
         </div>
     </div>
 
@@ -45,7 +54,7 @@
             <section class="card p-4 sm:p-6 max-w-full min-w-0">
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-navy/8 pb-3">
                     <h2 class="text-base sm:text-lg font-black text-navy">Submission Details</h2>
-                    <span class="text-xs text-muted font-medium">{{ $submission->submitted_at?->timezone($submission->conference->timezone)->format('d M Y H:i') }}</span>
+                    <span class="text-xs text-muted font-medium">{{ $submission->submitted_at?->timezone($submission->conference?->timezone ?? 'UTC')->format('d M Y H:i') }}</span>
                 </div>
                 <dl class="mt-5 grid gap-4 sm:grid-cols-2 text-xs sm:text-sm">
                     <div class="min-w-0">
@@ -60,6 +69,30 @@
                     <div class="min-w-0">
                         <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">Editable Format</dt>
                         <dd class="mt-1 font-medium text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Not confirmed') }}</dd>
+                    </div>
+                    <div class="min-w-0">
+                        <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">Page Count (Halaman Paper)</dt>
+                        <dd class="mt-1 font-bold text-navy leading-snug">
+                            @if($submission->initial_page_count || $submission->final_page_count)
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-black text-navy border border-slate-200/90" title="Halaman awal sebelum diedit editor">
+                                        <span>Awal: {{ $submission->initial_page_count ? $submission->initial_page_count.' hal' : '-' }}</span>
+                                    </span>
+                                    <span class="text-slate-400 font-bold">→</span>
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-800 border border-emerald-200" title="Halaman final setelah diedit editor">
+                                        <span>Final: {{ $submission->final_page_count ? $submission->final_page_count.' hal' : '-' }}</span>
+                                    </span>
+                                    @if($submission->initial_page_count && $submission->final_page_count)
+                                        @php $diff = $submission->final_page_count - $submission->initial_page_count; @endphp
+                                        <span class="text-[11px] font-extrabold {{ $diff < 0 ? 'text-emerald-600' : ($diff > 0 ? 'text-amber-600' : 'text-slate-500') }}">
+                                            ({{ $diff > 0 ? '+'.$diff : $diff }} {{ Str::plural('hal', abs($diff)) }})
+                                        </span>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="text-xs text-muted font-normal">Belum dicatat</span>
+                            @endif
+                        </dd>
                     </div>
                     @foreach($submission->formVersion?->schema ?? [] as $field)
                         @continue(in_array($field['key'], ['co_authors', 'affiliation', 'country']))
@@ -79,6 +112,13 @@
                     <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-orange hover:text-orange rounded-xl transition" title="Inspect author portal view exactly as seen by the author">
                         Open Author Portal ↗
                     </a>
+                    <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
+                        @csrf
+                        <button type="submit" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-indigo-600 hover:text-indigo-600 rounded-xl transition" title="Send Author Portal link email to author">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            Send Author Portal Link
+                        </button>
+                    </form>
                 </div>
 
                 @if($submission->authors->count() > 1)
@@ -247,7 +287,7 @@
 
                                 <div class="editorial-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isEditorialActive ? 'display: none;' : '' }}">
                                     <span class="text-base shrink-0">ℹ️</span>
-                                    <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong class="editorial-status-name">{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Compliance Check.</span>
+                                    <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong class="editorial-status-name">{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Review in Progress.</span>
                                 </div>
 
                                 <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
@@ -475,17 +515,24 @@
                                     </template>
 
                                     <template x-if="allPassed">
-                                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-                                            <template x-if="hasReviewer">
-                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    ✓ Approve &amp; Send to Reviewer
-                                                </button>
-                                            </template>
-                                            <template x-if="!hasReviewer">
-                                                <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
-                                                    ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
-                                                </button>
-                                            </template>
+                                        <div class="space-y-3 w-full">
+                                            <div class="rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3 text-xs">
+                                                <label class="form-label text-xs font-bold text-emerald-900">Final Page Count (Jumlah Halaman Final - Setelah Edit Editor)</label>
+                                                <input type="number" min="1" max="500" class="form-input text-xs bg-white border-emerald-300" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Jumlah halaman final)" :disabled="!isEditorialActive">
+                                                <small class="text-[11px] text-emerald-700 mt-1 block">Tuliskan jumlah halaman naskah yang telah selesai diedit/dirapikan sebelum dikirimkan ke Reviewer.</small>
+                                            </div>
+                                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto justify-end">
+                                                <template x-if="hasReviewer">
+                                                    <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        ✓ Approve &amp; Send to Reviewer
+                                                    </button>
+                                                </template>
+                                                <template x-if="!hasReviewer">
+                                                    <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
+                                                        ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
+                                                    </button>
+                                                </template>
+                                            </div>
                                         </div>
                                     </template>
 
@@ -1000,6 +1047,11 @@
                             </select>
                         </div>
 
+                        <div>
+                            <label class="form-label text-xs">Initial Page Count (Jumlah Halaman Awal - Sebelum Edit)</label>
+                            <input type="number" min="1" max="500" class="form-input text-xs" name="initial_page_count" value="{{ old('initial_page_count', $submission->initial_page_count) }}" placeholder="e.g. 8 (Jumlah halaman awal)" @if($submission->status->isTerminal()) disabled @endif>
+                        </div>
+
                         <div id="editor-reassignment-reason-block" style="{{ $submission->editor_id ? '' : 'display: none;' }}">
                             <label class="form-label text-xs text-amber-700">Editor Reassignment Reason *</label>
                             <input class="form-input text-xs border-amber-300 bg-amber-50" name="reassignment_reason" id="editor-reassignment-reason-input" placeholder="e.g. Workload rebalancing" @if($submission->editor_id) required @endif @if($submission->status->isTerminal()) disabled @endif>
@@ -1061,8 +1113,8 @@
                                         <label class="form-label text-xs">Revert Target Stage *</label>
                                         <select class="form-input text-xs" name="action" required>
                                             <option value="">Select target stage...</option>
-                                            <option value="revert_done_to_editorial">🔙 Return to Editorial Compliance Check</option>
-                                            <option value="revert_done_to_reviewer">🔙 Return to Peer &amp; Technical Review</option>
+                                            <option value="revert_done_to_editorial">🔙 Return to Editorial Review in Progress</option>
+                                            <option value="revert_done_to_reviewer">🔙 Return to Pre-EDAS Technical Review</option>
                                             <option value="revert_done_to_edas">🔙 Return to Ready for EDAS Upload</option>
                                         </select>
                                     </div>

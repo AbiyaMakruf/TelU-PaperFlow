@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ConferenceRole;
 use App\Models\Conference;
 use App\Models\Submission;
 use App\Services\AuditLogger;
@@ -12,54 +11,25 @@ use Illuminate\View\View;
 
 class EdasReconciliationController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, Conference $conference): View
     {
-        $user = $request->user();
-        $activeConferenceId = $request->session()->get('active_conference_id');
-        $activeConference = $activeConferenceId ? Conference::find($activeConferenceId) : null;
+        $this->authorize('update', $conference);
+        $request->session()->put('active_conference_id', $conference->id);
 
-        if (! $activeConference && ! $user->isSuperAdmin()) {
-            $firstMembership = $user->conferenceMemberships()
-                ->where('is_active', true)
-                ->where('role', ConferenceRole::Admin)
-                ->first();
-
-            if ($firstMembership) {
-                $activeConference = Conference::find($firstMembership->conference_id);
-            }
-        }
-
-        if ($activeConference) {
-            $this->authorize('update', $activeConference);
-        } else {
-            abort_unless($user->isSuperAdmin(), 403, 'Select an active conference workspace to perform EDAS reconciliation.');
-        }
-
-        $sessionData = $request->session()->get('edas_reconciliation_data');
-
-        $totalSubmissions = $activeConference
-            ? Submission::where('conference_id', $activeConference->id)->count()
-            : Submission::count();
+        $sessionData = $request->session()->get('edas_reconciliation_data_'.$conference->id);
+        $totalSubmissions = Submission::where('conference_id', $conference->id)->count();
 
         return view('conferences.edas-reconciliation', [
-            'activeConference' => $activeConference,
+            'activeConference' => $conference,
             'sessionData' => $sessionData,
             'totalSubmissions' => $totalSubmissions,
         ]);
     }
 
-    public function upload(Request $request, AuditLogger $auditLogger): RedirectResponse
+    public function upload(Request $request, Conference $conference, AuditLogger $auditLogger): RedirectResponse
     {
-        $user = $request->user();
-        $activeConferenceId = $request->session()->get('active_conference_id');
-        $conference = $activeConferenceId ? Conference::find($activeConferenceId) : null;
-
-        if ($conference) {
-            $this->authorize('update', $conference);
-        } else {
-            abort_unless($user->isSuperAdmin(), 403);
-            $conference = Conference::orderBy('name')->firstOrFail();
-        }
+        $this->authorize('update', $conference);
+        $request->session()->put('active_conference_id', $conference->id);
 
         $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt,tsv', 'max:10240'],
@@ -97,16 +67,11 @@ class EdasReconciliationController extends Controller
         $hasHeader = false;
 
         $idColIndex = -1;
-        $emailColIndex = -1;
         $titleColIndex = -1;
 
         foreach ($header as $idx => $colName) {
             if (in_array($colName, ['paper_id', 'paper id', 'paperid', 'id', 'paper', 'edas_id', 'edas id', 'number', 'paper #'], true)) {
                 $idColIndex = $idx;
-                $hasHeader = true;
-            }
-            if (in_array($colName, ['email', 'author_email', 'contact_email', 'corresponding_author_email', 'contact email', 'author email', 'mail'], true)) {
-                $emailColIndex = $idx;
                 $hasHeader = true;
             }
             if (in_array($colName, ['title', 'paper_title', 'paper title', 'manuscript title', 'name'], true)) {
@@ -120,11 +85,8 @@ class EdasReconciliationController extends Controller
         if ($idColIndex === -1) {
             $idColIndex = 0;
         }
-        if ($emailColIndex === -1) {
-            $emailColIndex = count($rows[0]) > 1 ? 1 : -1;
-        }
         if ($titleColIndex === -1) {
-            $titleColIndex = count($rows[0]) > 2 ? 2 : -1;
+            $titleColIndex = count($rows[0]) > 1 ? 1 : -1;
         }
 
         $paperflowSubmissions = Submission::query()
@@ -133,7 +95,6 @@ class EdasReconciliationController extends Controller
             ->get();
 
         $byPaperId = [];
-        $byEmail = [];
 
         foreach ($paperflowSubmissions as $sub) {
             if ($sub->paper_id) {
@@ -142,9 +103,6 @@ class EdasReconciliationController extends Controller
             if ($sub->paper_code) {
                 $byPaperId[strtolower(trim((string) $sub->paper_code))] = $sub;
             }
-            if ($sub->corresponding_author_email) {
-                $byEmail[strtolower(trim((string) $sub->corresponding_author_email))][] = $sub;
-            }
         }
 
         $reconciledItems = [];
@@ -152,22 +110,18 @@ class EdasReconciliationController extends Controller
 
         foreach ($dataRows as $index => $row) {
             $edasPaperId = isset($row[$idColIndex]) ? trim((string) $row[$idColIndex]) : '';
-            $edasEmail = ($emailColIndex !== -1 && isset($row[$emailColIndex])) ? trim((string) $row[$emailColIndex]) : '';
             $edasTitle = ($titleColIndex !== -1 && isset($row[$titleColIndex])) ? trim((string) $row[$titleColIndex]) : '';
 
-            if (empty($edasPaperId) && empty($edasEmail)) {
+            if (empty($edasPaperId)) {
                 continue;
             }
 
             $matchedSubmission = null;
             $matchReason = null;
 
-            if (! empty($edasPaperId) && isset($byPaperId[strtolower($edasPaperId)])) {
+            if (isset($byPaperId[strtolower($edasPaperId)])) {
                 $matchedSubmission = $byPaperId[strtolower($edasPaperId)];
                 $matchReason = 'Paper ID Match';
-            } elseif (! empty($edasEmail) && isset($byEmail[strtolower($edasEmail)])) {
-                $matchedSubmission = $byEmail[strtolower($edasEmail)][0];
-                $matchReason = 'Author Email Match';
             }
 
             if ($matchedSubmission) {
@@ -180,7 +134,6 @@ class EdasReconciliationController extends Controller
             $reconciledItems[] = [
                 'row_number' => $index + 1,
                 'edas_paper_id' => $edasPaperId ?: '-',
-                'edas_email' => $edasEmail ?: '-',
                 'edas_title' => $edasTitle ?: '-',
                 'status_state' => $statusState,
                 'match_reason' => $matchReason,
@@ -227,7 +180,7 @@ class EdasReconciliationController extends Controller
             ])->values()->all(),
         ];
 
-        $request->session()->put('edas_reconciliation_data', $sessionPayload);
+        $request->session()->put('edas_reconciliation_data_'.$conference->id, $sessionPayload);
 
         $auditLogger->record('conference.edas_reconciled', $conference, $conference, newValues: [
             'total_edas' => $totalEdasCount,
@@ -235,21 +188,23 @@ class EdasReconciliationController extends Controller
             'missing' => $missingCount,
         ]);
 
-        return redirect()->route('conferences.edas-reconciliation.index')
+        return redirect()->route('conferences.edas-reconciliation.index', $conference)
             ->with('success', "EDAS CSV file ({$file->getClientOriginalName()}) successfully uploaded & reconciled. {$submittedCount} out of {$totalEdasCount} EDAS papers submitted in Paperflow ({$submissionRate}%).");
     }
 
-    public function reset(Request $request): RedirectResponse
+    public function reset(Request $request, Conference $conference): RedirectResponse
     {
-        $request->session()->forget('edas_reconciliation_data');
+        $this->authorize('update', $conference);
+        $request->session()->forget('edas_reconciliation_data_'.$conference->id);
 
-        return redirect()->route('conferences.edas-reconciliation.index')
+        return redirect()->route('conferences.edas-reconciliation.index', $conference)
             ->with('success', 'EDAS reconciliation data successfully reset. Please upload a new CSV file.');
     }
 
-    public function exportMissing(Request $request)
+    public function exportMissing(Request $request, Conference $conference)
     {
-        $sessionData = $request->session()->get('edas_reconciliation_data');
+        $this->authorize('update', $conference);
+        $sessionData = $request->session()->get('edas_reconciliation_data_'.$conference->id);
         if (! $sessionData || empty($sessionData['items'])) {
             return back()->withErrors(['csv_file' => 'No active reconciliation data available for export.']);
         }
@@ -258,16 +213,15 @@ class EdasReconciliationController extends Controller
 
         return response()->streamDownload(function () use ($missingItems) {
             $output = fopen('php://output', 'w');
-            fputcsv($output, ['EDAS Paper ID', 'Author Email', 'Title', 'Status in Paperflow']);
+            fputcsv($output, ['EDAS Paper ID', 'Title', 'Status in Paperflow']);
             foreach ($missingItems as $item) {
                 fputcsv($output, [
                     $item['edas_paper_id'],
-                    $item['edas_email'],
                     $item['edas_title'],
                     'Not Submitted (Missing)',
                 ]);
             }
             fclose($output);
-        }, 'edas-missing-papers-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }, 'edas-missing-papers-'.$conference->slug.'-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 }

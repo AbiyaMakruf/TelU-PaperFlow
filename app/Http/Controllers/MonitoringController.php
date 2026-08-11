@@ -74,7 +74,7 @@ class MonitoringController extends Controller
         DB::table('failed_jobs')->where('uuid', $uuid)->exists() ?: abort(404);
         \Artisan::call('queue:retry', ['id' => [$uuid]]);
 
-        return back()->with('success', 'Job dimasukkan kembali ke antrean.');
+        return back()->with('success', 'Job re-queued successfully.');
     }
 
     private function getDatabaseMetrics(): array

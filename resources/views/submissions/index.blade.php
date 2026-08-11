@@ -120,6 +120,15 @@
                         📦 Bulk Download Author Files (ZIP)
                     </button>
                 </form>
+                <form method="POST" action="{{ route('submissions.bulk-send-portal-link') }}" class="inline-block w-full sm:w-auto">
+                    @csrf
+                    <template x-for="id in selected" :key="id">
+                        <input type="hidden" name="submission_ids[]" :value="id">
+                    </template>
+                    <button type="submit" class="btn text-xs py-1.5 px-3 w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold border-0 shadow-sm transition">
+                        ✉️ Bulk Send Portal Links
+                    </button>
+                </form>
                 <button type="button" @click="selected = []" class="text-xs text-slate-400 hover:text-white underline">
                     Deselect All
                 </button>
@@ -147,6 +156,7 @@
                             <th>Format</th>
                             <th><a href="{{ $sortUrl('pic') }}">PIC ↕</a></th>
                             <th><a href="{{ $sortUrl('status') }}">Status ↕</a></th>
+                            <th>Portal Link</th>
                             <th><a href="{{ $sortUrl('submitted_at') }}">Submitted ↕</a></th>
                         </tr>
                     </thead>
@@ -160,7 +170,7 @@
                                 <a href="{{ route('submissions.show', $submission) }}" @click.stop class="font-black text-navy hover:text-orange hover:underline block">
                                     {{ $submission->paper_id ?: $submission->paper_code }}
                                 </a>
-                                <p class="mt-1 text-xs text-muted">{{ $submission->conference->name }}</p>
+                                <p class="mt-1 text-xs text-muted">{{ $submission->conference?->name ?? 'Unknown Conference' }}</p>
                                 @if($submission->is_flagged_duplicate)
                                     <span class="mt-1 inline-block rounded bg-rose-100 px-2 py-0.5 text-[10px] font-extrabold text-rose-700" title="{{ $submission->duplicate_notes }}">⚠️ Potential Duplicate</span>
                                 @endif
@@ -196,14 +206,37 @@
                                 @endif
                             </td>
                             <td><x-status-badge :status="$submission->status" /></td>
+                            <td @click.stop>
+                                @if($submission->portalLinkSent())
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-extrabold text-emerald-700 border border-emerald-200" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y H:i') }}">
+                                            <span>✓ Sent</span>
+                                        </span>
+                                        <small class="text-[10px] text-muted">{{ $submission->portalLinkSentAt()?->format('d M H:i') }}</small>
+                                    </div>
+                                @else
+                                    <div class="flex flex-col gap-1">
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200/80">
+                                            <span>⏳ Not Sent</span>
+                                        </span>
+                                        <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
+                                            @csrf
+                                            <button type="submit" class="btn btn-secondary text-[10px] py-0.5 px-2 font-bold text-navy hover:text-orange hover:border-orange shadow-2xs" title="Send Author Portal link email to author">
+                                                ✉️ Send Link
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                            </td>
                             <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->deadline_at->format('d M Y') }}</p>@endif</td>
                         </tr>
                         <tr x-show="open" x-cloak>
-                            <td colspan="7" class="bg-warm/70 p-5">
-                                <div class="grid gap-4 text-sm md:grid-cols-4">
+                            <td colspan="8" class="bg-warm/70 p-5">
+                                <div class="grid gap-4 text-sm md:grid-cols-5">
                                     <div><p class="form-label">Internal Code</p><p class="font-bold text-navy">{{ $submission->paper_code }}</p></div>
                                     <div><p class="form-label">Primary Author</p><p class="font-bold text-navy">{{ $submission->corresponding_author_name }}</p><p class="text-muted">{{ $submission->corresponding_author_email }}</p></div>
                                     <div><p class="form-label">Editable Format</p><p class="font-bold text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Not confirmed by admin') }}</p></div>
+                                    <div><p class="form-label">Page Count</p><p class="font-bold text-navy">{{ $submission->initial_page_count ? $submission->initial_page_count.' pp' : '-' }} → {{ $submission->final_page_count ? $submission->final_page_count.' pp' : '-' }}</p></div>
                                     <div><p class="form-label">Author Count</p><p class="font-bold text-navy">{{ $submission->authors->count() }}</p></div>
                                 </div>
                                 <div class="mt-4 flex flex-wrap gap-3">
@@ -213,7 +246,7 @@
                         </tr>
                         </tbody>
                     @empty
-                        <tbody><tr><td colspan="7" class="py-12 text-center text-muted">No papers match the selected filters.</td></tr></tbody>
+                        <tbody><tr><td colspan="8" class="py-12 text-center text-muted">No papers match the selected filters.</td></tr></tbody>
                     @endforelse
                 </table>
             </div>
@@ -242,7 +275,7 @@
                             <a href="{{ route('submissions.show', $submission) }}" @click.stop class="block font-bold text-navy hover:text-orange text-sm leading-snug">
                                 {{ $submission->title }}
                             </a>
-                            <p class="mt-1 text-xs text-muted truncate">{{ $submission->conference->name }}</p>
+                            <p class="mt-1 text-xs text-muted truncate">{{ $submission->conference?->name ?? 'Unknown Conference' }}</p>
                             @if($submission->is_flagged_duplicate)
                                 <span class="mt-1 inline-block rounded bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">⚠️ Potential Duplicate</span>
                             @endif
@@ -255,25 +288,47 @@
                             </span>
                         </div>
 
-                        <div class="rounded-xl bg-slate-50 border border-slate-200/80 p-3 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <div class="min-w-0">
-                                <span class="text-muted block text-[11px]">Editor PIC</span>
-                                @if($submission->editor)
-                                    <button type="button" @click.stop="activePic = staffMap[{{ $submission->editor->id }}]" class="mt-0.5 truncate font-bold text-navy hover:text-orange text-left block w-full">
-                                        👤 {{ $submission->editor->name }}
-                                    </button>
-                                @else
-                                    <p class="mt-0.5 text-muted">No editor assigned</p>
-                                @endif
+                        <div class="rounded-xl bg-slate-50 border border-slate-200/80 p-3 text-xs space-y-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div class="min-w-0">
+                                    <span class="text-muted block text-[11px]">Editor PIC</span>
+                                    @if($submission->editor)
+                                        <button type="button" @click.stop="activePic = staffMap[{{ $submission->editor->id }}]" class="mt-0.5 truncate font-bold text-navy hover:text-orange text-left block w-full">
+                                            👤 {{ $submission->editor->name }}
+                                        </button>
+                                    @else
+                                        <p class="mt-0.5 text-muted">No editor assigned</p>
+                                    @endif
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="text-muted block text-[11px]">Reviewer PIC</span>
+                                    @if($submission->reviewer)
+                                        <button type="button" @click.stop="activePic = staffMap[{{ $submission->reviewer->id }}]" class="mt-0.5 truncate font-bold text-navy hover:text-orange text-left block w-full">
+                                            🔍 {{ $submission->reviewer->name }}
+                                        </button>
+                                    @else
+                                        <p class="mt-0.5 text-muted">Reviewer: Unassigned</p>
+                                    @endif
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <span class="text-muted block text-[11px]">Reviewer PIC</span>
-                                @if($submission->reviewer)
-                                    <button type="button" @click.stop="activePic = staffMap[{{ $submission->reviewer->id }}]" class="mt-0.5 truncate font-bold text-navy hover:text-orange text-left block w-full">
-                                        🔍 {{ $submission->reviewer->name }}
-                                    </button>
+                            <div class="flex items-center justify-between gap-2 border-t border-slate-200/60 pt-2" @click.stop>
+                                <span class="text-[11px] text-muted font-bold">Portal Link Email</span>
+                                @if($submission->portalLinkSent())
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700 border border-emerald-200">
+                                        <span>✓ Sent ({{ $submission->portalLinkSentAt()?->format('d M H:i') }})</span>
+                                    </span>
                                 @else
-                                    <p class="mt-0.5 text-muted">Reviewer: Unassigned</p>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">
+                                            <span>⏳ Not Sent</span>
+                                        </span>
+                                        <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
+                                            @csrf
+                                            <button type="submit" class="btn btn-secondary text-[10px] py-1 px-2 font-bold text-navy hover:text-orange">
+                                                ✉️ Send Link
+                                            </button>
+                                        </form>
+                                    </div>
                                 @endif
                             </div>
                         </div>
@@ -444,8 +499,6 @@
                         <button type="button" @click="show = false" class="btn btn-ghost">Cancel</button>
                         <button class="btn btn-primary">Execute Bulk Status Update</button>
                     </div>
-                </form>
-            </div>
         </div>
     </div>
 </x-layouts.app>

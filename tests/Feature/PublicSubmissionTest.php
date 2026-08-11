@@ -223,6 +223,42 @@ class PublicSubmissionTest extends TestCase
         $this->assertCount(1, $submission->files);
     }
 
+    public function test_downloading_file_with_direct_external_url_redirects_without_requiring_google_drive_oauth(): void
+    {
+        [$conference, $form] = $this->openConference();
+        $submission = Submission::create([
+            'conference_id' => $conference->id,
+            'form_version_id' => $form->id,
+            'paper_id' => 'PAPER-100',
+            'paper_code' => 'PAPER-100',
+            'title' => 'CSV Imported Paper',
+            'corresponding_author_name' => 'John',
+            'corresponding_author_email' => 'john@example.com',
+            'status' => SubmissionStatus::Submitted,
+            'author_token_hash' => hash('sha256', 'testtoken123'),
+            'author_token_encrypted' => 'testtoken123',
+            'author_token_expires_at' => now()->addYear(),
+        ]);
+
+        $externalUrl = 'https://drive.google.com/open?id=1S-VNLftQ6YwTvRUzBdqtuPrZpNKXo93B';
+        $file = $submission->files()->create([
+            'version_number' => 1,
+            'label' => 'Editable Manuscript (v1)',
+            'source' => 'author',
+            'disk' => 'google_drive',
+            'storage_path' => $externalUrl,
+            'external_url' => $externalUrl,
+            'original_name' => 'manuscript-v1.docx',
+            'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'size' => 0,
+            'is_final' => false,
+        ]);
+
+        $response = $this->get(route('author.files.download', ['token' => 'testtoken123', 'file' => $file]));
+
+        $response->assertRedirect($externalUrl);
+    }
+
     /** @return array{Conference, FormVersion} */
     private function openConference(): array
     {

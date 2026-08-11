@@ -83,8 +83,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/papers/bulk-assign', [SubmissionController::class, 'bulkAssign'])->name('submissions.bulk-assign');
         Route::post('/papers/bulk-status', [SubmissionController::class, 'bulkStatusUpdate'])->name('submissions.bulk-status');
         Route::post('/papers/bulk-download', [SubmissionController::class, 'bulkDownload'])->name('submissions.bulk-download');
+        Route::post('/papers/bulk-send-portal-link', [SubmissionController::class, 'bulkSendPortalLink'])->name('submissions.bulk-send-portal-link');
         Route::get('/papers-export.csv', SubmissionExportController::class)->name('submissions.export');
         Route::get('/papers/{submission}', [SubmissionController::class, 'show'])->name('submissions.show');
+        Route::post('/papers/{submission}/send-portal-link', [SubmissionController::class, 'sendPortalLink'])->name('submissions.send-portal-link');
         Route::post('/papers/{submission}/accept', [SubmissionController::class, 'accept'])->name('submissions.accept');
         Route::post('/papers/{submission}/correction', [SubmissionController::class, 'requestCorrection'])->name('submissions.correction');
         Route::post('/papers/{submission}/assign', [SubmissionController::class, 'assign'])->name('submissions.assign');
@@ -99,11 +101,21 @@ Route::middleware('auth')->group(function () {
         Route::delete('/papers/{submission}/files/{file}', [SubmissionController::class, 'destroyFile'])->name('submissions.files.destroy');
         Route::post('/papers/{submission}/uploads/{attempt}/retry', [SubmissionController::class, 'retryUpload'])->name('submissions.uploads.retry');
 
-        Route::get('/conferences/edas-reconciliation', [EdasReconciliationController::class, 'index'])->name('conferences.edas-reconciliation.index');
-        Route::post('/conferences/edas-reconciliation/upload', [EdasReconciliationController::class, 'upload'])->name('conferences.edas-reconciliation.upload');
-        Route::post('/conferences/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
-        Route::get('/conferences/edas-reconciliation/export-missing', [EdasReconciliationController::class, 'exportMissing'])->name('conferences.edas-reconciliation.export-missing');
-        Route::resource('conferences', ConferenceController::class)->except(['destroy']);
+        Route::get('/conferences/edas-reconciliation', function (Illuminate\Http\Request $request) {
+            $activeId = $request->session()->get('active_conference_id');
+            $conference = $activeId ? \App\Models\Conference::find($activeId) : \App\Models\Conference::orderBy('name')->first();
+            if (! $conference) {
+                return redirect()->route('conferences.index');
+            }
+            return redirect()->route('conferences.edas-reconciliation.index', $conference);
+        });
+        Route::get('/conferences/{conference}/edas-reconciliation', [EdasReconciliationController::class, 'index'])->name('conferences.edas-reconciliation.index');
+        Route::post('/conferences/{conference}/edas-reconciliation/upload', [EdasReconciliationController::class, 'upload'])->name('conferences.edas-reconciliation.upload');
+        Route::post('/conferences/{conference}/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
+        Route::get('/conferences/{conference}/edas-reconciliation/export-missing', [EdasReconciliationController::class, 'exportMissing'])->name('conferences.edas-reconciliation.export-missing');
+        Route::resource('conferences', ConferenceController::class);
+        Route::post('/conferences/{conference}/import/preview', [\App\Http\Controllers\SubmissionImportController::class, 'preview'])->name('conferences.import.preview');
+        Route::post('/conferences/{conference}/import/process', [\App\Http\Controllers\SubmissionImportController::class, 'process'])->name('conferences.import.process');
         Route::post('/conferences/{conference}/duplicate', [ConferenceController::class, 'duplicate'])->name('conferences.duplicate');
         Route::get('/conferences/{conference}/members', [ConferenceMemberController::class, 'index'])->name('conferences.members.index');
         Route::post('/conferences/{conference}/members', [ConferenceMemberController::class, 'store'])->name('conferences.members.store');
