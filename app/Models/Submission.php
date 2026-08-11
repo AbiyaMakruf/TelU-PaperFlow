@@ -160,4 +160,33 @@ class Submission extends Model
     {
         return $this->deadline_at?->isPast() && ! in_array($this->status, [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn], true);
     }
+
+    public function portalLinkSent(): bool
+    {
+        if ($this->relationLoaded('emailLogs')) {
+            return $this->emailLogs->contains(fn ($log) => in_array($log->template_key, ['submission_received', 'portal_access_link'], true) && $log->status !== 'failed');
+        }
+
+        return $this->emailLogs()
+            ->whereIn('template_key', ['submission_received', 'portal_access_link'])
+            ->where('status', '!=', 'failed')
+            ->exists();
+    }
+
+    public function portalLinkSentAt(): ?\Illuminate\Support\Carbon
+    {
+        if ($this->relationLoaded('emailLogs')) {
+            $log = $this->emailLogs->first(fn ($log) => in_array($log->template_key, ['submission_received', 'portal_access_link'], true) && $log->status !== 'failed');
+
+            return $log?->sent_at ?? $log?->created_at;
+        }
+
+        $log = $this->emailLogs()
+            ->whereIn('template_key', ['submission_received', 'portal_access_link'])
+            ->where('status', '!=', 'failed')
+            ->latest()
+            ->first();
+
+        return $log?->sent_at ?? $log?->created_at;
+    }
 }

@@ -373,11 +373,6 @@ class SubmissionImportController extends Controller
                         ]);
                     }
 
-                    // Dispatch welcome email
-                    $portalToken = $submission->ensureValidAuthorToken();
-                    $portalUrl = route('author.portal', ['token' => $portalToken]);
-                    $mailer->queue($submission->fresh(['conference', 'authors']), 'submission_received', ['portal_url' => $portalUrl]);
-
                     $newCount++;
                 }
             }

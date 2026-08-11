@@ -76,7 +76,7 @@ class SubmissionController extends Controller
         } else {
             $query->latest('submitted_at');
         }
-        $submissions = $query->with(['conference', 'editor', 'reviewer', 'authors', 'files'])->paginate(20)->withQueryString();
+        $submissions = $query->with(['conference', 'editor', 'reviewer', 'authors', 'files', 'emailLogs'])->paginate(20)->withQueryString();
         $conferences = Conference::whereIn('id', $conferenceIds)->orderBy('name')->get();
         $staff = User::whereHas('conferenceMemberships', fn ($q) => $q->whereIn('conference_id', $conferenceIds)->where('is_active', true))
             ->with([
@@ -1273,5 +1273,31 @@ class SubmissionController extends Controller
         } catch (\Throwable $e) {
             return back()->withErrors(['email' => 'Failed to send Author Portal link email: '.$e->getMessage()]);
         }
+    }
+
+    public function bulkSendPortalLink(Request $request, ConferenceMailer $mailer, AuditLogger $audit): RedirectResponse
+    {
+        $validated = $request->validate([
+            'submission_ids' => ['required', 'array', 'min:1'],
+            'submission_ids.*' => ['required', 'exists:submissions,id'],
+        ]);
+
+        $submissions = Submission::whereIn('id', $validated['submission_ids'])->get();
+        $sentCount = 0;
+
+        foreach ($submissions as $sub) {
+            $this->authorize('view', $sub);
+            try {
+                $token = $sub->ensureValidAuthorToken();
+                $portalUrl = url("/submission/access/{$token}");
+                $mailer->queue($sub->fresh(['conference', 'authors']), 'submission_received', ['portal_url' => $portalUrl]);
+                $audit->record('submission.portal_link_sent', $sub, $sub->conference);
+                $sentCount++;
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return back()->with('success', "Author Portal link emails queued for {$sentCount} papers.");
     }
 }

@@ -56,13 +56,12 @@ class SubmissionImportTest extends TestCase
     {
         Storage::fake('local');
         $user = User::factory()->create(['must_change_password' => false]);
-        $conference = Conference::create([
+        $conference = app(\App\Services\ConferenceProvisioner::class)->create([
             'name' => 'ICST 2026',
             'slug' => 'icst-2026',
             'status' => 'active',
             'timezone' => 'Asia/Jakarta',
-        ]);
-        $user->conferences()->attach($conference->id, ['role' => 'conference_admin']);
+        ], $user);
 
         $csvContent = "ID Papers (#),Paper's Title,Registered Author's Name,Registered Author's Email Address,Registered Author's Phone Number,Upload the Manuscript Source\n".
                       "PAPER-202,AI in Education,Jane Smith,jane@example.com,+62898765432,https://drive.google.com/file_v1.docx\n";
@@ -103,6 +102,12 @@ class SubmissionImportTest extends TestCase
         $submission = Submission::where('paper_id', 'PAPER-202')->first();
         $this->assertEquals(1, $submission->files()->count());
         $this->assertEquals('Editable Manuscript (v1)', $submission->files()->first()->label);
+        $this->assertFalse($submission->portalLinkSent());
+
+        // Staff manually sends author portal link
+        $sendResponse = $this->actingAs($user)->post(route('submissions.send-portal-link', $submission));
+        $sendResponse->assertSessionHasNoErrors();
+        $this->assertTrue($submission->fresh()->portalLinkSent());
 
         // 2. Re-upload updated CSV with a new manuscript URL (v2)
         $csvContentV2 = "ID Papers (#),Paper's Title,Registered Author's Name,Registered Author's Email Address,Registered Author's Phone Number,Upload the Manuscript Source\n".
