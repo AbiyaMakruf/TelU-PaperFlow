@@ -52,6 +52,7 @@ jobs:
 
             # 5. Flush All Caches Completely (No static route/view/config cache stored during development)
             echo "🗄️ [4/5] Flushing all application caches & running database migrations..."
+            rm -f bootstrap/cache/*.php storage/framework/views/*.php storage/framework/cache/data/* || true
             php artisan optimize:clear
             php artisan cache:clear
             php artisan config:clear
