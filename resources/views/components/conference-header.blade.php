@@ -22,10 +22,10 @@
 
             <!-- Direct Public Form & Landing Page Action Buttons -->
             <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-                <a href="{{ route('public.submission.show', $conference) }}" target="_blank" rel="noopener" class="btn text-xs py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold shadow-sm transition flex items-center gap-1.5">
+                <a href="{{ route('public.submission.show', $conference->slug ?: ($conference->id ?: 'default')) }}" target="_blank" rel="noopener" class="btn text-xs py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold shadow-sm transition flex items-center gap-1.5">
                     📝 Open Submission Form ↗
                 </a>
-                <a href="{{ route('public.conference.show', $conference) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs py-2 px-4 font-bold text-navy hover:text-orange transition flex items-center gap-1.5">
+                <a href="{{ route('public.conference.show', $conference->slug ?: ($conference->id ?: 'default')) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs py-2 px-4 font-bold text-navy hover:text-orange transition flex items-center gap-1.5">
                     🌐 View Landing Page ↗
                 </a>
             </div>

@@ -27,8 +27,11 @@ class EdasReconciliationController extends Controller
         return redirect()->route('conferences.edas-reconciliation.index', $conference);
     }
 
-    public function index(Request $request, Conference $conference): View
+    public function index(Request $request, Conference $conference): View|RedirectResponse
     {
+        if (! $conference->exists) {
+            return $this->legacyRedirect($request);
+        }
 
         $this->authorize('update', $conference);
         $request->session()->put('active_conference_id', $conference->id);
