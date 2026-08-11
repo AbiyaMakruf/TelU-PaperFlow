@@ -267,9 +267,12 @@ document.addEventListener('alpine:init', () => {
             formData.append('_token', '{{ csrf_token() }}');
 
             try {
-                const res = await fetch('{{ Route::has("conferences.import.preview") ? route("conferences.import.preview", $conference) : url("/conferences/".$conference->id."/import/preview") }}', {
+                const res = await fetch('{{ route("conferences.import.preview", $conference) }}', {
                     method: 'POST',
-                    headers: { 'Accept': 'application/json' },
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
                     body: formData
                 });
                 const data = await res.json();
@@ -292,7 +295,7 @@ document.addEventListener('alpine:init', () => {
             this.loading = true;
             this.errorMessage = '';
             try {
-                const res = await fetch('{{ Route::has("conferences.import.process") ? route("conferences.import.process", $conference) : url("/conferences/".$conference->id."/import/process") }}', {
+                const res = await fetch('{{ route("conferences.import.process", $conference) }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
