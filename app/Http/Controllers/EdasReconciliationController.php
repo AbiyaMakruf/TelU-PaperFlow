@@ -11,8 +11,26 @@ use Illuminate\View\View;
 
 class EdasReconciliationController extends Controller
 {
+    private function resolveConference(Conference $conference): Conference
+    {
+        if ($conference->exists && $conference->id) {
+            return $conference;
+        }
+
+        $activeId = session('active_conference_id');
+        if ($activeId) {
+            $conf = Conference::find($activeId);
+            if ($conf) {
+                return $conf;
+            }
+        }
+
+        return Conference::orderBy('name')->firstOrFail();
+    }
+
     public function index(Request $request, Conference $conference): View
     {
+        $conference = $this->resolveConference($conference);
         $this->authorize('update', $conference);
         $request->session()->put('active_conference_id', $conference->id);
 
@@ -28,6 +46,7 @@ class EdasReconciliationController extends Controller
 
     public function upload(Request $request, Conference $conference, AuditLogger $auditLogger): RedirectResponse
     {
+        $conference = $this->resolveConference($conference);
         $this->authorize('update', $conference);
         $request->session()->put('active_conference_id', $conference->id);
 
@@ -194,6 +213,7 @@ class EdasReconciliationController extends Controller
 
     public function reset(Request $request, Conference $conference): RedirectResponse
     {
+        $conference = $this->resolveConference($conference);
         $this->authorize('update', $conference);
         $request->session()->forget('edas_reconciliation_data_'.$conference->id);
 
@@ -203,6 +223,7 @@ class EdasReconciliationController extends Controller
 
     public function exportMissing(Request $request, Conference $conference)
     {
+        $conference = $this->resolveConference($conference);
         $this->authorize('update', $conference);
         $sessionData = $request->session()->get('edas_reconciliation_data_'.$conference->id);
         if (! $sessionData || empty($sessionData['items'])) {
