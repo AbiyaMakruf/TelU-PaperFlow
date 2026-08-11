@@ -1,24 +1,24 @@
-<x-layouts.app title="EDAS CSV Reconciliation">
+<x-layouts.app :title="'EDAS CSV Reconciliation · '.$activeConference->name">
     <div class="mx-auto max-w-[1600px] space-y-6">
-        <!-- Header Banner & Workspace Scoping -->
-        <div class="card p-6 sm:p-8 bg-white border border-slate-200 text-navy shadow-sm">
+        <x-conference-header :conference="$activeConference" active="edas" />
+
+        <!-- Header Card -->
+        <div class="card p-6 bg-white border border-slate-200 text-navy shadow-sm">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="space-y-1.5 min-w-0">
                     <div class="flex items-center gap-2">
                         <span class="badge bg-orange text-white text-xs font-black uppercase tracking-wider px-2.5 py-1">Conference Admin Feature</span>
-                        @if($activeConference)
-                            <span class="badge bg-navy/10 text-navy text-xs font-bold px-2.5 py-1">📌 {{ $activeConference->name }}</span>
-                        @endif
+                        <span class="badge bg-navy/10 text-navy text-xs font-bold px-2.5 py-1">📌 {{ $activeConference->name }}</span>
                     </div>
-                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-navy">EDAS CSV Reconciliation</h1>
-                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-3xl">
-                        Upload a manuscript CSV file exported from EDAS to automatically cross-check which papers have been <strong class="text-navy font-black">Submitted</strong> and which are <strong class="text-rose-600 font-black">Missing</strong> in Paperflow.
+                    <h1 class="text-xl sm:text-2xl font-black tracking-tight text-navy">EDAS CSV Reconciliation</h1>
+                    <p class="text-xs text-slate-600 leading-relaxed max-w-3xl">
+                        Upload a manuscript CSV file exported from EDAS to automatically cross-check which papers have been <strong class="text-navy font-black">Submitted</strong> and which are <strong class="text-rose-600 font-black">Missing</strong> in Paperflow for <strong>{{ $activeConference->name }}</strong>.
                     </p>
                 </div>
 
                 @if($sessionData)
                     <div class="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
-                        <form method="POST" action="{{ route('conferences.edas-reconciliation.reset') }}">
+                        <form method="POST" action="{{ route('conferences.edas-reconciliation.reset', $activeConference) }}">
                             @csrf
                             <button type="submit" class="btn border border-navy/20 bg-navy/5 hover:bg-navy/10 text-navy text-xs font-bold px-4 py-2.5 transition flex items-center gap-2" title="Clear current session data and upload a new CSV file">
                                 <span>🔄 Upload New CSV</span>
@@ -37,10 +37,10 @@
                         <h2 class="text-lg font-black text-navy flex items-center gap-2">
                             <span>📄 Upload EDAS CSV File</span>
                         </h2>
-                        <p class="text-xs text-muted mt-0.5">Select or drag and drop the manuscript list CSV exported from EDAS.</p>
+                        <p class="text-xs text-muted mt-0.5">Select or drag and drop the manuscript list CSV exported from EDAS for {{ $activeConference->name }}.</p>
                     </div>
 
-                    <form method="POST" action="{{ route('conferences.edas-reconciliation.upload') }}" enctype="multipart/form-data" class="space-y-5">
+                    <form method="POST" action="{{ route('conferences.edas-reconciliation.upload', $activeConference) }}" enctype="multipart/form-data" class="space-y-5">
                         @csrf
                         <div class="border-2 border-dashed border-navy/20 hover:border-orange rounded-2xl p-6 sm:p-10 text-center bg-slate-50/50 hover:bg-orange/5 transition group cursor-pointer relative">
                             <input type="file" name="csv_file" accept=".csv,.txt,.tsv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required onchange="document.getElementById('file-chosen-name').textContent = this.files[0] ? '📎 Selected File: ' + this.files[0].name : ''">
@@ -68,16 +68,12 @@
                         <span>💡 Supported CSV Format</span>
                     </h3>
                     <p class="text-xs text-slate-600 leading-relaxed">
-                        The system automatically detects columns based on EDAS CSV header names. Ensure your CSV file includes:
+                        The system automatically detects columns based on EDAS CSV header names. Only Paper ID is required:
                     </p>
                     <ul class="space-y-2 text-xs text-slate-700 font-medium">
                         <li class="flex items-start gap-2">
                             <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
-                            <span><strong>Paper ID:</strong> Header <code>paper_id</code>, <code>Paper ID</code>, <code>ID</code>, or <code>Paper #</code></span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
-                            <span><strong>Author Email:</strong> Header <code>email</code>, <code>Author Email</code>, <code>contact_email</code>, or <code>Contact Email</code></span>
+                            <span><strong>Paper ID (Required):</strong> Header <code>paper_id</code>, <code>Paper ID</code>, <code>ID</code>, <code>Paper</code>, or <code>Paper #</code></span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
@@ -85,7 +81,7 @@
                         </li>
                     </ul>
                     <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-900 leading-normal">
-                        <strong>Note:</strong> If the CSV does not contain headers, the system automatically reads the first column as Paper ID and the second column as Author Email.
+                        <strong>Note:</strong> If the CSV file does not contain headers, the first column is read as Paper ID and the second column as Paper Title (optional).
                     </div>
                 </div>
             </div>
@@ -93,16 +89,7 @@
             <!-- Section 2: Reconciliation Dashboard Results (Shown when session data exists) -->
             <div x-data="{
                 activeTab: 'all',
-                searchQuery: '',
-                copyEmails() {
-                    const missingEmails = {{ Js::from(collect($sessionData['items'])->where('status_state', 'missing')->pluck('edas_email')->filter(fn($e)=>$e !== '-')->unique()->values()) }};
-                    if (missingEmails.length === 0) {
-                        alert('No email addresses found in the missing list.');
-                        return;
-                    }
-                    navigator.clipboard.writeText(missingEmails.join(', '));
-                    alert('✓ ' + missingEmails.length + ' missing author email address(es) copied to clipboard!');
-                }
+                searchQuery: ''
             }" class="space-y-6">
 
                 <!-- Stat Cards Grid -->
@@ -166,15 +153,11 @@
 
                         <!-- Actions & Search Box -->
                         <div class="flex flex-wrap items-center gap-2.5">
-                            <input type="text" x-model="searchQuery" placeholder="Search ID, Email, or Title..." class="form-input text-xs py-2 px-3 min-w-[220px]">
+                            <input type="text" x-model="searchQuery" placeholder="Search Paper ID or Title..." class="form-input text-xs py-2 px-3 min-w-[220px]">
                             
-                            <a href="{{ route('conferences.edas-reconciliation.export-missing') }}" class="btn btn-secondary text-xs font-bold py-2 px-3 flex items-center gap-1.5" title="Download CSV file of EDAS papers not yet submitted in Paperflow">
+                            <a href="{{ route('conferences.edas-reconciliation.export-missing', $activeConference) }}" class="btn btn-secondary text-xs font-bold py-2 px-3 flex items-center gap-1.5" title="Download CSV file of EDAS papers not yet submitted in Paperflow">
                                 📥 Export Missing CSV
                             </a>
-                            
-                            <button type="button" @click="copyEmails()" class="btn bg-navy hover:bg-navy-light text-white text-xs font-bold py-2 px-3 flex items-center gap-1.5" title="Copy all missing author email addresses to clipboard">
-                                📋 Copy Missing Emails
-                            </button>
                         </div>
                     </div>
 
@@ -184,8 +167,8 @@
                             <thead>
                                 <tr>
                                     <th class="w-12 text-center">#</th>
-                                    <th class="w-32">EDAS Paper ID</th>
-                                    <th>EDAS Author Email</th>
+                                    <th class="w-36">EDAS Paper ID</th>
+                                    <th>EDAS Paper Title</th>
                                     <th>Paperflow Status</th>
                                     <th>Matching Paperflow Submission</th>
                                     <th class="text-right">Action</th>
@@ -194,7 +177,7 @@
                             <tbody>
                                 @foreach($sessionData['items'] as $item)
                                     @php
-                                        $rowSearch = strtolower($item['edas_paper_id'] . ' ' . $item['edas_email'] . ' ' . $item['edas_title'] . ' ' . ($item['paperflow_submission']['title'] ?? ''));
+                                        $rowSearch = strtolower($item['edas_paper_id'] . ' ' . $item['edas_title'] . ' ' . ($item['paperflow_submission']['title'] ?? ''));
                                     @endphp
                                     <tr x-show="(activeTab === 'all' || (activeTab === 'missing' && '{{ $item['status_state'] }}' === 'missing') || (activeTab === 'submitted' && '{{ $item['status_state'] }}' === 'submitted')) && (!searchQuery || {{ Js::from($rowSearch) }}.includes(searchQuery.toLowerCase()))" class="hover:bg-slate-50/80 transition">
                                         <td class="text-center text-xs font-bold text-muted">{{ $item['row_number'] }}</td>
@@ -202,10 +185,7 @@
                                             {{ $item['edas_paper_id'] }}
                                         </td>
                                         <td class="text-xs">
-                                            <p class="font-semibold text-slate-800 break-all">{{ $item['edas_email'] }}</p>
-                                            @if($item['edas_title'] !== '-')
-                                                <p class="text-[11px] text-muted truncate max-w-xs mt-0.5" title="{{ $item['edas_title'] }}">{{ $item['edas_title'] }}</p>
-                                            @endif
+                                            <p class="font-semibold text-slate-800 break-words">{{ $item['edas_title'] }}</p>
                                         </td>
                                         <td class="whitespace-nowrap">
                                             @if($item['status_state'] === 'submitted')
@@ -242,9 +222,7 @@
                                                     Open Paper ↗
                                                 </a>
                                             @else
-                                                <a href="mailto:{{ $item['edas_email'] }}?subject=Reminder: Submission for {{ urlencode($activeConference?->name ?? 'Conference') }} (Paper ID: {{ urlencode($item['edas_paper_id']) }})" class="btn bg-orange hover:bg-orange-dark text-white text-xs py-1 px-2.5 font-bold transition">
-                                                    📧 Remind Author
-                                                </a>
+                                                <span class="text-xs text-rose-600 font-bold">Unsubmitted</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -259,30 +237,26 @@
                             <div class="p-3 mb-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium">
                                 <strong>Information:</strong> The following {{ $sessionData['paperflow_only_count'] }} papers are recorded in Paperflow but <strong>were not found</strong> in the uploaded EDAS CSV file.
                             </div>
-                            <table class="data-table min-w-[700px]">
+                            <table class="data-table min-w-[650px]">
                                 <thead>
                                     <tr>
-                                        <th>Paper ID / Code</th>
-                                        <th>Title</th>
-                                        <th>Author</th>
-                                        <th>Email</th>
+                                        <th>Paper Code</th>
+                                        <th>Paper Title</th>
+                                        <th>Corresponding Author</th>
                                         <th>Paperflow Status</th>
                                         <th class="text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($sessionData['paperflow_only_items'] as $pfItem)
-                                        <tr class="hover:bg-slate-50 transition">
-                                            <td class="font-mono font-bold text-xs text-navy whitespace-nowrap">
-                                                {{ $pfItem['paper_code'] }}
-                                                @if($pfItem['paper_id'])
-                                                    <span class="text-muted font-normal">({{ $pfItem['paper_id'] }})</span>
-                                                @endif
+                                        <tr class="hover:bg-slate-50/80 transition">
+                                            <td class="font-mono font-bold text-xs text-navy whitespace-nowrap">{{ $pfItem['paper_code'] }}</td>
+                                            <td class="text-xs font-semibold text-navy">{{ $pfItem['title'] }}</td>
+                                            <td class="text-xs text-slate-700">
+                                                <p class="font-bold">{{ $pfItem['author_name'] }}</p>
+                                                <p class="text-muted text-[11px]">{{ $pfItem['author_email'] }}</p>
                                             </td>
-                                            <td class="font-bold text-navy text-xs break-words max-w-xs">{{ $pfItem['title'] }}</td>
-                                            <td class="text-xs font-semibold">{{ $pfItem['author_name'] }}</td>
-                                            <td class="text-xs text-muted break-all">{{ $pfItem['author_email'] }}</td>
-                                            <td>
+                                            <td class="whitespace-nowrap">
                                                 <span class="badge badge-{{ $pfItem['status_color'] }} text-[10px]">
                                                     {{ $pfItem['status_label'] }}
                                                 </span>
