@@ -13,7 +13,7 @@
         </form>
 
         @can('delete', $conference)
-            <div class="card p-6 border border-rose-200 bg-rose-50/50 space-y-4" x-data="{ openDeleteModal: false }">
+            <div class="card p-6 border border-rose-200 bg-rose-50/50 space-y-4" x-data="{ openDeleteModal: false, deleting: false }">
                 <div>
                     <h3 class="font-extrabold text-rose-900 text-sm flex items-center gap-2">
                         <span>⚠️</span> Danger Zone — Delete Conference
@@ -42,12 +42,32 @@
                                 Are you sure you want to permanently delete conference <strong class="text-navy font-black">&quot;{{ $conference->name }}&quot;</strong>? All associated submissions, checklist items, assigned staff, and settings will be permanently removed.
                             </p>
 
-                            <form method="POST" action="{{ url('/conferences/'.$conference->id.'/delete') }}" class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                            <form x-ref="deleteForm" method="POST" action="{{ url('/conferences/'.$conference->id.'/delete') }}" 
+                                  @submit.prevent="
+                                      deleting = true;
+                                      fetch($el.action, {
+                                          method: 'POST',
+                                          headers: {
+                                              'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                              'Accept': 'application/json',
+                                              'X-Requested-With': 'XMLHttpRequest'
+                                          }
+                                      })
+                                      .then(r => r.json())
+                                      .then(data => {
+                                          window.location.href = '{{ route('conferences.index') }}';
+                                      })
+                                      .catch(() => {
+                                          $refs.deleteForm.submit();
+                                      });
+                                  " 
+                                  class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
                                 @csrf
                                 @method('DELETE')
-                                <button type="button" @click="openDeleteModal = false" class="btn btn-secondary text-xs font-bold">Cancel</button>
-                                <button type="submit" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-sm">
-                                    Yes, Delete Conference
+                                <button type="button" @click="openDeleteModal = false" :disabled="deleting" class="btn btn-secondary text-xs font-bold">Cancel</button>
+                                <button type="submit" :disabled="deleting" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-sm flex items-center gap-2">
+                                    <span x-show="deleting" class="inline-block size-3 animate-spin rounded-full border-2 border-white border-t-transparent" x-cloak></span>
+                                    <span x-text="deleting ? 'Deleting...' : 'Yes, Delete Conference'"></span>
                                 </button>
                             </form>
                         </div>

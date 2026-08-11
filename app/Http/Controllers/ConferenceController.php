@@ -6,6 +6,7 @@ use App\Enums\ConferenceStatus;
 use App\Models\Conference;
 use App\Services\AuditLogger;
 use App\Services\ConferenceProvisioner;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -138,14 +139,20 @@ class ConferenceController extends Controller
         return redirect()->route('conferences.show', $copy)->with('success', 'Conference duplicated successfully with default forms and checklists.');
     }
 
-    public function destroy(string $conferenceId, AuditLogger $audit): RedirectResponse
+    public function destroy(Request $request, string $conferenceId, AuditLogger $audit): JsonResponse|RedirectResponse
     {
         $conference = Conference::withTrashed()->find($conferenceId);
         if (! $conference) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Conference has already been removed.']);
+            }
             return redirect()->route('conferences.index')->with('info', 'Conference has already been removed.');
         }
 
         if ($conference->trashed()) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => "Conference \"{$conference->name}\" was already deleted."]);
+            }
             return redirect()->route('conferences.index')->with('info', "Conference \"{$conference->name}\" was already deleted.");
         }
 
@@ -162,6 +169,11 @@ class ConferenceController extends Controller
 
         $conference->update(['slug' => $conference->slug . '-deleted-' . time()]);
         $conference->delete();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            session()->flash('success', "Conference \"{$name}\" has been deleted successfully.");
+            return response()->json(['success' => true, 'message' => "Conference \"{$name}\" has been deleted successfully."]);
+        }
 
         return redirect()->route('conferences.index')->with('success', "Conference \"{$name}\" has been deleted successfully.");
     }

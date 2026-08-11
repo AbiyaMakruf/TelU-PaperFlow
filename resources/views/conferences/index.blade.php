@@ -11,7 +11,7 @@
     </div>
     <div class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         @forelse($conferences as $conference)
-            <div class="card group p-6 hover:border-orange/40 hover:shadow-lg flex flex-col justify-between" x-data="{ openDeleteModal: false }">
+            <div class="card group p-6 hover:border-orange/40 hover:shadow-lg flex flex-col justify-between" x-data="{ openDeleteModal: false, deleting: false }">
                 <div>
                     <div class="flex items-start justify-between">
                         <span class="grid size-12 place-items-center rounded-xl bg-navy text-lg font-black text-white">{{ strtoupper(substr($conference->name, 0, 1)) }}</span>
@@ -51,12 +51,32 @@
                                     Are you sure you want to permanently delete conference <strong class="text-navy font-black">{{ $conference->name }}</strong>? All associated submissions, checklist items, assigned staff, and settings will be permanently removed.
                                 </p>
 
-                                <form method="POST" action="{{ url('/conferences/'.$conference->id.'/delete') }}" class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                                <form x-ref="deleteForm" method="POST" action="{{ url('/conferences/'.$conference->id.'/delete') }}" 
+                                      @submit.prevent="
+                                          deleting = true;
+                                          fetch($el.action, {
+                                              method: 'POST',
+                                              headers: {
+                                                  'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                  'Accept': 'application/json',
+                                                  'X-Requested-With': 'XMLHttpRequest'
+                                              }
+                                          })
+                                          .then(r => r.json())
+                                          .then(data => {
+                                              window.location.reload();
+                                          })
+                                          .catch(() => {
+                                              $refs.deleteForm.submit();
+                                          });
+                                      " 
+                                      class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="button" @click="openDeleteModal = false" class="btn btn-secondary text-xs font-bold">Cancel</button>
-                                    <button type="submit" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-sm">
-                                        Yes, Delete Conference
+                                    <button type="button" @click="openDeleteModal = false" :disabled="deleting" class="btn btn-secondary text-xs font-bold">Cancel</button>
+                                    <button type="submit" :disabled="deleting" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-sm flex items-center gap-2">
+                                        <span x-show="deleting" class="inline-block size-3 animate-spin rounded-full border-2 border-white border-t-transparent" x-cloak></span>
+                                        <span x-text="deleting ? 'Deleting...' : 'Yes, Delete Conference'"></span>
                                     </button>
                                 </form>
                             </div>
