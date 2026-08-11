@@ -64,6 +64,16 @@ class EdasReconciliationTest extends TestCase
             ->assertSee('EDAS CSV Reconciliation');
     }
 
+    public function test_legacy_query_string_url_redirects_to_scoped_edas_reconciliation(): void
+    {
+        [$conference, $admin] = $this->createConferenceWithAdmin();
+
+        $response = $this->actingAs($admin)
+            ->get('/conferences/edas-reconciliation?'.$conference->id);
+
+        $response->assertRedirect(route('conferences.edas-reconciliation.index', $conference));
+    }
+
     public function test_conference_admin_can_upload_edas_csv_and_see_reconciliation_results(): void
     {
         [$conference, $admin] = $this->createConferenceWithAdmin();

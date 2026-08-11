@@ -101,6 +101,30 @@ Route::middleware('auth')->group(function () {
         Route::delete('/papers/{submission}/files/{file}', [SubmissionController::class, 'destroyFile'])->name('submissions.files.destroy');
         Route::post('/papers/{submission}/uploads/{attempt}/retry', [SubmissionController::class, 'retryUpload'])->name('submissions.uploads.retry');
 
+        // Backward compatibility redirect for legacy un-scoped EDAS Reconciliation URLs (e.g. /conferences/edas-reconciliation?01kzrx...)
+        Route::get('/conferences/edas-reconciliation', function (\Illuminate\Http\Request $request) {
+            $queryString = $request->getQueryString() ?? '';
+            $rawParam = trim(explode('=', $queryString)[0], '?');
+            $conferenceId = filled($rawParam) ? $rawParam : session('active_conference_id');
+
+            $conference = \App\Models\Conference::where('id', $conferenceId)
+                ->orWhere('slug', $conferenceId)
+                ->first();
+
+            if (! $conference && auth()->check()) {
+                $userConferences = auth()->user()->isSuperAdmin()
+                    ? \App\Models\Conference::orderBy('name')->get()
+                    : \App\Models\Conference::whereIn('id', auth()->user()->conferenceMemberships()->where('is_active', true)->pluck('conference_id'))->orderBy('name')->get();
+                $conference = $userConferences->first();
+            }
+
+            if (! $conference) {
+                $conference = \App\Models\Conference::orderBy('name')->firstOrFail();
+            }
+
+            return redirect()->route('conferences.edas-reconciliation.index', $conference);
+        });
+
         Route::get('/conferences/{conference}/edas-reconciliation', [EdasReconciliationController::class, 'index'])->name('conferences.edas-reconciliation.index');
         Route::post('/conferences/{conference}/edas-reconciliation/upload', [EdasReconciliationController::class, 'upload'])->name('conferences.edas-reconciliation.upload');
         Route::post('/conferences/{conference}/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
