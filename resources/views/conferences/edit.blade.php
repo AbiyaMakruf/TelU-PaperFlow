@@ -51,14 +51,21 @@
                                               'X-CSRF-TOKEN': '{{ csrf_token() }}',
                                               'Accept': 'application/json',
                                               'X-Requested-With': 'XMLHttpRequest'
-                                          }
+                                          },
+                                          body: new FormData($refs.deleteForm)
                                       })
-                                      .then(r => r.json())
+                                      .then(r => {
+                                          if (!r.ok) {
+                                              return r.json().then(err => { throw new Error(err.message || 'Failed to delete conference.'); });
+                                          }
+                                          return r.json();
+                                      })
                                       .then(data => {
                                           window.location.href = '{{ route('conferences.index') }}';
                                       })
-                                      .catch(() => {
-                                          $refs.deleteForm.submit();
+                                      .catch(err => {
+                                          alert(err.message || 'Error deleting conference.');
+                                          deleting = false;
                                       });
                                   " 
                                   class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
