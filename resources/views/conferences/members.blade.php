@@ -1,5 +1,5 @@
 <x-layouts.app :title="'Members · '.$conference->name" heading="Conference Members">
-    <div class="max-w-5xl space-y-6">
+    <div class="w-full space-y-6">
         <x-conference-header :conference="$conference" active="members" />
         <x-flash />
         <form method="POST" action="{{ route('conferences.members.store', $conference) }}" class="card mt-7 grid gap-4 p-5 sm:grid-cols-[1fr_220px_auto]">

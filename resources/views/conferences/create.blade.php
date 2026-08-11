@@ -1,5 +1,5 @@
 <x-layouts.app title="New Conference · Paperflow" heading="New Conference">
-    <div class="max-w-4xl">
+    <div class="w-full space-y-6">
         <a href="{{ route('conferences.index') }}" class="back-link">&larr; Back</a>
         <h1 class="page-title mt-4">Create Conference</h1>
         <p class="page-subtitle">Initial submission form, review checklists, and email templates will be generated automatically.</p>

@@ -1,5 +1,5 @@
 <x-layouts.app :title="'Google Drive · '.$conference->name" :heading="$conference->name">
-    <div class="max-w-4xl space-y-6">
+    <div class="w-full space-y-6">
         <x-conference-header :conference="$conference" active="storage" />
 
         @if($errors->any())<div class="mt-6 rounded-xl border border-danger/20 bg-danger/8 p-4 text-sm text-danger">{{ $errors->first() }}</div>@endif

@@ -1,5 +1,5 @@
 <x-layouts.app :title="'Checklist · '.$conference->name" heading="Checklist">
-    <div class="max-w-5xl space-y-6">
+    <div class="w-full space-y-6">
         <x-conference-header :conference="$conference" active="checklists" />
         <x-flash />
         <form method="POST" action="{{ route('conferences.checklists.update', $conference) }}" class="mt-7 space-y-6">

@@ -1,5 +1,5 @@
 <x-layouts.app :title="'Edit Conference · '.$conference->name" heading="Conference Settings">
-    <div class="max-w-4xl space-y-6">
+    <div class="w-full space-y-6">
         <x-conference-header :conference="$conference" active="settings" />
         <x-flash />
         <form method="POST" action="{{ route('conferences.update', $conference) }}" enctype="multipart/form-data" class="card mt-7 space-y-6 p-6 sm:p-8">

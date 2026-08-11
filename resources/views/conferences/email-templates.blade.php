@@ -1,5 +1,5 @@
 <x-layouts.app :title="'Email Templates · '.$conference->name" :heading="$conference->name">
-    <div class="space-y-6">
+    <div class="w-full space-y-6">
         <x-conference-header :conference="$conference" active="templates" />
         <form method="POST" action="{{ route('conferences.email-templates.update', $conference) }}" class="mt-7 space-y-5">
             @csrf

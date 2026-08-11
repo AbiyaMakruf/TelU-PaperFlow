@@ -1,5 +1,5 @@
 <x-layouts.app :title="'EDAS CSV Reconciliation · '.$activeConference->name">
-    <div class="mx-auto max-w-[1600px] space-y-6">
+    <div class="w-full space-y-6">
         <x-conference-header :conference="$activeConference" active="edas" />
 
         <!-- Header Card -->

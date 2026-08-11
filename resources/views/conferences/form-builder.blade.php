@@ -1,6 +1,6 @@
 <x-layouts.app :title="'Form Builder · '.$conference->name" heading="Form Builder">
     @php($fields = old('fields', $form->schema ?? []))
-    <div class="max-w-5xl space-y-6">
+    <div class="w-full space-y-6">
         <x-conference-header :conference="$conference" active="form" />
         <div class="flex items-center justify-between gap-4 bg-white p-4 rounded-xl border border-navy/10 shadow-sm">
             <div>

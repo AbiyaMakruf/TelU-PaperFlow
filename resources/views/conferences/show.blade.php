@@ -1,5 +1,6 @@
 <x-layouts.app :title="$conference->name.' · Paperflow'" :heading="$conference->name">
-    <x-conference-header :conference="$conference" active="overview" />
+    <div class="w-full space-y-6">
+        <x-conference-header :conference="$conference" active="overview" />
 
     @if($conference->isGoogleFormMode())
         @can('update', $conference)
@@ -328,4 +329,5 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 </script>
+    </div>
 </x-layouts.app>
