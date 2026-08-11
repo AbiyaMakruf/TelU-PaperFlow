@@ -86,7 +86,7 @@ class SubmissionController extends Controller
             ])->orderBy('name')->get();
 
         $staffData = $staff->mapWithKeys(function ($person) {
-            $memberships = $person->conferenceMemberships->map(function ($m) use ($person) {
+            $memberships = $person->conferenceMemberships->filter(fn ($m) => $m->conference !== null)->map(function ($m) use ($person) {
                 $conf = $m->conference;
                 $assignedAsEditor = $person->editorSubmissions->where('conference_id', $conf->id)->count();
                 $assignedAsReviewer = $person->reviewerSubmissions->where('conference_id', $conf->id)->count();
