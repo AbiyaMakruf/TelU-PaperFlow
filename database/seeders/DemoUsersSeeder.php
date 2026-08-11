@@ -30,10 +30,12 @@ class DemoUsersSeeder extends Seeder
 
         DB::transaction(function () use ($password): void {
             $users = collect(self::ACCOUNTS)->mapWithKeys(function (string $name, string $email) use ($password): array {
+                $username = Str::before($email, '@');
                 $user = User::withTrashed()->updateOrCreate(
-                    ['email' => $email],
+                    ['username' => $username],
                     [
                         'name' => $name,
+                        'email' => $email,
                         'username' => Str::before($email, '@'),
                         'password' => Hash::make($password),
                         'email_verified_at' => now(),

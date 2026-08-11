@@ -42,9 +42,9 @@ class FreshDemoSeeder extends Seeder
 
     public function run(): void
     {
-        $password = (string) config('paperflow.demo_password', 'admin1234');
+        $password = (string) config('paperflow.demo_password', 'user1234');
         if (mb_strlen($password) < 8) {
-            $password = 'admin1234';
+            $password = 'user1234';
         }
 
         DB::transaction(function () use ($password): void {
@@ -71,10 +71,12 @@ class FreshDemoSeeder extends Seeder
             // 2. Ensure base demo accounts exist
             $users = collect();
             foreach (self::DEMO_ACCOUNTS as $email => $data) {
+                $username = Str::before($email, '@');
                 $user = User::withTrashed()->updateOrCreate(
-                    ['email' => $email],
+                    ['username' => $username],
                     [
                         'name' => $data['name'],
+                        'email' => $email,
                         'username' => Str::before($email, '@'),
                         'password' => Hash::make($password),
                         'email_verified_at' => now(),
