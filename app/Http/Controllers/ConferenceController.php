@@ -44,7 +44,7 @@ class ConferenceController extends Controller
         $conference = $provisioner->create($validated, $request->user());
         $audit->record('conference.created', $conference, $conference, newValues: $validated);
 
-        return redirect()->route('conferences.show', $conference)->with('success', 'Conference berhasil dibuat.');
+        return redirect()->route('conferences.show', $conference)->with('success', 'Conference created successfully.');
     }
 
     public function show(Conference $conference): View
@@ -96,7 +96,7 @@ class ConferenceController extends Controller
         $conference->update($validated);
         $audit->record('conference.updated', $conference, $conference, $old, $validated);
 
-        return redirect()->route('conferences.show', $conference)->with('success', 'Pengaturan conference diperbarui.');
+        return redirect()->route('conferences.show', $conference)->with('success', 'Conference settings updated successfully.');
     }
 
     public function duplicate(Request $request, Conference $conference, ConferenceProvisioner $provisioner, AuditLogger $audit): RedirectResponse
@@ -110,7 +110,7 @@ class ConferenceController extends Controller
         $copy = $provisioner->duplicate($conference, $validated, $request->user());
         $audit->record('conference.duplicated', $copy, $copy, newValues: ['source_id' => $conference->id]);
 
-        return redirect()->route('conferences.show', $copy)->with('success', 'Conference beserta form dan checklist berhasil diduplikasi.');
+        return redirect()->route('conferences.show', $copy)->with('success', 'Conference duplicated successfully with default forms and checklists.');
     }
 
     /** @return array<string, mixed> */
