@@ -100,7 +100,14 @@ class User extends Authenticatable
         }
 
         $conferenceId = $conference instanceof Conference ? $conference->getKey() : $conference;
-        $roleValues = collect($roles)->map(fn (ConferenceRole|string $role) => $role instanceof ConferenceRole ? $role->value : $role);
+        $roleValues = collect($roles)->flatMap(function (ConferenceRole|string $role) {
+            $val = $role instanceof ConferenceRole ? $role->value : (string) $role;
+            if ($val === 'conference_admin' || $val === 'admin') {
+                return ['conference_admin', 'admin'];
+            }
+
+            return [$val];
+        })->unique()->values();
 
         return $this->conferenceMemberships()
             ->where('conference_id', $conferenceId)
