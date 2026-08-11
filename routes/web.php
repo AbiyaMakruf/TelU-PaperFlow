@@ -154,8 +154,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/conferences/{conference}/edas-reconciliation/upload', [EdasReconciliationController::class, 'upload'])->name('conferences.edas-reconciliation.upload');
         Route::post('/conferences/{conference}/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
         Route::get('/conferences/{conference}/edas-reconciliation/export-missing', [EdasReconciliationController::class, 'exportMissing'])->name('conferences.edas-reconciliation.export-missing');
-        Route::match(['get', 'post', 'delete'], '/conferences/{conference}/delete', [ConferenceController::class, 'destroy'])->name('conferences.destroy.post');
-        Route::resource('conferences', ConferenceController::class);
         Route::post('/conferences/{conference}/import/preview', [\App\Http\Controllers\SubmissionImportController::class, 'preview'])->name('conferences.import.preview');
         Route::post('/conferences/{conference}/import/process', [\App\Http\Controllers\SubmissionImportController::class, 'process'])->name('conferences.import.process');
         Route::post('/conferences/{conference}/duplicate', [ConferenceController::class, 'duplicate'])->name('conferences.duplicate');
@@ -176,6 +174,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/conferences/{conference}/drive/connect', [GoogleDriveController::class, 'connect'])->name('conferences.drive.connect');
         Route::delete('/conferences/{conference}/drive', [GoogleDriveController::class, 'disconnect'])->name('conferences.drive.disconnect');
         Route::get('/google-drive/callback', [GoogleDriveController::class, 'callback'])->name('google-drive.callback');
+
+        Route::resource('conferences', ConferenceController::class);
 
         Route::post('/impersonate/leave', [ImpersonationController::class, 'leave'])->name('impersonate.leave');
 
