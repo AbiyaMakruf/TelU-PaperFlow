@@ -101,7 +101,6 @@ Route::middleware('auth')->group(function () {
         Route::delete('/papers/{submission}/files/{file}', [SubmissionController::class, 'destroyFile'])->name('submissions.files.destroy');
         Route::post('/papers/{submission}/uploads/{attempt}/retry', [SubmissionController::class, 'retryUpload'])->name('submissions.uploads.retry');
 
-        Route::get('/conferences/edas-reconciliation', [EdasReconciliationController::class, 'legacyRedirect'])->name('conferences.edas-reconciliation.legacy');
         Route::get('/conferences/{conference}/edas-reconciliation', [EdasReconciliationController::class, 'index'])->name('conferences.edas-reconciliation.index');
         Route::post('/conferences/{conference}/edas-reconciliation/upload', [EdasReconciliationController::class, 'upload'])->name('conferences.edas-reconciliation.upload');
         Route::post('/conferences/{conference}/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');

@@ -46,17 +46,17 @@ jobs:
               npm run build
             fi
 
-            # 5. Flush Old Caches & Run Database Migrations
-            echo "🗄️ [4/5] Running database migrations..."
+            # 5. Flush All Caches Completely (No static route/view/config cache stored during development)
+            echo "🗄️ [4/5] Flushing all application caches & running database migrations..."
             php artisan optimize:clear
+            php artisan cache:clear
+            php artisan config:clear
+            php artisan route:clear
+            php artisan view:clear
+            php artisan event:clear
             php artisan migrate --force
 
-            # 6. Re-build Fresh Production Caches
-            echo "🧹 [5/5] Caching routes, views, and configuration..."
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-            php artisan event:cache
+            echo "🧹 [5/5] All application caches cleared cleanly."
 
             # 7. Restart Queue Workers
             echo "🔄 Restarting queue workers..."
