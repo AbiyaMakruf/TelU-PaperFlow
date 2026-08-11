@@ -57,7 +57,7 @@ class EmailTemplateController extends Controller
         }
         $audit->record('conference.email_templates_updated', $conference, $conference);
 
-        return back()->with('success', 'Template email berhasil diperbarui.');
+        return back()->with('success', 'Email templates updated successfully.');
     }
 
     public function testSend(Request $request, Conference $conference, ConferenceMailer $mailer): RedirectResponse
@@ -76,7 +76,7 @@ class EmailTemplateController extends Controller
         $input = $validated['templates'][$template->id] ?? abort(422);
         $mailer->queueTest($template, $recipient, $request->user(), $input['subject'], $input['body'], $this->emails($input['default_cc'] ?? ''));
 
-        return back()->with('success', 'Test email dimasukkan ke antrean. Pantau statusnya di Monitoring Email.');
+        return back()->with('success', 'Test email queued successfully. You can monitor delivery status in Email Monitoring.');
     }
 
     /** @return list<string> */

@@ -23,13 +23,13 @@ class ImpersonationController extends Controller
 
         $audit->record('user.impersonated', $user, newValues: ['impersonated_by' => $originalUserId, 'target_user' => $user->id]);
 
-        return redirect()->route('dashboard')->with('success', "Anda sekarang masuk sebagai {$user->name} ({$user->username}).");
+        return redirect()->route('dashboard')->with('success', "You are now impersonating {$user->name} ({$user->username}).");
     }
 
     public function leave(Request $request, AuditLogger $audit): RedirectResponse
     {
         $originalUserId = $request->session()->pull('impersonated_by');
-        abort_unless($originalUserId, 400, 'Sesi impersonation tidak aktif.');
+        abort_unless($originalUserId, 400, 'Impersonation session is not active.');
 
         $originalUser = User::findOrFail($originalUserId);
         $impersonatedUser = $request->user();
@@ -38,6 +38,6 @@ class ImpersonationController extends Controller
 
         $audit->record('user.impersonated_leave', $originalUser, newValues: ['impersonated_user' => $impersonatedUser->id]);
 
-        return redirect()->route('admin.users.index')->with('success', 'Kembali ke akun Superadmin.');
+        return redirect()->route('admin.users.index')->with('success', 'Returned to Superadmin account.');
     }
 }

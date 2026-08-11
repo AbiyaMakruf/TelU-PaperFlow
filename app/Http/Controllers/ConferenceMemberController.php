@@ -39,7 +39,7 @@ class ConferenceMemberController extends Controller
         );
         $audit->record('conference.member_added', $conference, $conference, newValues: ['user_id' => $user->id, 'role' => $validated['role']]);
 
-        return back()->with('success', "{$user->name} ditambahkan sebagai {$membership->role->label()}.");
+        return back()->with('success', "{$user->name} added as {$membership->role->label()}.");
     }
 
     public function destroy(Request $request, Conference $conference, ConferenceMember $member, AuditLogger $audit): RedirectResponse
@@ -47,12 +47,12 @@ class ConferenceMemberController extends Controller
         $this->authorize('manageMembers', $conference);
         abort_unless($member->conference_id === $conference->id, 404);
         if ($member->user_id === $request->user()->id && $member->role === ConferenceRole::Admin) {
-            return back()->withErrors(['member' => 'Anda tidak dapat menghapus akses admin sendiri.']);
+            return back()->withErrors(['member' => 'You cannot remove your own admin access.']);
         }
 
         $member->update(['is_active' => false]);
         $audit->record('conference.member_removed', $conference, $conference, oldValues: ['user_id' => $member->user_id, 'role' => $member->role->value]);
 
-        return back()->with('success', 'Akses anggota dinonaktifkan.');
+        return back()->with('success', 'Member access deactivated.');
     }
 }

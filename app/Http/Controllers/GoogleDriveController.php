@@ -44,18 +44,18 @@ class GoogleDriveController extends Controller
         }
         $conference->update($validated);
 
-        return back()->with('success', 'Penyimpanan default conference berhasil diperbarui.');
+        return back()->with('success', 'Default conference file storage updated successfully.');
     }
 
     public function callback(Request $request, GoogleDriveStorage $drive): RedirectResponse
     {
         $oauth = $request->session()->pull('google_drive_oauth');
-        abort_unless($oauth && hash_equals($oauth['state'], (string) $request->query('state')), 403, 'State OAuth tidak valid.');
+        abort_unless($oauth && hash_equals($oauth['state'], (string) $request->query('state')), 403, 'Invalid OAuth state.');
         $conference = Conference::findOrFail($oauth['conference_id']);
         $this->authorize('update', $conference);
 
         if ($request->filled('error')) {
-            return redirect()->route('conferences.drive.show', $conference)->withErrors(['google_drive' => 'Akses Google Drive dibatalkan.']);
+            return redirect()->route('conferences.drive.show', $conference)->withErrors(['google_drive' => 'Google Drive access was cancelled.']);
         }
         $request->validate(['code' => ['required', 'string']]);
 
@@ -67,7 +67,7 @@ class GoogleDriveController extends Controller
             return redirect()->route('conferences.drive.show', $conference)->withErrors(['google_drive' => $exception->getMessage()]);
         }
 
-        return redirect()->route('conferences.drive.show', $conference)->with('success', 'Google Drive berhasil dihubungkan.');
+        return redirect()->route('conferences.drive.show', $conference)->with('success', 'Google Drive connected successfully.');
     }
 
     public function disconnect(Conference $conference, GoogleDriveStorage $drive): RedirectResponse
@@ -75,7 +75,7 @@ class GoogleDriveController extends Controller
         $this->authorize('update', $conference);
         $drive->disconnect($conference);
 
-        return back()->with('success', 'Koneksi Google Drive dilepas dari conference.');
+        return back()->with('success', 'Google Drive disconnected from conference.');
     }
 
     public function migrateStorage(Request $request, Conference $conference, \App\Services\ConferenceFileStorage $storage): RedirectResponse
@@ -87,6 +87,6 @@ class GoogleDriveController extends Controller
 
         $count = $storage->migrateStorage($conference, $validated['target_provider']);
 
-        return back()->with('success', "Proses migrasi selesai. {$count} berkas berhasil dipindahkan ke {$validated['target_provider']}.");
+        return back()->with('success', "Migration completed. {$count} files migrated to {$validated['target_provider']}.");
     }
 }

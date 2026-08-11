@@ -55,7 +55,7 @@ class UserController extends Controller
         ]);
         $audit->record('user.created', $user, newValues: ['username' => $user->username, 'is_super_admin' => $user->is_super_admin]);
 
-        return redirect()->route('admin.users.index')->with('success', 'Akun dibuat. Password awal pengguna adalah user1234.');
+        return redirect()->route('admin.users.index')->with('success', 'User account created. Initial temporary password is user1234.');
     }
 
     public function edit(User $user): View
@@ -78,7 +78,7 @@ class UserController extends Controller
         ]);
 
         if ($request->user()->is($user) && (! $request->boolean('is_active') || ! $request->boolean('is_super_admin'))) {
-            return back()->withErrors(['is_active' => 'Anda tidak dapat menonaktifkan atau mencabut akses superadmin sendiri.']);
+            return back()->withErrors(['is_active' => 'You cannot deactivate or revoke your own superadmin access.']);
         }
 
         $old = $user->only(['name', 'username', 'email', 'is_active', 'is_super_admin']);
@@ -91,7 +91,7 @@ class UserController extends Controller
         ]);
         $audit->record('user.updated', $user, oldValues: $old, newValues: $user->only(array_keys($old)));
 
-        return redirect()->route('admin.users.index')->with('success', 'Akun berhasil diperbarui.');
+        return redirect()->route('admin.users.index')->with('success', 'User account updated successfully.');
     }
 
     public function resetPassword(User $user, AuditLogger $audit): RedirectResponse
@@ -102,6 +102,6 @@ class UserController extends Controller
         ]);
         $audit->record('user.password_reset_to_default', $user, newValues: ['must_change_password' => true]);
 
-        return back()->with('success', 'Password dikembalikan ke user1234. Pengguna wajib mengubahnya saat login berikutnya.');
+        return back()->with('success', 'Password reset to user1234. User will be prompted to change password on next login.');
     }
 }

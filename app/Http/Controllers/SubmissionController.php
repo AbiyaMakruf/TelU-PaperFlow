@@ -162,7 +162,7 @@ class SubmissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Submission valid dan siap di-assign.',
+                'message' => 'Submission validated and ready for staff assignment.',
                 'status_change' => [
                     'status' => $fresh->status->value,
                     'status_label' => $fresh->status->label(),
@@ -173,7 +173,7 @@ class SubmissionController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Submission valid dan siap di-assign.');
+        return back()->with('success', 'Submission validated and ready for staff assignment.');
     }
 
     public function requestCorrection(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse|JsonResponse
@@ -192,7 +192,7 @@ class SubmissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Permintaan koreksi dikirim ke author.',
+                'message' => 'Correction request sent to author.',
                 'status_change' => [
                     'status' => $fresh->status->value,
                     'status_label' => $fresh->status->label(),
@@ -203,7 +203,7 @@ class SubmissionController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Permintaan koreksi dikirim ke author.');
+        return back()->with('success', 'Correction request sent to author.');
     }
 
     public function assign(Request $request, Submission $submission, SubmissionWorkflow $workflow, AuditLogger $audit): RedirectResponse|JsonResponse
@@ -248,7 +248,7 @@ class SubmissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'PIC berhasil diperbarui.',
+                'message' => 'Assignees updated successfully.',
                 'assignment' => [
                     'role' => $validated['role'],
                     'user_id' => (string) $validated['user_id'],
@@ -266,7 +266,7 @@ class SubmissionController extends Controller
             ]);
         }
 
-        return back()->with('success', 'PIC berhasil diperbarui.');
+        return back()->with('success', 'Assignees updated successfully.');
     }
 
     public function bulkAssign(Request $request, SubmissionWorkflow $workflow): RedirectResponse
@@ -309,7 +309,7 @@ class SubmissionController extends Controller
             }
         });
 
-        return back()->with('success', count($submissions).' paper berhasil diperbarui massal.');
+        return back()->with('success', count($submissions).' papers updated successfully.');
     }
 
     public function bulkStatusUpdate(Request $request, SubmissionWorkflow $workflow): RedirectResponse
@@ -334,12 +334,12 @@ class SubmissionController extends Controller
                 'withdraw' => SubmissionStatus::Withdrawn,
             };
             if ($workflow->canTransition($sub->status, $targetStatus)) {
-                $workflow->transition($sub, $targetStatus, $request->user(), $validated['note'] ?? 'Aksi massal');
+                $workflow->transition($sub, $targetStatus, $request->user(), $validated['note'] ?? 'Bulk action');
                 $count++;
             }
         }
 
-        return back()->with('success', "Status {$count} paper berhasil diperbarui massal.");
+        return back()->with('success', "Status of {$count} papers updated successfully.");
     }
 
     public function bulkDownload(Request $request, VisibleSubmissions $visibleSubmissions, ConferenceFileStorage $storage): RedirectResponse|BinaryFileResponse
@@ -501,7 +501,7 @@ class SubmissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Status IEEE PDF eXpress & catatan EDAS berhasil diperbarui.',
+                'message' => 'IEEE PDF eXpress status and EDAS notes updated successfully.',
                 'pdf_express_status' => $fresh->pdf_express_status,
                 'pdf_express_label' => match ($fresh->pdf_express_status) {
                     'passed' => 'PDF eXpress: Passed',
@@ -523,7 +523,7 @@ class SubmissionController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Status IEEE PDF eXpress & catatan EDAS berhasil diperbarui.');
+        return back()->with('success', 'IEEE PDF eXpress status and EDAS notes updated successfully.');
     }
 
     public function preview(Request $request, Submission $submission, FileVersion $file, ConferenceFileStorage $storage): View|BinaryFileResponse
@@ -627,10 +627,10 @@ class SubmissionController extends Controller
         });
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Checklist tersimpan.']);
+            return response()->json(['success' => true, 'message' => 'Checklist saved successfully.']);
         }
 
-        return back()->with('success', 'Checklist tersimpan.');
+        return back()->with('success', 'Checklist saved successfully.');
     }
 
     public function advance(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse|JsonResponse
@@ -656,7 +656,7 @@ class SubmissionController extends Controller
 
         try {
             if (in_array($action, ['revert_done_to_editorial', 'revert_done_to_reviewer', 'revert_done_to_edas'], true) && $submission->status !== SubmissionStatus::Done) {
-                throw new DomainException('Aksi pengembalian status hanya dapat dilakukan jika status paper sudah Completed / Done.');
+                throw new DomainException('Revert action can only be executed on Completed / Done submissions.');
             }
 
             match ($action) {
@@ -686,7 +686,7 @@ class SubmissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Status paper berhasil diperbarui.',
+                'message' => 'Paper status updated successfully.',
                 'status_change' => [
                     'status' => $fresh->status->value,
                     'status_label' => $fresh->status->label(),
@@ -697,7 +697,7 @@ class SubmissionController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Status paper berhasil diperbarui.');
+        return back()->with('success', 'Paper status updated successfully.');
     }
 
     public function addFeedback(Request $request, Submission $submission, ConferenceMailer $mailer, SubmissionWorkflow $workflow): RedirectResponse|JsonResponse
@@ -931,7 +931,7 @@ class SubmissionController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Versi file baru berhasil disimpan.');
+        return back()->with('success', 'New file version saved successfully.');
     }
 
     public function download(Submission $submission, FileVersion $file, ConferenceFileStorage $storage): RedirectResponse|BinaryFileResponse
@@ -947,7 +947,7 @@ class SubmissionController extends Controller
         $this->authorize('editorialReview', $submission);
         abort_unless($attempt->submission_id === $submission->id && $attempt->status === 'failed', 404);
         $absolute = Storage::disk('local')->path($attempt->temporary_path);
-        abort_unless(is_file($absolute), 404, 'File sementara tidak ditemukan.');
+        abort_unless(is_file($absolute), 404, 'Temporary file not found.');
         $uploaded = new UploadedFile($absolute, $attempt->original_name, $attempt->mime_type, null, true);
         $version = $submission->files()->max('version_number') + 1;
         try {
@@ -955,13 +955,13 @@ class SubmissionController extends Controller
         } catch (Throwable $e) {
             $attempt->update(['attempts' => $attempt->attempts + 1, 'error' => $e->getMessage()]);
 
-            return back()->withErrors(['paper_file' => 'Retry upload masih gagal: '.$e->getMessage()]);
+            return back()->withErrors(['paper_file' => 'Upload retry failed: '.$e->getMessage()]);
         }
         $submission->files()->create(['version_number' => $version, 'label' => $attempt->label, 'source' => $attempt->source, 'disk' => $stored['disk'], 'storage_path' => $stored['storage_path'], 'original_name' => $attempt->original_name, 'mime_type' => $attempt->mime_type, 'size' => $attempt->size, 'checksum' => hash_file('sha256', $absolute), 'uploaded_by' => $request->user()->id, 'notes' => $attempt->notes, 'is_final' => $attempt->is_final, 'external_provider' => $stored['external_provider'], 'external_id' => $stored['external_id'], 'external_url' => $stored['external_url']]);
         Storage::disk('local')->delete($attempt->temporary_path);
         $attempt->update(['status' => 'completed', 'retried_at' => now(), 'attempts' => $attempt->attempts + 1]);
 
-        return back()->with('success', 'Upload berhasil dicoba ulang.');
+        return back()->with('success', 'Upload attempt retried successfully.');
     }
 
     private function currentCycle(Submission $submission, ReviewStage $stage, string $templateId, int $userId): ReviewCycle

@@ -56,7 +56,7 @@ class FormBuilderController extends Controller
         $form->update(['schema' => $fields->all()]);
         $audit->record('conference.form_updated', $form, $conference, newValues: ['version' => $form->version, 'field_count' => $fields->count()]);
 
-        return back()->with('success', 'Draft form berhasil disimpan.');
+        return back()->with('success', 'Form draft saved successfully.');
     }
 
     public function publish(Request $request, Conference $conference, FormVersion $form, AuditLogger $audit): RedirectResponse
@@ -70,7 +70,7 @@ class FormBuilderController extends Controller
         });
         $audit->record('conference.form_published', $form, $conference, newValues: ['version' => $form->version]);
 
-        return redirect()->route('conferences.show', $conference)->with('success', "Form versi {$form->version} dipublikasikan.");
+        return redirect()->route('conferences.show', $conference)->with('success', "Form version {$form->version} published successfully.");
     }
 
     private function draftFor(Conference $conference, Request $request): FormVersion

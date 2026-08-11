@@ -59,6 +59,6 @@ class ChecklistController extends Controller
         });
         $audit->record('conference.checklists_updated', $conference, $conference);
 
-        return back()->with('success', 'Checklist editorial dan reviewer diperbarui.');
+        return back()->with('success', 'Editorial and reviewer checklists updated successfully.');
     }
 }
