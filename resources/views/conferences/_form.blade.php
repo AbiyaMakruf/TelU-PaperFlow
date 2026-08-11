@@ -133,8 +133,6 @@ document.addEventListener('alpine:init', () => {
             </div>
         </div>
     </div>
-        </div>
-    </div>
 
     @if($conference)
         <div class="md:col-span-2 border-t border-navy/10 pt-5">

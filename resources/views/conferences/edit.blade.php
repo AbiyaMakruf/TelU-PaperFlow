@@ -2,13 +2,13 @@
     <div class="max-w-4xl space-y-6">
         <x-conference-header :conference="$conference" active="settings" />
         <x-flash />
-        <form method="POST" action="{{ route('conferences.update', $conference) }}" enctype="multipart/form-data" class="card mt-7 space-y-6 p-6">
+        <form method="POST" action="{{ route('conferences.update', $conference) }}" enctype="multipart/form-data" class="card mt-7 space-y-6 p-6 sm:p-8">
             @csrf
             @method('PUT')
             @include('conferences._form', ['conference' => $conference])
-            <div class="flex justify-end gap-3">
-                <a href="{{ route('conferences.show', $conference) }}" class="btn btn-ghost">Cancel</a>
-                <button class="btn btn-primary">Save Changes</button>
+            <div class="flex items-center justify-end gap-3 pt-5 border-t border-navy/10">
+                <a href="{{ route('conferences.show', $conference) }}" class="btn btn-secondary text-xs font-bold">Cancel</a>
+                <button type="submit" class="btn btn-primary text-xs font-extrabold shadow-sm">Save Changes</button>
             </div>
         </form>
 
