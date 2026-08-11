@@ -120,6 +120,7 @@
                         📦 Bulk Download Author Files (ZIP)
                     </button>
                 </form>
+                @if(Route::has('submissions.bulk-send-portal-link'))
                 <form method="POST" action="{{ route('submissions.bulk-send-portal-link') }}" class="inline-block w-full sm:w-auto">
                     @csrf
                     <template x-for="id in selected" :key="id">
@@ -129,6 +130,7 @@
                         ✉️ Bulk Send Portal Links
                     </button>
                 </form>
+                @endif
                 <button type="button" @click="selected = []" class="text-xs text-slate-400 hover:text-white underline">
                     Deselect All
                 </button>
