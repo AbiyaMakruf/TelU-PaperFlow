@@ -71,26 +71,26 @@
                         <dd class="mt-1 font-medium text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Not confirmed') }}</dd>
                     </div>
                     <div class="min-w-0">
-                        <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">Page Count (Halaman Paper)</dt>
+                        <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">Page Count</dt>
                         <dd class="mt-1 font-bold text-navy leading-snug">
                             @if($submission->initial_page_count || $submission->final_page_count)
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-black text-navy border border-slate-200/90" title="Halaman awal sebelum diedit editor">
-                                        <span>Awal: {{ $submission->initial_page_count ? $submission->initial_page_count.' hal' : '-' }}</span>
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-black text-navy border border-slate-200/90" title="Initial page count before editorial revision">
+                                        <span>Initial: {{ $submission->initial_page_count ? $submission->initial_page_count.' pp' : '-' }}</span>
                                     </span>
                                     <span class="text-slate-400 font-bold">→</span>
-                                    <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-800 border border-emerald-200" title="Halaman final setelah diedit editor">
-                                        <span>Final: {{ $submission->final_page_count ? $submission->final_page_count.' hal' : '-' }}</span>
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-800 border border-emerald-200" title="Final camera-ready page count after editorial revision">
+                                        <span>Final: {{ $submission->final_page_count ? $submission->final_page_count.' pp' : '-' }}</span>
                                     </span>
                                     @if($submission->initial_page_count && $submission->final_page_count)
                                         @php $diff = $submission->final_page_count - $submission->initial_page_count; @endphp
                                         <span class="text-[11px] font-extrabold {{ $diff < 0 ? 'text-emerald-600' : ($diff > 0 ? 'text-amber-600' : 'text-slate-500') }}">
-                                            ({{ $diff > 0 ? '+'.$diff : $diff }} {{ Str::plural('hal', abs($diff)) }})
+                                            ({{ $diff > 0 ? '+'.$diff : $diff }} {{ Str::plural('pp', abs($diff)) }})
                                         </span>
                                     @endif
                                 </div>
                             @else
-                                <span class="text-xs text-muted font-normal">Belum dicatat</span>
+                                <span class="text-xs text-muted font-normal">Not recorded</span>
                             @endif
                         </dd>
                     </div>
@@ -112,13 +112,6 @@
                     <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-orange hover:text-orange rounded-xl transition" title="Inspect author portal view exactly as seen by the author">
                         Open Author Portal ↗
                     </a>
-                    <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
-                        @csrf
-                        <button type="submit" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-indigo-600 hover:text-indigo-600 rounded-xl transition" title="Send Author Portal link email to author">
-                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            Send Author Portal Link
-                        </button>
-                    </form>
                 </div>
 
                 @if($submission->authors->count() > 1)
@@ -517,9 +510,9 @@
                                     <template x-if="allPassed">
                                         <div class="space-y-3 w-full">
                                             <div class="rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3 text-xs">
-                                                <label class="form-label text-xs font-bold text-emerald-900">Final Page Count (Jumlah Halaman Final - Setelah Edit Editor)</label>
-                                                <input type="number" min="1" max="500" class="form-input text-xs bg-white border-emerald-300" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Jumlah halaman final)" :disabled="!isEditorialActive">
-                                                <small class="text-[11px] text-emerald-700 mt-1 block">Tuliskan jumlah halaman naskah yang telah selesai diedit/dirapikan sebelum dikirimkan ke Reviewer.</small>
+                                                <label class="form-label text-xs font-bold text-emerald-900">Final Page Count (Camera-Ready / Post-Editorial Edit)</label>
+                                                <input type="number" min="1" max="500" class="form-input text-xs bg-white border-emerald-300" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Final page count)" :disabled="!isEditorialActive">
+                                                <small class="text-[11px] text-emerald-700 mt-1 block">Enter the final manuscript page count after editorial formatting before sending to Reviewer.</small>
                                             </div>
                                             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto justify-end">
                                                 <template x-if="hasReviewer">
@@ -1048,8 +1041,8 @@
                         </div>
 
                         <div>
-                            <label class="form-label text-xs">Initial Page Count (Jumlah Halaman Awal - Sebelum Edit)</label>
-                            <input type="number" min="1" max="500" class="form-input text-xs" name="initial_page_count" value="{{ old('initial_page_count', $submission->initial_page_count) }}" placeholder="e.g. 8 (Jumlah halaman awal)" @if($submission->status->isTerminal()) disabled @endif>
+                            <label class="form-label text-xs">Initial Page Count (Pre-Editorial Submission)</label>
+                            <input type="number" min="1" max="500" class="form-input text-xs" name="initial_page_count" value="{{ old('initial_page_count', $submission->initial_page_count) }}" placeholder="e.g. 8 (Initial page count)" @if($submission->status->isTerminal()) disabled @endif>
                         </div>
 
                         <div id="editor-reassignment-reason-block" style="{{ $submission->editor_id ? '' : 'display: none;' }}">
