@@ -232,10 +232,11 @@
                         </tr>
                         <tr x-show="open" x-cloak>
                             <td colspan="8" class="bg-warm/70 p-5">
-                                <div class="grid gap-4 text-sm md:grid-cols-4">
+                                <div class="grid gap-4 text-sm md:grid-cols-5">
                                     <div><p class="form-label">Internal Code</p><p class="font-bold text-navy">{{ $submission->paper_code }}</p></div>
                                     <div><p class="form-label">Primary Author</p><p class="font-bold text-navy">{{ $submission->corresponding_author_name }}</p><p class="text-muted">{{ $submission->corresponding_author_email }}</p></div>
                                     <div><p class="form-label">Editable Format</p><p class="font-bold text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Not confirmed by admin') }}</p></div>
+                                    <div><p class="form-label">Page Count</p><p class="font-bold text-navy">{{ $submission->initial_page_count ? $submission->initial_page_count.' pp' : '-' }} → {{ $submission->final_page_count ? $submission->final_page_count.' pp' : '-' }}</p></div>
                                     <div><p class="form-label">Author Count</p><p class="font-bold text-navy">{{ $submission->authors->count() }}</p></div>
                                 </div>
                                 <div class="mt-4 flex flex-wrap gap-3">

@@ -216,6 +216,8 @@ class SubmissionController extends Controller
             'reassignment_reason' => ['nullable', 'string', 'max:2000'],
             'deadline_at' => ['nullable', 'date'],
             'manuscript_format' => ['nullable', Rule::requiredIf($request->input('role') === ConferenceRole::Editorial->value), Rule::in(['docx', 'latex'])],
+            'initial_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'final_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
         ]);
 
         try {
@@ -240,6 +242,12 @@ class SubmissionController extends Controller
         }
         if ($validated['role'] === ConferenceRole::Editorial->value) {
             $submission->update(['manuscript_format' => $validated['manuscript_format']]);
+        }
+        if ($request->filled('initial_page_count')) {
+            $submission->update(['initial_page_count' => $request->integer('initial_page_count')]);
+        }
+        if ($request->filled('final_page_count')) {
+            $submission->update(['final_page_count' => $request->integer('final_page_count')]);
         }
 
         if ($request->expectsJson()) {
@@ -277,6 +285,7 @@ class SubmissionController extends Controller
             'editor_id' => ['nullable', 'exists:users,id'],
             'reviewer_id' => ['nullable', 'exists:users,id'],
             'manuscript_format' => ['nullable', Rule::in(['docx', 'latex'])],
+            'initial_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
             'deadline_at' => ['nullable', 'date'],
             'reassignment_reason' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -299,6 +308,9 @@ class SubmissionController extends Controller
                 $updates = [];
                 if (! empty($validated['manuscript_format'])) {
                     $updates['manuscript_format'] = $validated['manuscript_format'];
+                }
+                if (! empty($validated['initial_page_count'])) {
+                    $updates['initial_page_count'] = $validated['initial_page_count'];
                 }
                 if (! empty($validated['deadline_at'])) {
                     $updates['deadline_at'] = $validated['deadline_at'];
@@ -644,8 +656,16 @@ class SubmissionController extends Controller
             ])],
             'note' => ['nullable', 'string', 'max:10000'],
             'edas_reference' => ['nullable', 'string', 'max:255'],
+            'initial_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'final_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
         ]);
         $action = $validated['action'];
+        if ($request->filled('initial_page_count')) {
+            $submission->update(['initial_page_count' => $request->integer('initial_page_count')]);
+        }
+        if ($request->filled('final_page_count')) {
+            $submission->update(['final_page_count' => $request->integer('final_page_count')]);
+        }
         if (in_array($action, ['revert_done_to_editorial', 'revert_done_to_reviewer', 'revert_done_to_edas'], true)) {
             $this->authorize('revertCompleted', $submission);
         } elseif (in_array($action, ['reject', 'withdraw'], true)) {

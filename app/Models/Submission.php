@@ -18,7 +18,7 @@ class Submission extends Model
     use HasFactory, HasUlids, SoftDeletes;
 
     protected $fillable = [
-        'conference_id', 'form_version_id', 'paper_id', 'paper_code', 'manuscript_format', 'title', 'corresponding_author_name',
+        'conference_id', 'form_version_id', 'paper_id', 'paper_code', 'manuscript_format', 'initial_page_count', 'final_page_count', 'title', 'corresponding_author_name',
         'corresponding_author_email', 'corresponding_author_phone', 'answers', 'status', 'submission_source', 'is_flagged_duplicate', 'duplicate_notes',
         'editor_id', 'reviewer_id', 'author_token_hash', 'author_token_encrypted', 'author_token_expires_at',
         'submitted_at', 'validated_at', 'completed_at', 'edas_reference', 'edas_notes', 'lock_version',
@@ -34,6 +34,8 @@ class Submission extends Model
             'answers' => 'array',
             'status' => SubmissionStatus::class,
             'is_flagged_duplicate' => 'boolean',
+            'initial_page_count' => 'integer',
+            'final_page_count' => 'integer',
             'author_token_encrypted' => 'encrypted',
             'author_token_expires_at' => 'datetime',
             'submitted_at' => 'datetime',

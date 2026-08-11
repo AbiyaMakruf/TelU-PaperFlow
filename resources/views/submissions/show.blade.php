@@ -70,6 +70,30 @@
                         <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">Editable Format</dt>
                         <dd class="mt-1 font-medium text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX (ZIP)' : ($submission->manuscript_format === 'docx' ? 'Microsoft Word (DOCX)' : 'Not confirmed') }}</dd>
                     </div>
+                    <div class="min-w-0">
+                        <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">Page Count (Halaman Paper)</dt>
+                        <dd class="mt-1 font-bold text-navy leading-snug">
+                            @if($submission->initial_page_count || $submission->final_page_count)
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-black text-navy border border-slate-200/90" title="Halaman awal sebelum diedit editor">
+                                        <span>Awal: {{ $submission->initial_page_count ? $submission->initial_page_count.' hal' : '-' }}</span>
+                                    </span>
+                                    <span class="text-slate-400 font-bold">→</span>
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-800 border border-emerald-200" title="Halaman final setelah diedit editor">
+                                        <span>Final: {{ $submission->final_page_count ? $submission->final_page_count.' hal' : '-' }}</span>
+                                    </span>
+                                    @if($submission->initial_page_count && $submission->final_page_count)
+                                        @php $diff = $submission->final_page_count - $submission->initial_page_count; @endphp
+                                        <span class="text-[11px] font-extrabold {{ $diff < 0 ? 'text-emerald-600' : ($diff > 0 ? 'text-amber-600' : 'text-slate-500') }}">
+                                            ({{ $diff > 0 ? '+'.$diff : $diff }} {{ Str::plural('hal', abs($diff)) }})
+                                        </span>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="text-xs text-muted font-normal">Belum dicatat</span>
+                            @endif
+                        </dd>
+                    </div>
                     @foreach($submission->formVersion?->schema ?? [] as $field)
                         @continue(in_array($field['key'], ['co_authors', 'affiliation', 'country']))
                         <div class="min-w-0">
@@ -491,17 +515,24 @@
                                     </template>
 
                                     <template x-if="allPassed">
-                                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-                                            <template x-if="hasReviewer">
-                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    ✓ Approve &amp; Send to Reviewer
-                                                </button>
-                                            </template>
-                                            <template x-if="!hasReviewer">
-                                                <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
-                                                    ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
-                                                </button>
-                                            </template>
+                                        <div class="space-y-3 w-full">
+                                            <div class="rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3 text-xs">
+                                                <label class="form-label text-xs font-bold text-emerald-900">Final Page Count (Jumlah Halaman Final - Setelah Edit Editor)</label>
+                                                <input type="number" min="1" max="500" class="form-input text-xs bg-white border-emerald-300" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Jumlah halaman final)" :disabled="!isEditorialActive">
+                                                <small class="text-[11px] text-emerald-700 mt-1 block">Tuliskan jumlah halaman naskah yang telah selesai diedit/dirapikan sebelum dikirimkan ke Reviewer.</small>
+                                            </div>
+                                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto justify-end">
+                                                <template x-if="hasReviewer">
+                                                    <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        ✓ Approve &amp; Send to Reviewer
+                                                    </button>
+                                                </template>
+                                                <template x-if="!hasReviewer">
+                                                    <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
+                                                        ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
+                                                    </button>
+                                                </template>
+                                            </div>
                                         </div>
                                     </template>
 
@@ -1014,6 +1045,11 @@
                                 <option value="docx" @selected($submission->manuscript_format === 'docx')>Microsoft Word (.docx)</option>
                                 <option value="latex" @selected($submission->manuscript_format === 'latex')>LaTeX (.zip)</option>
                             </select>
+                        </div>
+
+                        <div>
+                            <label class="form-label text-xs">Initial Page Count (Jumlah Halaman Awal - Sebelum Edit)</label>
+                            <input type="number" min="1" max="500" class="form-input text-xs" name="initial_page_count" value="{{ old('initial_page_count', $submission->initial_page_count) }}" placeholder="e.g. 8 (Jumlah halaman awal)" @if($submission->status->isTerminal()) disabled @endif>
                         </div>
 
                         <div id="editor-reassignment-reason-block" style="{{ $submission->editor_id ? '' : 'display: none;' }}">
