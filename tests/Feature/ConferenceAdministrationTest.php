@@ -145,6 +145,31 @@ class ConferenceAdministrationTest extends TestCase
         $this->assertNotNull($conference->brandBannerUrl());
     }
 
+    public function test_superadmin_can_delete_a_conference(): void
+    {
+        $superadmin = User::factory()->create(['is_super_admin' => true]);
+        $conference = Conference::create([
+            'name' => 'To Be Deleted Conference',
+            'slug' => 'to-be-deleted',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($superadmin)->delete(route('conferences.destroy', $conference));
+
+        $response->assertRedirect(route('dashboard'));
+        $this->assertSoftDeleted('conferences', ['id' => $conference->id]);
+    }
+
+    public function test_non_superadmin_cannot_delete_a_conference(): void
+    {
+        [$conference, $admin] = $this->conferenceWithAdmin();
+
+        $response = $this->actingAs($admin)->delete(route('conferences.destroy', $conference));
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('conferences', ['id' => $conference->id]);
+    }
+
     /** @return array{Conference, User} */
     private function conferenceWithAdmin(): array
     {

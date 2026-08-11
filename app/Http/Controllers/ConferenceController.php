@@ -131,6 +131,24 @@ class ConferenceController extends Controller
         return redirect()->route('conferences.show', $copy)->with('success', 'Conference duplicated successfully with default forms and checklists.');
     }
 
+    public function destroy(Conference $conference, AuditLogger $audit): RedirectResponse
+    {
+        $this->authorize('delete', $conference);
+
+        $oldValues = $conference->only(['id', 'name', 'slug']);
+        $name = $conference->name;
+
+        if (session('active_conference_id') === $conference->id) {
+            session()->forget('active_conference_id');
+        }
+
+        $audit->record('conference.deleted', $conference, $conference, oldValues: $oldValues);
+
+        $conference->delete();
+
+        return redirect()->route('dashboard')->with('success', "Conference \"{$name}\" deleted successfully.");
+    }
+
     /** @return array<string, mixed> */
     private function validateConference(Request $request, ?Conference $conference = null): array
     {

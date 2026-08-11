@@ -106,7 +106,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/conferences/edas-reconciliation/upload', [EdasReconciliationController::class, 'upload'])->name('conferences.edas-reconciliation.upload');
         Route::post('/conferences/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
         Route::get('/conferences/edas-reconciliation/export-missing', [EdasReconciliationController::class, 'exportMissing'])->name('conferences.edas-reconciliation.export-missing');
-        Route::resource('conferences', ConferenceController::class)->except(['destroy']);
+        Route::resource('conferences', ConferenceController::class);
         Route::post('/conferences/{conference}/duplicate', [ConferenceController::class, 'duplicate'])->name('conferences.duplicate');
         Route::get('/conferences/{conference}/members', [ConferenceMemberController::class, 'index'])->name('conferences.members.index');
         Route::post('/conferences/{conference}/members', [ConferenceMemberController::class, 'store'])->name('conferences.members.store');
