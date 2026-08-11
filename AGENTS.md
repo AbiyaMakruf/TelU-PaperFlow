@@ -81,7 +81,11 @@ Do not update `submissions.status` directly when a transition should be validate
 - **Ultrawide & 34-Inch Monitor Layout Optimization**: Constrained main layout container (`max-w-[1600px]`) and `.container-page` / landing page (`max-w-[1400px]`) to ensure balanced, centered presentation on 34-inch ultrawide (3440px / 21:9) displays without horizontal stretching.
 - **Staff Author-Portal Preview Action ("Buka Portal Author")**: Direct header action button on paper detail page allowing staff to inspect the exact portal view seen by authors (`/submission/access/{token}`).
 - **Paper Detail Accordion Sections**: Converted Catatan Internal, Feedback & Komunikasi Author, and Versioning File cards into collapsible `<details>` accordions with `<summary>` headers to keep paper detail pages clean and compact.
-- **Auto-PostgreSQL Driver & Batch Launcher Resilience**: `bootstrap/enable-pgsql.php` auto-enables `extension=pdo_pgsql` in `php.ini`, with persistent CMD launchers (`start-paperflow.bat` & `start-paperflow-ngrok.bat`) and drive C-F PHP/Node auto-detection.
+- **Initial & Final Page Count Tracking**: Captures initial page count during PIC assignment and final page count during editorial approval, displaying side-by-side differential metrics (`Awal: 8 hal → Final: 6 hal (-2 hal)`).
+- **Conference-Scoped EDAS Reconciliation**: Scoped to conference sub-navigation (`/conferences/{id}/edas-reconciliation`) with simplified CSV column mapping requiring only Paper ID (mandatory) and Paper Title (optional).
+- **Manual Author Portal Link Email Action**: Dedicated "Send Author Portal Link" button and tracking column in paper list with bulk action capability.
+- **Direct External URL Download Support**: CSV / Webhook imported papers with external URLs (e.g. Google Drive/Sheets) download/redirect directly without requiring Google Drive OAuth setup.
+- **Updated Workflow Status Labels**: Status labels updated for better editorial clarity (`Waiting for Editor Assignment`, `Editorial Review in Progress`, `Pre-EDAS Technical Review`).
 - **GCP-Style Workspace Selector**: Header & drawer active conference selector scoping `VisibleSubmissions` to `session('active_conference_id')`.
 - **Duplicate Submission Detection**: Automatic flags for title similarity, corresponding author email match, or exact file checksums.
 - **Bulk Actions**: Bulk assignment (PIC, format, deadline), bulk status transitions (validate/accept, reject, withdraw), & bulk download of author manuscript files in a single ZIP named by Paper ID.
@@ -190,6 +194,9 @@ Laravel migrations in `database/migrations` are the source of truth. Latest appl
 - `2026_07_26_000100_add_soft_deletes_to_file_versions.php`
 - `2026_07_26_000100_update_revision_requested_email_deadline_bold.php`
 - `2026_07_27_000100_close_open_review_cycles_for_pending_revisions.php`
+- `2026_07_27_000200_update_file_versions_unique_constraint.php`
+- `2026_08_11_000100_add_initial_and_final_page_counts_to_submissions.php`
+- `2026_08_11_083459_add_submission_source_to_submissions_table.php`
 
 Application tables are server-only. RLS is enabled without anon/authenticated policies because the browser does not use Supabase Data API for these tables. Laravel connects with the server database role.
 
@@ -297,8 +304,8 @@ php artisan migrate --force
 
 Current baseline:
 
-- **88 tests**
-- **428 assertions**
+- **100 tests**
+- **486 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
