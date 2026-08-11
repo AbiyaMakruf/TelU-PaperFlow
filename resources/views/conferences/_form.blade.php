@@ -18,9 +18,13 @@
     slug: '{{ old('slug', $conference?->slug ?? '') }}', 
     submissionMode: '{{ old('submission_mode', $conference?->submissionMode() ?? 'paperflow_native') }}',
     baseUrl: window.location.origin,
-    copiedUrl: false,
-    copiedSecret: false,
-    customFields: {{ json_encode(old('google_form_mapping.custom_fields', $mapping['custom_fields'] ?? [])) }}
+    copiedCode: false,
+    customFields: {{ json_encode(old('google_form_mapping.custom_fields', $mapping['custom_fields'] ?? [])) }},
+    getAppsScriptCode() {
+        const webhookUrl = this.baseUrl + '/api/webhooks/google-form/' + (this.slug.trim() || '{your-slug}');
+        const secretToken = '{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}';
+        return `/**\n * PAPERFLOW REAL-TIME GOOGLE FORM WEBHOOK INTEGRATION\n */\nconst PAPERFLOW_WEBHOOK_URL = \"${webhookUrl}\";\nconst SECRET_TOKEN = \"${secretToken}\";\n\nfunction onFormSubmit(e) {\n  try {\n    let payload = {};\n    if (e && e.namedValues) {\n      for (let key in e.namedValues) {\n        payload[key.trim()] = e.namedValues[key][0] || \"\";\n      }\n    } else if (e && e.response) {\n      let itemResponses = e.response.getItemResponses();\n      for (let i = 0; i < itemResponses.length; i++) {\n        let itemResponse = itemResponses[i];\n        let title = itemResponse.getItem().getTitle().trim();\n        let response = itemResponse.getResponse();\n        payload[title] = Array.isArray(response) ? response.join(\", \") : response;\n      }\n    } else {\n      return;\n    }\n\n    let options = {\n      \"method\": \"post\",\n      \"contentType\": \"application/json\",\n      \"headers\": {\n        \"X-Paperflow-Secret\": SECRET_TOKEN\n      },\n      \"payload\": JSON.stringify(payload),\n      \"muteHttpExceptions\": true\n    };\n\n    UrlFetchApp.fetch(PAPERFLOW_WEBHOOK_URL, options);\n  } catch (error) {\n    Logger.log(\"Paperflow Webhook Error: \" + error.toString());\n  }\n}`;
+    }
 }">
     <div class="md:col-span-2">
         <label class="form-label" for="name">Conference Name</label>
@@ -91,32 +95,32 @@
                 <h4 class="font-extrabold text-navy text-sm flex items-center gap-2">
                     <span>🔗</span> Google Form Real-Time Sync Setup Guide
                 </h4>
-                <p class="text-xs text-muted mt-1">Follow these steps to automatically sync submissions from your existing Google Form or Spreadsheet into Paperflow:</p>
-                <ol class="mt-3 list-decimal list-inside text-xs text-navy/80 space-y-2.5 font-medium">
-                    <li>Open your Google Form or its connected Google Sheets spreadsheet.</li>
-                    <li>Go to <strong>Extensions &gt; Apps Script</strong> (or Click <strong>&vellip; &gt; Script Editor</strong>).</li>
-                    <li>Paste the Google Apps Script integration code into the editor.</li>
+                <p class="text-xs text-muted mt-1">Follow these exact step-by-step instructions to connect your Google Form / Spreadsheet to Paperflow:</p>
+                <ol class="mt-3 list-decimal list-inside text-xs text-navy/90 space-y-3 font-medium">
+                    <li>Open your Google Form (or its connected Google Sheets spreadsheet).</li>
+                    <li>Click <strong>Extensions &gt; Apps Script</strong> (or click <strong>&vellip; &gt; Script Editor</strong>) to open the <code class="font-mono text-purple-950 bg-purple-100 px-1.5 py-0.5 rounded">script.google.com</code> editor.</li>
                     <li>
-                        <span class="block mb-1">Set the Webhook URL to:</span>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <code class="font-mono bg-white px-2.5 py-1 rounded-lg border border-navy/10 text-orange font-bold break-all select-all text-xs" x-text="baseUrl + '/api/webhooks/google-form/' + (slug.trim() || '{your-slug}')">
-                                {{ url('/api/webhooks/google-form/'.($conference?->slug ?? '{your-slug}')) }}
-                            </code>
-                            <button type="button" @click="navigator.clipboard.writeText(baseUrl + '/api/webhooks/google-form/' + (slug.trim() || '{your-slug}')); copiedUrl = true; setTimeout(() => copiedUrl = false, 2000)" class="btn text-xs py-1 px-3 bg-white border border-navy/15 hover:border-orange hover:text-orange text-navy rounded-lg transition inline-flex items-center gap-1 font-bold shadow-2xs">
-                                <span x-text="copiedUrl ? 'Copied! ✓' : '📋 Copy Webhook URL'">📋 Copy Webhook URL</span>
-                            </button>
+                        Clear any default code in <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-navy/10">Code.gs</code>, then click <strong>"📋 Copy Complete Apps Script Code"</strong> below and paste it into the editor:
+                        <div class="mt-2.5 bg-navy text-slate-100 p-4 rounded-xl font-mono text-[11px] leading-relaxed relative overflow-x-auto border border-navy/20 shadow-xs">
+                            <div class="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-white/10 flex-wrap">
+                                <span class="text-xs text-orange font-bold font-sans">Google Apps Script Code (Code.gs)</span>
+                                <button type="button" @click="navigator.clipboard.writeText(getAppsScriptCode()); copiedCode = true; setTimeout(() => copiedCode = false, 2000)" class="btn text-xs py-1 px-3 bg-orange hover:bg-orange-dark text-white font-sans font-bold rounded-lg transition shrink-0 shadow-2xs">
+                                    <span x-text="copiedCode ? 'Copied to Clipboard! ✓' : '📋 Copy Complete Apps Script Code'">📋 Copy Complete Apps Script Code</span>
+                                </button>
+                            </div>
+                            <pre class="whitespace-pre overflow-x-auto text-[11px] text-emerald-300" x-text="getAppsScriptCode()"></pre>
                         </div>
                     </li>
+                    <li>Click <strong>Save 💾</strong> (or press <kbd class="px-1.5 py-0.5 bg-white border border-navy/20 rounded text-[10px]">Ctrl+S</kbd> / <kbd class="px-1.5 py-0.5 bg-white border border-navy/20 rounded text-[10px]">Cmd+S</kbd>).</li>
                     <li>
-                        <span class="block mb-1">Set the Secret Token header (<code class="font-mono text-navy font-bold">X-Paperflow-Secret</code>) to:</span>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <code class="font-mono bg-white px-2.5 py-1 rounded-lg border border-navy/10 text-navy font-bold text-xs select-all">{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}</code>
-                            <button type="button" @click="navigator.clipboard.writeText('{{ env('GOOGLE_FORM_WEBHOOK_SECRET', 'paperflow_webhook_secret_key') }}'); copiedSecret = true; setTimeout(() => copiedSecret = false, 2000)" class="btn text-xs py-1 px-3 bg-white border border-navy/15 hover:border-orange hover:text-orange text-navy rounded-lg transition inline-flex items-center gap-1 font-bold shadow-2xs">
-                                <span x-text="copiedSecret ? 'Copied! ✓' : '📋 Copy Secret Token'">📋 Copy Secret Token</span>
-                            </button>
-                        </div>
+                        On the left sidebar of <code class="font-mono text-purple-950 bg-purple-100 px-1.5 py-0.5 rounded">script.google.com</code>, click <strong>Triggers ⏰</strong> (alarm clock icon) &rarr; Click <strong>+ Add Trigger</strong> (at bottom right):
+                        <ul class="mt-1.5 ml-5 list-disc space-y-1 text-xs text-navy/80 font-normal">
+                            <li>Choose function to run: <strong><code class="font-mono text-navy font-bold">onFormSubmit</code></strong></li>
+                            <li>Select event source: <strong><code class="font-mono text-navy font-bold">From form</code></strong> (or <em>From spreadsheet</em>)</li>
+                            <li>Select event type: <strong><code class="font-mono text-navy font-bold">On form submit</code></strong></li>
+                        </ul>
                     </li>
-                    <li>Add an <strong>On form submit</strong> trigger under Apps Script Triggers (&num;1 Event Source: <em>From form / From spreadsheet</em>).</li>
+                    <li>Click <strong>Save</strong> and grant Google permissions if prompted. Submissions will now sync instantly into Paperflow!</li>
                 </ol>
             </div>
 
