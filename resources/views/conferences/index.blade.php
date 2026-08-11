@@ -18,7 +18,7 @@
                         <div class="flex items-center gap-2">
                             <span class="badge badge-primary">{{ $conference->status->label() }}</span>
                             @can('delete', $conference)
-                                <button type="button" @click="deleteUrl = '{{ Route::has('conferences.destroy') ? route('conferences.destroy', $conference) : url('/conferences/'.$conference->id) }}'; deleteName = '{{ e($conference->name) }}'; openDeleteModal = true" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition text-xs font-bold" title="Delete Conference">
+                                <button type="button" @click="deleteUrl = '{{ route('conferences.destroy.post', $conference) }}'; deleteName = '{{ e($conference->name) }}'; openDeleteModal = true" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition text-xs font-bold" title="Delete Conference">
                                     🗑️
                                 </button>
                             @endcan
