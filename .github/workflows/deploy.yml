@@ -67,9 +67,13 @@ jobs:
 
             echo "🧹 [5/5] All application & Web OPcache caches cleared cleanly."
 
-            # 7. Restart Queue Workers
-            echo "🔄 Restarting queue workers..."
+            # 7. Process Pending Queue Jobs & Start Background Worker
+            echo "🔄 Processing pending email jobs & launching background queue worker..."
             php artisan queue:restart || true
+            php artisan queue:work --stop-when-empty || true
+            pkill -f "php artisan queue:work" || true
+            nohup php artisan queue:work --tries=3 > /dev/null 2>&1 &
+            echo "✅ Queue worker actively running in background."
 
             echo "========================================================"
             echo "🎉 Paperflow Deployment Successfully Completed!"
