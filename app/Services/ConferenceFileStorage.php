@@ -193,4 +193,27 @@ class ConferenceFileStorage
 
         return $migratedCount;
     }
+
+    public function deleteConferenceFiles(Conference $conference): void
+    {
+        $files = FileVersion::query()
+            ->whereHas('submission', fn ($q) => $q->where('conference_id', $conference->id))
+            ->get();
+
+        foreach ($files as $file) {
+            try {
+                if ($file->disk === 'supabase' || $file->disk === 'local') {
+                    $this->privateStorage->delete($file->storage_path);
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        try {
+            $this->privateStorage->deleteDirectory($conference->slug);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
 }

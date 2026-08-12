@@ -64,6 +64,32 @@ class PrivateFileStorage
             : $this->storageUrl('/'.ltrim($signedUrl, '/'));
     }
 
+    public function delete(string $path): void
+    {
+        if (! $this->usesSupabase()) {
+            Storage::disk('local')->delete($path);
+            return;
+        }
+
+        Http::withToken($this->secret())
+            ->withHeaders(['apikey' => $this->secret()])
+            ->delete($this->objectUrl($path));
+    }
+
+    public function deleteDirectory(string $folderPath): void
+    {
+        if (! $this->usesSupabase()) {
+            Storage::disk('local')->deleteDirectory($folderPath);
+            return;
+        }
+
+        Http::withToken($this->secret())
+            ->withHeaders(['apikey' => $this->secret()])
+            ->delete($this->storageUrl('/object/'.$this->bucket()), [
+                'prefixes' => [trim($folderPath, '/')],
+            ]);
+    }
+
     public function localPath(string $path): string
     {
         return Storage::disk('local')->path($path);

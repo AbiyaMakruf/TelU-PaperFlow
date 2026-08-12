@@ -167,7 +167,16 @@ class ConferenceController extends Controller
 
         $audit->record('conference.deleted', $conference, $conference, oldValues: $oldValues);
 
-        $conference->submissions()->delete();
+        // Delete physical files from Supabase / private file storage
+        app(\App\Services\ConferenceFileStorage::class)->deleteConferenceFiles($conference);
+
+        // Delete memberships and soft-delete submissions with file versions
+        $conference->memberships()->delete();
+        $conference->submissions()->each(function ($sub) {
+            $sub->files()->delete();
+            $sub->delete();
+        });
+
         $conference->update(['slug' => $conference->slug . '-deleted-' . time()]);
         $conference->delete();
 

@@ -17,7 +17,7 @@ class UserController extends Controller
     public function index(Request $request): View
     {
         $users = User::query()
-            ->withCount('conferenceMemberships')
+            ->withCount(['conferenceMemberships' => fn ($query) => $query->whereHas('conference')])
             ->when($request->string('search')->toString(), fn ($query, $search) => $query
                 ->where(fn ($scope) => $scope
                     ->where('name', 'like', "%{$search}%")
