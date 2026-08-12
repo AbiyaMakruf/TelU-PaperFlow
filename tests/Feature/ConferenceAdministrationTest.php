@@ -153,11 +153,24 @@ class ConferenceAdministrationTest extends TestCase
             'slug' => 'to-be-deleted',
             'status' => 'active',
         ]);
+        $submission = \App\Models\Submission::create([
+            'conference_id' => $conference->id,
+            'paper_code' => 'DEL-001',
+            'title' => 'Paper in Deleted Conference',
+            'corresponding_author_name' => 'Author',
+            'corresponding_author_email' => 'author@example.com',
+            'status' => \App\Enums\SubmissionStatus::Submitted,
+            'submitted_at' => now(),
+        ]);
 
         $response = $this->actingAs($superadmin)->delete(route('conferences.destroy', $conference));
 
         $response->assertRedirect(route('conferences.index'));
         $this->assertSoftDeleted('conferences', ['id' => $conference->id]);
+        $this->assertSoftDeleted('submissions', ['id' => $submission->id]);
+
+        $visibleSubmissions = app(\App\Services\VisibleSubmissions::class)->for($superadmin)->get();
+        $this->assertFalse($visibleSubmissions->contains('id', $submission->id));
     }
 
     public function test_non_superadmin_cannot_delete_a_conference(): void

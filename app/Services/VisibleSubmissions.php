@@ -11,7 +11,7 @@ class VisibleSubmissions
     /** @return Builder<Submission> */
     public function for(User $user): Builder
     {
-        $query = Submission::query();
+        $query = Submission::query()->whereHas('conference');
 
         $activeWorkspaceId = session('active_conference_id');
 

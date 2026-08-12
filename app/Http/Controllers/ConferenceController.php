@@ -167,6 +167,7 @@ class ConferenceController extends Controller
 
         $audit->record('conference.deleted', $conference, $conference, oldValues: $oldValues);
 
+        $conference->submissions()->delete();
         $conference->update(['slug' => $conference->slug . '-deleted-' . time()]);
         $conference->delete();
 
