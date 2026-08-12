@@ -28,6 +28,24 @@ jobs:
             echo "🚀 Starting Paperflow Deployment on Hostinger..."
             echo "========================================================"
             
+            # Export Node / NVM PATH for non-interactive SSH
+            export PATH=$PATH:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:$HOME/.local/bin:$HOME/bin:/usr/local/bin
+
+            # Detect PHP 8.2+ CLI binary on Hostinger
+            PHP_BIN="php"
+            if command -v php82 &> /dev/null; then
+              PHP_BIN="php82"
+            elif command -v php8.2 &> /dev/null; then
+              PHP_BIN="php8.2"
+            elif [ -f /usr/bin/php8.2 ]; then
+              PHP_BIN="/usr/bin/php8.2"
+            elif [ -f /opt/alt/php82/usr/bin/php ]; then
+              PHP_BIN="/opt/alt/php82/usr/bin/php"
+            elif [ -f /usr/local/bin/php82 ]; then
+              PHP_BIN="/usr/local/bin/php82"
+            fi
+            echo "🐘 Using PHP Binary: $PHP_BIN"
+
             # 1. Navigate to deployment target directory
             cd ${{ secrets.TARGET_DIR }} || exit 1
 
@@ -38,41 +56,41 @@ jobs:
 
             # 3. Install PHP Dependencies (No Dev)
             echo "⚡ [2/5] Installing Composer dependencies..."
-            composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+            composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-req=php+ || $PHP_BIN $(which composer) install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-req=php+ || true
 
             # 4. Install Node Dependencies & Build Frontend Assets
             echo "🎨 [3/5] Building frontend assets..."
             if command -v pnpm &> /dev/null; then
-              pnpm install
-              pnpm build
+              pnpm install && pnpm build
+            elif command -v npm &> /dev/null; then
+              npm install && npm run build
             else
-              npm install
-              npm run build
+              echo "⚠️ Node/npm not found in SSH PATH, skipping frontend build step."
             fi
 
             # 5. Flush All Caches Completely (No static route/view/config cache stored during development)
             echo "🗄️ [4/5] Flushing all application caches & running database migrations..."
             rm -f bootstrap/cache/*.php storage/framework/views/*.php storage/framework/cache/data/* || true
-            php artisan optimize:clear
-            php artisan cache:clear
-            php artisan config:clear
-            php artisan route:clear
-            php artisan view:clear
-            php artisan event:clear
-            php artisan migrate --force
+            $PHP_BIN artisan optimize:clear
+            $PHP_BIN artisan cache:clear
+            $PHP_BIN artisan config:clear
+            $PHP_BIN artisan route:clear
+            $PHP_BIN artisan view:clear
+            $PHP_BIN artisan event:clear
+            $PHP_BIN artisan migrate --force
 
             # Purge Web OPcache via HTTP curl request
-            TOKEN=$(php artisan eval "echo md5((string) config('app.key'));")
+            TOKEN=$($PHP_BIN artisan eval "echo md5((string) config('app.key'));")
             curl -s -k "http://127.0.0.1/deploy-purge-cache?token=${TOKEN}" || curl -s -k "https://paperflow.info/deploy-purge-cache?token=${TOKEN}" || true
 
             echo "🧹 [5/5] All application & Web OPcache caches cleared cleanly."
 
-            # 7. Process Pending Queue Jobs & Start Background Worker
+            # 7. Process Pending Queue Jobs & Start Background Worker Daemon
             echo "🔄 Processing pending email jobs & launching background queue worker..."
-            php artisan queue:restart || true
-            php artisan queue:work --stop-when-empty || true
-            pkill -f "php artisan queue:work" || true
-            nohup php artisan queue:work --tries=3 > /dev/null 2>&1 &
+            $PHP_BIN artisan queue:restart || true
+            $PHP_BIN artisan queue:work --stop-when-empty || true
+            pkill -f "artisan queue:work" || true
+            (nohup $PHP_BIN artisan queue:work --tries=3 > /dev/null 2>&1 &) disown || true
             echo "✅ Queue worker actively running in background."
 
             echo "========================================================"
