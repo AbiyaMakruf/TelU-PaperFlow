@@ -56,7 +56,7 @@ jobs:
 
             # 3. Install PHP Dependencies (No Dev)
             echo "⚡ [2/5] Installing Composer dependencies..."
-            composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-req=php+ || $PHP_BIN $(which composer) install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-req=php+ || true
+            $PHP_BIN $(which composer) install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-req=php+ || composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-req=php+
 
             # 4. Install Node Dependencies & Build Frontend Assets
             echo "🎨 [3/5] Building frontend assets..."
@@ -85,13 +85,10 @@ jobs:
 
             echo "🧹 [5/5] All application & Web OPcache caches cleared cleanly."
 
-            # 7. Process Pending Queue Jobs & Start Background Worker Daemon
-            echo "🔄 Processing pending email jobs & launching background queue worker..."
+            # 6. Process Pending Queue Jobs & Restart Workers
+            echo "🔄 Processing pending email jobs & restarting queue workers..."
             $PHP_BIN artisan queue:restart || true
             $PHP_BIN artisan queue:work --stop-when-empty || true
-            pkill -f "artisan queue:work" || true
-            (nohup $PHP_BIN artisan queue:work --tries=3 > /dev/null 2>&1 &) disown || true
-            echo "✅ Queue worker actively running in background."
 
             echo "========================================================"
             echo "🎉 Paperflow Deployment Successfully Completed!"
