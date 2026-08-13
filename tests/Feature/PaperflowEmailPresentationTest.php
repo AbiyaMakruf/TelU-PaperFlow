@@ -103,6 +103,7 @@ class PaperflowEmailPresentationTest extends TestCase
         $this->actingAs($editor)->post(route('submissions.advance', $submission), [
             'action' => 'send_reviewer',
             'note' => 'Checklist complete, please review.',
+            'final_page_count' => 6,
         ]);
         $this->assertDatabaseHas('email_logs', [
             'recipient' => 'reviewer@conf.org',

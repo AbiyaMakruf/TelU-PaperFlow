@@ -437,7 +437,7 @@ class SubmissionController extends Controller
         return response()->download($zipPath, 'Paperflow_Author_Files_'.now()->format('Ymd_His').'.zip')->deleteFileAfterSend(true);
     }
 
-    public function updateEdasStatus(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer): RedirectResponse|JsonResponse
+    public function updateEdasStatus(Request $request, Submission $submission, SubmissionWorkflow $workflow, ConferenceMailer $mailer, ConferenceFileStorage $storage): RedirectResponse|JsonResponse
     {
         $this->authorize('reviewerReview', $submission);
 
@@ -445,14 +445,44 @@ class SubmissionController extends Controller
             'pdf_express_status' => ['required', Rule::in(['pending', 'passed', 'failed'])],
             'edas_reference' => ['nullable', 'string', 'max:255'],
             'edas_error_note' => ['nullable', 'string', 'max:5000'],
+            'camera_ready_pdf' => ['nullable', 'file', 'mimes:pdf', 'max:25600'],
             'action' => ['nullable', 'string', Rule::in(['reviewer_changes', 'reviewer_approve', 'save_status'])],
         ]);
 
         $submission->update([
             'pdf_express_status' => $validated['pdf_express_status'],
             'edas_reference' => $validated['edas_reference'] ?? $submission->edas_reference,
-            'edas_error_note' => $validated['edas_error_note'],
+            'edas_error_note' => $validated['edas_error_note'] ?? null,
         ]);
+
+        if ($request->hasFile('camera_ready_pdf')) {
+            $pdfFile = $request->file('camera_ready_pdf');
+            $version = $submission->files()->max('version_number') ?: 1;
+            $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-camera-ready-'.Str::slug(pathinfo($pdfFile->getClientOriginalName(), PATHINFO_FILENAME)).'.pdf';
+            try {
+                $storedPdf = $storage->put($submission->conference, $pdfFile, $path, $submission->paper_code.'-V'.$version.'-CameraReadyPDF');
+                $submission->files()->create([
+                    'version_number' => $version,
+                    'label' => 'IEEE PDF eXpress Passed Camera-Ready PDF',
+                    'source' => 'reviewer',
+                    'file_category' => 'camera_ready_pdf',
+                    'disk' => $storedPdf['disk'],
+                    'storage_path' => $storedPdf['storage_path'],
+                    'original_name' => $pdfFile->getClientOriginalName(),
+                    'mime_type' => 'application/pdf',
+                    'size' => $pdfFile->getSize(),
+                    'checksum' => hash_file('sha256', $pdfFile->getRealPath()),
+                    'uploaded_by' => $request->user()->id,
+                    'notes' => 'Validated IEEE PDF eXpress camera-ready PDF file uploaded to EDAS.',
+                    'is_final' => true,
+                    'external_provider' => $storedPdf['external_provider'],
+                    'external_id' => $storedPdf['external_id'],
+                    'external_url' => $storedPdf['external_url'],
+                ]);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
 
         $action = $validated['action'] ?? null;
 
@@ -657,7 +687,15 @@ class SubmissionController extends Controller
             'note' => ['nullable', 'string', 'max:10000'],
             'edas_reference' => ['nullable', 'string', 'max:255'],
             'initial_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
-            'final_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'final_page_count' => [
+                Rule::requiredIf(fn () => $request->input('action') === 'send_reviewer'),
+                'nullable',
+                'integer',
+                'min:1',
+                'max:500',
+            ],
+        ], [
+            'final_page_count.required' => 'Final page count (camera-ready / post-editorial edit) is mandatory before approving and sending the paper to Reviewer.',
         ]);
         $action = $validated['action'];
         if ($request->filled('initial_page_count')) {
@@ -735,7 +773,15 @@ class SubmissionController extends Controller
             'send_email' => ['nullable', 'boolean'],
             'cc' => ['nullable', 'string', 'max:2000'],
             'revision_days' => ['nullable', 'integer', 'min:1', 'max:60'],
-            'final_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'final_page_count' => [
+                Rule::requiredIf(fn () => $request->input('action') === 'approve_and_send_reviewer'),
+                'nullable',
+                'integer',
+                'min:1',
+                'max:500',
+            ],
+        ], [
+            'final_page_count.required' => 'Final page count (camera-ready / post-editorial edit) is mandatory before approving and sending the paper to Reviewer.',
         ]);
 
         if ($request->has('final_page_count')) {

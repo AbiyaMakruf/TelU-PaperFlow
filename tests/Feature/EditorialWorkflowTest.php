@@ -73,8 +73,23 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial', 'manuscript_format' => 'latex']);
         $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
 
-        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer'])
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer', 'final_page_count' => 6])
             ->assertSessionHasErrors('workflow');
+        $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
+    }
+
+    public function test_advancing_to_reviewer_requires_final_page_count(): void
+    {
+        [, $admin, $editor, $reviewer, $submission, $editorialItem] = $this->workflowFixture();
+        $this->actingAs($admin)->post(route('submissions.accept', $submission));
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial', 'manuscript_format' => 'docx']);
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
+        $this->actingAs($editor)->put(route('submissions.checklist', [$submission, 'editorial']), [
+            'items' => [$editorialItem->id => ['checked' => '1']],
+        ]);
+
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer'])
+            ->assertSessionHasErrors('final_page_count');
         $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
     }
 
@@ -87,10 +102,38 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($editor)->put(route('submissions.checklist', [$submission, 'editorial']), [
             'items' => [$editorialItem->id => ['checked' => '1']],
         ]);
-        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer']);
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer', 'final_page_count' => 6]);
 
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'reviewer_approve']);
         $this->assertSame(SubmissionStatus::Done, $submission->fresh()->status);
+    }
+
+    public function test_reviewer_can_upload_camera_ready_pdf_when_passed_and_author_can_see_download_button(): void
+    {
+        Storage::fake('private');
+        [, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+        $this->actingAs($admin)->post(route('submissions.accept', $submission));
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial', 'manuscript_format' => 'docx']);
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
+
+        $pdf = UploadedFile::fake()->create('camera_ready_final.pdf', 500, 'application/pdf');
+
+        $this->actingAs($reviewer)->post(route('submissions.edas-status', $submission), [
+            'pdf_express_status' => 'passed',
+            'camera_ready_pdf' => $pdf,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('file_versions', [
+            'submission_id' => $submission->id,
+            'file_category' => 'camera_ready_pdf',
+            'original_name' => 'camera_ready_final.pdf',
+        ]);
+
+        $token = $submission->ensureValidAuthorToken();
+        $response = $this->get('/submission/access/'.$token);
+        $response->assertOk();
+        $response->assertSee('IEEE PDF eXpress Verified (EDAS Camera-Ready PDF)');
+        $response->assertSee('Download PDF');
     }
 
     public function test_conference_admin_can_export_visible_papers_as_csv(): void
