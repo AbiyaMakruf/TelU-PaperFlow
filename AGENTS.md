@@ -197,6 +197,7 @@ Laravel migrations in `database/migrations` are the source of truth. Latest appl
 - `2026_07_27_000200_update_file_versions_unique_constraint.php`
 - `2026_08_11_000100_add_initial_and_final_page_counts_to_submissions.php`
 - `2026_08_11_083459_add_submission_source_to_submissions_table.php`
+- `2026_08_13_000100_update_revision_requested_email_styling.php`
 
 Application tables are server-only. RLS is enabled without anon/authenticated policies because the browser does not use Supabase Data API for these tables. Laravel connects with the server database role.
 

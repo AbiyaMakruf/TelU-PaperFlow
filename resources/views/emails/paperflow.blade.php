@@ -10,9 +10,9 @@
     </td></tr>
     <tr><td style="padding:38px 36px 24px">
         <div style="font-size:15px;line-height:1.75;color:#374151;">
-            @if(str_contains($messageBody, '<table') || str_contains($messageBody, '<div'))
+            @if(str_contains($messageBody, '<table') || str_contains($messageBody, '<div') || str_contains($messageBody, '<ul') || str_contains($messageBody, '<p') || str_contains($messageBody, '<strong'))
                 @php
-                    $cleanBody = preg_replace_callback('/<(div|table)[^>]*>.*?<\/(div|table)>/is', function ($m) {
+                    $cleanBody = preg_replace_callback('/<(div|table|ul|ol)[^>]*>.*?<\/(div|table|ul|ol)>/is', function ($m) {
                         return str_replace(["\r\n", "\r", "\n"], '', $m[0]);
                     }, $messageBody);
                 @endphp

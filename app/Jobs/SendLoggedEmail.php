@@ -48,9 +48,31 @@ class SendLoggedEmail implements ShouldQueue
                 'author_revision_uploaded' => 'Inspect Updated Paper',
                 default => 'Track Submission',
             };
+            $body = $this->body;
+            $accentColor = $this->emailLog->conference?->brandAccent() ?? '#f47c20';
+
+            if ($actionUrl) {
+                if (str_contains($body, '<a href=')) {
+                    $actionUrl = null;
+                } else {
+                    $buttonHtml = '<div style="margin:16px 0;text-align:center;"><a href="' . e($actionUrl) . '" style="display:inline-block;background:' . $accentColor . ';color:#ffffff;text-decoration:none;font-size:13.5px;font-weight:800;padding:12px 26px;border-radius:8px;box-shadow:0 3px 10px rgba(244,124,32,0.25);">' . e($actionLabel) . '</a></div>';
+
+                    $markdownPattern = '/(?:\r?\n)*\s*\[[^\]]*\]\(\s*' . preg_quote($actionUrl, '/') . '\s*\)\s*(?:\r?\n)*/i';
+                    $rawUrlPattern = '/(?:\r?\n)*\s*' . preg_quote($actionUrl, '/') . '\s*(?:\r?\n)*/i';
+
+                    if (preg_match($markdownPattern, $body)) {
+                        $body = preg_replace($markdownPattern, "\n" . $buttonHtml . "\n", $body);
+                    } elseif (preg_match($rawUrlPattern, $body)) {
+                        $body = preg_replace($rawUrlPattern, "\n" . $buttonHtml . "\n", $body);
+                    }
+
+                    $actionUrl = null;
+                }
+            }
+
             $mail = new PaperflowMail(
                 mailSubject: $this->emailLog->subject,
-                messageBody: $this->body,
+                messageBody: $body,
                 senderName: $this->emailLog->sender_name ?: (string) config('mail.from.name'),
                 contextName: $this->emailLog->conference?->name ?: 'Paperflow',
                 actionUrl: $actionUrl,
