@@ -15,11 +15,25 @@ class GoogleDriveStorage
 {
     private const SCOPE = 'https://www.googleapis.com/auth/drive';
 
+    public function redirectUri(): string
+    {
+        $custom = config('services.google_drive.redirect_uri');
+        if (filled($custom)) {
+            return $custom;
+        }
+
+        try {
+            return route('google-drive.callback');
+        } catch (\Throwable) {
+            return url('/google-drive/callback');
+        }
+    }
+
     public function configured(): bool
     {
         return filled(config('services.google_drive.client_id'))
             && filled(config('services.google_drive.client_secret'))
-            && filled(config('services.google_drive.redirect_uri'));
+            && filled($this->redirectUri());
     }
 
     public function connected(Conference $conference): bool
@@ -47,7 +61,7 @@ class GoogleDriveStorage
 
         return 'https://accounts.google.com/o/oauth2/v2/auth?'.http_build_query([
             'client_id' => config('services.google_drive.client_id'),
-            'redirect_uri' => config('services.google_drive.redirect_uri'),
+            'redirect_uri' => $this->redirectUri(),
             'response_type' => 'code', 'scope' => self::SCOPE, 'access_type' => 'offline',
             'prompt' => 'consent', 'state' => $state,
         ]);
@@ -60,7 +74,7 @@ class GoogleDriveStorage
             'code' => $code,
             'client_id' => config('services.google_drive.client_id'),
             'client_secret' => config('services.google_drive.client_secret'),
-            'redirect_uri' => config('services.google_drive.redirect_uri'),
+            'redirect_uri' => $this->redirectUri(),
             'grant_type' => 'authorization_code',
         ])->throw()->json();
         $token['expires_at'] = now()->addSeconds(max(60, ((int) ($token['expires_in'] ?? 3600)) - 60))->timestamp;
