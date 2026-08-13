@@ -20,38 +20,46 @@ class PhoneNumber
 
         $raw = trim($raw);
 
-        // If starts with +, keep + and strip non-digits after it
+        // 1. If starts with +, preserve international prefix and strip non-digits
         if (str_starts_with($raw, '+')) {
             $digits = preg_replace('/\D+/', '', $raw);
 
             return $digits !== '' ? '+'.$digits : null;
         }
 
-        // Strip all non-digit characters
+        // Strip non-digit characters
         $digits = preg_replace('/\D+/', '', $raw);
 
         if (empty($digits)) {
             return null;
         }
 
-        // If starts with 08... (Indonesian local standard format)
+        // 2. If starts with international 00 prefix (e.g. 0060123456789, 006591234567)
+        if (str_starts_with($digits, '00')) {
+            return '+'.substr($digits, 2);
+        }
+
+        // 3. If starts with 08... (Indonesian local standard format)
         if (str_starts_with($digits, '08')) {
             return '+'.preg_replace('/^08/', $defaultCountryCode.'8', $digits);
         }
 
-        // If starts with 0... (general local number with leading zero)
-        if (str_starts_with($digits, '0')) {
-            return '+'.$defaultCountryCode.substr($digits, 1);
-        }
-
-        // If starts with country code directly e.g. 628...
-        if (str_starts_with($digits, $defaultCountryCode)) {
-            return '+'.$digits;
-        }
-
-        // If starts with 8... (omitted leading 0 e.g. 8123456789)
+        // 4. If starts with 8... (Indonesian local number omitting leading zero e.g. 81283887102)
         if (str_starts_with($digits, '8') && $defaultCountryCode === '62') {
             return '+'.$defaultCountryCode.$digits;
+        }
+
+        // 5. Check for known international country prefixes (e.g. 62=Indonesia, 60=Malaysia, 65=Singapore, 63=Philippines, 66=Thailand, 84=Vietnam, 673=Brunei, 61=Australia, 1=USA, 44=UK, 91=India, etc.)
+        $knownCountryPrefixes = ['62', '60', '65', '63', '66', '84', '673', '61', '1', '44', '91', '86', '49', '33'];
+        foreach ($knownCountryPrefixes as $prefix) {
+            if (str_starts_with($digits, $prefix) && strlen($digits) >= (strlen($prefix) + 7)) {
+                return '+'.$digits;
+            }
+        }
+
+        // 6. If starts with 0... (general local number with leading zero)
+        if (str_starts_with($digits, '0')) {
+            return '+'.$defaultCountryCode.substr($digits, 1);
         }
 
         return '+'.$defaultCountryCode.$digits;
