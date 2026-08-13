@@ -85,8 +85,8 @@ class ConferenceMailer
         $replace = [
             '{{conference}}' => $conference->name, '{{paper_code}}' => '#1571259462', '{{paper_title}}' => 'Design and Implementation of Edge Computing Architecture',
             '{{author_name}}' => 'Demo Author',
-            '{{feedback}}' => "• Example revision item\n• Please verify IEEE formatting", '{{portal_url}}' => url('/submission/access/demo-token'),
-            '{{deadline}}' => now($conference->timezone)->addDays(7)->format('F j, Y \a\t H:i T'), '{{editor_name}}' => $sender->name,
+            '{{feedback}}' => 'File yang kamu lampirkan saat ini masih tidak sesuai dengan ketentuan. Ukuran file seharusnya meggunakan A4 saat ini kamu menggunakan letter. Mohon untuk memperbaikinya dan melakukan submit ulang.', '{{portal_url}}' => url('/submission/access/demo-token'),
+            '{{deadline}}' => now($conference->timezone)->addDays(7)->format('d F Y, 23:59 \G\M\T+7'), '{{editor_name}}' => $sender->name,
             '{{editor_job_title}}' => $sender->job_title ?: 'Publication Committee', '{{editor_affiliation}}' => $sender->affiliation ?: $conference->name,
             '{{editor_whatsapp}}' => $sender->whatsapp() ?: '-', '{{editor_whatsapp_url}}' => $sender->whatsapp() ? 'https://wa.me/'.PhoneNumber::whatsappDigits($sender->whatsapp()) : '-',
         ];
