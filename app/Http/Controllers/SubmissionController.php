@@ -1245,16 +1245,8 @@ class SubmissionController extends Controller
 
         $versionNumber = $file->version_number;
         $label = $file->label;
-        $wasFinal = $file->is_final;
 
         $file->delete();
-
-        if ($wasFinal) {
-            $latestRemaining = $submission->files()->orderByDesc('version_number')->first();
-            if ($latestRemaining) {
-                $latestRemaining->update(['is_final' => true]);
-            }
-        }
 
         $auditLogger->record('file_version.deleted', $file, $submission->conference, oldValues: [
             'submission_id' => $submission->id,

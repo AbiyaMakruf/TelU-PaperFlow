@@ -300,9 +300,13 @@ class EditorialWorkflowTest extends TestCase
         // Re-set v3 as Final
         $this->actingAs($editor)->post(route('submissions.files.set-final', [$submission, $f3]))->assertRedirect();
 
-        // 2. Delete v3
+        // 2. Delete v3 (which was final)
         $this->actingAs($editor)->delete(route('submissions.files.destroy', [$submission, $f3]))->assertRedirect();
         $this->assertSoftDeleted('file_versions', ['id' => $f3->id]);
+
+        // Remaining latest file (v5) should NOT be automatically marked as is_final = true
+        $this->assertFalse($f5->fresh()->is_final);
+        $this->assertNull($submission->files()->firstWhere('is_final', true));
 
         // Version numbers of remaining files must NOT change (v4 is 4, v5 is 5)
         $this->assertSame(4, $f4->fresh()->version_number);
