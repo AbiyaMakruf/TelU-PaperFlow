@@ -1,12 +1,8 @@
 <x-layouts.public :title="$submission->paper_code">
     <div class="mx-auto max-w-5xl">
-        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-            <div class="min-w-0">
-                <p class="eyebrow truncate">Author Portal &middot; {{ $submission->conference->name }}</p>
-                <h1 class="page-title">Author Portal</h1>
-                <p class="page-subtitle">Track your manuscript progress, view editorial checklist compliance, and upload revisions.</p>
-            </div>
-            <span class="badge badge-{{ $submission->status->color() }} self-start shrink-0 sm:self-auto">{{ $submission->status->label() }}</span>
+        <div class="flex items-center justify-between gap-4">
+            <p class="eyebrow truncate mb-0">Author Portal &middot; {{ $submission->conference->name }}</p>
+            <span class="badge badge-{{ $submission->status->color() }} shrink-0">{{ $submission->status->label() }}</span>
         </div>
 
         <div class="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1.4fr_.6fr]">
