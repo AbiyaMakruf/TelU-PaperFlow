@@ -113,14 +113,14 @@
                                 </div>
 
                                 @if($cameraReadyPdf)
-                                    <!-- IEEE PDF eXpress Passed Camera-Ready PDF Download Card (RED BUTTON) -->
-                                    <a href="{{ route('author.files.download', [$token, $cameraReadyPdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50/90 to-red-50/50 hover:from-rose-100/90 hover:to-red-100/70 hover:border-rose-300 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden mt-3 cursor-pointer">
+                                    <!-- IEEE PDF eXpress Passed Camera-Ready PDF Download Card (VIBRANT RED HOVER CARD) -->
+                                    <a href="{{ route('author.files.download', [$token, $cameraReadyPdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-rose-200 bg-rose-50/80 hover:bg-rose-600 hover:border-rose-600 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden mt-3 cursor-pointer">
                                         <div class="min-w-0 flex-1 space-y-0.5">
-                                            <span class="text-[10px] font-extrabold text-rose-700 uppercase tracking-wider block">IEEE PDF eXpress Verified (EDAS Camera-Ready PDF)</span>
-                                            <p class="text-xs font-bold text-rose-950 truncate" title="{{ $cameraReadyPdf->original_name }}">{{ $cameraReadyPdf->original_name }}</p>
-                                            <span class="text-[11px] text-rose-700 font-medium block">Passed IEEE PDF eXpress &amp; Uploaded to EDAS &middot; {{ number_format($cameraReadyPdf->size / 1024, 0) }} KB</span>
+                                            <span class="text-[10px] font-extrabold text-rose-700 group-hover:text-rose-100 uppercase tracking-wider block transition-colors duration-200">IEEE PDF eXpress Verified (EDAS Camera-Ready PDF)</span>
+                                            <p class="text-xs font-bold text-rose-950 group-hover:text-white truncate transition-colors duration-200" title="{{ $cameraReadyPdf->original_name }}">{{ $cameraReadyPdf->original_name }}</p>
+                                            <span class="text-[11px] text-rose-700 group-hover:text-rose-100 font-medium block transition-colors duration-200">Passed IEEE PDF eXpress &amp; Uploaded to EDAS &middot; {{ number_format($cameraReadyPdf->size / 1024, 0) }} KB</span>
                                         </div>
-                                        <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-rose-600 group-hover:bg-rose-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
+                                        <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-rose-600 text-white group-hover:bg-white group-hover:text-rose-700 font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
                                             Download PDF
                                         </span>
                                     </a>
