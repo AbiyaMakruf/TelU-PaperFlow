@@ -85,7 +85,7 @@
                                 <div class="grid gap-3 {{ $targetGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
                                     @if($targetManuscript)
                                         <!-- Manuscript Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 via-amber-50/50 to-orange/10 hover:from-orange/15 hover:to-amber-100/70 hover:border-orange/40 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
+                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-orange/20 bg-amber-50/60 hover:bg-amber-100/90 hover:border-orange/40 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
                                             <div class="min-w-0 flex-1 space-y-0.5">
                                                 <span class="text-[10px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Manuscript</span>
                                                 <p class="text-xs font-bold text-navy truncate" title="{{ $targetManuscript->original_name }}">{{ $targetManuscript->original_name }}</p>
@@ -99,13 +99,13 @@
 
                                     @if($targetGuidancePdf)
                                         <!-- Revision Guide Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:from-indigo-100/90 hover:to-purple-100/70 hover:border-indigo-300 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
+                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-600 hover:border-indigo-600 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
                                             <div class="min-w-0 flex-1 space-y-0.5">
-                                                <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Revision Guide</span>
-                                                <p class="text-xs font-bold text-indigo-950 truncate" title="{{ $targetGuidancePdf->original_name }}">{{ $targetGuidancePdf->original_name }}</p>
-                                                <span class="text-[11px] text-indigo-700 font-medium block">PDF Guide &middot; {{ number_format($targetGuidancePdf->size / 1024, 0) }} KB</span>
+                                                <span class="text-[10px] font-extrabold text-indigo-700 group-hover:text-indigo-100 uppercase tracking-wider block transition-colors duration-200">Revision Guide</span>
+                                                <p class="text-xs font-bold text-indigo-950 group-hover:text-white truncate transition-colors duration-200" title="{{ $targetGuidancePdf->original_name }}">{{ $targetGuidancePdf->original_name }}</p>
+                                                <span class="text-[11px] text-indigo-700 group-hover:text-indigo-100 font-medium block transition-colors duration-200">PDF Guide &middot; {{ number_format($targetGuidancePdf->size / 1024, 0) }} KB</span>
                                             </div>
-                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
+                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-indigo-600 text-white group-hover:bg-white group-hover:text-indigo-700 font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
                                                 Download
                                             </span>
                                         </a>
