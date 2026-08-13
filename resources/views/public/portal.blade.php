@@ -3,8 +3,8 @@
         <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div class="min-w-0">
                 <p class="eyebrow truncate">Author Portal &middot; {{ $submission->conference->name }}</p>
-                <h1 class="page-title break-words">{{ $submission->paper_code }}</h1>
-                <p class="page-subtitle break-words">{{ $submission->title }}</p>
+                <h1 class="page-title">Author Portal</h1>
+                <p class="page-subtitle">Track your manuscript progress, view editorial checklist compliance, and upload revisions.</p>
             </div>
             <span class="badge badge-{{ $submission->status->color() }} self-start shrink-0 sm:self-auto">{{ $submission->status->label() }}</span>
         </div>
