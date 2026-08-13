@@ -28,6 +28,7 @@ class AuthorPortalController extends Controller
     {
         $submission = $this->submissionFor($token)->load([
             'conference.checklistTemplates.items',
+            'editor',
             'files',
             'uploadAttempts',
             'feedback' => fn ($query) => $query->where('visibility', 'author')->with('author'),

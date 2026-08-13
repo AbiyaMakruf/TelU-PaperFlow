@@ -77,14 +77,17 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create(['must_change_password' => true]);
 
         $this->actingAs($user)->put(route('password.change.update'), [
-            'current_password' => 'password',
             'email' => 'updated@example.com',
+            'whatsapp_country_code' => '+62',
+            'whatsapp_number' => '81234567890',
             'password' => '12345678',
             'password_confirmation' => '12345678',
         ])->assertRedirect(route('dashboard'));
 
         $this->assertTrue(Hash::check('12345678', $user->fresh()->password));
         $this->assertSame('updated@example.com', $user->fresh()->email);
+        $this->assertSame('+62', $user->fresh()->whatsapp_country_code);
+        $this->assertSame('81234567890', $user->fresh()->whatsapp_number);
         $this->assertFalse($user->fresh()->must_change_password);
     }
 
@@ -93,8 +96,9 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create(['must_change_password' => true]);
 
         $this->actingAs($user)->put(route('password.change.update'), [
-            'current_password' => 'password',
             'email' => 'updated@example.com',
+            'whatsapp_country_code' => '+62',
+            'whatsapp_number' => '81234567890',
             'password' => '1234567',
             'password_confirmation' => '1234567',
         ])->assertSessionHasErrors('password');
@@ -140,8 +144,9 @@ class AuthenticationTest extends TestCase
         $this->get(route('dashboard'))->assertRedirect(route('password.change.edit'));
 
         $this->put(route('password.change.update'), [
-            'current_password' => 'user1234',
             'email' => 'editor.baru@example.com',
+            'whatsapp_country_code' => '+62',
+            'whatsapp_number' => '81234567890',
             'password' => '87654321',
             'password_confirmation' => '87654321',
         ])->assertRedirect(route('dashboard'));

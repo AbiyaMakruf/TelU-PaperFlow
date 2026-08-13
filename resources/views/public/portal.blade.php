@@ -1,12 +1,8 @@
 <x-layouts.public :title="$submission->paper_code">
     <div class="mx-auto max-w-5xl">
-        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-            <div class="min-w-0">
-                <p class="eyebrow truncate">Author Portal &middot; {{ $submission->conference->name }}</p>
-                <h1 class="page-title break-words">{{ $submission->paper_code }}</h1>
-                <p class="page-subtitle break-words">{{ $submission->title }}</p>
-            </div>
-            <span class="badge badge-{{ $submission->status->color() }} self-start shrink-0 sm:self-auto">{{ $submission->status->label() }}</span>
+        <div class="flex items-center justify-between gap-4">
+            <p class="eyebrow truncate mb-0">Author Portal &middot; {{ $submission->conference->name }}</p>
+            <span class="badge badge-{{ $submission->status->color() }} shrink-0">{{ $submission->status->label() }}</span>
         </div>
 
         <div class="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1.4fr_.6fr]">
@@ -87,26 +83,26 @@
                                 </div>
                                 <div class="grid gap-3 {{ $targetGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
                                     <!-- Manuscript Download Card -->
-                                    <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 to-amber-50/50 hover:border-orange/40 hover:bg-orange/10 transition flex items-center justify-between gap-3 shadow-2xs">
-                                        <div class="min-w-0 space-y-0.5">
+                                    <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 to-amber-50/50 hover:border-orange/40 hover:bg-orange/10 transition flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden">
+                                        <div class="min-w-0 flex-1 space-y-0.5">
                                             <span class="text-[10px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Manuscript</span>
                                             <p class="text-xs font-bold text-navy truncate" title="{{ $targetManuscript->original_name }}">{{ $targetManuscript->original_name }}</p>
                                             <span class="text-[11px] text-muted font-medium block">{{ number_format($targetManuscript->size / 1024, 0) }} KB</span>
                                         </div>
-                                        <span class="btn text-xs py-2 px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                        <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
                                             Download
                                         </span>
                                     </a>
 
                                     @if($targetGuidancePdf)
                                         <!-- Revision Guide Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:border-indigo-300 hover:bg-indigo-100/70 transition flex items-center justify-between gap-3 shadow-2xs">
-                                            <div class="min-w-0 space-y-0.5">
+                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:border-indigo-300 hover:bg-indigo-100/70 transition flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden">
+                                            <div class="min-w-0 flex-1 space-y-0.5">
                                                 <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Revision Guide</span>
                                                 <p class="text-xs font-bold text-indigo-950 truncate" title="{{ $targetGuidancePdf->original_name }}">{{ $targetGuidancePdf->original_name }}</p>
                                                 <span class="text-[11px] text-indigo-700 font-medium block">PDF Guide &middot; {{ number_format($targetGuidancePdf->size / 1024, 0) }} KB</span>
                                             </div>
-                                            <span class="btn text-xs py-2 px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
                                                 Download
                                             </span>
                                         </a>
@@ -189,12 +185,16 @@
                     </form>
                 </div>
 
+                <div class="block lg:hidden mt-6">
+                    @include('public.partials.editorial-contact')
+                </div>
+
                 @if ($submission->status === \App\Enums\SubmissionStatus::WaitingAuthorRevision)
                     <div class="card p-4 sm:p-5 border-amber-300 bg-amber-50/80 text-xs text-amber-950 space-y-2.5 shadow-2xs">
                         <h3 class="font-extrabold text-amber-950 text-sm">Important Revision Instructions</h3>
                         <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
                             <li>Please inspect the <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card below to see specific items requiring correction (marked with <strong class="text-rose-700 font-extrabold">✕ Revision Needed</strong>).</li>
-                            <li><strong>Always use the Latest Manuscript File (v{{ $latestManuscript?->version_number ?? '1' }})</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it.</li>
+                            <li><strong>Always use the Latest Manuscript File (v{{ $targetVersion ?? ($targetManuscript?->version_number ?? '1') }})</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it. You can download this file from the <strong>Submission Details</strong> card above (under <em>{{ $statusLabel ?? 'Latest' }} Manuscript Files</em>) or from the <strong>File Version History</strong> section at the bottom of this page.</li>
                             <li><strong>Only modify the specific items requested for correction</strong>. Please leave all other already compliant sections untouched.</li>
                         </ul>
                     </div>
@@ -222,8 +222,24 @@
 
                         @php
                             $isRevisionStage = $submission->status === \App\Enums\SubmissionStatus::WaitingAuthorRevision;
+                            $guidelinesUrl = $submission->conference->editorialGuidelinesUrl();
                         @endphp
                         <div class="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                            @if($guidelinesUrl)
+                                <div class="mb-4 p-3.5 rounded-xl bg-gradient-to-r from-orange/10 via-amber-50 to-orange/5 border border-orange/20 text-xs text-navy flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                                    <div class="flex items-start gap-2.5 min-w-0">
+                                        <span class="text-base shrink-0">📖</span>
+                                        <div class="min-w-0">
+                                            <strong class="font-extrabold text-navy block text-xs">Manual Formatting Check Guidelines</strong>
+                                            <span class="text-muted text-[11px] block mt-0.5">To review full manuscript formatting rules and detailed compliance instructions, please open the guidelines document below.</span>
+                                        </div>
+                                    </div>
+                                    <a href="{{ $guidelinesUrl }}" target="_blank" rel="noopener" class="btn text-[11px] py-2 px-3.5 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition self-start sm:self-auto inline-flex items-center gap-1.5">
+                                        <span>Open Formatting Guidelines ↗</span>
+                                    </a>
+                                </div>
+                            @endif
+
                             @foreach($editorialTemplates as $tmpl)
                                 @foreach($tmpl->items as $item)
                                     @php $res = isset($checklistResults) ? $checklistResults->get($item->id) : null; @endphp
@@ -489,36 +505,44 @@
                 </details>
             </section>
 
-            <aside class="card h-fit p-4 sm:p-6 min-w-0">
-                <h2 class="text-lg font-black text-navy">Timeline</h2>
-                <p class="text-xs text-muted mt-0.5">Submission status and milestone progress.</p>
+            <aside class="space-y-6 min-w-0">
+                <!-- Editorial Contact Information Card (Desktop) -->
+                <div class="hidden lg:block">
+                    @include('public.partials.editorial-contact')
+                </div>
 
-                @php
-                    $authorStatusHistory = $submission->statusHistory->reject(function ($history) {
-                        return in_array($history->to_status, [
-                            \App\Enums\SubmissionStatus::ReviewerReview,
-                            \App\Enums\SubmissionStatus::ReviewerChangesRequested,
-                        ], true);
-                    });
-                @endphp
+                <!-- Timeline Card -->
+                <div class="card p-4 sm:p-6 min-w-0">
+                    <h2 class="text-lg font-black text-navy">Timeline</h2>
+                    <p class="text-xs text-muted mt-0.5">Submission status and milestone progress.</p>
 
-                <ol class="mt-5 space-y-5 border-l-2 border-navy/10 pl-5">
-                    @foreach ($authorStatusHistory as $history)
-                        <li class="min-w-0">
-                            @php
-                                $circleColor = match($history->to_status) {
-                                    \App\Enums\SubmissionStatus::Done => 'bg-emerald-500 ring-4 ring-emerald-100',
-                                    \App\Enums\SubmissionStatus::Withdrawn, \App\Enums\SubmissionStatus::Rejected => 'bg-rose-500 ring-4 ring-rose-100',
-                                    \App\Enums\SubmissionStatus::ReadyForEdas => 'bg-sky-500 ring-4 ring-sky-100',
-                                    default => 'bg-orange ring-4 ring-warm',
-                                };
-                            @endphp
-                            <span class="-ml-[23px] sm:-ml-[27px] mr-3 inline-block size-3 rounded-full {{ $circleColor }}"></span>
-                            <span class="text-sm font-bold text-navy break-words">{{ $history->to_status->label() }}</span>
-                            <p class="mt-1 text-xs text-muted">{{ $history->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
-                        </li>
-                    @endforeach
-                </ol>
+                    @php
+                        $authorStatusHistory = $submission->statusHistory->reject(function ($history) {
+                            return in_array($history->to_status, [
+                                \App\Enums\SubmissionStatus::ReviewerReview,
+                                \App\Enums\SubmissionStatus::ReviewerChangesRequested,
+                            ], true);
+                        });
+                    @endphp
+
+                    <ol class="mt-5 space-y-5 border-l-2 border-navy/10 pl-5">
+                        @foreach ($authorStatusHistory as $history)
+                            <li class="min-w-0">
+                                @php
+                                    $circleColor = match($history->to_status) {
+                                        \App\Enums\SubmissionStatus::Done => 'bg-emerald-500 ring-4 ring-emerald-100',
+                                        \App\Enums\SubmissionStatus::Withdrawn, \App\Enums\SubmissionStatus::Rejected => 'bg-rose-500 ring-4 ring-rose-100',
+                                        \App\Enums\SubmissionStatus::ReadyForEdas => 'bg-sky-500 ring-4 ring-sky-100',
+                                        default => 'bg-orange ring-4 ring-warm',
+                                    };
+                                @endphp
+                                <span class="-ml-[23px] sm:-ml-[27px] mr-3 inline-block size-3 rounded-full {{ $circleColor }}"></span>
+                                <span class="text-sm font-bold text-navy break-words">{{ $history->to_status->label() }}</span>
+                                <p class="mt-1 text-xs text-muted">{{ $history->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
+                            </li>
+                        @endforeach
+                    </ol>
+                </div>
             </aside>
         </div>
     </div>

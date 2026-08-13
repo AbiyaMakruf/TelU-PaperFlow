@@ -15,7 +15,6 @@
         <div class="container-page flex h-20 items-center justify-between">
             <x-brand class="text-navy" />
             <div class="flex items-center gap-3">
-                <a href="{{ route('user-manual.author') }}" class="btn btn-ghost text-xs font-bold text-navy hover:text-orange">📖 Author Guide</a>
                 <a href="{{ route('login') }}" class="btn btn-secondary text-xs">Editorial Login</a>
             </div>
         </div>
@@ -28,7 +27,6 @@
                 <p class="mt-6 max-w-2xl text-lg leading-8 text-muted">Paperflow unifies author submission forms, PIC assignments, editorial compliance checks, document versioning, and final review into a single streamlined workspace.</p>
                 <div class="mt-8 flex flex-wrap gap-3">
                     <button type="button" @click="openSearch = true" class="btn btn-primary">Search Conferences 🔍</button>
-                    <a href="{{ route('login') }}" class="btn btn-ghost">I am Editorial Staff &rarr;</a>
                 </div>
             </div>
             <div class="relative">

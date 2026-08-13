@@ -24,6 +24,5 @@
         @endif
         {{ $slot }}
     </main>
-    <footer class="container-page pb-10 text-center text-xs text-muted">Paperflow &middot; Alur kerja editorial ilmiah konferensi</footer>
 </body>
 </html>

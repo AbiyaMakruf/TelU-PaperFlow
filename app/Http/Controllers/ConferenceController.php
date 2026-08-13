@@ -103,6 +103,7 @@ class ConferenceController extends Controller
         $settings['brand_tagline'] = $request->input('brand_tagline');
         $settings['form_title'] = $request->input('form_title');
         $settings['form_description'] = $request->input('form_description');
+        $settings['editorial_guidelines_url'] = $request->input('editorial_guidelines_url');
         if ($request->hasFile('brand_logo')) {
             if (isset($settings['brand_logo'])) {
                 Storage::disk('public')->delete($settings['brand_logo']);
@@ -218,13 +219,14 @@ class ConferenceController extends Controller
             'brand_banner' => ['nullable', 'image', 'max:4096'],
             'form_title' => ['nullable', 'string', 'max:500'],
             'form_description' => ['nullable', 'string', 'max:5000'],
+            'editorial_guidelines_url' => ['nullable', 'url', 'max:1000'],
             'submission_mode' => ['nullable', 'string', Rule::in(['paperflow_native', 'google_form_external'])],
             'google_form_mapping' => ['nullable', 'array'],
         ]);
         $validated['submission_opens_at'] = $validated['submission_opens_at'] ?? ($validated['starts_at'] ?? null);
         $validated['submission_closes_at'] = $validated['submission_closes_at'] ?? ($validated['ends_at'] ?? null);
 
-        unset($validated['allowed_extensions'], $validated['max_file_mb'], $validated['brand_primary'], $validated['brand_accent'], $validated['brand_tagline'], $validated['brand_logo'], $validated['brand_banner'], $validated['form_title'], $validated['form_description'], $validated['submission_mode'], $validated['google_form_mapping']);
+        unset($validated['allowed_extensions'], $validated['max_file_mb'], $validated['brand_primary'], $validated['brand_accent'], $validated['brand_tagline'], $validated['brand_logo'], $validated['brand_banner'], $validated['form_title'], $validated['form_description'], $validated['editorial_guidelines_url'], $validated['submission_mode'], $validated['google_form_mapping']);
 
         return $validated;
     }
