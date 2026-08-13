@@ -230,12 +230,12 @@
                                     <div class="flex items-start gap-2.5 min-w-0">
                                         <span class="text-base shrink-0">📖</span>
                                         <div class="min-w-0">
-                                            <strong class="font-extrabold text-navy block text-xs">Petunjuk Manual Pemeriksaan Formatting</strong>
-                                            <span class="text-muted text-[11px] block mt-0.5">Untuk mempelajari panduan lengkap dan aturan detail pemeriksaan formatting naskah, Anda dapat membuka dokumen petunjuk berikut.</span>
+                                            <strong class="font-extrabold text-navy block text-xs">Manual Formatting Check Guidelines</strong>
+                                            <span class="text-muted text-[11px] block mt-0.5">To review full manuscript formatting rules and detailed compliance instructions, please open the guidelines document below.</span>
                                         </div>
                                     </div>
                                     <a href="{{ $guidelinesUrl }}" target="_blank" rel="noopener" class="btn text-[11px] py-2 px-3.5 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition self-start sm:self-auto inline-flex items-center gap-1.5">
-                                        <span>Buka Guidelines Manual ↗</span>
+                                        <span>Open Formatting Guidelines ↗</span>
                                     </a>
                                 </div>
                             @endif
