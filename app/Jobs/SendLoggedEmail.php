@@ -48,9 +48,18 @@ class SendLoggedEmail implements ShouldQueue
                 'author_revision_uploaded' => 'Inspect Updated Paper',
                 default => 'Track Submission',
             };
+            $body = $this->body;
+            $accentColor = $this->emailLog->conference?->brandAccent() ?? '#f47c20';
+
+            if ($actionUrl && str_contains($body, $actionUrl)) {
+                $buttonHtml = '<div style="margin:24px 0 16px;text-align:center;"><a href="' . e($actionUrl) . '" style="display:inline-block;background:' . $accentColor . ';color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 28px;border-radius:10px;box-shadow:0 4px 12px rgba(244,124,32,0.25);">' . e($actionLabel) . '</a></div>';
+                $body = str_replace($actionUrl, $buttonHtml, $body);
+                $actionUrl = null;
+            }
+
             $mail = new PaperflowMail(
                 mailSubject: $this->emailLog->subject,
-                messageBody: $this->body,
+                messageBody: $body,
                 senderName: $this->emailLog->sender_name ?: (string) config('mail.from.name'),
                 contextName: $this->emailLog->conference?->name ?: 'Paperflow',
                 actionUrl: $actionUrl,
