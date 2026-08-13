@@ -52,7 +52,8 @@ class SendLoggedEmail implements ShouldQueue
             $accentColor = $this->emailLog->conference?->brandAccent() ?? '#f47c20';
 
             if ($actionUrl && str_contains($body, $actionUrl)) {
-                $buttonHtml = '<div style="margin:24px 0 16px;text-align:center;"><a href="' . e($actionUrl) . '" style="display:inline-block;background:' . $accentColor . ';color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;padding:14px 28px;border-radius:10px;box-shadow:0 4px 12px rgba(244,124,32,0.25);">' . e($actionLabel) . '</a></div>';
+                $buttonHtml = '<div style="margin:12px 0 10px;text-align:center;"><a href="' . e($actionUrl) . '" style="display:inline-block;background:' . $accentColor . ';color:#ffffff;text-decoration:none;font-size:13.5px;font-weight:800;padding:11px 24px;border-radius:8px;box-shadow:0 3px 10px rgba(244,124,32,0.2);">' . e($actionLabel) . '</a></div>';
+                $body = preg_replace('/(?:\r?\n){1,3}' . preg_quote($actionUrl, '/') . '(?:\r?\n){1,3}/', "\n" . $buttonHtml . "\n", $body);
                 $body = str_replace($actionUrl, $buttonHtml, $body);
                 $actionUrl = null;
             }
