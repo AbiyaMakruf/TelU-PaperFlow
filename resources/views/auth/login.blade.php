@@ -5,6 +5,15 @@
         <p class="mt-2 text-sm leading-6 text-muted">Use your account credentials created by the administrator.</p>
     </div>
     <x-flash />
+    <div class="mb-6 rounded-xl border border-sky-200 bg-sky-50/80 p-4 text-xs leading-relaxed text-sky-900 shadow-xs">
+        <div class="flex items-start gap-2.5">
+            <span class="text-base leading-none shrink-0">ℹ️</span>
+            <div>
+                <strong class="font-bold text-sky-950 block mb-0.5">Are you an Author?</strong>
+                <span>Authors do not need to log in here. Please access your paper status and upload revisions using your private <strong>Author Portal</strong> link sent to your email.</span>
+            </div>
+        </div>
+    </div>
     <form method="POST" action="{{ route('login.store') }}" class="space-y-5">
         @csrf
         <div>
