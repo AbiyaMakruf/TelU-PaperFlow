@@ -313,7 +313,7 @@
                     </div>
 
                     <!-- Purge Execution Form -->
-                    <form method="POST" action="{{ route('admin.system.purge') }}" class="space-y-4 pt-2">
+                    <form id="purgeSystemForm" x-ref="purgeSystemForm" method="POST" action="{{ route('admin.system.purge') }}" class="space-y-4 pt-2">
                         @csrf
                         <div class="max-w-md space-y-1.5">
                             <label class="form-label text-xs font-bold text-rose-950">Confirm Superadmin Password *</label>
@@ -357,7 +357,7 @@
                                         <button type="button" @click="showPurgeModal = false" class="btn btn-secondary text-xs px-4 py-2 font-bold rounded-xl">
                                             Cancel
                                         </button>
-                                        <button type="submit" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold px-5 py-2 rounded-xl shadow-md transition">
+                                        <button type="button" @click="$refs.purgeSystemForm.submit()" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold px-5 py-2 rounded-xl shadow-md transition cursor-pointer">
                                             Yes, Purge Everything Now
                                         </button>
                                     </div>
