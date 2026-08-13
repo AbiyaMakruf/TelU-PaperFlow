@@ -120,7 +120,7 @@
                                             <p class="text-xs font-bold text-rose-950 truncate" title="{{ $cameraReadyPdf->original_name }}">{{ $cameraReadyPdf->original_name }}</p>
                                             <span class="text-[11px] text-rose-700 font-medium block">Passed IEEE PDF eXpress &amp; Uploaded to EDAS &middot; {{ number_format($cameraReadyPdf->size / 1024, 0) }} KB</span>
                                         </div>
-                                        <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-rose-600 group-hover:bg-rose-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                        <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-rose-600 group-hover:bg-rose-700 hover:bg-rose-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
                                             Download PDF
                                         </span>
                                     </a>
