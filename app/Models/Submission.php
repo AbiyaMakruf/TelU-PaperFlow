@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\SubmissionStatus;
+use App\Services\PhoneNumber;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +45,13 @@ class Submission extends Model
             'completed_at' => 'datetime',
             'deadline_at' => 'datetime', 'edas_submitted_at' => 'datetime', 'edas_approved_at' => 'datetime',
         ];
+    }
+
+    protected function correspondingAuthorPhone(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => PhoneNumber::parse($value) ?? $value
+        );
     }
 
     public function conference(): BelongsTo
