@@ -72,7 +72,7 @@
                     </div>
                     <div class="min-w-0">
                         <dt class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted">Page Count</dt>
-                        <dd class="mt-1 font-bold text-navy leading-snug">
+                        <dd class="mt-1 font-bold text-navy leading-snug" id="submission-page-count-wrapper">
                             @if($submission->initial_page_count || $submission->final_page_count)
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-black text-navy border border-slate-200/90" title="Initial page count before editorial revision">
@@ -499,36 +499,22 @@
                                     </div>
                                 </div>
 
+                                <!-- Final Page Count Card (Shown when allPassed is true) -->
+                                <template x-if="allPassed">
+                                    <div class="rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3.5 text-xs mb-3">
+                                        <label class="form-label text-xs font-bold text-emerald-950 flex items-center justify-between mb-1">
+                                            <span>Final Page Count (Camera-Ready / Post-Editorial Edit)</span>
+                                            @if($submission->initial_page_count)
+                                                <span class="text-[11px] font-semibold text-emerald-800">Initial: {{ $submission->initial_page_count }} pp</span>
+                                            @endif
+                                        </label>
+                                        <input type="number" min="1" max="500" class="form-input text-xs bg-white border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Final camera-ready page count)" :disabled="!isEditorialActive">
+                                        <small class="text-[11px] text-emerald-700 mt-1 block">Enter the final manuscript page count after editorial formatting before sending to Reviewer.</small>
+                                    </div>
+                                </template>
+
                                 <!-- Action Buttons -->
                                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-navy/10">
-                                    <template x-if="!allPassed">
-                                        <button type="submit" name="action" value="request_revision" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                            Request Author Revision &amp; Send Email Notification
-                                        </button>
-                                    </template>
-
-                                    <template x-if="allPassed">
-                                        <div class="space-y-3 w-full">
-                                            <div class="rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3 text-xs">
-                                                <label class="form-label text-xs font-bold text-emerald-900">Final Page Count (Camera-Ready / Post-Editorial Edit)</label>
-                                                <input type="number" min="1" max="500" class="form-input text-xs bg-white border-emerald-300" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Final page count)" :disabled="!isEditorialActive">
-                                                <small class="text-[11px] text-emerald-700 mt-1 block">Enter the final manuscript page count after editorial formatting before sending to Reviewer.</small>
-                                            </div>
-                                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto justify-end">
-                                                <template x-if="hasReviewer">
-                                                    <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                                                        ✓ Approve &amp; Send to Reviewer
-                                                    </button>
-                                                </template>
-                                                <template x-if="!hasReviewer">
-                                                    <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
-                                                        ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
-                                                    </button>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </template>
-
                                     @if($whatsappUrl)
                                         <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener" class="btn px-4 py-2.5 text-xs font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] flex items-center justify-center gap-1.5 w-full sm:w-auto text-center shadow-xs">
                                             <svg class="size-4 shrink-0 fill-current" viewBox="0 0 24 24">
@@ -537,6 +523,27 @@
                                             <span>Send via WhatsApp</span>
                                         </a>
                                     @endif
+
+                                    <template x-if="!allPassed">
+                                        <button type="submit" name="action" value="request_revision" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Request Author Revision &amp; Send Email Notification
+                                        </button>
+                                    </template>
+
+                                    <template x-if="allPassed">
+                                        <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                                            <template x-if="hasReviewer">
+                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    ✓ Approve &amp; Send to Reviewer
+                                                </button>
+                                            </template>
+                                            <template x-if="!hasReviewer">
+                                                <button type="button" disabled title="Assign Reviewer PIC in sidebar before sending" class="btn bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto flex items-center justify-center gap-1.5 select-none opacity-90">
+                                                    ✓ Approve &amp; Send to Reviewer (Assign Reviewer First)
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </template>
                                 </div>
                                 <template x-if="allPassed && !hasReviewer">
                                     <p class="text-[11px] font-bold text-amber-700 text-right mt-2">
@@ -1287,6 +1294,30 @@
                 window.dispatchEvent(new CustomEvent('paperflow-toast', {
                     detail: { message: msg, type: 'success' }
                 }));
+
+                // Handle dynamic Page Count updates in Submission Details
+                if (data.page_count) {
+                    const wrapper = document.getElementById('submission-page-count-wrapper');
+                    if (wrapper) {
+                        const initial = data.page_count.initial;
+                        const final = data.page_count.final;
+                        const diff = data.page_count.diff;
+
+                        if (initial || final) {
+                            let html = '<div class="flex items-center gap-2 flex-wrap">';
+                            html += `<span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-black text-navy border border-slate-200/90" title="Initial page count before editorial revision"><span>Initial: ${initial ? initial + ' pp' : '-'}</span></span>`;
+                            html += '<span class="text-slate-400 font-bold">→</span>';
+                            html += `<span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-800 border border-emerald-200" title="Final camera-ready page count after editorial revision"><span id="submission-final-page-count">Final: ${final ? final + ' pp' : '-'}</span></span>`;
+                            if (initial && final && diff !== null) {
+                                const diffText = diff > 0 ? '+' + diff : diff;
+                                const colorClass = diff < 0 ? 'text-emerald-600' : (diff > 0 ? 'text-amber-600' : 'text-slate-500');
+                                html += `<span id="submission-page-count-diff" class="text-[11px] font-extrabold ${colorClass}">(${diffText} ${Math.abs(diff) === 1 ? 'pp' : 'pp'})</span>`;
+                            }
+                            html += '</div>';
+                            wrapper.innerHTML = html;
+                        }
+                    }
+                }
 
                 // Handle dynamic timeline updates
                 if (data.timeline && Array.isArray(data.timeline)) {

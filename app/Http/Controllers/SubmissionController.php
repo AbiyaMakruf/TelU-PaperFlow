@@ -735,7 +735,13 @@ class SubmissionController extends Controller
             'send_email' => ['nullable', 'boolean'],
             'cc' => ['nullable', 'string', 'max:2000'],
             'revision_days' => ['nullable', 'integer', 'min:1', 'max:60'],
+            'final_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
         ]);
+
+        if ($request->has('final_page_count')) {
+            $val = $request->filled('final_page_count') ? $request->integer('final_page_count') : null;
+            $submission->update(['final_page_count' => $val]);
+        }
 
         $bodyText = $validated['body']
             ?? (($validated['action'] ?? null) === 'approve_and_send_reviewer' ? 'Editorial compliance checklist approved and submission sent to Reviewer.' : null);
@@ -827,6 +833,11 @@ class SubmissionController extends Controller
                             'is_terminal' => $fresh->status->isTerminal(),
                         ],
                         'timeline' => $this->formatStatusHistory($submission),
+                        'page_count' => [
+                            'initial' => $fresh->initial_page_count,
+                            'final' => $fresh->final_page_count,
+                            'diff' => ($fresh->initial_page_count && $fresh->final_page_count) ? ($fresh->final_page_count - $fresh->initial_page_count) : null,
+                        ],
                     ]);
                 }
 
@@ -835,9 +846,16 @@ class SubmissionController extends Controller
         }
 
         if ($request->expectsJson()) {
+            $fresh = $submission->fresh();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Feedback saved.',
+                'page_count' => [
+                    'initial' => $fresh->initial_page_count,
+                    'final' => $fresh->final_page_count,
+                    'diff' => ($fresh->initial_page_count && $fresh->final_page_count) ? ($fresh->final_page_count - $fresh->initial_page_count) : null,
+                ],
                 'feedback' => isset($feedback) ? [
                     'id' => $feedback->id,
                     'visibility' => $feedback->visibility,
