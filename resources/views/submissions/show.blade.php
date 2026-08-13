@@ -637,7 +637,7 @@
                                 <span class="text-base shrink-0">ℹ️</span>
                                 <span>PDF eXpress &amp; EDAS settings are in <strong>Read Only</strong> mode because current paper status is <strong class="pdfexpress-status-name">{{ $submission->status->label() }}</strong>.</span>
                             </div>
-                            <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 min-w-0">
+                            <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" enctype="multipart/form-data" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 min-w-0">
                                 @csrf
                                 <div>
                                     <label class="form-label text-xs">IEEE PDF eXpress / EDAS Upload Status *</label>
@@ -646,6 +646,33 @@
                                         <option value="passed">✓ Passed &amp; EDAS Uploaded Successfully</option>
                                         <option value="failed">✕ Failed / EDAS Error Encountered</option>
                                     </select>
+                                </div>
+
+                                <div x-show="statusState === 'passed'" x-cloak style="display: none;" class="space-y-2">
+                                    <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-950 space-y-2 shadow-2xs">
+                                        <div class="flex items-center gap-2 font-extrabold text-xs text-emerald-900">
+                                            <span class="text-base">📄</span>
+                                            <span>IEEE PDF eXpress Camera-Ready PDF File</span>
+                                        </div>
+                                        <p class="text-[11px] text-emerald-800 leading-relaxed font-medium">
+                                            Please upload the final camera-ready PDF file that has passed IEEE PDF eXpress verification and was uploaded to EDAS without errors. Once uploaded, authors will be able to download this verified PDF file directly from their portal.
+                                        </p>
+                                        <div class="pt-1">
+                                            <label class="form-label text-xs font-bold text-emerald-950 mb-1">Upload IEEE PDF eXpress Passed File (PDF format, Max 25 MB)</label>
+                                            <input type="file" name="camera_ready_pdf" accept="application/pdf" class="form-input text-xs bg-white py-2 border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20" :disabled="!isReviewerActive">
+                                        </div>
+                                        @php
+                                            $existingCameraReadyPdf = $submission->files->firstWhere('file_category', 'camera_ready_pdf');
+                                        @endphp
+                                        @if($existingCameraReadyPdf)
+                                            <div class="mt-2 pt-2 border-t border-emerald-200/80 flex items-center justify-between gap-2">
+                                                <span class="text-[11px] font-bold text-emerald-900 truncate">Current File: {{ $existingCameraReadyPdf->original_name }} ({{ number_format($existingCameraReadyPdf->size / 1024, 0) }} KB)</span>
+                                                <a href="{{ route('submissions.files.download', [$submission, $existingCameraReadyPdf]) }}" class="btn text-[11px] py-1 px-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shrink-0 transition">
+                                                    Download PDF
+                                                </a>
+                                            </div>
+                                        @endif
+                                    </div>
                                 </div>
 
                                 <div x-show="statusState === 'failed'" x-cloak style="display: none;">
