@@ -31,6 +31,7 @@ class ConferenceMailer
             'paper_code' => $submission->paper_code,
             'paper_title' => $submission->title,
             'author_name' => $submission->corresponding_author_name,
+            'author_phone' => $submission->corresponding_author_phone ?: '-',
             'deadline' => $submission->deadline_at?->timezone('Asia/Jakarta')->format('d F Y, 23:59 \G\M\T+7') ?? 'Please follow the deadline communicated by the committee.',
             'editor_name' => $sender?->name ?? 'Editorial Team',
             'editor_job_title' => $sender?->job_title ?? 'Publication Committee',
@@ -84,7 +85,7 @@ class ConferenceMailer
         $conference = $template->conference;
         $replace = [
             '{{conference}}' => $conference->name, '{{paper_code}}' => '#1571259462', '{{paper_title}}' => 'Design and Implementation of Edge Computing Architecture',
-            '{{author_name}}' => 'Demo Author',
+            '{{author_name}}' => 'Demo Author', '{{author_phone}}' => '+62 812-3456-7890',
             '{{feedback}}' => '<div style="margin: 18px 0; overflow-x: auto;"><table border="0" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; font-size: 13px; border-radius: 8px; overflow: hidden;"><thead><tr style="background-color: #102a43; color: #ffffff; text-align: left;"><th style="padding: 10px 14px; font-weight: 700;">Checklist Criteria</th><th style="padding: 10px 14px; font-weight: 700; width: 130px;">Status</th><th style="padding: 10px 14px; font-weight: 700;">Notes</th></tr></thead><tbody><tr style="background-color: #fff1f2; border-bottom: 1px solid #fecdd3;"><td style="padding: 11px 14px; color: #1e293b; font-weight: 600;">1. Citations & References Format</td><td style="padding: 11px 14px; color: #e11d48; font-weight: 700;">✕ Needs Revision</td><td style="padding: 11px 14px; color: #475569;">Reference [1] missing publication year and IEEE citation style.</td></tr></tbody></table></div>', '{{portal_url}}' => url('/submission/access/t24nPReuE0sdV8zizyYbVCzj6JnzGmfjIj3gcc9biZfZxpWGVEtFB0DhZb2BznuP'),
             '{{deadline}}' => '19 August 2026, 23:59 GMT+7', '{{editor_name}}' => $sender->name ?: 'Nugroho Rahmanto',
             '{{editor_job_title}}' => $sender->job_title ?: 'Publication Committee', '{{editor_affiliation}}' => $sender->affiliation ?: $conference->name,
