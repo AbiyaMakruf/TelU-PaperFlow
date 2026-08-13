@@ -657,7 +657,15 @@ class SubmissionController extends Controller
             'note' => ['nullable', 'string', 'max:10000'],
             'edas_reference' => ['nullable', 'string', 'max:255'],
             'initial_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
-            'final_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'final_page_count' => [
+                Rule::requiredIf(fn () => $request->input('action') === 'send_reviewer'),
+                'nullable',
+                'integer',
+                'min:1',
+                'max:500',
+            ],
+        ], [
+            'final_page_count.required' => 'Final page count (camera-ready / post-editorial edit) is mandatory before approving and sending the paper to Reviewer.',
         ]);
         $action = $validated['action'];
         if ($request->filled('initial_page_count')) {
@@ -735,7 +743,15 @@ class SubmissionController extends Controller
             'send_email' => ['nullable', 'boolean'],
             'cc' => ['nullable', 'string', 'max:2000'],
             'revision_days' => ['nullable', 'integer', 'min:1', 'max:60'],
-            'final_page_count' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'final_page_count' => [
+                Rule::requiredIf(fn () => $request->input('action') === 'approve_and_send_reviewer'),
+                'nullable',
+                'integer',
+                'min:1',
+                'max:500',
+            ],
+        ], [
+            'final_page_count.required' => 'Final page count (camera-ready / post-editorial edit) is mandatory before approving and sending the paper to Reviewer.',
         ]);
 
         if ($request->has('final_page_count')) {

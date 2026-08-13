@@ -49,6 +49,10 @@ class SubmissionWorkflow
                 throw new DomainException("Perubahan status dari {$from->value} ke {$to->value} tidak diizinkan.");
             }
 
+            if ($from === SubmissionStatus::EditorialReview && $to === SubmissionStatus::ReviewerReview && empty($locked->final_page_count)) {
+                throw new DomainException('Final camera-ready page count must be specified before approving and sending to Reviewer.');
+            }
+
             $changes = ['status' => $to, 'lock_version' => $locked->lock_version + 1];
             if ($to === SubmissionStatus::ReadyForAssignment) {
                 $changes['validated_at'] = now();

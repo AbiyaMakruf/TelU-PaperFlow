@@ -73,8 +73,23 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial', 'manuscript_format' => 'latex']);
         $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
 
-        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer'])
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer', 'final_page_count' => 6])
             ->assertSessionHasErrors('workflow');
+        $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
+    }
+
+    public function test_advancing_to_reviewer_requires_final_page_count(): void
+    {
+        [, $admin, $editor, $reviewer, $submission, $editorialItem] = $this->workflowFixture();
+        $this->actingAs($admin)->post(route('submissions.accept', $submission));
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial', 'manuscript_format' => 'docx']);
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
+        $this->actingAs($editor)->put(route('submissions.checklist', [$submission, 'editorial']), [
+            'items' => [$editorialItem->id => ['checked' => '1']],
+        ]);
+
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer'])
+            ->assertSessionHasErrors('final_page_count');
         $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
     }
 
@@ -87,7 +102,7 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($editor)->put(route('submissions.checklist', [$submission, 'editorial']), [
             'items' => [$editorialItem->id => ['checked' => '1']],
         ]);
-        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer']);
+        $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer', 'final_page_count' => 6]);
 
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'reviewer_approve']);
         $this->assertSame(SubmissionStatus::Done, $submission->fresh()->status);

@@ -499,17 +499,17 @@
                                     </div>
                                 </div>
 
-                                <!-- Final Page Count Card (Shown when allPassed is true) -->
+                                 <!-- Final Page Count Card (Shown when allPassed is true) -->
                                 <template x-if="allPassed">
                                     <div class="rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3.5 text-xs mb-3">
                                         <label class="form-label text-xs font-bold text-emerald-950 flex items-center justify-between mb-1">
-                                            <span>Final Page Count (Camera-Ready / Post-Editorial Edit)</span>
+                                            <span>Final Page Count (Camera-Ready / Post-Editorial Edit) <span class="text-rose-600 font-black">*</span></span>
                                             @if($submission->initial_page_count)
                                                 <span class="text-[11px] font-semibold text-emerald-800">Initial: {{ $submission->initial_page_count }} pp</span>
                                             @endif
                                         </label>
-                                        <input type="number" min="1" max="500" class="form-input text-xs bg-white border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Final camera-ready page count)" :disabled="!isEditorialActive">
-                                        <small class="text-[11px] text-emerald-700 mt-1 block">Enter the final manuscript page count after editorial formatting before sending to Reviewer.</small>
+                                        <input type="number" min="1" max="500" required class="form-input text-xs bg-white border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Final camera-ready page count)" :disabled="!isEditorialActive">
+                                        <small class="text-[11px] text-emerald-800 font-medium mt-1 block">⚠️ Mandatory: Enter the final manuscript page count after editorial formatting before approving &amp; sending to Reviewer.</small>
                                     </div>
                                 </template>
 
