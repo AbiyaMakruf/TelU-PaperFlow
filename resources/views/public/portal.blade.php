@@ -222,8 +222,24 @@
 
                         @php
                             $isRevisionStage = $submission->status === \App\Enums\SubmissionStatus::WaitingAuthorRevision;
+                            $guidelinesUrl = $submission->conference->editorialGuidelinesUrl();
                         @endphp
                         <div class="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                            @if($guidelinesUrl)
+                                <div class="mb-4 p-3.5 rounded-xl bg-gradient-to-r from-orange/10 via-amber-50 to-orange/5 border border-orange/20 text-xs text-navy flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                                    <div class="flex items-start gap-2.5 min-w-0">
+                                        <span class="text-base shrink-0">📖</span>
+                                        <div class="min-w-0">
+                                            <strong class="font-extrabold text-navy block text-xs">Petunjuk Manual Pemeriksaan Formatting</strong>
+                                            <span class="text-muted text-[11px] block mt-0.5">Untuk mempelajari panduan lengkap dan aturan detail pemeriksaan formatting naskah, Anda dapat membuka dokumen petunjuk berikut.</span>
+                                        </div>
+                                    </div>
+                                    <a href="{{ $guidelinesUrl }}" target="_blank" rel="noopener" class="btn text-[11px] py-2 px-3.5 bg-orange hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition self-start sm:self-auto inline-flex items-center gap-1.5">
+                                        <span>Buka Guidelines Manual ↗</span>
+                                    </a>
+                                </div>
+                            @endif
+
                             @foreach($editorialTemplates as $tmpl)
                                 @foreach($tmpl->items as $item)
                                     @php $res = isset($checklistResults) ? $checklistResults->get($item->id) : null; @endphp

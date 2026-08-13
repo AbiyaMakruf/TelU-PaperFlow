@@ -149,6 +149,13 @@ class Conference extends Model
             : ('Thank you for your contribution to '.$this->name.'. Please use this form to submit your final, camera-ready manuscript and all required supplementary materials. Ensuring your submission strictly adheres to the conference formatting guidelines will facilitate a smooth publication process.');
     }
 
+    public function editorialGuidelinesUrl(): ?string
+    {
+        return ! empty($this->settings['editorial_guidelines_url'])
+            ? $this->settings['editorial_guidelines_url']
+            : null;
+    }
+
     /** @return list<string> */
     public function defaultCc(): array
     {

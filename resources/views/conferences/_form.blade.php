@@ -182,5 +182,10 @@ document.addEventListener('alpine:init', () => {
             <textarea class="form-input min-h-24 py-3" name="form_description" placeholder="{{ $conference->formDescription() }}">{{ old('form_description', $conference->settings['form_description'] ?? '') }}</textarea>
             <span class="mt-1 block text-xs text-muted">Detailed description or instructions displayed before the input fields.</span>
         </div>
+        <div class="md:col-span-2">
+            <label class="form-label">Editorial Guidelines URL (Manual Formatting Reference Link)</label>
+            <input class="form-input" type="url" name="editorial_guidelines_url" value="{{ old('editorial_guidelines_url', $conference->settings['editorial_guidelines_url'] ?? '') }}" placeholder="https://example.com/guidelines-pdf-or-doc">
+            <span class="mt-1 block text-xs text-muted">Provide an external URL or Google Drive link containing full manual formatting guidelines for authors. If filled, a clickable reference link will appear inside the Author Portal Editorial Checklist card.</span>
+        </div>
     @endif
 </div>
