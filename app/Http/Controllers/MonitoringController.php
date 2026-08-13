@@ -46,7 +46,7 @@ class MonitoringController extends Controller
 
         // Failed jobs & Laravel log errors
         $failedJobs = DB::table('failed_jobs')->latest('failed_at')->paginate(15);
-        $errors = collect(file_exists(storage_path('logs/laravel.log')) ? file(storage_path('logs/laravel.log')) : [])
+        $logErrors = collect(file_exists(storage_path('logs/laravel.log')) ? file(storage_path('logs/laravel.log')) : [])
             ->filter(fn ($line) => str_contains($line, '.ERROR:') || str_contains($line, '.WARNING:'))->take(-30)->reverse()->map(fn ($line) => Str::limit(trim($line), 500));
 
         $activeTab = $request->string('tab', $canViewSystemMonitoring ? 'system' : 'audit')->toString();
@@ -55,7 +55,7 @@ class MonitoringController extends Controller
             'dbStatus',
             'storageStatus',
             'failedJobs',
-            'errors',
+            'logErrors',
             'logs',
             'conferences',
             'canViewSystemMonitoring',

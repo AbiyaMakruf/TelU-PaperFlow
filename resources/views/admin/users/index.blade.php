@@ -5,7 +5,13 @@
             <h1 class="page-title">User Management</h1>
             <p class="page-subtitle">Create staff accounts and manage global user access permissions.</p>
         </div>
-        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">+ New User</a>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('admin.monitoring.index', ['tab' => 'purge']) }}" class="btn bg-rose-50 border border-rose-200 text-rose-800 hover:bg-rose-100 font-extrabold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow-2xs">
+                <span>🚨</span>
+                <span>System Reset &amp; Purge</span>
+            </a>
+            <a href="{{ route('admin.users.create') }}" class="btn btn-primary">+ New User</a>
+        </div>
     </div>
     <form method="GET" class="mt-7 card flex gap-3 p-4">
         <input class="form-input" name="search" value="{{ request('search') }}" placeholder="Search name, username, or email address...">

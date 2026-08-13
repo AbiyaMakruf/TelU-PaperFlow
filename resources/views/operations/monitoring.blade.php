@@ -15,6 +15,9 @@
                     <button type="button" @click="activeTab = 'jobs'" :class="activeTab === 'jobs' ? 'bg-white text-navy shadow-sm' : 'text-slate-600 hover:text-navy'" class="rounded-lg px-3 py-1.5 text-xs font-black transition">
                         ⚠️ Failed Jobs &amp; Logs
                     </button>
+                    <button type="button" @click="activeTab = 'purge'" :class="activeTab === 'purge' ? 'bg-rose-600 text-white shadow-sm' : 'text-rose-700 hover:text-rose-900 font-bold'" class="rounded-lg px-3 py-1.5 text-xs font-black transition flex items-center gap-1.5">
+                        🚨 System Reset &amp; Purge
+                    </button>
                 @endif
                 @if($canViewAuditLog)
                     <button type="button" @click="activeTab = 'audit'" :class="activeTab === 'audit' ? 'bg-white text-navy shadow-sm' : 'text-slate-600 hover:text-navy'" class="rounded-lg px-3 py-1.5 text-xs font-black transition">
@@ -192,7 +195,7 @@
                         <span class="text-xs text-muted">storage/logs/laravel.log</span>
                     </div>
                     <div class="mt-4 space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                        @forelse($errors as $error)
+                        @forelse($logErrors as $error)
                             <pre class="whitespace-pre-wrap break-all rounded-xl bg-rose-50/70 border border-rose-200/80 p-3 text-[11px] font-mono text-rose-900 leading-relaxed">{{ $error }}</pre>
                         @empty
                             <p class="text-sm text-muted py-4 text-center">No system error logs recorded.</p>
@@ -275,6 +278,93 @@
                     <div class="p-4 border-t border-navy/8">
                         {{ $logs->links() }}
                     </div>
+                </div>
+            </div>
+        @endif
+
+        @if($canViewSystemMonitoring)
+            <!-- TAB 4: SUPERADMIN SYSTEM RESET & PURGE -->
+            <div x-show="activeTab === 'purge'" x-cloak class="mt-6 space-y-6" x-data="{ showPurgeModal: false, passwordInput: '', showPassword: false }">
+                <div class="card p-6 sm:p-8 border-2 border-rose-200 bg-gradient-to-b from-rose-50/70 to-white shadow-lg rounded-2xl space-y-6">
+                    <div class="flex items-start gap-4 border-b border-rose-200 pb-5">
+                        <div class="grid size-12 shrink-0 place-items-center rounded-2xl bg-rose-600 text-white text-2xl shadow-sm">
+                            🚨
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-xl font-black text-rose-950">Clean Slate Database &amp; Storage System Purge</h2>
+                            <p class="text-xs font-semibold text-rose-800 leading-relaxed">
+                                Superadmin-only development tool to reset Paperflow to a clean post-installation state.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Danger Warning Callout Banner -->
+                    <div class="rounded-xl bg-rose-100/80 border border-rose-300 p-4 space-y-3">
+                        <div class="flex items-center gap-2 font-extrabold text-xs text-rose-950 uppercase tracking-wider">
+                            <span>⚠️</span>
+                            <span>High Risk Action &middot; Permanent Data Wiping</span>
+                        </div>
+                        <ul class="text-xs text-rose-900 space-y-1.5 font-medium list-disc list-inside leading-relaxed">
+                            <li><strong>Database Wipe:</strong> Deletes all conferences, submissions, file version metadata, review cycles, checklists, email logs, audit logs, queue jobs, notifications, and non-superadmin user accounts.</li>
+                            <li><strong>Storage Wipe:</strong> Deletes all physical manuscript DOCX/LaTeX files, revision guidance PDFs, camera-ready PDFs, upload attempts, and conference branding assets from local &amp; cloud file storage.</li>
+                            <li><strong>Superadmin Protection:</strong> Your current Superadmin account remains intact so you stay logged in without disruption.</li>
+                            <li><strong>Security Requirement:</strong> Requires entering your current Superadmin password for verification before executing.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Purge Execution Form -->
+                    <form method="POST" action="{{ route('admin.system.purge') }}" class="space-y-4 pt-2">
+                        @csrf
+                        <div class="max-w-md space-y-1.5">
+                            <label class="form-label text-xs font-bold text-rose-950">Confirm Superadmin Password *</label>
+                            <div class="relative">
+                                <input :type="showPassword ? 'text' : 'password'" name="password" required x-model="passwordInput" placeholder="Enter your current Superadmin password..." class="form-input text-xs pr-10 border-rose-300 focus:border-rose-600 focus:ring-rose-600/20 bg-white">
+                                <button type="button" @click="showPassword = !showPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold">
+                                    <span x-text="showPassword ? 'Hide' : 'Show'"></span>
+                                </button>
+                            </div>
+                            @error('password')
+                                <p class="text-xs font-bold text-rose-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="pt-3 border-t border-rose-200/80 flex flex-wrap items-center justify-between gap-3">
+                            <span class="text-[11px] font-bold text-slate-500">
+                                ⚠️ Please make sure you intend to reset the entire database before clicking.
+                            </span>
+                            <button type="button" @click="showPurgeModal = true" :disabled="!passwordInput" class="btn bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2">
+                                <span>🚨 Execute Clean Slate System Purge</span>
+                            </button>
+                        </div>
+
+                        <!-- Confirmation Modal -->
+                        <template x-teleport="body">
+                            <div x-show="showPurgeModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4" @keydown.escape.window="showPurgeModal = false">
+                                <div class="card max-w-lg w-full p-6 space-y-5 bg-white shadow-2xl rounded-2xl border-2 border-rose-500" @click.away="showPurgeModal = false">
+                                    <div class="flex items-center gap-3 text-rose-700">
+                                        <div class="grid size-10 place-items-center rounded-xl bg-rose-100 text-xl font-bold">⚠️</div>
+                                        <div>
+                                            <h3 class="font-black text-navy text-base">Final Confirmation: Purge Entire System?</h3>
+                                            <p class="text-xs text-rose-800 font-semibold">This action cannot be undone.</p>
+                                        </div>
+                                    </div>
+
+                                    <p class="text-xs text-slate-700 leading-relaxed">
+                                        You are about to permanently delete all conferences, submissions, uploaded manuscript &amp; guidance files, email logs, audit logs, and non-superadmin users. Your Superadmin account will remain active.
+                                    </p>
+
+                                    <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                                        <button type="button" @click="showPurgeModal = false" class="btn btn-secondary text-xs px-4 py-2 font-bold rounded-xl">
+                                            Cancel
+                                        </button>
+                                        <button type="submit" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold px-5 py-2 rounded-xl shadow-md transition">
+                                            Yes, Purge Everything Now
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </form>
                 </div>
             </div>
         @endif

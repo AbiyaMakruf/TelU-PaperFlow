@@ -2,6 +2,7 @@
 
 use App\Enums\ConferenceStatus;
 use App\Http\Controllers\Admin\ImpersonationController;
+use App\Http\Controllers\Admin\SystemPurgeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\GoogleFormWebhookController;
 use App\Http\Controllers\AuditLogController;
@@ -185,6 +186,7 @@ Route::middleware('auth')->group(function () {
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
             Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
             Route::post('/users/{user}/impersonate', [ImpersonationController::class, 'impersonate'])->name('users.impersonate');
+            Route::post('/system/purge', [SystemPurgeController::class, 'purge'])->name('system.purge');
         });
     });
 });
