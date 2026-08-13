@@ -85,13 +85,13 @@
                                 <div class="grid gap-3 {{ $targetGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
                                     @if($targetManuscript)
                                         <!-- Manuscript Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 to-amber-50/50 hover:border-orange/40 hover:bg-orange/10 transition flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden">
+                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 via-amber-50/50 to-orange/10 hover:from-orange/15 hover:to-amber-100/70 hover:border-orange/40 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
                                             <div class="min-w-0 flex-1 space-y-0.5">
                                                 <span class="text-[10px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Manuscript</span>
                                                 <p class="text-xs font-bold text-navy truncate" title="{{ $targetManuscript->original_name }}">{{ $targetManuscript->original_name }}</p>
                                                 <span class="text-[11px] text-muted font-medium block">{{ number_format($targetManuscript->size / 1024, 0) }} KB</span>
                                             </div>
-                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
                                                 Download
                                             </span>
                                         </a>
@@ -99,13 +99,13 @@
 
                                     @if($targetGuidancePdf)
                                         <!-- Revision Guide Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:border-indigo-300 hover:bg-indigo-100/70 transition flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden">
+                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:from-indigo-100/90 hover:to-purple-100/70 hover:border-indigo-300 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
                                             <div class="min-w-0 flex-1 space-y-0.5">
                                                 <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Revision Guide</span>
                                                 <p class="text-xs font-bold text-indigo-950 truncate" title="{{ $targetGuidancePdf->original_name }}">{{ $targetGuidancePdf->original_name }}</p>
                                                 <span class="text-[11px] text-indigo-700 font-medium block">PDF Guide &middot; {{ number_format($targetGuidancePdf->size / 1024, 0) }} KB</span>
                                             </div>
-                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
                                                 Download
                                             </span>
                                         </a>
@@ -114,13 +114,13 @@
 
                                 @if($cameraReadyPdf)
                                     <!-- IEEE PDF eXpress Passed Camera-Ready PDF Download Card (RED BUTTON) -->
-                                    <a href="{{ route('author.files.download', [$token, $cameraReadyPdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50/90 to-red-50/50 hover:border-rose-300 hover:bg-rose-100/80 transition flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden mt-3">
+                                    <a href="{{ route('author.files.download', [$token, $cameraReadyPdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50/90 to-red-50/50 hover:from-rose-100/90 hover:to-red-100/70 hover:border-rose-300 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden mt-3 cursor-pointer">
                                         <div class="min-w-0 flex-1 space-y-0.5">
                                             <span class="text-[10px] font-extrabold text-rose-700 uppercase tracking-wider block">IEEE PDF eXpress Verified (EDAS Camera-Ready PDF)</span>
                                             <p class="text-xs font-bold text-rose-950 truncate" title="{{ $cameraReadyPdf->original_name }}">{{ $cameraReadyPdf->original_name }}</p>
                                             <span class="text-[11px] text-rose-700 font-medium block">Passed IEEE PDF eXpress &amp; Uploaded to EDAS &middot; {{ number_format($cameraReadyPdf->size / 1024, 0) }} KB</span>
                                         </div>
-                                        <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-rose-600 group-hover:bg-rose-700 hover:bg-rose-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                        <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-rose-600 group-hover:bg-rose-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
                                             Download PDF
                                         </span>
                                     </a>
