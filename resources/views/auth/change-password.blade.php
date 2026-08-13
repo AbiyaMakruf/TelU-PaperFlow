@@ -10,8 +10,8 @@
         <div class="flex items-start gap-2.5">
             <span class="text-base leading-none shrink-0">ℹ️</span>
             <div>
-                <strong class="font-bold text-sky-950 block mb-1">Mengapa Email &amp; Nomor WhatsApp Wajib Diisi?</strong>
-                <span>Email dan nomor WhatsApp Anda akan ditampilkan secara otomatis sebagai <strong>Informasi Kontak PIC Editor</strong> pada <strong>Portal Author</strong>. Jika penulis (author) membutuhkan bantuan atau memiliki pertanyaan seputar naskah mereka, author dapat langsung menghubungi Anda melalui kontak ini.</span>
+                <strong class="font-bold text-sky-950 block mb-1">Why are Email &amp; WhatsApp Number Required?</strong>
+                <span>Your email address and WhatsApp number will be displayed as the <strong>Editorial PIC Contact Information</strong> on the private <strong>Author Portal</strong>. If authors need assistance or have questions regarding their manuscript, they can contact you directly using these contact details.</span>
             </div>
         </div>
     </div>

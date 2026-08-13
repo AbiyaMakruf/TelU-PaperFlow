@@ -87,26 +87,26 @@
                                 </div>
                                 <div class="grid gap-3 {{ $targetGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
                                     <!-- Manuscript Download Card -->
-                                    <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 to-amber-50/50 hover:border-orange/40 hover:bg-orange/10 transition flex items-center justify-between gap-3 shadow-2xs">
-                                        <div class="min-w-0 space-y-0.5">
+                                    <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-orange/20 bg-gradient-to-r from-orange/5 to-amber-50/50 hover:border-orange/40 hover:bg-orange/10 transition flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden">
+                                        <div class="min-w-0 flex-1 space-y-0.5">
                                             <span class="text-[10px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Manuscript</span>
                                             <p class="text-xs font-bold text-navy truncate" title="{{ $targetManuscript->original_name }}">{{ $targetManuscript->original_name }}</p>
                                             <span class="text-[11px] text-muted font-medium block">{{ number_format($targetManuscript->size / 1024, 0) }} KB</span>
                                         </div>
-                                        <span class="btn text-xs py-2 px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                        <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
                                             Download
                                         </span>
                                     </a>
 
                                     @if($targetGuidancePdf)
                                         <!-- Revision Guide Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:border-indigo-300 hover:bg-indigo-100/70 transition flex items-center justify-between gap-3 shadow-2xs">
-                                            <div class="min-w-0 space-y-0.5">
+                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-purple-50/40 hover:border-indigo-300 hover:bg-indigo-100/70 transition flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden">
+                                            <div class="min-w-0 flex-1 space-y-0.5">
                                                 <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Revision Guide</span>
                                                 <p class="text-xs font-bold text-indigo-950 truncate" title="{{ $targetGuidancePdf->original_name }}">{{ $targetGuidancePdf->original_name }}</p>
                                                 <span class="text-[11px] text-indigo-700 font-medium block">PDF Guide &middot; {{ number_format($targetGuidancePdf->size / 1024, 0) }} KB</span>
                                             </div>
-                                            <span class="btn text-xs py-2 px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
+                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition">
                                                 Download
                                             </span>
                                         </a>
@@ -187,6 +187,10 @@
                             <button class="btn btn-primary w-full sm:w-auto">Save Changes</button>
                         </div>
                     </form>
+                </div>
+
+                <div class="block lg:hidden mt-6">
+                    @include('public.partials.editorial-contact')
                 </div>
 
                 @if ($submission->status === \App\Enums\SubmissionStatus::WaitingAuthorRevision)
@@ -490,68 +494,9 @@
             </section>
 
             <aside class="space-y-6 min-w-0">
-                <!-- Editorial Contact Information Card -->
-                <div class="card p-4 sm:p-6 min-w-0">
-                    <div class="flex items-center justify-between gap-2 border-b border-navy/10 pb-3">
-                        <div>
-                            <h2 class="text-base sm:text-lg font-black text-navy">Editorial Contact</h2>
-                            <p class="text-xs text-muted">Assigned Editorial PIC for your paper.</p>
-                        </div>
-                        <span class="badge badge-primary text-[10px] font-bold">Editorial PIC</span>
-                    </div>
-
-                    @if($submission->editor)
-                        @php
-                            $editorWa = $submission->editor->whatsapp();
-                            $editorWaDigits = \App\Services\PhoneNumber::whatsappDigits($submission->editor->whatsapp());
-                        @endphp
-                        <div class="mt-4 space-y-3 text-xs">
-                            <div>
-                                <span class="text-muted font-bold block text-[11px] uppercase tracking-wider">PIC Editor Name</span>
-                                <p class="font-extrabold text-navy text-sm mt-0.5">{{ $submission->editor->name }}</p>
-                                @if($submission->editor->job_title)
-                                    <p class="text-muted text-[11px] font-medium">{{ $submission->editor->job_title }}</p>
-                                @endif
-                            </div>
-
-                            @if($submission->editor->affiliation)
-                                <div>
-                                    <span class="text-muted font-bold block text-[11px] uppercase tracking-wider">Affiliation</span>
-                                    <p class="font-bold text-navy mt-0.5">{{ $submission->editor->affiliation }}</p>
-                                </div>
-                            @endif
-
-                            <div>
-                                <span class="text-muted font-bold block text-[11px] uppercase tracking-wider">Email Address</span>
-                                <a href="mailto:{{ $submission->editor->email }}" class="font-bold text-orange hover:underline break-all block mt-0.5">
-                                    {{ $submission->editor->email ?: '-' }}
-                                </a>
-                            </div>
-
-                            <div>
-                                <span class="text-muted font-bold block text-[11px] uppercase tracking-wider">Mobile / WhatsApp</span>
-                                @if($editorWaDigits)
-                                    <div class="mt-1 flex items-center gap-2">
-                                        <span class="font-bold text-navy">{{ $editorWa }}</span>
-                                        <a href="https://wa.me/{{ $editorWaDigits }}?text={{ rawurlencode('Hello ' . $submission->editor->name . ', I am the corresponding author of Paper ID ' . $submission->paper_id . ' (' . $submission->title . ').') }}" 
-                                           target="_blank" rel="noopener" 
-                                           class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] rounded-lg shadow-2xs transition">
-                                            <svg class="size-3.5 fill-current" viewBox="0 0 24 24">
-                                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-                                            </svg>
-                                            <span>WhatsApp</span>
-                                        </a>
-                                    </div>
-                                @else
-                                    <span class="font-bold text-navy block mt-0.5">-</span>
-                                @endif
-                            </div>
-                        </div>
-                    @else
-                        <div class="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-muted">
-                            <span>An Editorial PIC has not been assigned to this paper yet.</span>
-                        </div>
-                    @endif
+                <!-- Editorial Contact Information Card (Desktop) -->
+                <div class="hidden lg:block">
+                    @include('public.partials.editorial-contact')
                 </div>
 
                 <!-- Timeline Card -->
