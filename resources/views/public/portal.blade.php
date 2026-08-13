@@ -489,36 +489,103 @@
                 </details>
             </section>
 
-            <aside class="card h-fit p-4 sm:p-6 min-w-0">
-                <h2 class="text-lg font-black text-navy">Timeline</h2>
-                <p class="text-xs text-muted mt-0.5">Submission status and milestone progress.</p>
+            <aside class="space-y-6 min-w-0">
+                <!-- Editorial Contact Information Card -->
+                <div class="card p-4 sm:p-6 min-w-0">
+                    <div class="flex items-center justify-between gap-2 border-b border-navy/10 pb-3">
+                        <div>
+                            <h2 class="text-base sm:text-lg font-black text-navy">Editorial Contact</h2>
+                            <p class="text-xs text-muted">Assigned Editorial PIC for your paper.</p>
+                        </div>
+                        <span class="badge badge-primary text-[10px] font-bold">Editorial PIC</span>
+                    </div>
 
-                @php
-                    $authorStatusHistory = $submission->statusHistory->reject(function ($history) {
-                        return in_array($history->to_status, [
-                            \App\Enums\SubmissionStatus::ReviewerReview,
-                            \App\Enums\SubmissionStatus::ReviewerChangesRequested,
-                        ], true);
-                    });
-                @endphp
+                    @if($submission->editor)
+                        @php
+                            $editorWa = $submission->editor->whatsapp();
+                            $editorWaDigits = \App\Services\PhoneNumber::whatsappDigits($submission->editor->whatsapp());
+                        @endphp
+                        <div class="mt-4 space-y-3 text-xs">
+                            <div>
+                                <span class="text-muted font-bold block text-[11px] uppercase tracking-wider">PIC Editor Name</span>
+                                <p class="font-extrabold text-navy text-sm mt-0.5">{{ $submission->editor->name }}</p>
+                                @if($submission->editor->job_title)
+                                    <p class="text-muted text-[11px] font-medium">{{ $submission->editor->job_title }}</p>
+                                @endif
+                            </div>
 
-                <ol class="mt-5 space-y-5 border-l-2 border-navy/10 pl-5">
-                    @foreach ($authorStatusHistory as $history)
-                        <li class="min-w-0">
-                            @php
-                                $circleColor = match($history->to_status) {
-                                    \App\Enums\SubmissionStatus::Done => 'bg-emerald-500 ring-4 ring-emerald-100',
-                                    \App\Enums\SubmissionStatus::Withdrawn, \App\Enums\SubmissionStatus::Rejected => 'bg-rose-500 ring-4 ring-rose-100',
-                                    \App\Enums\SubmissionStatus::ReadyForEdas => 'bg-sky-500 ring-4 ring-sky-100',
-                                    default => 'bg-orange ring-4 ring-warm',
-                                };
-                            @endphp
-                            <span class="-ml-[23px] sm:-ml-[27px] mr-3 inline-block size-3 rounded-full {{ $circleColor }}"></span>
-                            <span class="text-sm font-bold text-navy break-words">{{ $history->to_status->label() }}</span>
-                            <p class="mt-1 text-xs text-muted">{{ $history->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
-                        </li>
-                    @endforeach
-                </ol>
+                            @if($submission->editor->affiliation)
+                                <div>
+                                    <span class="text-muted font-bold block text-[11px] uppercase tracking-wider">Affiliation</span>
+                                    <p class="font-bold text-navy mt-0.5">{{ $submission->editor->affiliation }}</p>
+                                </div>
+                            @endif
+
+                            <div>
+                                <span class="text-muted font-bold block text-[11px] uppercase tracking-wider">Email Address</span>
+                                <a href="mailto:{{ $submission->editor->email }}" class="font-bold text-orange hover:underline break-all block mt-0.5">
+                                    {{ $submission->editor->email ?: '-' }}
+                                </a>
+                            </div>
+
+                            <div>
+                                <span class="text-muted font-bold block text-[11px] uppercase tracking-wider">Mobile / WhatsApp</span>
+                                @if($editorWaDigits)
+                                    <div class="mt-1 flex items-center gap-2">
+                                        <span class="font-bold text-navy">{{ $editorWa }}</span>
+                                        <a href="https://wa.me/{{ $editorWaDigits }}?text={{ rawurlencode('Hello ' . $submission->editor->name . ', I am the corresponding author of Paper ID ' . $submission->paper_id . ' (' . $submission->title . ').') }}" 
+                                           target="_blank" rel="noopener" 
+                                           class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-extrabold bg-[#25D366] text-white hover:bg-[#1faa52] rounded-lg shadow-2xs transition">
+                                            <svg class="size-3.5 fill-current" viewBox="0 0 24 24">
+                                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                                            </svg>
+                                            <span>WhatsApp</span>
+                                        </a>
+                                    </div>
+                                @else
+                                    <span class="font-bold text-navy block mt-0.5">-</span>
+                                @endif
+                            </div>
+                        </div>
+                    @else
+                        <div class="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-muted">
+                            <span>An Editorial PIC has not been assigned to this paper yet.</span>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Timeline Card -->
+                <div class="card p-4 sm:p-6 min-w-0">
+                    <h2 class="text-lg font-black text-navy">Timeline</h2>
+                    <p class="text-xs text-muted mt-0.5">Submission status and milestone progress.</p>
+
+                    @php
+                        $authorStatusHistory = $submission->statusHistory->reject(function ($history) {
+                            return in_array($history->to_status, [
+                                \App\Enums\SubmissionStatus::ReviewerReview,
+                                \App\Enums\SubmissionStatus::ReviewerChangesRequested,
+                            ], true);
+                        });
+                    @endphp
+
+                    <ol class="mt-5 space-y-5 border-l-2 border-navy/10 pl-5">
+                        @foreach ($authorStatusHistory as $history)
+                            <li class="min-w-0">
+                                @php
+                                    $circleColor = match($history->to_status) {
+                                        \App\Enums\SubmissionStatus::Done => 'bg-emerald-500 ring-4 ring-emerald-100',
+                                        \App\Enums\SubmissionStatus::Withdrawn, \App\Enums\SubmissionStatus::Rejected => 'bg-rose-500 ring-4 ring-rose-100',
+                                        \App\Enums\SubmissionStatus::ReadyForEdas => 'bg-sky-500 ring-4 ring-sky-100',
+                                        default => 'bg-orange ring-4 ring-warm',
+                                    };
+                                @endphp
+                                <span class="-ml-[23px] sm:-ml-[27px] mr-3 inline-block size-3 rounded-full {{ $circleColor }}"></span>
+                                <span class="text-sm font-bold text-navy break-words">{{ $history->to_status->label() }}</span>
+                                <p class="mt-1 text-xs text-muted">{{ $history->created_at->timezone($submission->conference->timezone)->format('d M Y H:i') }}</p>
+                            </li>
+                        @endforeach
+                    </ol>
+                </div>
             </aside>
         </div>
     </div>
