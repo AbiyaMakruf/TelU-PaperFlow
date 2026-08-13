@@ -29,6 +29,7 @@ class ConferenceMailer
         $variables = [
             'conference' => $submission->conference->name,
             'paper_code' => $submission->paper_code,
+            'paper_title' => $submission->title,
             'author_name' => $submission->corresponding_author_name,
             'deadline' => $submission->deadline_at?->timezone('Asia/Jakarta')->format('d F Y, 23:59 \G\M\T+7') ?? 'Please follow the deadline communicated by the committee.',
             'editor_name' => $sender?->name ?? 'Editorial Team',
@@ -82,7 +83,8 @@ class ConferenceMailer
     {
         $conference = $template->conference;
         $replace = [
-            '{{conference}}' => $conference->name, '{{paper_code}}' => 'DEMO-001', '{{author_name}}' => 'Demo Author',
+            '{{conference}}' => $conference->name, '{{paper_code}}' => '#1571259462', '{{paper_title}}' => 'Design and Implementation of Edge Computing Architecture',
+            '{{author_name}}' => 'Demo Author',
             '{{feedback}}' => "• Example revision item\n• Please verify IEEE formatting", '{{portal_url}}' => url('/submission/access/demo-token'),
             '{{deadline}}' => now($conference->timezone)->addDays(7)->format('F j, Y \a\t H:i T'), '{{editor_name}}' => $sender->name,
             '{{editor_job_title}}' => $sender->job_title ?: 'Publication Committee', '{{editor_affiliation}}' => $sender->affiliation ?: $conference->name,
