@@ -225,6 +225,40 @@ class ConferenceAdministrationTest extends TestCase
         $this->assertEquals('google_form_external', $conference->submissionMode());
     }
 
+    public function test_conference_admin_can_update_checklist_with_timestamp_keys(): void
+    {
+        [$conference, $admin] = $this->conferenceWithAdmin();
+
+        $response = $this->actingAs($admin)->put(route('conferences.checklists.update', $conference), [
+            'templates' => [
+                'editorial' => [
+                    'name' => 'IEEE Editorial Checklist',
+                    'items' => [
+                        '178704001992517' => [
+                            'title' => 'Custom IEEE Check Item',
+                            'description' => 'Guidance details',
+                            'is_required' => 1,
+                        ],
+                        'new_178704001992518_1' => [
+                            'title' => 'Second Check Item',
+                            'description' => 'Second item details',
+                            'is_required' => 1,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $template = $conference->checklistTemplates()->where('stage', 'editorial')->first();
+        $this->assertNotNull($template);
+        $this->assertCount(2, $template->items);
+        $this->assertEquals(1, $template->items[0]->sort_order);
+        $this->assertEquals(2, $template->items[1]->sort_order);
+    }
+
     /** @return array{Conference, User} */
     private function conferenceWithAdmin(): array
     {

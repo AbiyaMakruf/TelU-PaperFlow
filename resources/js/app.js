@@ -21,7 +21,7 @@ document.addEventListener('click', (event) => {
     const list = builder?.querySelector('[data-builder-list]');
     if (!template || !list) return;
 
-    const index = `${Date.now()}${list.children.length}`;
+    const index = `new_${Date.now()}_${list.children.length}`;
     const wrapper = document.createElement('div');
     wrapper.innerHTML = template.innerHTML.replaceAll('__INDEX__', index).trim();
     list.append(wrapper.firstElementChild);
