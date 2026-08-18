@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conference;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -18,10 +19,11 @@ class WorkspaceController extends Controller
 
         if ($conferenceId === 'all' || empty($conferenceId)) {
             session()->forget('active_conference_id');
+
             return back()->with('status', 'Active workspace switched to All Conferences.');
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         // Validate that user has access to this conference

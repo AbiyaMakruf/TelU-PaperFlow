@@ -1346,7 +1346,7 @@ class SubmissionController extends Controller
             $audit->record('submission.portal_link_sent', $submission, $submission->conference);
 
             return back()->with('success', 'Author Portal link email sent successfully to '.$submission->corresponding_author_email);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return back()->withErrors(['email' => 'Failed to send Author Portal link email: '.$e->getMessage()]);
         }
     }
@@ -1369,11 +1369,70 @@ class SubmissionController extends Controller
                 $mailer->queue($sub->fresh(['conference', 'authors']), 'submission_received', ['portal_url' => $portalUrl]);
                 $audit->record('submission.portal_link_sent', $sub, $sub->conference);
                 $sentCount++;
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 report($e);
             }
         }
 
         return back()->with('success', "Author Portal link emails queued for {$sentCount} papers.");
+    }
+
+    public function updateDetails(Request $request, Submission $submission, AuditLogger $audit): RedirectResponse
+    {
+        $user = $request->user();
+        $isAuthorized = $user->isSuperAdmin() || $user->hasConferenceRole($submission->conference_id, ConferenceRole::Admin);
+
+        abort_unless($isAuthorized, 403, 'Unauthorized. Superadmin or Conference Admin role required to edit submission details.');
+
+        $validated = $request->validate([
+            'paper_code' => ['required', 'string', 'max:60'],
+            'title' => ['required', 'string', 'max:500'],
+            'corresponding_author_name' => ['required', 'string', 'max:200'],
+            'corresponding_author_email' => ['required', 'email', 'max:255'],
+            'corresponding_author_phone' => ['nullable', 'string', 'max:50'],
+            'manuscript_format' => ['nullable', Rule::in(['docx', 'latex', 'zip'])],
+            'initial_page_count' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'final_page_count' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $oldValues = $submission->only([
+            'paper_code', 'paper_id', 'title', 'corresponding_author_name',
+            'corresponding_author_email', 'corresponding_author_phone',
+            'manuscript_format', 'initial_page_count', 'final_page_count',
+        ]);
+
+        // Preserve original tracking fields if they were null
+        $originalPaperCode = $submission->original_paper_code ?: $submission->paper_code ?: $submission->paper_id;
+        $originalTitle = $submission->original_title ?: $submission->title;
+        $originalAuthorEmail = $submission->original_author_email ?: $submission->corresponding_author_email;
+
+        $submission->update([
+            'paper_code' => $validated['paper_code'],
+            'paper_id' => $validated['paper_code'],
+            'original_paper_code' => $originalPaperCode,
+            'title' => $validated['title'],
+            'original_title' => $originalTitle,
+            'corresponding_author_name' => $validated['corresponding_author_name'],
+            'corresponding_author_email' => Str::lower($validated['corresponding_author_email']),
+            'original_author_email' => $originalAuthorEmail,
+            'corresponding_author_phone' => $validated['corresponding_author_phone'] ?? null,
+            'manuscript_format' => $validated['manuscript_format'] ?? $submission->manuscript_format,
+            'initial_page_count' => $validated['initial_page_count'] ?? $submission->initial_page_count,
+            'final_page_count' => $validated['final_page_count'] ?? $submission->final_page_count,
+        ]);
+
+        // Also update primary author row in submission_authors table if exists
+        $primaryAuthor = $submission->authors()->where('is_corresponding', true)->first();
+        if ($primaryAuthor) {
+            $primaryAuthor->update([
+                'name' => $validated['corresponding_author_name'],
+                'email' => Str::lower($validated['corresponding_author_email']),
+                'phone' => $validated['corresponding_author_phone'] ?? $primaryAuthor->phone,
+            ]);
+        }
+
+        $audit->record('submission.details_updated', $submission, $submission->conference, oldValues: $oldValues, newValues: $submission->fresh()->only(array_keys($oldValues)));
+
+        return back()->with('success', 'Submission details updated successfully.');
     }
 }

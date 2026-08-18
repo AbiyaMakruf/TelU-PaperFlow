@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Enums\ConferenceRole;
 use App\Enums\ReviewStage;
 use App\Enums\SubmissionStatus;
+use App\Jobs\SendLoggedEmail;
 use App\Mail\PaperflowMail;
+use App\Models\EmailLog;
 use App\Models\ReviewItemResult;
 use App\Models\Submission;
 use App\Models\User;
@@ -148,19 +150,19 @@ class PaperflowEmailPresentationTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        $feedbackTable = '<div style="margin:16px 0; clear:both;">' .
-            '<table border="0" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1; font-size:13px;">' .
-            '<thead><tr style="background-color:#102a43; color:#ffffff;"><th style="padding:10px 12px;">Criteria</th><th style="padding:10px 12px;">Status</th><th style="padding:10px 12px;">Notes</th></tr></thead>' .
-            '<tbody>' .
-            '<tr style="background-color:#fff1f2;"><td style="padding:10px 12px;">1. Template (IEEE&#039;s Format)</td><td style="padding:10px 12px;">✕ Needs Revision</td><td style="padding:10px 12px;">Must use IEEE&#039;s latex/word template (https://www.ieee.org/conferences/publishing/templates.html)</td></tr>' .
-            '<tr style="background-color:#fff1f2;"><td style="padding:10px 12px;">2. Abstract &amp; Title</td><td style="padding:10px 12px;">✕ Needs Revision</td><td style="padding:10px 12px;">Abstract length &lt; 200 words</td></tr>' .
-            '<tr style="background-color:#fff1f2;"><td style="padding:10px 12px;">3. References</td><td style="padding:10px 12px;">✕ Needs Revision</td><td style="padding:10px 12px;">Reference [1] missing year</td></tr>' .
+        $feedbackTable = '<div style="margin:16px 0; clear:both;">'.
+            '<table border="0" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1; font-size:13px;">'.
+            '<thead><tr style="background-color:#102a43; color:#ffffff;"><th style="padding:10px 12px;">Criteria</th><th style="padding:10px 12px;">Status</th><th style="padding:10px 12px;">Notes</th></tr></thead>'.
+            '<tbody>'.
+            '<tr style="background-color:#fff1f2;"><td style="padding:10px 12px;">1. Template (IEEE&#039;s Format)</td><td style="padding:10px 12px;">✕ Needs Revision</td><td style="padding:10px 12px;">Must use IEEE&#039;s latex/word template (https://www.ieee.org/conferences/publishing/templates.html)</td></tr>'.
+            '<tr style="background-color:#fff1f2;"><td style="padding:10px 12px;">2. Abstract &amp; Title</td><td style="padding:10px 12px;">✕ Needs Revision</td><td style="padding:10px 12px;">Abstract length &lt; 200 words</td></tr>'.
+            '<tr style="background-color:#fff1f2;"><td style="padding:10px 12px;">3. References</td><td style="padding:10px 12px;">✕ Needs Revision</td><td style="padding:10px 12px;">Reference [1] missing year</td></tr>'.
             '</tbody></table></div>';
 
         $portalUrl = route('author.portal', 'test-token-12345');
-        $body = "Dear Authors,\n\nRevision is required:\n\n" . $feedbackTable . "\n\n📌 IMPORTANT INSTRUCTIONS FOR REVISION:\n• Please download latest manuscript.\n\nPortal: " . $portalUrl;
+        $body = "Dear Authors,\n\nRevision is required:\n\n".$feedbackTable."\n\n📌 IMPORTANT INSTRUCTIONS FOR REVISION:\n• Please download latest manuscript.\n\nPortal: ".$portalUrl;
 
-        $log = \App\Models\EmailLog::create([
+        $log = EmailLog::create([
             'conference_id' => $conference->id,
             'submission_id' => $submission->id,
             'template_key' => 'revision_requested',
@@ -170,7 +172,7 @@ class PaperflowEmailPresentationTest extends TestCase
             'status' => 'queued',
         ]);
 
-        $job = new \App\Jobs\SendLoggedEmail($log, $body, [], $portalUrl);
+        $job = new SendLoggedEmail($log, $body, [], $portalUrl);
         $job->handle();
 
         $this->assertSame($portalUrl, $job->actionUrl);
@@ -185,7 +187,7 @@ class PaperflowEmailPresentationTest extends TestCase
         $rendered = $mail->render();
 
         // 1. CTA URL must be portal URL, not the IEEE URL
-        $this->assertStringContainsString('href="' . $portalUrl . '"', $rendered);
+        $this->assertStringContainsString('href="'.$portalUrl.'"', $rendered);
         $this->assertStringNotContainsString('%3C/td%3E', $rendered);
 
         // 2. All 3 items must be in separate <tr> tags and </table> must be properly closed before IMPORTANT INSTRUCTIONS

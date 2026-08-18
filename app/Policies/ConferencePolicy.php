@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\ConferenceRole;
 use App\Models\Conference;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class ConferencePolicy
 {
@@ -30,7 +31,7 @@ class ConferencePolicy
     {
         $allowed = $user->hasConferenceRole($conference, ConferenceRole::Admin);
         if (! $allowed) {
-            \Illuminate\Support\Facades\Log::warning('[Paperflow Authorization] 403 Forbidden on Conference Update/EDAS', [
+            Log::warning('[Paperflow Authorization] 403 Forbidden on Conference Update/EDAS', [
                 'user_id' => $user->id,
                 'user_email' => $user->email,
                 'is_super_admin' => $user->is_super_admin,

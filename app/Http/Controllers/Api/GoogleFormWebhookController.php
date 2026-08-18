@@ -123,9 +123,15 @@ class GoogleFormWebhookController extends Controller
             ->where('conference_id', $conference->id)
             ->where(function ($query) use ($paperId, $title, $authorEmail) {
                 $query->where('paper_id', $paperId)
+                    ->orWhere('paper_code', $paperId)
+                    ->orWhere('original_paper_code', $paperId)
                     ->orWhere(function ($q) use ($title, $authorEmail) {
                         $q->where('title', $title)
                             ->where('corresponding_author_email', $authorEmail);
+                    })
+                    ->orWhere(function ($q) use ($title, $authorEmail) {
+                        $q->where('original_title', $title)
+                            ->where('original_author_email', $authorEmail);
                     });
             })
             ->first();
@@ -141,7 +147,7 @@ class GoogleFormWebhookController extends Controller
             );
 
             // Flag duplicate warning if paper_id differs but title matches
-            $isDuplicateFlag = ($submission->paper_id !== $paperId);
+            $isDuplicateFlag = ($submission->paper_id !== $paperId && $submission->paper_code !== $paperId && $submission->original_paper_code !== $paperId);
             $duplicateNotes = $isDuplicateFlag
                 ? "Re-submitted with different Paper ID ({$paperId}) under existing paper {$submission->paper_id}."
                 : $submission->duplicate_notes;
@@ -191,10 +197,13 @@ class GoogleFormWebhookController extends Controller
                 'form_version_id' => $conference->activeFormVersion?->id,
                 'paper_id' => $paperId,
                 'paper_code' => $paperId,
+                'original_paper_code' => $paperId,
                 'manuscript_format' => $manuscriptFormat,
                 'title' => $title,
+                'original_title' => $title,
                 'corresponding_author_name' => $authorName ?: 'Author',
                 'corresponding_author_email' => $authorEmail,
+                'original_author_email' => $authorEmail,
                 'corresponding_author_phone' => $authorPhone ?: '-',
                 'status' => SubmissionStatus::Submitted,
                 'submission_source' => 'google_form',

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conference;
+use App\Services\ConferenceFileStorage;
 use App\Services\GoogleDriveStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -78,7 +79,7 @@ class GoogleDriveController extends Controller
         return back()->with('success', 'Google Drive disconnected from conference.');
     }
 
-    public function migrateStorage(Request $request, Conference $conference, \App\Services\ConferenceFileStorage $storage): RedirectResponse
+    public function migrateStorage(Request $request, Conference $conference, ConferenceFileStorage $storage): RedirectResponse
     {
         $this->authorize('update', $conference);
         $validated = $request->validate([

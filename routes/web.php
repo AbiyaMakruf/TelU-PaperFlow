@@ -28,10 +28,14 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicSubmissionController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\SubmissionExportController;
+use App\Http\Controllers\SubmissionImportController;
 use App\Http\Controllers\UserManualController;
 use App\Http\Controllers\WorkspaceController;
 use App\Models\Conference;
-Route::get('/deploy-purge-cache', function (\Illuminate\Http\Request $request) {
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/deploy-purge-cache', function (Request $request) {
     $expectedToken = md5((string) config('app.key'));
     $token = $request->query('token');
 
@@ -43,11 +47,11 @@ Route::get('/deploy-purge-cache', function (\Illuminate\Http\Request $request) {
         @opcache_reset();
     }
 
-    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
-    \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    \Illuminate\Support\Facades\Artisan::call('config:clear');
-    \Illuminate\Support\Facades\Artisan::call('route:clear');
-    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    Artisan::call('optimize:clear');
+    Artisan::call('cache:clear');
+    Artisan::call('config:clear');
+    Artisan::call('route:clear');
+    Artisan::call('view:clear');
 
     return response()->json([
         'success' => true,
@@ -112,6 +116,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/papers/bulk-send-portal-link', [SubmissionController::class, 'bulkSendPortalLink'])->name('submissions.bulk-send-portal-link');
         Route::get('/papers-export.csv', SubmissionExportController::class)->name('submissions.export');
         Route::get('/papers/{submission}', [SubmissionController::class, 'show'])->name('submissions.show');
+        Route::put('/papers/{submission}/details', [SubmissionController::class, 'updateDetails'])->name('submissions.details.update');
         Route::post('/papers/{submission}/send-portal-link', [SubmissionController::class, 'sendPortalLink'])->name('submissions.send-portal-link');
         Route::post('/papers/{submission}/accept', [SubmissionController::class, 'accept'])->name('submissions.accept');
         Route::post('/papers/{submission}/correction', [SubmissionController::class, 'requestCorrection'])->name('submissions.correction');
@@ -128,24 +133,24 @@ Route::middleware('auth')->group(function () {
         Route::post('/papers/{submission}/uploads/{attempt}/retry', [SubmissionController::class, 'retryUpload'])->name('submissions.uploads.retry');
 
         // Backward compatibility redirect for legacy un-scoped EDAS Reconciliation URLs (e.g. /conferences/edas-reconciliation?01kzrx...)
-        Route::get('/conferences/edas-reconciliation', function (\Illuminate\Http\Request $request) {
+        Route::get('/conferences/edas-reconciliation', function (Request $request) {
             $queryString = $request->getQueryString() ?? '';
             $rawParam = trim(explode('=', $queryString)[0], '?');
             $conferenceId = filled($rawParam) ? $rawParam : session('active_conference_id');
 
-            $conference = \App\Models\Conference::where('id', $conferenceId)
+            $conference = Conference::where('id', $conferenceId)
                 ->orWhere('slug', $conferenceId)
                 ->first();
 
             if (! $conference && auth()->check()) {
                 $userConferences = auth()->user()->isSuperAdmin()
-                    ? \App\Models\Conference::orderBy('name')->get()
-                    : \App\Models\Conference::whereIn('id', auth()->user()->conferenceMemberships()->where('is_active', true)->pluck('conference_id'))->orderBy('name')->get();
+                    ? Conference::orderBy('name')->get()
+                    : Conference::whereIn('id', auth()->user()->conferenceMemberships()->where('is_active', true)->pluck('conference_id'))->orderBy('name')->get();
                 $conference = $userConferences->first();
             }
 
             if (! $conference) {
-                $conference = \App\Models\Conference::orderBy('name')->firstOrFail();
+                $conference = Conference::orderBy('name')->firstOrFail();
             }
 
             return redirect()->route('conferences.edas-reconciliation.index', $conference);
@@ -155,8 +160,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/conferences/{conference}/edas-reconciliation/upload', [EdasReconciliationController::class, 'upload'])->name('conferences.edas-reconciliation.upload');
         Route::post('/conferences/{conference}/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
         Route::get('/conferences/{conference}/edas-reconciliation/export-missing', [EdasReconciliationController::class, 'exportMissing'])->name('conferences.edas-reconciliation.export-missing');
-        Route::post('/conferences/{conference}/import/preview', [\App\Http\Controllers\SubmissionImportController::class, 'preview'])->name('conferences.import.preview');
-        Route::post('/conferences/{conference}/import/process', [\App\Http\Controllers\SubmissionImportController::class, 'process'])->name('conferences.import.process');
+        Route::post('/conferences/{conference}/import/preview', [SubmissionImportController::class, 'preview'])->name('conferences.import.preview');
+        Route::post('/conferences/{conference}/import/process', [SubmissionImportController::class, 'process'])->name('conferences.import.process');
         Route::post('/conferences/{conference}/duplicate', [ConferenceController::class, 'duplicate'])->name('conferences.duplicate');
         Route::get('/conferences/{conference}/members', [ConferenceMemberController::class, 'index'])->name('conferences.members.index');
         Route::post('/conferences/{conference}/members', [ConferenceMemberController::class, 'store'])->name('conferences.members.store');

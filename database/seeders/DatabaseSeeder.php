@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -14,12 +16,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\User::withTrashed()->updateOrCreate(
+        User::withTrashed()->updateOrCreate(
             ['username' => 'superadmin'],
             [
                 'name' => 'Super Admin',
                 'email' => 'superadmin@paperflow.test',
-                'password' => \Illuminate\Support\Facades\Hash::make('user1234'),
+                'password' => Hash::make('user1234'),
                 'is_super_admin' => true,
                 'is_active' => true,
                 'must_change_password' => false,

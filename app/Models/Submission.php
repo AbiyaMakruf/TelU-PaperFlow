@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -20,8 +21,8 @@ class Submission extends Model
     use HasFactory, HasUlids, SoftDeletes;
 
     protected $fillable = [
-        'conference_id', 'form_version_id', 'paper_id', 'paper_code', 'manuscript_format', 'initial_page_count', 'final_page_count', 'title', 'corresponding_author_name',
-        'corresponding_author_email', 'corresponding_author_phone', 'answers', 'status', 'submission_source', 'is_flagged_duplicate', 'duplicate_notes',
+        'conference_id', 'form_version_id', 'paper_id', 'paper_code', 'original_paper_code', 'manuscript_format', 'initial_page_count', 'final_page_count', 'title', 'original_title', 'corresponding_author_name',
+        'corresponding_author_email', 'original_author_email', 'corresponding_author_phone', 'answers', 'status', 'submission_source', 'is_flagged_duplicate', 'duplicate_notes',
         'editor_id', 'reviewer_id', 'author_token_hash', 'author_token_encrypted', 'author_token_expires_at',
         'submitted_at', 'validated_at', 'completed_at', 'edas_reference', 'edas_notes', 'lock_version',
         'deadline_at', 'edas_submitted_at', 'edas_submitted_by', 'edas_approved_at', 'edas_approved_by',
@@ -184,7 +185,7 @@ class Submission extends Model
             ->exists();
     }
 
-    public function portalLinkSentAt(): ?\Illuminate\Support\Carbon
+    public function portalLinkSentAt(): ?Carbon
     {
         if ($this->relationLoaded('emailLogs')) {
             $log = $this->emailLogs->first(fn ($log) => in_array($log->template_key, ['submission_received', 'portal_access_link'], true) && $log->status !== 'failed');

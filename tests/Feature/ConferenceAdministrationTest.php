@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\ConferenceRole;
+use App\Enums\SubmissionStatus;
 use App\Models\Conference;
 use App\Models\EmailTemplate;
+use App\Models\Submission;
 use App\Models\User;
+use App\Services\VisibleSubmissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -153,13 +156,13 @@ class ConferenceAdministrationTest extends TestCase
             'slug' => 'to-be-deleted',
             'status' => 'active',
         ]);
-        $submission = \App\Models\Submission::create([
+        $submission = Submission::create([
             'conference_id' => $conference->id,
             'paper_code' => 'DEL-001',
             'title' => 'Paper in Deleted Conference',
             'corresponding_author_name' => 'Author',
             'corresponding_author_email' => 'author@example.com',
-            'status' => \App\Enums\SubmissionStatus::Submitted,
+            'status' => SubmissionStatus::Submitted,
             'submitted_at' => now(),
         ]);
 
@@ -169,7 +172,7 @@ class ConferenceAdministrationTest extends TestCase
         $this->assertSoftDeleted('conferences', ['id' => $conference->id]);
         $this->assertSoftDeleted('submissions', ['id' => $submission->id]);
 
-        $visibleSubmissions = app(\App\Services\VisibleSubmissions::class)->for($superadmin)->get();
+        $visibleSubmissions = app(VisibleSubmissions::class)->for($superadmin)->get();
         $this->assertFalse($visibleSubmissions->contains('id', $submission->id));
     }
 
