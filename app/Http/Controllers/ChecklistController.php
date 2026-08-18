@@ -45,7 +45,7 @@ class ChecklistController extends Controller
                     ['name' => $payload['name']],
                 );
                 $template->items()->delete();
-                foreach ($payload['items'] as $index => $item) {
+                foreach (array_values($payload['items']) as $index => $item) {
                     $template->items()->create([
                         'title' => $item['title'],
                         'description' => $item['description'] ?? null,
