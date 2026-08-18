@@ -15,6 +15,9 @@
                     <button type="button" @click="activeTab = 'jobs'" :class="activeTab === 'jobs' ? 'bg-white text-navy shadow-sm' : 'text-slate-600 hover:text-navy'" class="rounded-lg px-3 py-1.5 text-xs font-black transition">
                         ⚠️ Failed Jobs &amp; Logs
                     </button>
+                    <button type="button" @click="activeTab = 'backup'" :class="activeTab === 'backup' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-navy font-bold'" class="rounded-lg px-3 py-1.5 text-xs font-black transition flex items-center gap-1.5">
+                        📦 Backup &amp; Restore
+                    </button>
                     <button type="button" @click="activeTab = 'purge'" :class="activeTab === 'purge' ? 'bg-rose-600 text-white shadow-sm' : 'text-rose-700 hover:text-rose-900 font-bold'" class="rounded-lg px-3 py-1.5 text-xs font-black transition flex items-center gap-1.5">
                         🚨 System Reset &amp; Purge
                     </button>
@@ -283,7 +286,91 @@
         @endif
 
         @if($canViewSystemMonitoring)
-            <!-- TAB 4: SUPERADMIN SYSTEM RESET & PURGE -->
+            <!-- TAB 4: DATABASE BACKUP & RESTORE CHECKPOINT -->
+            <div x-show="activeTab === 'backup'" x-cloak class="mt-6 space-y-6">
+                <div class="card p-6 border-2 border-emerald-500/30 bg-gradient-to-b from-emerald-50/40 to-white shadow-lg rounded-2xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-200/80 pb-5">
+                        <div class="flex items-center gap-3">
+                            <div class="grid size-12 place-items-center rounded-2xl bg-emerald-600 text-white text-2xl font-bold shadow-md">📦</div>
+                            <div>
+                                <h2 class="font-black text-navy text-xl">Database Backup &amp; Restore Checkpoint</h2>
+                                <p class="text-xs text-muted">Create system checkpoints and restore data safely if accidental deletion or system issues occur.</p>
+                            </div>
+                        </div>
+                        <a href="{{ route('admin.system.backup.export') }}" class="btn text-xs py-2.5 px-5 font-black shadow-md bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition inline-flex items-center gap-2">
+                            <span>⬇️</span>
+                            <span>Download Database Backup</span>
+                        </a>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Card: Backup Guidance & Stats -->
+                        <div class="rounded-2xl bg-white p-5 border border-slate-200 shadow-xs space-y-4">
+                            <h3 class="font-black text-navy text-sm flex items-center gap-2">
+                                <span>🛡️</span>
+                                <span>Database Backup Protection</span>
+                            </h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Downloading a backup exports all conferences, paper submissions, file metadata, status history, checklist evaluations, email logs, and user accounts into a timestamped JSON snapshot.
+                            </p>
+
+                            <div class="rounded-xl bg-slate-50 p-4 border border-slate-200 text-xs space-y-2 text-slate-700">
+                                <div class="flex justify-between font-bold">
+                                    <span>Total Submissions to Backup:</span>
+                                    <span class="text-navy font-black">{{ number_format($dbStatus['records']['submissions']) }}</span>
+                                </div>
+                                <div class="flex justify-between font-bold">
+                                    <span>Active Conferences:</span>
+                                    <span class="text-navy font-black">{{ number_format($dbStatus['records']['conferences']) }}</span>
+                                </div>
+                                <div class="flex justify-between font-bold">
+                                    <span>File Version Records:</span>
+                                    <span class="text-navy font-black">{{ number_format($dbStatus['records']['file_versions']) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 space-y-1">
+                                <p class="font-extrabold flex items-center gap-1">💡 Best Practice Suggestion</p>
+                                <p class="text-[11px] leading-normal">
+                                    Create a backup before performing bulk operations or major conference configurations to ensure you can restore to this exact checkpoint at any time.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Right Card: Restore Checkpoint Form -->
+                        <div class="rounded-2xl bg-white p-5 border border-slate-200 shadow-xs space-y-4">
+                            <h3 class="font-black text-navy text-sm flex items-center gap-2">
+                                <span>🔄</span>
+                                <span>Restore Checkpoint from Backup</span>
+                            </h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Select a previously downloaded <code class="bg-slate-100 px-1 py-0.5 rounded text-navy font-bold">.json</code> backup file to restore the application database back to that checkpoint.
+                            </p>
+
+                            <form method="POST" action="{{ route('admin.system.backup.restore') }}" enctype="multipart/form-data" class="space-y-4" onsubmit="return confirm('⚠️ RESTORE WARNING: This action will replace current database tables with data from the backup file. Are you sure you want to proceed?');">
+                                @csrf
+
+                                <div class="space-y-1">
+                                    <label class="form-label text-xs font-bold text-navy">Select Backup JSON File *</label>
+                                    <input type="file" name="backup_file" accept=".json,application/json" required class="form-input text-xs">
+                                </div>
+
+                                <div class="space-y-1">
+                                    <label class="form-label text-xs font-bold text-navy">Superadmin Password Verification *</label>
+                                    <input type="password" name="password" placeholder="Enter your current password" required class="form-input text-xs">
+                                </div>
+
+                                <button type="submit" class="btn text-xs py-2.5 px-4 font-black shadow-sm bg-navy hover:bg-navy-dark text-white rounded-xl transition w-full flex items-center justify-center gap-2">
+                                    <span>🔄</span>
+                                    <span>Restore Database Checkpoint</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: SUPERADMIN SYSTEM RESET & PURGE -->
             <div x-show="activeTab === 'purge'" x-cloak class="mt-6 space-y-6" x-data="{ showPurgeModal: false, passwordInput: '', showPassword: false }">
                 <div class="card p-6 sm:p-8 border-2 border-rose-200 bg-gradient-to-b from-rose-50/70 to-white shadow-lg rounded-2xl space-y-6">
                     <div class="flex items-start gap-4 border-b border-rose-200 pb-5">
