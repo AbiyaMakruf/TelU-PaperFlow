@@ -18,15 +18,21 @@ class GoogleDriveStorage
     public function redirectUri(): string
     {
         $custom = config('services.google_drive.redirect_uri');
-        if (filled($custom)) {
-            return $custom;
+        $uri = filled($custom)
+            ? $custom
+            : (function () {
+                try {
+                    return route('google-drive.callback');
+                } catch (\Throwable) {
+                    return url('/google-drive/callback');
+                }
+            })();
+
+        if (str_starts_with((string) config('app.url'), 'https://') && str_starts_with($uri, 'http://')) {
+            $uri = 'https://'.substr($uri, 7);
         }
 
-        try {
-            return route('google-drive.callback');
-        } catch (\Throwable) {
-            return url('/google-drive/callback');
-        }
+        return $uri;
     }
 
     public function configured(): bool

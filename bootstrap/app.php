@@ -4,9 +4,14 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ForcePasswordChange;
 use App\Http\Middleware\RequireSuperAdmin;
 use App\Http\Middleware\SkipNgrokWarning;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -27,8 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, \Illuminate\Http\Request $request) {
-            \Illuminate\Support\Facades\Log::error('[Paperflow 404 Not Found] Route missing', [
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            Log::error('[Paperflow 404 Not Found] Route missing', [
                 'url' => $request->fullUrl(),
                 'path' => $request->path(),
                 'method' => $request->method(),
@@ -44,8 +49,8 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        $exceptions->render(function (\Illuminate\Auth\Access\AuthorizationException $e, \Illuminate\Http\Request $request) {
-            \Illuminate\Support\Facades\Log::warning('[Paperflow 403 Forbidden] Authorization check failed', [
+        $exceptions->render(function (AuthorizationException $e, Request $request) {
+            Log::warning('[Paperflow 403 Forbidden] Authorization check failed', [
                 'url' => $request->fullUrl(),
                 'path' => $request->path(),
                 'method' => $request->method(),
@@ -61,8 +66,8 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
-            \Illuminate\Support\Facades\Log::warning('[Paperflow 419 Token Mismatch] CSRF token invalid or missing', [
+        $exceptions->render(function (TokenMismatchException $e, Request $request) {
+            Log::warning('[Paperflow 419 Token Mismatch] CSRF token invalid or missing', [
                 'url' => $request->fullUrl(),
                 'path' => $request->path(),
                 'method' => $request->method(),

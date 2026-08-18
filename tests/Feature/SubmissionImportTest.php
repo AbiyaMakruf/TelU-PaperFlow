@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Conference;
-use App\Models\FileVersion;
 use App\Models\Submission;
 use App\Models\User;
+use App\Services\ConferenceProvisioner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -56,7 +56,7 @@ class SubmissionImportTest extends TestCase
     {
         Storage::fake('local');
         $user = User::factory()->create(['must_change_password' => false]);
-        $conference = app(\App\Services\ConferenceProvisioner::class)->create([
+        $conference = app(ConferenceProvisioner::class)->create([
             'name' => 'ICST 2026',
             'slug' => 'icst-2026',
             'status' => 'active',

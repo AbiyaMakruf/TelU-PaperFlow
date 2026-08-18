@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ConferenceStatus;
 use App\Models\Conference;
 use App\Services\AuditLogger;
+use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceProvisioner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -147,6 +148,7 @@ class ConferenceController extends Controller
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => true, 'message' => 'Conference has already been removed.']);
             }
+
             return redirect()->route('conferences.index')->with('info', 'Conference has already been removed.');
         }
 
@@ -154,6 +156,7 @@ class ConferenceController extends Controller
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => true, 'message' => "Conference \"{$conference->name}\" was already deleted."]);
             }
+
             return redirect()->route('conferences.index')->with('info', "Conference \"{$conference->name}\" was already deleted.");
         }
 
@@ -169,7 +172,7 @@ class ConferenceController extends Controller
         $audit->record('conference.deleted', $conference, $conference, oldValues: $oldValues);
 
         // Delete physical files from Supabase / private file storage
-        app(\App\Services\ConferenceFileStorage::class)->deleteConferenceFiles($conference);
+        app(ConferenceFileStorage::class)->deleteConferenceFiles($conference);
 
         // Delete memberships and soft-delete submissions with file versions
         $conference->memberships()->delete();
@@ -178,11 +181,12 @@ class ConferenceController extends Controller
             $sub->delete();
         });
 
-        $conference->update(['slug' => $conference->slug . '-deleted-' . time()]);
+        $conference->update(['slug' => $conference->slug.'-deleted-'.time()]);
         $conference->delete();
 
         if ($request->wantsJson() || $request->ajax()) {
             session()->flash('success', "Conference \"{$name}\" has been deleted successfully.");
+
             return response()->json(['success' => true, 'message' => "Conference \"{$name}\" has been deleted successfully."]);
         }
 

@@ -97,7 +97,7 @@ class GoogleFormWebhookTest extends TestCase
             "Paper's Title" => 'Quantum Computing Research',
             "Registered Author's Name" => 'Dr. Alice',
             "Registered Author's Email Address" => 'alice@example.com',
-            "Upload the Manuscript Source" => 'https://drive.google.com/file/d/v1/view',
+            'Upload the Manuscript Source' => 'https://drive.google.com/file/d/v1/view',
         ];
 
         // First Submission (v1)
@@ -114,7 +114,7 @@ class GoogleFormWebhookTest extends TestCase
             "Paper's Title" => 'Quantum Computing Research',
             "Registered Author's Name" => 'Dr. Alice',
             "Registered Author's Email Address" => 'alice@example.com',
-            "Upload the Manuscript Source" => 'https://drive.google.com/file/d/v2-updated/view',
+            'Upload the Manuscript Source' => 'https://drive.google.com/file/d/v2-updated/view',
         ];
 
         $responseV2 = $this->postJson("/api/webhooks/google-form/{$conference->slug}", $payloadV2, ['X-Paperflow-Secret' => $secret]);

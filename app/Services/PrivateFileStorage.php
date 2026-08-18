@@ -68,6 +68,7 @@ class PrivateFileStorage
     {
         if (! $this->usesSupabase()) {
             Storage::disk('local')->delete($path);
+
             return;
         }
 
@@ -80,6 +81,7 @@ class PrivateFileStorage
     {
         if (! $this->usesSupabase()) {
             Storage::disk('local')->deleteDirectory($folderPath);
+
             return;
         }
 

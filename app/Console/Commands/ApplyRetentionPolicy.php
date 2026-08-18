@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Enums\SubmissionStatus;
 use App\Models\Conference;
-use App\Models\FileVersion;
 use App\Models\Submission;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;

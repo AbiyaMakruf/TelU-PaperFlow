@@ -12,7 +12,6 @@ use App\Services\SubmissionWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class SubmissionImportController extends Controller
 {
@@ -272,16 +271,22 @@ class SubmissionImportController extends Controller
                     ->where('conference_id', $conference->id)
                     ->where(function ($query) use ($paperId, $title, $authorEmail) {
                         $query->where('paper_id', $paperId)
+                            ->orWhere('paper_code', $paperId)
+                            ->orWhere('original_paper_code', $paperId)
                             ->orWhere(function ($q) use ($title, $authorEmail) {
                                 $q->where('title', $title)
                                     ->where('corresponding_author_email', $authorEmail);
+                            })
+                            ->orWhere(function ($q) use ($title, $authorEmail) {
+                                $q->where('original_title', $title)
+                                    ->where('original_author_email', $authorEmail);
                             });
                     })
                     ->first();
 
                 if ($existing) {
                     // Update existing paper safely without deleting review cycles or internal notes
-                    $isDuplicateFlag = ($existing->paper_id !== $paperId);
+                    $isDuplicateFlag = ($existing->paper_id !== $paperId && $existing->paper_code !== $paperId && $existing->original_paper_code !== $paperId);
                     $duplicateNotes = $isDuplicateFlag
                         ? "Imported CSV row with different Paper ID ({$paperId}) under existing paper {$existing->paper_id}."
                         : $existing->duplicate_notes;
@@ -335,10 +340,13 @@ class SubmissionImportController extends Controller
                         'form_version_id' => $conference->activeFormVersion?->id,
                         'paper_id' => $paperId,
                         'paper_code' => $paperId,
+                        'original_paper_code' => $paperId,
                         'manuscript_format' => $manuscriptFormat,
                         'title' => $title,
+                        'original_title' => $title,
                         'corresponding_author_name' => $authorName ?: 'Author',
                         'corresponding_author_email' => $authorEmail,
+                        'original_author_email' => $authorEmail,
                         'corresponding_author_phone' => $authorPhone ?: '-',
                         'status' => SubmissionStatus::Submitted,
                         'submission_source' => 'google_form',

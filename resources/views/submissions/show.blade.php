@@ -52,9 +52,100 @@
         <div class="space-y-6 min-w-0 w-full max-w-full">
             <!-- Data Submission Card -->
             <section class="card p-4 sm:p-6 max-w-full min-w-0">
+                @php $canEditDetails = auth()->user()->isSuperAdmin() || auth()->user()->hasConferenceRole($submission->conference_id, \App\Enums\ConferenceRole::Admin); @endphp
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between border-b border-navy/8 pb-3">
                     <h2 class="text-base sm:text-lg font-black text-navy">Submission Details</h2>
-                    <span class="text-xs text-muted font-medium">{{ $submission->submitted_at?->timezone($submission->conference?->timezone ?? 'UTC')->format('d M Y H:i') }}</span>
+                    @if($canEditDetails)
+                        <div x-data="{ showEditModal: false }">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-muted font-medium">{{ $submission->submitted_at?->timezone($submission->conference?->timezone ?? 'UTC')->format('d M Y H:i') }}</span>
+                                <button type="button" @click="showEditModal = true" class="btn btn-secondary text-xs py-1 px-2.5 rounded-lg font-bold hover:text-navy transition flex items-center gap-1 shadow-2xs">
+                                    <span>✏️</span>
+                                    <span>Edit Details</span>
+                                </button>
+                            </div>
+
+                            <!-- Edit Modal -->
+                            <template x-teleport="body">
+                                <div x-show="showEditModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4" @keydown.escape.window="showEditModal = false">
+                                    <div class="card max-w-xl w-full p-6 space-y-5 bg-white shadow-2xl rounded-2xl border border-slate-200" @click.away="showEditModal = false">
+                                        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                                            <div>
+                                                <h3 class="font-black text-navy text-base">Edit Submission Details</h3>
+                                                <p class="text-xs text-muted">Update paper metadata. Original identifiers are preserved for smart CSV deduplication.</p>
+                                            </div>
+                                            <button type="button" @click="showEditModal = false" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+                                        </div>
+
+                                        <form id="editSubmissionDetailsForm" x-ref="editDetailsForm" method="POST" action="{{ route('submissions.details.update', $submission) }}" class="space-y-4">
+                                            @csrf
+                                            @method('PUT')
+
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div class="space-y-1">
+                                                    <label class="form-label text-xs font-bold">Paper ID / Code *</label>
+                                                    <input type="text" name="paper_code" value="{{ old('paper_code', $submission->paper_code ?: $submission->paper_id) }}" required class="form-input text-xs">
+                                                </div>
+
+                                                <div class="space-y-1">
+                                                    <label class="form-label text-xs font-bold">Editable Format</label>
+                                                    <select name="manuscript_format" class="form-input text-xs">
+                                                        <option value="docx" @selected($submission->manuscript_format === 'docx')>Microsoft Word (DOCX)</option>
+                                                        <option value="latex" @selected($submission->manuscript_format === 'latex' || $submission->manuscript_format === 'zip')>LaTeX (ZIP)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="space-y-1">
+                                                <label class="form-label text-xs font-bold">Paper Title *</label>
+                                                <textarea name="title" rows="2" required class="form-input text-xs leading-relaxed">{{ old('title', $submission->title) }}</textarea>
+                                            </div>
+
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div class="space-y-1">
+                                                    <label class="form-label text-xs font-bold">Primary Author Name *</label>
+                                                    <input type="text" name="corresponding_author_name" value="{{ old('corresponding_author_name', $submission->corresponding_author_name) }}" required class="form-input text-xs">
+                                                </div>
+
+                                                <div class="space-y-1">
+                                                    <label class="form-label text-xs font-bold">Primary Author Email *</label>
+                                                    <input type="email" name="corresponding_author_email" value="{{ old('corresponding_author_email', $submission->corresponding_author_email) }}" required class="form-input text-xs">
+                                                </div>
+                                            </div>
+
+                                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                <div class="space-y-1 sm:col-span-1">
+                                                    <label class="form-label text-xs font-bold">WhatsApp / Phone</label>
+                                                    <input type="text" name="corresponding_author_phone" value="{{ old('corresponding_author_phone', $submission->corresponding_author_phone) }}" class="form-input text-xs" placeholder="+62812...">
+                                                </div>
+
+                                                <div class="space-y-1 sm:col-span-1">
+                                                    <label class="form-label text-xs font-bold">Initial Page Count</label>
+                                                    <input type="number" name="initial_page_count" min="1" max="100" value="{{ old('initial_page_count', $submission->initial_page_count) }}" class="form-input text-xs" placeholder="e.g. 8">
+                                                </div>
+
+                                                <div class="space-y-1 sm:col-span-1">
+                                                    <label class="form-label text-xs font-bold">Final Page Count</label>
+                                                    <input type="number" name="final_page_count" min="1" max="100" value="{{ old('final_page_count', $submission->final_page_count) }}" class="form-input text-xs" placeholder="e.g. 6">
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                                                <button type="button" @click="showEditModal = false" class="btn btn-secondary text-xs px-4 py-2 font-bold rounded-xl">
+                                                    Cancel
+                                                </button>
+                                                <button type="button" @click="$refs.editDetailsForm.submit()" class="btn btn-primary text-xs px-5 py-2 font-black rounded-xl shadow-xs">
+                                                    Save Details
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    @else
+                        <span class="text-xs text-muted font-medium">{{ $submission->submitted_at?->timezone($submission->conference?->timezone ?? 'UTC')->format('d M Y H:i') }}</span>
+                    @endif
                 </div>
                 <dl class="mt-5 grid gap-4 sm:grid-cols-2 text-xs sm:text-sm">
                     <div class="min-w-0">

@@ -19,7 +19,7 @@ class DuplicateSubmissionDetector
 
         foreach ($existingSubmissions as $existing) {
             $existingTitle = mb_strtolower(trim(preg_replace('/\s+/', ' ', $existing->title)));
-            
+
             if ($normalizedTitle === $existingTitle) {
                 return "Paper title is identical to submission {$existing->paper_code}.";
             }
@@ -27,7 +27,7 @@ class DuplicateSubmissionDetector
             // String similarity > 85%
             similar_text($normalizedTitle, $existingTitle, $percent);
             if ($percent >= 85.0) {
-                return "Paper title is highly similar (" . round($percent, 1) . "%) to submission {$existing->paper_code}.";
+                return 'Paper title is highly similar ('.round($percent, 1)."%) to submission {$existing->paper_code}.";
             }
 
             // Same author email and title similarity > 70%

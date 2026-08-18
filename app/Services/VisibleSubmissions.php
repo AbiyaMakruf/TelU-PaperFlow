@@ -19,6 +19,7 @@ class VisibleSubmissions
             if ($activeWorkspaceId) {
                 return $query->where('conference_id', $activeWorkspaceId);
             }
+
             return $query;
         }
 
