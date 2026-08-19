@@ -63,11 +63,32 @@ class SubmissionController extends Controller
             ->when($request->boolean('overdue'), fn ($q) => $q->where('deadline_at', '<', now())->whereNotIn('status', [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn]))
             ->when($request->filled('date_from'), fn ($q) => $q->whereDate('submitted_at', '>=', $request->date('date_from')))
             ->when($request->filled('date_to'), fn ($q) => $q->whereDate('submitted_at', '<=', $request->date('date_to')))
-            ->when($request->filled('search'), fn ($q) => $q->where(fn ($search) => $search
-                ->where('paper_code', 'like', '%'.$request->string('search').'%')
-                ->orWhere('paper_id', 'like', '%'.$request->string('search').'%')
-                ->orWhere('title', 'like', '%'.$request->string('search').'%')
-                ->orWhere('corresponding_author_name', 'like', '%'.$request->string('search').'%')));
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $term = Str::lower(trim($request->string('search')->toString()));
+                $likeTerm = '%'.$term.'%';
+
+                $q->where(function ($search) use ($likeTerm) {
+                    $search->whereRaw('LOWER(paper_code) LIKE ?', [$likeTerm])
+                        ->orWhereRaw('LOWER(paper_id) LIKE ?', [$likeTerm])
+                        ->orWhereRaw('LOWER(COALESCE(original_paper_code, \'\')) LIKE ?', [$likeTerm])
+                        ->orWhereRaw('LOWER(title) LIKE ?', [$likeTerm])
+                        ->orWhereRaw('LOWER(corresponding_author_name) LIKE ?', [$likeTerm])
+                        ->orWhereRaw('LOWER(corresponding_author_email) LIKE ?', [$likeTerm])
+                        ->orWhereRaw('LOWER(COALESCE(corresponding_author_phone, \'\')) LIKE ?', [$likeTerm])
+                        ->orWhereHas('editor', function ($eQuery) use ($likeTerm) {
+                            $eQuery->whereRaw('LOWER(name) LIKE ?', [$likeTerm])
+                                ->orWhereRaw('LOWER(email) LIKE ?', [$likeTerm]);
+                        })
+                        ->orWhereHas('reviewer', function ($rQuery) use ($likeTerm) {
+                            $rQuery->whereRaw('LOWER(name) LIKE ?', [$likeTerm])
+                                ->orWhereRaw('LOWER(email) LIKE ?', [$likeTerm]);
+                        })
+                        ->orWhereHas('authors', function ($aQuery) use ($likeTerm) {
+                            $aQuery->whereRaw('LOWER(name) LIKE ?', [$likeTerm])
+                                ->orWhereRaw('LOWER(email) LIKE ?', [$likeTerm]);
+                        });
+                });
+            });
 
         if ($sort === 'pic') {
             $query->orderBy(User::query()->select('name')->whereColumn('users.id', 'submissions.editor_id'), $direction);
@@ -76,7 +97,19 @@ class SubmissionController extends Controller
         } else {
             $query->latest('submitted_at');
         }
-        $submissions = $query->with(['conference', 'editor', 'reviewer', 'authors', 'files', 'emailLogs'])->paginate(20)->withQueryString();
+
+        $perPageInput = $request->string('per_page')->lower()->toString();
+        $perPage = match ($perPageInput) {
+            '10' => 10,
+            '20' => 20,
+            '30' => 30,
+            '40' => 40,
+            '50' => 50,
+            'all' => 1000,
+            default => 20,
+        };
+
+        $submissions = $query->with(['conference', 'editor', 'reviewer', 'authors', 'files', 'emailLogs'])->paginate($perPage)->withQueryString();
         $conferences = Conference::whereIn('id', $conferenceIds)->orderBy('name')->get();
         $staff = User::whereHas('conferenceMemberships', fn ($q) => $q->whereIn('conference_id', $conferenceIds)->where('is_active', true))
             ->with([
