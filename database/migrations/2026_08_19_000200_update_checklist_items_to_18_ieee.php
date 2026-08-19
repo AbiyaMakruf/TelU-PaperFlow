@@ -86,7 +86,6 @@ return new class extends Migration
         $templates = ChecklistTemplate::where('stage', ReviewStage::Editorial->value)->get();
 
         foreach ($templates as $template) {
-            // Remove old default items if present
             $template->items()->delete();
 
             foreach ($ieeeItems as $index => $item) {
@@ -100,8 +99,5 @@ return new class extends Migration
         }
     }
 
-    public function down(): void
-    {
-        // Revert is optional
-    }
+    public function down(): void {}
 };
