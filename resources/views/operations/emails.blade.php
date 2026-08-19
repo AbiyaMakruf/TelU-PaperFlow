@@ -180,10 +180,8 @@
         </form>
     </div>
 
-    <!-- Interactive Email Logs Table with Re-send Modal & HTML iframe Preview -->
-    <div x-data="emailMonitoring" class="mt-6 card shadow-sm overflow-hidden">
-
-        <!-- Table Container -->
+    <!-- Email Logs Table Container -->
+    <div class="mt-6 card shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="data-table">
                 <thead>
@@ -213,7 +211,7 @@
                             <td>
                                 <div class="flex items-center gap-1.5 group">
                                     <p class="font-bold text-navy text-xs break-all">{{ $log->recipient }}</p>
-                                    <button type="button" @click="copyEmail('{{ addslashes($log->recipient) }}')" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-navy text-xs transition" title="Copy recipient email">
+                                    <button type="button" onclick="copyEmail('{{ addslashes($log->recipient) }}')" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-navy text-xs transition" title="Copy recipient email">
                                         📋
                                     </button>
                                 </div>
@@ -248,11 +246,11 @@
                             </td>
                             <td class="text-right whitespace-nowrap space-x-1.5">
                                 @if($log->body)
-                                    <button type="button" @click="openBodyModal('{{ $log->id }}', '{{ addslashes($log->subject) }}')" class="btn border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs py-1.5 px-2.5 font-bold transition rounded-lg" title="View rendered HTML email body">
+                                    <button type="button" onclick="previewEmailBody('{{ $log->id }}', '{{ addslashes($log->subject) }}')" class="btn border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs py-1.5 px-2.5 font-bold transition rounded-lg" title="View rendered HTML email body">
                                         👁️ View Body
                                     </button>
 
-                                    <button type="button" @click="openResendModal('{{ route('emails.resend', $log) }}', '{{ e($log->recipient) }}', '{{ addslashes($log->subject) }}', '{{ $log->id }}')" class="btn border border-navy/20 bg-navy/5 hover:bg-navy/15 text-navy text-xs py-1.5 px-2.5 font-extrabold transition rounded-lg" title="Re-queue email send to recipient (with option to edit recipient address)">
+                                    <button type="button" onclick="openResendModal('{{ route('emails.resend', $log) }}', '{{ e($log->recipient) }}', '{{ addslashes($log->subject) }}')" class="btn border border-navy/20 bg-navy/5 hover:bg-navy/15 text-navy text-xs py-1.5 px-2.5 font-extrabold transition rounded-lg" title="Re-queue email send to recipient (with option to edit recipient address)">
                                         🔄 Re-send
                                     </button>
                                 @endif
@@ -273,80 +271,193 @@
             <div>{{ $logs->links() }}</div>
             <p class="text-xs text-muted font-bold text-right">Total Logs Found: {{ number_format($logs->total()) }}</p>
         </div>
-
-        <!-- Re-send Modal (Self-Contained AJAX Submit + Recipient Editor) -->
-        <template x-teleport="body">
-            <div x-show="resendModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/60 backdrop-blur-xs" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-                <div @click.away="if(!isSubmitting) resendModalOpen = false" class="card w-full max-w-lg p-6 bg-white space-y-5 shadow-2xl rounded-2xl border border-slate-200">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="size-8 rounded-xl bg-orange/10 text-orange flex items-center justify-center font-bold">🔄</span>
-                            <div>
-                                <h3 class="text-base font-black text-navy">Confirm Email Re-send</h3>
-                                <p class="text-[11px] text-muted">Re-queue email delivery via SMTP queue worker</p>
-                            </div>
-                        </div>
-                        <button type="button" @click="resendModalOpen = false" :disabled="isSubmitting" class="text-slate-400 hover:text-navy font-bold text-lg">&times;</button>
-                    </div>
-
-                    <form @submit.prevent="submitResend()" class="space-y-4">
-                        <div class="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
-                            <span class="text-muted font-bold block uppercase text-[10px]">Email Subject:</span>
-                            <p class="font-bold text-navy text-xs break-words" x-text="subject"></p>
-                        </div>
-
-                        <div class="space-y-1.5">
-                            <label class="form-label text-xs">Recipient Email Address:</label>
-                            <input type="email" x-model="recipient" required :disabled="isSubmitting" class="form-input text-xs py-2.5 font-mono">
-                            <p class="text-[11px] text-slate-500">
-                                You can correct or change the recipient email address before re-queuing (Original: <code x-text="originalRecipient" class="font-bold"></code>).
-                            </p>
-                        </div>
-
-                        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                            <button type="button" @click="resendModalOpen = false" :disabled="isSubmitting" class="btn border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs py-2.5 px-4 font-bold rounded-xl">
-                                Cancel
-                            </button>
-                            <button type="submit" :disabled="isSubmitting" class="btn bg-orange hover:bg-orange-dark text-white text-xs font-black py-2.5 px-5 shadow-sm rounded-xl flex items-center gap-2">
-                                <span x-show="!isSubmitting">🚀 Confirm &amp; Re-send Email</span>
-                                <span x-show="isSubmitting" class="inline-flex items-center gap-1.5">
-                                    <svg class="animate-spin size-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Re-queuing...
-                                </span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </template>
-
-        <!-- View Body Preview Modal with Clean HTML iframe Rendering -->
-        <template x-teleport="body">
-            <div x-show="viewBodyOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/60 backdrop-blur-xs" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-                <div @click.away="viewBodyOpen = false" class="card w-full max-w-4xl p-6 bg-white space-y-4 shadow-2xl rounded-2xl border border-slate-200 max-h-[90vh] flex flex-col">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="size-8 rounded-xl bg-navy/10 text-navy flex items-center justify-center font-bold">✉️</span>
-                            <div class="min-w-0">
-                                <h3 class="text-base font-black text-navy truncate" x-text="viewSubject"></h3>
-                                <p class="text-[11px] text-muted">Authentic Rendered HTML Email Content</p>
-                            </div>
-                        </div>
-                        <button type="button" @click="viewBodyOpen = false" class="text-slate-400 hover:text-navy font-bold text-lg shrink-0">&times;</button>
-                    </div>
-
-                    <div class="flex-1 overflow-hidden p-1 bg-slate-100 border border-slate-200 rounded-xl min-h-[400px]">
-                        <iframe :srcdoc="bodyContent" class="w-full h-[520px] rounded-lg border-0 bg-white shadow-inner"></iframe>
-                    </div>
-
-                    <div class="pt-2 border-t border-slate-100 flex items-center justify-end shrink-0">
-                        <button type="button" @click="viewBodyOpen = false" class="btn btn-secondary text-xs py-2 px-4 font-bold rounded-xl">
-                            Close Preview
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </template>
     </div>
+
+    <!-- 1. View Body HTML Preview Modal -->
+    <div id="email-preview-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/60 backdrop-blur-xs">
+        <div class="card w-full max-w-4xl p-6 bg-white space-y-4 shadow-2xl rounded-2xl border border-slate-200 max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="size-8 rounded-xl bg-navy/10 text-navy flex items-center justify-center font-bold">✉️</span>
+                    <div class="min-w-0">
+                        <h3 id="email-preview-subject" class="text-base font-black text-navy truncate">Preview</h3>
+                        <p class="text-[11px] text-muted">Authentic Rendered HTML Email Content</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEmailPreviewModal()" class="text-slate-400 hover:text-navy font-bold text-lg shrink-0">&times;</button>
+            </div>
+
+            <div class="flex-1 overflow-hidden p-1 bg-slate-100 border border-slate-200 rounded-xl min-h-[400px]">
+                <iframe id="email-preview-iframe" class="w-full h-[520px] rounded-lg border-0 bg-white shadow-inner"></iframe>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-end shrink-0">
+                <button type="button" onclick="closeEmailPreviewModal()" class="btn btn-secondary text-xs py-2 px-4 font-bold rounded-xl">
+                    Close Preview
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Re-send Email Modal -->
+    <div id="email-resend-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/60 backdrop-blur-xs">
+        <div class="card w-full max-w-lg p-6 bg-white space-y-5 shadow-2xl rounded-2xl border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="size-8 rounded-xl bg-orange/10 text-orange flex items-center justify-center font-bold">🔄</span>
+                    <div>
+                        <h3 class="text-base font-black text-navy">Confirm Email Re-send</h3>
+                        <p class="text-[11px] text-muted">Re-queue email delivery via SMTP queue worker</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEmailResendModal()" class="text-slate-400 hover:text-navy font-bold text-lg">&times;</button>
+            </div>
+
+            <form id="email-resend-form" onsubmit="submitEmailResend(event)" class="space-y-4">
+                <input type="hidden" id="resend-url-input" value="">
+                <div class="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                    <span class="text-muted font-bold block uppercase text-[10px]">Email Subject:</span>
+                    <p id="resend-subject-preview" class="font-bold text-navy text-xs break-words"></p>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="form-label text-xs">Recipient Email Address:</label>
+                    <input type="email" id="resend-recipient-input" required class="form-input text-xs py-2.5 font-mono">
+                    <p class="text-[11px] text-slate-500">
+                        You can correct or change the recipient email address before re-queuing (Original: <code id="resend-original-recipient" class="font-bold"></code>).
+                    </p>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button type="button" onclick="closeEmailResendModal()" class="btn border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs py-2.5 px-4 font-bold rounded-xl">
+                        Cancel
+                    </button>
+                    <button type="submit" id="resend-submit-btn" class="btn bg-orange hover:bg-orange-dark text-white text-xs font-black py-2.5 px-5 shadow-sm rounded-xl flex items-center gap-2">
+                        <span>🚀 Confirm &amp; Re-send Email</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Native JavaScript Implementation for Modal Popups & AJAX Telemetry -->
+    <script>
+    window.previewEmailBody = async function(logId, subject) {
+        const modal = document.getElementById('email-preview-modal');
+        const subjectEl = document.getElementById('email-preview-subject');
+        const iframe = document.getElementById('email-preview-iframe');
+
+        if (!modal || !subjectEl || !iframe) return;
+
+        subjectEl.textContent = subject || 'Email Preview';
+        iframe.srcdoc = '<div style="padding: 40px; text-align: center; font-family: sans-serif; color: #64748b; font-weight: bold;">⏳ Loading email content preview...</div>';
+        modal.classList.remove('hidden');
+
+        try {
+            const response = await fetch('/email-monitoring/' + logId + '/body', {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+            if (data.body) {
+                iframe.srcdoc = data.body;
+            } else {
+                iframe.srcdoc = '<div style="padding: 40px; text-align: center; font-family: sans-serif; color: #ef4444; font-weight: bold;">No body content stored for this email.</div>';
+            }
+        } catch (e) {
+            iframe.srcdoc = '<div style="padding: 40px; text-align: center; font-family: sans-serif; color: #ef4444; font-weight: bold;">Failed to load email preview.</div>';
+        }
+    };
+
+    window.closeEmailPreviewModal = function() {
+        const modal = document.getElementById('email-preview-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.openResendModal = function(url, currentRecipient, currentSubject) {
+        const modal = document.getElementById('email-resend-modal');
+        const urlInput = document.getElementById('resend-url-input');
+        const recipientInput = document.getElementById('resend-recipient-input');
+        const originalRecipientEl = document.getElementById('resend-original-recipient');
+        const subjectPreview = document.getElementById('resend-subject-preview');
+
+        if (!modal) return;
+
+        urlInput.value = url;
+        recipientInput.value = currentRecipient;
+        originalRecipientEl.textContent = currentRecipient;
+        subjectPreview.textContent = currentSubject;
+
+        modal.classList.remove('hidden');
+    };
+
+    window.closeEmailResendModal = function() {
+        const modal = document.getElementById('email-resend-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.submitEmailResend = async function(event) {
+        event.preventDefault();
+        const urlInput = document.getElementById('resend-url-input');
+        const recipientInput = document.getElementById('resend-recipient-input');
+        const submitBtn = document.getElementById('resend-submit-btn');
+
+        if (!urlInput || !urlInput.value) return;
+
+        const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="inline-flex items-center gap-1.5"><svg class="animate-spin size-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Re-queuing...</span>';
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const formData = new FormData();
+        formData.append('_token', csrfToken);
+        if (recipientInput && recipientInput.value) {
+            formData.append('recipient', recipientInput.value);
+        }
+
+        try {
+            const res = await fetch(urlInput.value, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                    detail: { message: data.message || 'Email successfully re-queued!', type: 'success' }
+                }));
+                closeEmailResendModal();
+            } else {
+                const err = data.message || 'Failed to re-send email.';
+                window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                    detail: { message: err, type: 'error' }
+                }));
+            }
+        } catch (e) {
+            window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                detail: { message: 'Network or server error while re-sending email.', type: 'error' }
+            }));
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+            }
+        }
+    };
+
+    window.copyEmail = function(email) {
+        navigator.clipboard.writeText(email);
+        window.dispatchEvent(new CustomEvent('paperflow-toast', {
+            detail: { message: 'Copied recipient email address: ' + email, type: 'success' }
+        }));
+    };
+    </script>
 
     <!-- Chart.js Engine & Initialization Script -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
