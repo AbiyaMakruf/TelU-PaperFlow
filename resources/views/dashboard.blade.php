@@ -86,51 +86,67 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="data-table text-xs">
+                <table class="data-table text-xs min-w-[900px]">
                     <thead>
                         <tr>
-                            <th class="!bg-navy !text-white py-3.5 px-4 font-bold">PIC</th>
-                            <th class="!bg-navy-dark !text-white py-3.5 px-4 text-center font-bold">Total</th>
-                            <th class="!bg-slate-600 !text-white py-3.5 px-4 text-center font-bold">Unassigned</th>
-                            <th class="!bg-blue-600 !text-white py-3.5 px-4 text-center font-bold">In Progress</th>
-                            <th class="!bg-amber-600 !text-white py-3.5 px-4 text-center font-bold">Awaiting Author Response</th>
-                            <th class="!bg-indigo-600 !text-white py-3.5 px-4 text-center font-bold">Done - Revised by Editor</th>
-                            <th class="!bg-emerald-600 !text-white py-3.5 px-4 text-center font-bold">Done - Revised by Author</th>
-                            <th class="!bg-teal-700 !text-white py-3.5 px-4 text-center font-bold">DONE / Completed</th>
+                            <th class="!bg-navy !text-white py-3.5 px-3 font-bold">PIC</th>
+                            <th class="!bg-slate-900 !text-white py-3.5 px-3 text-center font-bold">Total</th>
+                            <th class="!bg-slate-700 !text-white py-3.5 px-3 text-center font-bold">Submitted / Needs Assign</th>
+                            <th class="!bg-rose-700 !text-white py-3.5 px-3 text-center font-bold">Needs Correction</th>
+                            <th class="!bg-blue-700 !text-white py-3.5 px-3 text-center font-bold">Editorial Review</th>
+                            <th class="!bg-amber-600 !text-white py-3.5 px-3 text-center font-bold">Waiting Author Revision</th>
+                            <th class="!bg-purple-700 !text-white py-3.5 px-3 text-center font-bold">Pre-EDAS Review</th>
+                            <th class="!bg-sky-700 !text-white py-3.5 px-3 text-center font-bold">Ready for EDAS</th>
+                            <th class="!bg-emerald-700 !text-white py-3.5 px-3 text-center font-bold">Completed (Done)</th>
+                            <th class="!bg-slate-800 !text-white py-3.5 px-3 text-center font-bold">Rejected / Withdrawn</th>
                         </tr>
                     </thead>
                     <tbody>
                         @php
-                            $totals = ['Total' => 0, 'Unassigned' => 0, 'In Progress' => 0, 'Awaiting Response' => 0, 'Revised by Editor' => 0, 'Revised by Author' => 0, 'Completed' => 0];
+                            $totals = [
+                                'Total' => 0,
+                                'Submitted' => 0,
+                                'NeedsCorrection' => 0,
+                                'EditorialReview' => 0,
+                                'WaitingRevision' => 0,
+                                'ReviewerReview' => 0,
+                                'ReadyForEdas' => 0,
+                                'Done' => 0,
+                                'RejectedWithdrawn' => 0,
+                            ];
                         @endphp
                         @forelse($picMatrix ?? [] as $picName => $row)
                             @php
                                 foreach($totals as $k => $v) { $totals[$k] += ($row[$k] ?? 0); }
                             @endphp
                             <tr class="border-b hover:bg-warm/50">
-                                <td class="font-extrabold text-navy py-3 px-4">{{ $picName }}</td>
-                                <td class="text-center font-black py-3 px-4">{{ $row['Total'] }}</td>
-                                <td class="text-center font-bold text-slate-700 py-3 px-4">{{ $row['Unassigned'] }}</td>
-                                <td class="text-center font-bold text-blue-700 py-3 px-4">{{ $row['In Progress'] }}</td>
-                                <td class="text-center font-bold text-amber-700 py-3 px-4">{{ $row['Awaiting Response'] }}</td>
-                                <td class="text-center font-bold text-indigo-700 py-3 px-4">{{ $row['Revised by Editor'] }}</td>
-                                <td class="text-center font-bold text-emerald-700 py-3 px-4">{{ $row['Revised by Author'] }}</td>
-                                <td class="text-center font-black text-emerald-900 py-3 px-4">{{ $row['Completed'] }}</td>
+                                <td class="font-extrabold text-navy py-3 px-3">{{ $picName }}</td>
+                                <td class="text-center font-black py-3 px-3 text-navy">{{ $row['Total'] }}</td>
+                                <td class="text-center font-bold text-slate-700 py-3 px-3">{{ $row['Submitted'] }}</td>
+                                <td class="text-center font-bold text-rose-700 py-3 px-3">{{ $row['NeedsCorrection'] }}</td>
+                                <td class="text-center font-bold text-blue-700 py-3 px-3">{{ $row['EditorialReview'] }}</td>
+                                <td class="text-center font-bold text-amber-700 py-3 px-3">{{ $row['WaitingRevision'] }}</td>
+                                <td class="text-center font-bold text-purple-700 py-3 px-3">{{ $row['ReviewerReview'] }}</td>
+                                <td class="text-center font-bold text-sky-700 py-3 px-3">{{ $row['ReadyForEdas'] }}</td>
+                                <td class="text-center font-black text-emerald-800 py-3 px-3">{{ $row['Done'] }}</td>
+                                <td class="text-center font-bold text-slate-500 py-3 px-3">{{ $row['RejectedWithdrawn'] }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="text-center py-6 text-muted">No PIC matrix data available yet.</td></tr>
+                            <tr><td colspan="10" class="text-center py-6 text-muted">No PIC matrix data available yet.</td></tr>
                         @endforelse
                     </tbody>
                     <tfoot>
                         <tr class="bg-warm/80 font-black text-navy border-t-2 border-navy">
-                            <td class="py-3 px-4">TOTAL SUMMARY</td>
-                            <td class="text-center py-3 px-4">{{ $totals['Total'] }}</td>
-                            <td class="text-center py-3 px-4">{{ $totals['Unassigned'] }}</td>
-                            <td class="text-center py-3 px-4">{{ $totals['In Progress'] }}</td>
-                            <td class="text-center py-3 px-4">{{ $totals['Awaiting Response'] }}</td>
-                            <td class="text-center py-3 px-4">{{ $totals['Revised by Editor'] }}</td>
-                            <td class="text-center py-3 px-4">{{ $totals['Revised by Author'] }}</td>
-                            <td class="text-center py-3 px-4 text-emerald-800">{{ $totals['Completed'] }}</td>
+                            <td class="py-3 px-3">TOTAL SUMMARY</td>
+                            <td class="text-center py-3 px-3">{{ $totals['Total'] }}</td>
+                            <td class="text-center py-3 px-3">{{ $totals['Submitted'] }}</td>
+                            <td class="text-center py-3 px-3 text-rose-800">{{ $totals['NeedsCorrection'] }}</td>
+                            <td class="text-center py-3 px-3 text-blue-800">{{ $totals['EditorialReview'] }}</td>
+                            <td class="text-center py-3 px-3 text-amber-800">{{ $totals['WaitingRevision'] }}</td>
+                            <td class="text-center py-3 px-3 text-purple-800">{{ $totals['ReviewerReview'] }}</td>
+                            <td class="text-center py-3 px-3 text-sky-800">{{ $totals['ReadyForEdas'] }}</td>
+                            <td class="text-center py-3 px-3 text-emerald-800">{{ $totals['Done'] }}</td>
+                            <td class="text-center py-3 px-3 text-slate-600">{{ $totals['RejectedWithdrawn'] }}</td>
                         </tr>
                     </tfoot>
                 </table>
