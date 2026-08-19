@@ -89,7 +89,9 @@ class EmailMonitoringController extends Controller
             default => 30,
         };
 
-        $logs = $base->with(['conference', 'submission', 'sender'])
+        $sort = strtolower(trim((string) $request->query('sort', 'latest')));
+
+        $logsQuery = $base->with(['conference', 'submission', 'sender'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = strtolower(trim((string) $request->string('search')));
@@ -104,9 +106,17 @@ class EmailMonitoringController extends Controller
                         });
                 });
             })
-            ->latest()
-            ->paginate($perPage)
-            ->withQueryString();
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('created_at', '>=', $request->string('date_from')))
+            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('created_at', '<=', $request->string('date_to')));
+
+        match ($sort) {
+            'oldest' => $logsQuery->oldest('created_at'),
+            'recipient' => $logsQuery->orderBy('recipient', 'asc'),
+            'subject' => $logsQuery->orderBy('subject', 'asc'),
+            default => $logsQuery->latest('created_at'),
+        };
+
+        $logs = $logsQuery->paginate($perPage)->withQueryString();
 
         return view('operations.emails', compact(
             'logs',
@@ -122,6 +132,18 @@ class EmailMonitoringController extends Controller
             'templateLabels',
             'templateValues'
         ));
+    }
+
+    public function body(Request $request, EmailLog $emailLog, VisibleEmailLogs $visible): JsonResponse
+    {
+        abort_unless($visible->for($request->user())->whereKey($emailLog->id)->exists(), 403);
+
+        return response()->json([
+            'id' => $emailLog->id,
+            'subject' => $emailLog->subject,
+            'recipient' => $emailLog->recipient,
+            'body' => (string) $emailLog->body,
+        ]);
     }
 
     public function resend(Request $request, EmailLog $emailLog, VisibleEmailLogs $visible, ConferenceMailer $mailer): RedirectResponse|JsonResponse

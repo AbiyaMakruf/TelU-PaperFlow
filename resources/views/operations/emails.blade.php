@@ -110,7 +110,77 @@
         </div>
     </div>
 
-    <!-- Interactive Email Logs Table with Search, Filter & Re-send Modal -->
+    <!-- Paper-List Style Unified Filter Card -->
+    <div x-data="{ mobileFilterOpen: {{ request()->query() ? 'true' : 'false' }} }" class="card mt-7 p-4 sm:p-5">
+        <button type="button" @click="mobileFilterOpen = !mobileFilterOpen" class="flex w-full items-center justify-between font-bold text-navy md:hidden">
+            <span class="flex items-center gap-2 text-sm">
+                🔍 Filter &amp; Search Email Logs
+                @if(request()->query())
+                    <span class="badge badge-primary text-[10px]">Active</span>
+                @endif
+            </span>
+            <span class="text-xs text-orange" x-text="mobileFilterOpen ? 'Close −' : 'Open +'"></span>
+        </button>
+
+        <form method="GET" action="{{ route('emails.index') }}" x-show="mobileFilterOpen || window.innerWidth >= 768" x-collapse class="mt-4 md:mt-0 space-y-4">
+            <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label class="form-label">Search</label>
+                    <input class="form-input" name="search" value="{{ request('search') }}" placeholder="Search email, subject, paper ID...">
+                </div>
+                <div>
+                    <label class="form-label">Delivery Status</label>
+                    <select class="form-input" name="status">
+                        <option value="">All statuses</option>
+                        <option value="sent" @selected(request('status') === 'sent')>✓ Sent</option>
+                        <option value="failed" @selected(request('status') === 'failed')>✕ Failed</option>
+                        <option value="queued" @selected(request('status') === 'queued')>🕒 Queued</option>
+                        <option value="sending" @selected(request('status') === 'sending')>⏳ Sending</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Sort Order</label>
+                    <select class="form-input" name="sort">
+                        <option value="latest" @selected(request('sort', 'latest') === 'latest')>Newest First</option>
+                        <option value="oldest" @selected(request('sort') === 'oldest')>Oldest First</option>
+                        <option value="recipient" @selected(request('sort') === 'recipient')>Recipient A-Z</option>
+                        <option value="subject" @selected(request('sort') === 'subject')>Subject A-Z</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Items Per Page</label>
+                    <select class="form-input" name="per_page">
+                        <option value="10" @selected(request('per_page') === '10')>10 per page</option>
+                        <option value="20" @selected(request('per_page') === '20')>20 per page</option>
+                        <option value="30" @selected(request('per_page', '30') === '30')>30 per page</option>
+                        <option value="50" @selected(request('per_page') === '50')>50 per page</option>
+                        <option value="100" @selected(request('per_page') === '100')>100 per page</option>
+                        <option value="all" @selected(request('per_page') === 'all')>All records</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Date From</label>
+                    <input class="form-input" type="date" name="date_from" value="{{ request('date_from') }}">
+                </div>
+                <div>
+                    <label class="form-label">Date To</label>
+                    <input class="form-input" type="date" name="date_to" value="{{ request('date_to') }}">
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-navy/10 pt-4">
+                <p class="text-xs text-muted font-bold">Showing {{ $logs->firstItem() ?? 0 }}-{{ $logs->lastItem() ?? 0 }} of {{ number_format($logs->total()) }} email logs</p>
+                <div class="flex items-center gap-2">
+                    @if(request()->query())
+                        <a href="{{ route('emails.index') }}" class="btn btn-secondary text-xs py-2 px-4">Reset Filters</a>
+                    @endif
+                    <button type="submit" class="btn btn-primary text-xs py-2 px-5">Apply Filter &amp; Search</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Interactive Email Logs Table with Re-send Modal & HTML iframe Preview -->
     <div x-data="{
         resendModalOpen: false,
         resendUrl: '',
@@ -118,11 +188,13 @@
         originalRecipient: '',
         subject: '',
         logId: '',
-        
+        isSubmitting: false,
+
         viewBodyOpen: false,
         bodyContent: '',
         viewSubject: '',
-        
+        isLoadingBody: false,
+
         openResendModal(url, currentRecipient, currentSubject, id) {
             this.resendUrl = url;
             this.recipient = currentRecipient;
@@ -131,13 +203,72 @@
             this.logId = id;
             this.resendModalOpen = true;
         },
-        
-        openBodyModal(subject, bodyHtml) {
-            this.viewSubject = subject;
-            this.bodyContent = bodyHtml;
-            this.viewBodyOpen = true;
+
+        async submitResend() {
+            if (!this.resendUrl || this.isSubmitting) return;
+            this.isSubmitting = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+                if (this.recipient) {
+                    formData.append('recipient', this.recipient);
+                }
+
+                const res = await fetch(this.resendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                        detail: { message: data.message || 'Email successfully re-queued!', type: 'success' }
+                    }));
+                    this.resendModalOpen = false;
+                } else {
+                    const err = data.message || 'Failed to re-send email.';
+                    window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                        detail: { message: err, type: 'error' }
+                    }));
+                }
+            } catch (e) {
+                window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                    detail: { message: 'Network or server error while re-sending email.', type: 'error' }
+                }));
+            } finally {
+                this.isSubmitting = false;
+            }
         },
-        
+
+        async openBodyModal(logId, subject) {
+            this.viewSubject = subject;
+            this.bodyContent = '<div style=\"padding: 40px; text-align: center; font-family: sans-serif; color: #64748b; font-weight: bold;\">⏳ Loading email content preview...</div>';
+            this.isLoadingBody = true;
+            this.viewBodyOpen = true;
+
+            try {
+                const res = await fetch('/email-monitoring/' + logId + '/body', {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.body) {
+                    this.bodyContent = data.body;
+                } else {
+                    this.bodyContent = '<div style=\"padding: 40px; text-align: center; font-family: sans-serif; color: #ef4444; font-weight: bold;\">No body content stored for this email.</div>';
+                }
+            } catch (e) {
+                this.bodyContent = '<div style=\"padding: 40px; text-align: center; font-family: sans-serif; color: #ef4444; font-weight: bold;\">Failed to load email preview.</div>';
+            } finally {
+                this.isLoadingBody = false;
+            }
+        },
+
         copyEmail(email) {
             navigator.clipboard.writeText(email);
             window.dispatchEvent(new CustomEvent('paperflow-toast', {
@@ -145,49 +276,6 @@
             }));
         }
     }" class="mt-6 card shadow-sm overflow-hidden">
-
-        <!-- Toolbar & Filter Header -->
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 border-b border-navy/10 bg-slate-50/50">
-            <div class="flex flex-wrap items-center gap-2">
-                <a href="{{ route('emails.index', array_filter(['search' => request('search'), 'per_page' => request('per_page')])) }}" class="btn text-xs py-1.5 px-3 {{ !request('status') ? 'bg-navy text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
-                    All Logs ({{ number_format($stats['sent'] + $stats['failed'] + $stats['queued']) }})
-                </a>
-                <a href="{{ route('emails.index', array_filter(['status' => 'sent', 'search' => request('search'), 'per_page' => request('per_page')])) }}" class="btn text-xs py-1.5 px-3 {{ request('status') === 'sent' ? 'bg-emerald-600 text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
-                    ✓ Sent ({{ number_format($stats['sent']) }})
-                </a>
-                <a href="{{ route('emails.index', array_filter(['status' => 'failed', 'search' => request('search'), 'per_page' => request('per_page')])) }}" class="btn text-xs py-1.5 px-3 {{ request('status') === 'failed' ? 'bg-rose-600 text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
-                    ✕ Failed ({{ number_format($stats['failed']) }})
-                </a>
-                <a href="{{ route('emails.index', array_filter(['status' => 'queued', 'search' => request('search'), 'per_page' => request('per_page')])) }}" class="btn text-xs py-1.5 px-3 {{ request('status') === 'queued' ? 'bg-amber-600 text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
-                    🕒 Queued ({{ number_format($stats['queued']) }})
-                </a>
-            </div>
-
-            <!-- Search Bar & Items Per Page Selector -->
-            <form method="GET" action="{{ route('emails.index') }}" class="flex flex-wrap items-center gap-2">
-                @if(request('status'))
-                    <input type="hidden" name="status" value="{{ request('status') }}">
-                @endif
-                <div class="relative min-w-[200px] sm:min-w-[240px]">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search email, subject, or paper ID..." class="form-input text-xs py-1.5 pl-3 pr-8 min-h-9 rounded-lg">
-                    @if(request('search'))
-                        <a href="{{ route('emails.index', array_filter(['status' => request('status'), 'per_page' => request('per_page')])) }}" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-navy text-xs font-bold" title="Clear Search">&times;</a>
-                    @endif
-                </div>
-
-                <div class="flex items-center gap-1.5">
-                    <label class="text-[11px] font-bold text-slate-500 shrink-0">Show:</label>
-                    <select name="per_page" onchange="this.form.submit()" class="form-input text-xs py-1 px-2.5 min-h-9 rounded-lg border-slate-300">
-                        <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10 / page</option>
-                        <option value="20" {{ request('per_page') == '20' ? 'selected' : '' }}>20 / page</option>
-                        <option value="30" {{ request('per_page', '30') == '30' ? 'selected' : '' }}>30 / page</option>
-                        <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50 / page</option>
-                        <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100 / page</option>
-                        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
-                    </select>
-                </div>
-            </form>
-        </div>
 
         <!-- Table Container -->
         <div class="overflow-x-auto">
@@ -254,7 +342,7 @@
                             </td>
                             <td class="text-right whitespace-nowrap space-x-1.5">
                                 @if($log->body)
-                                    <button type="button" @click="openBodyModal('{{ addslashes($log->subject) }}', $el.dataset.body)" data-body="{{ e($log->body) }}" class="btn border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs py-1.5 px-2.5 font-bold transition rounded-lg" title="View rendered HTML email body">
+                                    <button type="button" @click="openBodyModal('{{ $log->id }}', '{{ addslashes($log->subject) }}')" class="btn border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs py-1.5 px-2.5 font-bold transition rounded-lg" title="View rendered HTML email body">
                                         👁️ View Body
                                     </button>
 
@@ -280,10 +368,10 @@
             <p class="text-xs text-muted font-bold text-right">Total Logs Found: {{ number_format($logs->total()) }}</p>
         </div>
 
-        <!-- Re-send Modal (Asynchronous Non-Reloading Submit + Recipient Editor) -->
+        <!-- Re-send Modal (Self-Contained AJAX Submit + Recipient Editor) -->
         <template x-teleport="body">
             <div x-show="resendModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/60 backdrop-blur-xs" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-                <div @click.away="resendModalOpen = false" class="card w-full max-w-lg p-6 bg-white space-y-5 shadow-2xl rounded-2xl border border-slate-200">
+                <div @click.away="if(!isSubmitting) resendModalOpen = false" class="card w-full max-w-lg p-6 bg-white space-y-5 shadow-2xl rounded-2xl border border-slate-200">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div class="flex items-center gap-2">
                             <span class="size-8 rounded-xl bg-orange/10 text-orange flex items-center justify-center font-bold">🔄</span>
@@ -292,11 +380,10 @@
                                 <p class="text-[11px] text-muted">Re-queue email delivery via SMTP queue worker</p>
                             </div>
                         </div>
-                        <button type="button" @click="resendModalOpen = false" class="text-slate-400 hover:text-navy font-bold text-lg">&times;</button>
+                        <button type="button" @click="resendModalOpen = false" :disabled="isSubmitting" class="text-slate-400 hover:text-navy font-bold text-lg">&times;</button>
                     </div>
 
-                    <form :action="resendUrl" method="POST" @submit.prevent="window.submitPaperflowForm($event); resendModalOpen = false;" class="space-y-4">
-                        @csrf
+                    <form @submit.prevent="submitResend()" class="space-y-4">
                         <div class="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
                             <span class="text-muted font-bold block uppercase text-[10px]">Email Subject:</span>
                             <p class="font-bold text-navy text-xs break-words" x-text="subject"></p>
@@ -304,18 +391,21 @@
 
                         <div class="space-y-1.5">
                             <label class="form-label text-xs">Recipient Email Address:</label>
-                            <input type="email" name="recipient" x-model="recipient" required class="form-input text-xs py-2.5 font-mono">
+                            <input type="email" x-model="recipient" required :disabled="isSubmitting" class="form-input text-xs py-2.5 font-mono">
                             <p class="text-[11px] text-slate-500">
                                 You can correct or change the recipient email address before re-queuing (Original: <code x-text="originalRecipient" class="font-bold"></code>).
                             </p>
                         </div>
 
                         <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                            <button type="button" @click="resendModalOpen = false" class="btn border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs py-2.5 px-4 font-bold rounded-xl">
+                            <button type="button" @click="resendModalOpen = false" :disabled="isSubmitting" class="btn border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs py-2.5 px-4 font-bold rounded-xl">
                                 Cancel
                             </button>
-                            <button type="submit" class="btn bg-orange hover:bg-orange-dark text-white text-xs font-black py-2.5 px-5 shadow-sm rounded-xl flex items-center gap-2">
-                                <span>🚀 Confirm &amp; Re-send Email</span>
+                            <button type="submit" :disabled="isSubmitting" class="btn bg-orange hover:bg-orange-dark text-white text-xs font-black py-2.5 px-5 shadow-sm rounded-xl flex items-center gap-2">
+                                <span x-show="!isSubmitting">🚀 Confirm &amp; Re-send Email</span>
+                                <span x-show="isSubmitting" class="inline-flex items-center gap-1.5">
+                                    <svg class="animate-spin size-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Re-queuing...
+                                </span>
                             </button>
                         </div>
                     </form>
@@ -338,7 +428,7 @@
                         <button type="button" @click="viewBodyOpen = false" class="text-slate-400 hover:text-navy font-bold text-lg shrink-0">&times;</button>
                     </div>
 
-                    <div class="flex-1 overflow-hidden p-1 bg-slate-100 border border-slate-200 rounded-xl">
+                    <div class="flex-1 overflow-hidden p-1 bg-slate-100 border border-slate-200 rounded-xl min-h-[400px]">
                         <iframe :srcdoc="bodyContent" class="w-full h-[520px] rounded-lg border-0 bg-white shadow-inner"></iframe>
                     </div>
 
