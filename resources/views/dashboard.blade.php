@@ -89,16 +89,16 @@
                 <table class="data-table text-xs min-w-[900px]">
                     <thead>
                         <tr>
-                            <th class="!bg-navy !text-white py-3.5 px-3 font-bold">PIC</th>
-                            <th class="!bg-slate-900 !text-white py-3.5 px-3 text-center font-bold">Total</th>
-                            <th class="!bg-slate-700 !text-white py-3.5 px-3 text-center font-bold">Submitted / Needs Assign</th>
-                            <th class="!bg-rose-700 !text-white py-3.5 px-3 text-center font-bold">Needs Correction</th>
-                            <th class="!bg-blue-700 !text-white py-3.5 px-3 text-center font-bold">Editorial Review</th>
-                            <th class="!bg-amber-600 !text-white py-3.5 px-3 text-center font-bold">Waiting Author Revision</th>
-                            <th class="!bg-purple-700 !text-white py-3.5 px-3 text-center font-bold">Pre-EDAS Review</th>
-                            <th class="!bg-sky-700 !text-white py-3.5 px-3 text-center font-bold">Ready for EDAS</th>
-                            <th class="!bg-emerald-700 !text-white py-3.5 px-3 text-center font-bold">Completed (Done)</th>
-                            <th class="!bg-slate-800 !text-white py-3.5 px-3 text-center font-bold">Rejected / Withdrawn</th>
+                            <th style="background-color: #102a43; color: #ffffff;" class="py-3.5 px-3 font-bold">PIC</th>
+                            <th style="background-color: #0f172a; color: #ffffff;" class="py-3.5 px-3 text-center font-bold">Total</th>
+                            <th style="background-color: #334155; color: #ffffff;" class="py-3.5 px-3 text-center font-bold">Submitted / Needs Assign</th>
+                            <th style="background-color: #be123c; color: #ffffff;" class="py-3.5 px-3 text-center font-bold">Needs Correction</th>
+                            <th style="background-color: #1d4ed8; color: #ffffff;" class="py-3.5 px-3 text-center font-bold">Editorial Review</th>
+                            <th style="background-color: #d97706; color: #ffffff;" class="py-3.5 px-3 text-center font-bold">Waiting Author Revision</th>
+                            <th style="background-color: #7e22ce; color: #ffffff;" class="py-3.5 px-3 text-center font-bold">Pre-EDAS Review</th>
+                            <th style="background-color: #0369a1; color: #ffffff;" class="py-3.5 px-3 text-center font-bold">Ready for EDAS</th>
+                            <th style="background-color: #047857; color: #ffffff;" class="py-3.5 px-3 text-center font-bold">Completed (Done)</th>
+                            <th style="background-color: #1e293b; color: #ffffff;" class="py-3.5 px-3 text-center font-bold">Rejected / Withdrawn</th>
                         </tr>
                     </thead>
                     <tbody>
