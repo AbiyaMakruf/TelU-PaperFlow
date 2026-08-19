@@ -77,9 +77,36 @@ class EmailMonitoringController extends Controller
             $templateValues[] = (int) $row->total;
         }
 
+        $perPageRaw = strtolower(trim((string) $request->query('per_page', '30')));
+        $perPage = match ($perPageRaw) {
+            '10' => 10,
+            '20' => 20,
+            '30' => 30,
+            '40' => 40,
+            '50' => 50,
+            '100' => 100,
+            'all' => 1000,
+            default => 30,
+        };
+
         $logs = $base->with(['conference', 'submission', 'sender'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
-            ->latest()->paginate(30)->withQueryString();
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $term = strtolower(trim((string) $request->string('search')));
+                $q->where(function ($subQ) use ($term) {
+                    $subQ->whereRaw('LOWER(recipient) LIKE ?', ["%{$term}%"])
+                        ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$term}%"])
+                        ->orWhereRaw('LOWER(sender_name) LIKE ?', ["%{$term}%"])
+                        ->orWhereHas('submission', function ($sq) use ($term) {
+                            $sq->whereRaw('LOWER(paper_code) LIKE ?', ["%{$term}%"])
+                                ->orWhereRaw('LOWER(paper_id) LIKE ?', ["%{$term}%"])
+                                ->orWhereRaw('LOWER(title) LIKE ?', ["%{$term}%"]);
+                        });
+                });
+            })
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
 
         return view('operations.emails', compact(
             'logs',

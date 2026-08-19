@@ -147,24 +147,46 @@
     }" class="mt-6 card shadow-sm overflow-hidden">
 
         <!-- Toolbar & Filter Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-navy/10 bg-slate-50/50">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 border-b border-navy/10 bg-slate-50/50">
             <div class="flex flex-wrap items-center gap-2">
-                <a href="{{ route('emails.index') }}" class="btn text-xs py-1.5 px-3 {{ !request('status') ? 'bg-navy text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
+                <a href="{{ route('emails.index', array_filter(['search' => request('search'), 'per_page' => request('per_page')])) }}" class="btn text-xs py-1.5 px-3 {{ !request('status') ? 'bg-navy text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
                     All Logs ({{ number_format($stats['sent'] + $stats['failed'] + $stats['queued']) }})
                 </a>
-                <a href="{{ route('emails.index', ['status' => 'sent']) }}" class="btn text-xs py-1.5 px-3 {{ request('status') === 'sent' ? 'bg-emerald-600 text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
+                <a href="{{ route('emails.index', array_filter(['status' => 'sent', 'search' => request('search'), 'per_page' => request('per_page')])) }}" class="btn text-xs py-1.5 px-3 {{ request('status') === 'sent' ? 'bg-emerald-600 text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
                     ✓ Sent ({{ number_format($stats['sent']) }})
                 </a>
-                <a href="{{ route('emails.index', ['status' => 'failed']) }}" class="btn text-xs py-1.5 px-3 {{ request('status') === 'failed' ? 'bg-rose-600 text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
+                <a href="{{ route('emails.index', array_filter(['status' => 'failed', 'search' => request('search'), 'per_page' => request('per_page')])) }}" class="btn text-xs py-1.5 px-3 {{ request('status') === 'failed' ? 'bg-rose-600 text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
                     ✕ Failed ({{ number_format($stats['failed']) }})
                 </a>
-                <a href="{{ route('emails.index', ['status' => 'queued']) }}" class="btn text-xs py-1.5 px-3 {{ request('status') === 'queued' ? 'bg-amber-600 text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
+                <a href="{{ route('emails.index', array_filter(['status' => 'queued', 'search' => request('search'), 'per_page' => request('per_page')])) }}" class="btn text-xs py-1.5 px-3 {{ request('status') === 'queued' ? 'bg-amber-600 text-white font-black' : 'bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-100' }}">
                     🕒 Queued ({{ number_format($stats['queued']) }})
                 </a>
             </div>
-            <p class="text-xs font-semibold text-slate-500 text-right">
-                Showing {{ $logs->firstItem() ?? 0 }}-{{ $logs->lastItem() ?? 0 }} of {{ number_format($logs->total()) }} records
-            </p>
+
+            <!-- Search Bar & Items Per Page Selector -->
+            <form method="GET" action="{{ route('emails.index') }}" class="flex flex-wrap items-center gap-2">
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                <div class="relative min-w-[200px] sm:min-w-[240px]">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search email, subject, or paper ID..." class="form-input text-xs py-1.5 pl-3 pr-8 min-h-9 rounded-lg">
+                    @if(request('search'))
+                        <a href="{{ route('emails.index', array_filter(['status' => request('status'), 'per_page' => request('per_page')])) }}" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-navy text-xs font-bold" title="Clear Search">&times;</a>
+                    @endif
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <label class="text-[11px] font-bold text-slate-500 shrink-0">Show:</label>
+                    <select name="per_page" onchange="this.form.submit()" class="form-input text-xs py-1 px-2.5 min-h-9 rounded-lg border-slate-300">
+                        <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10 / page</option>
+                        <option value="20" {{ request('per_page') == '20' ? 'selected' : '' }}>20 / page</option>
+                        <option value="30" {{ request('per_page', '30') == '30' ? 'selected' : '' }}>30 / page</option>
+                        <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50 / page</option>
+                        <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100 / page</option>
+                        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
+                    </select>
+                </div>
+            </form>
         </div>
 
         <!-- Table Container -->
@@ -253,8 +275,9 @@
             </table>
         </div>
 
-        <div class="p-4 border-t border-navy/10 bg-slate-50/30">
-            {{ $logs->links() }}
+        <div class="p-4 border-t border-navy/10 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>{{ $logs->links() }}</div>
+            <p class="text-xs text-muted font-bold text-right">Total Logs Found: {{ number_format($logs->total()) }}</p>
         </div>
 
         <!-- Re-send Modal (Asynchronous Non-Reloading Submit + Recipient Editor) -->
@@ -272,7 +295,7 @@
                         <button type="button" @click="resendModalOpen = false" class="text-slate-400 hover:text-navy font-bold text-lg">&times;</button>
                     </div>
 
-                    <form :action="resendUrl" method="POST" @submit.prevent="submitPaperflowForm($event); resendModalOpen = false;" class="space-y-4">
+                    <form :action="resendUrl" method="POST" @submit.prevent="window.submitPaperflowForm($event); resendModalOpen = false;" class="space-y-4">
                         @csrf
                         <div class="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
                             <span class="text-muted font-bold block uppercase text-[10px]">Email Subject:</span>
@@ -300,23 +323,23 @@
             </div>
         </template>
 
-        <!-- View Body Preview Modal -->
+        <!-- View Body Preview Modal with Clean HTML iframe Rendering -->
         <template x-teleport="body">
             <div x-show="viewBodyOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/60 backdrop-blur-xs" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-                <div @click.away="viewBodyOpen = false" class="card w-full max-w-3xl p-6 bg-white space-y-4 shadow-2xl rounded-2xl border border-slate-200 max-h-[85vh] flex flex-col">
+                <div @click.away="viewBodyOpen = false" class="card w-full max-w-4xl p-6 bg-white space-y-4 shadow-2xl rounded-2xl border border-slate-200 max-h-[90vh] flex flex-col">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="size-8 rounded-xl bg-navy/10 text-navy flex items-center justify-center font-bold">✉️</span>
                             <div class="min-w-0">
                                 <h3 class="text-base font-black text-navy truncate" x-text="viewSubject"></h3>
-                                <p class="text-[11px] text-muted">Rendered HTML Email Content</p>
+                                <p class="text-[11px] text-muted">Authentic Rendered HTML Email Content</p>
                             </div>
                         </div>
                         <button type="button" @click="viewBodyOpen = false" class="text-slate-400 hover:text-navy font-bold text-lg shrink-0">&times;</button>
                     </div>
 
-                    <div class="flex-1 overflow-y-auto p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                        <div x-html="bodyContent" class="prose max-w-none text-xs"></div>
+                    <div class="flex-1 overflow-hidden p-1 bg-slate-100 border border-slate-200 rounded-xl">
+                        <iframe :srcdoc="bodyContent" class="w-full h-[520px] rounded-lg border-0 bg-white shadow-inner"></iframe>
                     </div>
 
                     <div class="pt-2 border-t border-slate-100 flex items-center justify-end shrink-0">
