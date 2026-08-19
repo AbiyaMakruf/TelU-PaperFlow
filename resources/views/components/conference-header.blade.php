@@ -38,34 +38,40 @@
             </div>
         </div>
 
-        @can('update', $c)
-            <!-- Admin Sub-Navigation Action Bar -->
+        @can('view', $c)
+            <!-- Conference Sub-Navigation Action Bar -->
             <div class="mt-5 pt-4 border-t border-navy/10">
                 <div class="flex flex-wrap items-center gap-1.5">
-                    <a href="{{ route('conferences.show', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'overview' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
-                        <span>📊</span> <span>Overview</span>
-                    </a>
-                    <a href="{{ route('conferences.form.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'form' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
-                        <span>🎨</span> <span>Form Builder</span>
-                    </a>
-                    <a href="{{ route('conferences.drive.show', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'storage' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
-                        <span>☁️</span> <span>File Storage</span>
-                    </a>
-                    <a href="{{ route('conferences.checklists.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'checklists' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
-                        <span>✅</span> <span>IEEE Checklist</span>
-                    </a>
-                    <a href="{{ route('conferences.email-templates.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'templates' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
-                        <span>📧</span> <span>Email Templates</span>
-                    </a>
-                    <a href="{{ route('conferences.members.index', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'members' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
-                        <span>👥</span> <span>Team Members</span>
-                    </a>
+                    @can('update', $c)
+                        <a href="{{ route('conferences.show', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'overview' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
+                            <span>📊</span> <span>Overview</span>
+                        </a>
+                        <a href="{{ route('conferences.form.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'form' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
+                            <span>🎨</span> <span>Form Builder</span>
+                        </a>
+                        <a href="{{ route('conferences.drive.show', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'storage' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
+                            <span>☁️</span> <span>File Storage</span>
+                        </a>
+                        <a href="{{ route('conferences.checklists.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'checklists' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
+                            <span>✅</span> <span>IEEE Checklist</span>
+                        </a>
+                        <a href="{{ route('conferences.email-templates.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'templates' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
+                            <span>📧</span> <span>Email Templates</span>
+                        </a>
+                        <a href="{{ route('conferences.members.index', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'members' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
+                            <span>👥</span> <span>Team Members</span>
+                        </a>
+                    @endcan
+
                     <a href="{{ route('conferences.edas-reconciliation.index', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'edas' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
                         <span>🔄</span> <span>EDAS Reconciliation</span>
                     </a>
-                    <a href="{{ route('conferences.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'settings' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
-                        <span>⚙️</span> <span>Settings</span>
-                    </a>
+
+                    @can('update', $c)
+                        <a href="{{ route('conferences.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'settings' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
+                            <span>⚙️</span> <span>Settings</span>
+                        </a>
+                    @endcan
                 </div>
             </div>
         @endcan

@@ -159,6 +159,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/conferences/{conference}/edas-reconciliation', [EdasReconciliationController::class, 'index'])->name('conferences.edas-reconciliation.index');
         Route::post('/conferences/{conference}/edas-reconciliation/upload', [EdasReconciliationController::class, 'upload'])->name('conferences.edas-reconciliation.upload');
+        Route::post('/conferences/{conference}/edas-reconciliation/refresh', [EdasReconciliationController::class, 'refresh'])->name('conferences.edas-reconciliation.refresh');
         Route::post('/conferences/{conference}/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
         Route::get('/conferences/{conference}/edas-reconciliation/export-missing', [EdasReconciliationController::class, 'exportMissing'])->name('conferences.edas-reconciliation.export-missing');
         Route::post('/conferences/{conference}/import/preview', [SubmissionImportController::class, 'preview'])->name('conferences.import.preview');

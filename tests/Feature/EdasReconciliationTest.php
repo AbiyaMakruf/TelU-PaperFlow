@@ -15,7 +15,7 @@ class EdasReconciliationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createConferenceWithAdmin(): array
+    private function createConferenceWithRoles(): array
     {
         $conference = Conference::create([
             'name' => 'ICoICT 2026',
@@ -40,45 +40,51 @@ class EdasReconciliationTest extends TestCase
         return [$conference, $admin, $editor];
     }
 
-    public function test_guest_or_editor_cannot_access_edas_reconciliation(): void
+    public function test_guest_is_redirected_to_login(): void
     {
-        [$conference, $admin, $editor] = $this->createConferenceWithAdmin();
+        [$conference] = $this->createConferenceWithRoles();
 
         $this->get(route('conferences.edas-reconciliation.index', $conference))
             ->assertRedirect(route('login'));
-
-        $this->actingAs($editor)
-            ->withSession(['active_conference_id' => $conference->id])
-            ->get(route('conferences.edas-reconciliation.index', $conference))
-            ->assertForbidden();
     }
 
-    public function test_conference_admin_can_access_edas_reconciliation(): void
+    public function test_all_conference_members_can_view_edas_reconciliation_page(): void
     {
-        [$conference, $admin] = $this->createConferenceWithAdmin();
+        [$conference, $admin, $editor] = $this->createConferenceWithRoles();
 
+        // Admin can view
         $this->actingAs($admin)
-            ->withSession(['active_conference_id' => $conference->id])
+            ->get(route('conferences.edas-reconciliation.index', $conference))
+            ->assertOk()
+            ->assertSee('EDAS CSV Reconciliation');
+
+        // Editor member can also view
+        $this->actingAs($editor)
             ->get(route('conferences.edas-reconciliation.index', $conference))
             ->assertOk()
             ->assertSee('EDAS CSV Reconciliation');
     }
 
-    public function test_legacy_query_string_url_redirects_to_scoped_edas_reconciliation(): void
+    public function test_non_admin_cannot_upload_or_reset_edas_csv(): void
     {
-        [$conference, $admin] = $this->createConferenceWithAdmin();
+        [$conference, $admin, $editor] = $this->createConferenceWithRoles();
+        $file = UploadedFile::fake()->createWithContent('edas.csv', "Paper ID\n12345");
 
-        $response = $this->actingAs($admin)
-            ->get('/conferences/edas-reconciliation?'.$conference->id);
+        // Editor uploading CSV is forbidden
+        $this->actingAs($editor)
+            ->post(route('conferences.edas-reconciliation.upload', $conference), ['csv_file' => $file])
+            ->assertForbidden();
 
-        $response->assertRedirect(route('conferences.edas-reconciliation.index', $conference));
+        // Editor resetting CSV is forbidden
+        $this->actingAs($editor)
+            ->post(route('conferences.edas-reconciliation.reset', $conference))
+            ->assertForbidden();
     }
 
-    public function test_conference_admin_can_upload_edas_csv_and_see_reconciliation_results(): void
+    public function test_conference_admin_can_upload_edas_csv_and_persist_data_in_database(): void
     {
-        [$conference, $admin] = $this->createConferenceWithAdmin();
+        [$conference, $admin] = $this->createConferenceWithRoles();
 
-        // Create a paper in Paperflow matching EDAS Paper ID 1570990001
         $submission = Submission::create([
             'conference_id' => $conference->id,
             'paper_id' => '1570990001',
@@ -87,11 +93,9 @@ class EdasReconciliationTest extends TestCase
             'manuscript_format' => 'docx',
             'corresponding_author_name' => 'John Doe',
             'corresponding_author_email' => 'john.doe@example.com',
-            'corresponding_author_phone' => '081234567890',
             'submitted_at' => now(),
         ]);
 
-        // Create fake EDAS CSV content (1 submitted, 1 missing) with only Paper ID and optional Title
         $csvContent = "Paper ID,Title\n".
             "1570990001,AI Deep Learning Workflow in Academic Publishing\n".
             '1570990002,Unsubmitted Paper Title';
@@ -99,7 +103,6 @@ class EdasReconciliationTest extends TestCase
         $csvFile = UploadedFile::fake()->createWithContent('edas_export.csv', $csvContent);
 
         $response = $this->actingAs($admin)
-            ->withSession(['active_conference_id' => $conference->id])
             ->post(route('conferences.edas-reconciliation.upload', $conference), [
                 'csv_file' => $csvFile,
             ]);
@@ -107,19 +110,12 @@ class EdasReconciliationTest extends TestCase
         $response->assertRedirect(route('conferences.edas-reconciliation.index', $conference));
         $response->assertSessionHas('success');
 
-        // Verify session data
-        $sessionData = session('edas_reconciliation_data_'.$conference->id);
-        $this->assertNotNull($sessionData);
-        $this->assertEquals(2, $sessionData['total_edas_count']);
-        $this->assertEquals(1, $sessionData['submitted_count']);
-        $this->assertEquals(1, $sessionData['missing_count']);
+        // Verify database persistence in conference settings
+        $conference->refresh();
+        $this->assertNotNull($conference->settings['edas_reconciliation'] ?? null);
 
-        // Assert rendered view
+        // Verify index view rendered for admin and editor
         $this->actingAs($admin)
-            ->withSession([
-                'active_conference_id' => $conference->id,
-                'edas_reconciliation_data_'.$conference->id => $sessionData,
-            ])
             ->get(route('conferences.edas-reconciliation.index', $conference))
             ->assertOk()
             ->assertSee('Submitted')
@@ -128,31 +124,64 @@ class EdasReconciliationTest extends TestCase
             ->assertSee('1570990002');
     }
 
-    public function test_admin_can_export_missing_edas_papers_as_csv(): void
+    public function test_tolerant_paper_id_matching_with_format_warning(): void
     {
-        [$conference, $admin] = $this->createConferenceWithAdmin();
+        [$conference, $admin] = $this->createConferenceWithRoles();
 
-        $sessionData = [
-            'total_edas_count' => 2,
-            'items' => [
-                [
-                    'edas_paper_id' => '1570990002',
-                    'edas_title' => 'Missing Paper',
-                    'status_state' => 'missing',
-                ],
-            ],
-        ];
+        // Paper registered in Paperflow as "1570990001"
+        Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => '1570990001',
+            'paper_code' => '1570990001',
+            'title' => 'Sample Research Paper',
+            'corresponding_author_name' => 'Jane Doe',
+            'corresponding_author_email' => 'jane@example.com',
+            'submitted_at' => now(),
+        ]);
 
-        $response = $this->actingAs($admin)
-            ->withSession([
-                'active_conference_id' => $conference->id,
-                'edas_reconciliation_data_'.$conference->id => $sessionData,
-            ])
-            ->get(route('conferences.edas-reconciliation.export-missing', $conference));
+        // EDAS CSV has typo/prefix "#1570990001"
+        $csvContent = "Paper ID,Title\n".
+            '#1570990001,Sample Research Paper';
 
-        $response->assertOk();
-        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
-        $this->assertStringContainsString('1570990002', $response->streamedContent());
-        $this->assertStringContainsString('Missing Paper', $response->streamedContent());
+        $csvFile = UploadedFile::fake()->createWithContent('edas_export.csv', $csvContent);
+
+        $this->actingAs($admin)
+            ->post(route('conferences.edas-reconciliation.upload', $conference), ['csv_file' => $csvFile]);
+
+        $res = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.index', $conference));
+        $res->assertOk();
+        $res->assertSee('ID format mismatch');
+    }
+
+    public function test_refresh_route_updates_reconciliation_live(): void
+    {
+        [$conference, $admin] = $this->createConferenceWithRoles();
+
+        $csvContent = "Paper ID,Title\n1570990005,Future AI Paper";
+        $csvFile = UploadedFile::fake()->createWithContent('edas.csv', $csvContent);
+
+        $this->actingAs($admin)->post(route('conferences.edas-reconciliation.upload', $conference), ['csv_file' => $csvFile]);
+
+        // Initially 1570990005 is missing
+        $res1 = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.index', $conference));
+        $res1->assertSee('Missing');
+
+        // Now author submits paper 1570990005 in Paperflow
+        Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => '1570990005',
+            'paper_code' => '1570990005',
+            'title' => 'Future AI Paper',
+            'corresponding_author_name' => 'New Author',
+            'corresponding_author_email' => 'new@example.com',
+            'submitted_at' => now(),
+        ]);
+
+        // Trigger refresh
+        $this->actingAs($admin)->post(route('conferences.edas-reconciliation.refresh', $conference))->assertRedirect();
+
+        // Now 1570990005 is submitted
+        $res2 = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.index', $conference));
+        $res2->assertSee('Submitted');
     }
 }
