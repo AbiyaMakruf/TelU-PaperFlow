@@ -82,6 +82,17 @@
                     <input class="form-input" type="date" name="date_to" value="{{ request('date_to') }}">
                 </div>
                 <div>
+                    <label class="form-label">Items Per Page</label>
+                    <select class="form-input" name="per_page">
+                        <option value="10" @selected(request('per_page') === '10')>10 per page</option>
+                        <option value="20" @selected(request('per_page') === '20' || !request('per_page'))>20 per page</option>
+                        <option value="30" @selected(request('per_page') === '30')>30 per page</option>
+                        <option value="40" @selected(request('per_page') === '40')>40 per page</option>
+                        <option value="50" @selected(request('per_page') === '50')>50 per page</option>
+                        <option value="all" @selected(request('per_page') === 'all')>All papers</option>
+                    </select>
+                </div>
+                <div>
                     <label class="form-label">Additional Filters</label>
                     <label class="check-row h-12 py-0 px-4 flex items-center cursor-pointer">
                         <input type="checkbox" name="overdue" value="1" @checked(request('overdue'))>
@@ -210,11 +221,16 @@
                             <td class="text-center"><x-status-badge :status="$submission->status" /></td>
                             <td @click.stop class="text-center">
                                 @if($submission->portalLinkSent())
-                                    <div class="inline-flex flex-col items-center gap-0.5">
+                                    <div class="inline-flex flex-col items-center gap-1">
                                         <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700 border border-emerald-200" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y H:i') }}">
-                                            ✓ Sent
+                                            ✓ Sent ({{ $submission->portalLinkSentAt()?->format('d M H:i') }})
                                         </span>
-                                        <span class="text-[10px] text-slate-400 font-medium">{{ $submission->portalLinkSentAt()?->format('d M H:i') }}</span>
+                                        <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
+                                            @csrf
+                                            <button type="submit" class="btn btn-secondary text-[10px] py-0.5 px-2 font-bold text-navy hover:text-orange hover:border-orange shadow-2xs" title="Resend Author Portal link email to author">
+                                                ✉️ Resend Link
+                                            </button>
+                                        </form>
                                     </div>
                                 @else
                                     <div class="inline-flex flex-col items-center gap-1">
@@ -337,9 +353,17 @@
                             <div class="flex items-center justify-between gap-2 border-t border-slate-200/60 pt-2" @click.stop>
                                 <span class="text-[11px] text-muted font-bold">Portal Link Email</span>
                                 @if($submission->portalLinkSent())
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700 border border-emerald-200">
-                                        <span>✓ Sent ({{ $submission->portalLinkSentAt()?->format('d M H:i') }})</span>
-                                    </span>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700 border border-emerald-200">
+                                            <span>✓ Sent ({{ $submission->portalLinkSentAt()?->format('d M H:i') }})</span>
+                                        </span>
+                                        <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
+                                            @csrf
+                                            <button type="submit" class="btn btn-secondary text-[10px] py-1 px-2 font-bold text-navy hover:text-orange">
+                                                ✉️ Resend Link
+                                            </button>
+                                        </form>
+                                    </div>
                                 @else
                                     <div class="flex items-center gap-1.5">
                                         <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">
@@ -380,7 +404,29 @@
                 @endforelse
             </div>
         </div>
-        <div class="mt-6">{{ $submissions->links() }}</div>
+        <div class="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <form method="GET" action="{{ route('submissions.index') }}" class="flex items-center gap-2 text-xs font-bold text-slate-600">
+                @foreach(request()->except(['per_page', 'page']) as $key => $val)
+                    @if(is_array($val))
+                        @foreach($val as $v)
+                            <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
+                        @endforeach
+                    @else
+                        <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                    @endif
+                @endforeach
+                <label for="per_page_select_bottom" class="whitespace-nowrap">Show per page:</label>
+                <select id="per_page_select_bottom" name="per_page" onchange="this.form.submit()" class="form-input text-xs py-1.5 px-3 rounded-lg w-auto font-bold bg-white border-slate-300 shadow-2xs">
+                    <option value="10" @selected(request('per_page') === '10')>10</option>
+                    <option value="20" @selected(request('per_page') === '20' || !request('per_page'))>20</option>
+                    <option value="30" @selected(request('per_page') === '30')>30</option>
+                    <option value="40" @selected(request('per_page') === '40')>40</option>
+                    <option value="50" @selected(request('per_page') === '50')>50</option>
+                    <option value="all" @selected(request('per_page') === 'all')>All</option>
+                </select>
+            </form>
+            <div>{{ $submissions->links() }}</div>
+        </div>
 
         <!-- PIC Details Modal -->
         <div x-show="activePic" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto">

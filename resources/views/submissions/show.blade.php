@@ -203,6 +203,12 @@
                     <a href="{{ route('author.portal', ['token' => $portalToken]) }}" target="_blank" rel="noopener" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-orange hover:text-orange rounded-xl transition" title="Inspect author portal view exactly as seen by the author">
                         Open Author Portal ↗
                     </a>
+                    <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
+                        @csrf
+                        <button type="submit" class="btn btn-secondary text-xs py-2 px-4 inline-flex items-center gap-1.5 shadow-xs hover:border-orange hover:text-orange rounded-xl transition font-bold" title="Send or resend Author Portal link email to author">
+                            ✉️ {{ $submission->portalLinkSent() ? 'Resend Portal Link Email' : 'Send Portal Link Email' }}
+                        </button>
+                    </form>
                 </div>
 
                 @if($submission->authors->count() > 1)
