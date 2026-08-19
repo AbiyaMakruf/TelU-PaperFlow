@@ -95,6 +95,21 @@ class CommunicationAccessTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_fetch_email_body_json(): void
+    {
+        [$conference, $admin] = $this->member(ConferenceRole::Admin);
+        $emailLog = $this->email($conference, $admin, 'Email Body Test', 'sent');
+
+        $response = $this->actingAs($admin)->getJson(route('emails.body', $emailLog));
+
+        $response->assertOk();
+        $response->assertJson([
+            'id' => $emailLog->id,
+            'subject' => 'Email Body Test',
+            'body' => $emailLog->body,
+        ]);
+    }
+
     public function test_every_staff_role_can_update_profile_identity(): void
     {
         $user = User::factory()->create(['must_change_password' => false]);
