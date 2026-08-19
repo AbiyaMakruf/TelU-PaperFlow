@@ -91,36 +91,33 @@ class DashboardController extends Controller
             if (! isset($picMatrix[$picName])) {
                 $picMatrix[$picName] = [
                     'Total' => 0,
-                    'Unassigned' => 0,
-                    'In Progress' => 0,
-                    'Awaiting Response' => 0,
-                    'Revised by Editor' => 0,
-                    'Revised by Author' => 0,
-                    'Completed' => 0,
+                    'Submitted' => 0,
+                    'NeedsCorrection' => 0,
+                    'EditorialReview' => 0,
+                    'WaitingRevision' => 0,
+                    'ReviewerReview' => 0,
+                    'ReadyForEdas' => 0,
+                    'Done' => 0,
+                    'RejectedWithdrawn' => 0,
                 ];
             }
 
             $picMatrix[$picName]['Total']++;
 
-            if (in_array($sub->status, [SubmissionStatus::Submitted, SubmissionStatus::ReadyForAssignment], true)) {
-                $picMatrix[$picName]['Unassigned']++;
-            } elseif (in_array($sub->status, [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview, SubmissionStatus::ReadyForEdas], true)) {
-                $picMatrix[$picName]['In Progress']++;
-            } elseif (in_array($sub->status, [SubmissionStatus::WaitingAuthorRevision, SubmissionStatus::NeedsAuthorCorrection], true)) {
-                $picMatrix[$picName]['Awaiting Response']++;
-            } elseif ($sub->status === SubmissionStatus::Done) {
-                $picMatrix[$picName]['Completed']++;
-            }
-
-            if ($sub->revision_substatus === 'revised_by_editor') {
-                $picMatrix[$picName]['Revised by Editor']++;
-            } elseif ($sub->revision_substatus === 'revised_by_author') {
-                $picMatrix[$picName]['Revised by Author']++;
-            }
+            match ($sub->status) {
+                SubmissionStatus::Submitted, SubmissionStatus::ReadyForAssignment => $picMatrix[$picName]['Submitted']++,
+                SubmissionStatus::NeedsAuthorCorrection => $picMatrix[$picName]['NeedsCorrection']++,
+                SubmissionStatus::EditorialReview => $picMatrix[$picName]['EditorialReview']++,
+                SubmissionStatus::WaitingAuthorRevision => $picMatrix[$picName]['WaitingRevision']++,
+                SubmissionStatus::ReviewerReview, SubmissionStatus::ReviewerChangesRequested => $picMatrix[$picName]['ReviewerReview']++,
+                SubmissionStatus::ReadyForEdas, SubmissionStatus::EdasFixRequired => $picMatrix[$picName]['ReadyForEdas']++,
+                SubmissionStatus::Done => $picMatrix[$picName]['Done']++,
+                SubmissionStatus::Rejected, SubmissionStatus::Withdrawn => $picMatrix[$picName]['RejectedWithdrawn']++,
+            };
 
             if ($sub->editor) {
                 $name = $sub->editor->name;
-                $picWorkload[$name]['active'] = ($picWorkload[$name]['active'] ?? 0) + (! in_array($sub->status, [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn]) ? 1 : 0);
+                $picWorkload[$name]['active'] = ($picWorkload[$name]['active'] ?? 0) + (! in_array($sub->status, [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn], true) ? 1 : 0);
                 $picWorkload[$name]['total'] = ($picWorkload[$name]['total'] ?? 0) + 1;
             }
         }
@@ -128,8 +125,8 @@ class DashboardController extends Controller
         // Formatted PIC chart data
         $picChartData = [
             'labels' => array_keys($picMatrix),
-            'active' => array_map(fn ($p) => $p['In Progress'] + $p['Unassigned'] + $p['Awaiting Response'], array_values($picMatrix)),
-            'done' => array_map(fn ($p) => $p['Completed'], array_values($picMatrix)),
+            'active' => array_map(fn ($p) => $p['Submitted'] + $p['NeedsCorrection'] + $p['EditorialReview'] + $p['WaitingRevision'] + $p['ReviewerReview'] + $p['ReadyForEdas'], array_values($picMatrix)),
+            'done' => array_map(fn ($p) => $p['Done'], array_values($picMatrix)),
         ];
 
         // Average turnaround time (days between submitted_at and completed_at)
