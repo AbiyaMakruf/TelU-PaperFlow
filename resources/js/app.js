@@ -65,6 +65,104 @@ window.submitPaperflowForm = async function(event) {
     }
 };
 
+Alpine.data('emailMonitoring', () => ({
+    resendModalOpen: false,
+    resendUrl: '',
+    recipient: '',
+    originalRecipient: '',
+    subject: '',
+    logId: '',
+    isSubmitting: false,
+
+    viewBodyOpen: false,
+    bodyContent: '',
+    viewSubject: '',
+    isLoadingBody: false,
+
+    openResendModal(url, currentRecipient, currentSubject, id) {
+        this.resendUrl = url;
+        this.recipient = currentRecipient;
+        this.originalRecipient = currentRecipient;
+        this.subject = currentSubject;
+        this.logId = id;
+        this.resendModalOpen = true;
+    },
+
+    async submitResend() {
+        if (!this.resendUrl || this.isSubmitting) return;
+        this.isSubmitting = true;
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+        try {
+            const formData = new FormData();
+            formData.append('_token', csrfToken);
+            if (this.recipient) {
+                formData.append('recipient', this.recipient);
+            }
+
+            const res = await fetch(this.resendUrl, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                    detail: { message: data.message || 'Email successfully re-queued!', type: 'success' }
+                }));
+                this.resendModalOpen = false;
+            } else {
+                const err = data.message || 'Failed to re-send email.';
+                window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                    detail: { message: err, type: 'error' }
+                }));
+            }
+        } catch (e) {
+            window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                detail: { message: 'Network or server error while re-sending email.', type: 'error' }
+            }));
+        } finally {
+            this.isSubmitting = false;
+        }
+    },
+
+    async openBodyModal(logId, subject) {
+        this.viewSubject = subject;
+        this.bodyContent = '<div style="padding: 40px; text-align: center; font-family: sans-serif; color: #64748b; font-weight: bold;">⏳ Loading email content preview...</div>';
+        this.isLoadingBody = true;
+        this.viewBodyOpen = true;
+
+        try {
+            const res = await fetch('/email-monitoring/' + logId + '/body', {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
+            if (data.body) {
+                this.bodyContent = data.body;
+            } else {
+                this.bodyContent = '<div style="padding: 40px; text-align: center; font-family: sans-serif; color: #ef4444; font-weight: bold;">No body content stored for this email.</div>';
+            }
+        } catch (e) {
+            this.bodyContent = '<div style="padding: 40px; text-align: center; font-family: sans-serif; color: #ef4444; font-weight: bold;">Failed to load email preview.</div>';
+        } finally {
+            this.isLoadingBody = false;
+        }
+    },
+
+    copyEmail(email) {
+        navigator.clipboard.writeText(email);
+        window.dispatchEvent(new CustomEvent('paperflow-toast', {
+            detail: { message: 'Copied recipient email address: ' + email, type: 'success' }
+        }));
+    }
+}));
+
 Alpine.start();
 
 document.addEventListener('click', (event) => {
