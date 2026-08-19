@@ -1,6 +1,6 @@
 <x-layouts.public :title="$submission->paper_code">
     <div class="mx-auto max-w-5xl">
-        <div class="flex items-center justify-between gap-4">
+        <div class="sticky top-0 z-40 bg-white/95 backdrop-blur-md py-3 px-4 -mx-4 mb-4 border-b border-navy/10 shadow-2xs sm:static sm:z-auto sm:bg-transparent sm:backdrop-blur-none sm:p-0 sm:m-0 sm:border-0 sm:shadow-none flex items-center justify-between gap-4">
             <p class="eyebrow truncate mb-0">Author Portal &middot; {{ $submission->conference->name }}</p>
             <span class="badge badge-{{ $submission->status->color() }} shrink-0">{{ $submission->status->label() }}</span>
         </div>
