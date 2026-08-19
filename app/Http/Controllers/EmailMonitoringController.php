@@ -99,14 +99,31 @@ class EmailMonitoringController extends Controller
 
     public function resend(Request $request, EmailLog $emailLog, VisibleEmailLogs $visible, ConferenceMailer $mailer): RedirectResponse|JsonResponse
     {
-        abort_unless($emailLog->status === 'failed' && filled($emailLog->body), 422, 'Only failed emails with saved body content can be re-sent.');
         abort_unless($visible->for($request->user())->whereKey($emailLog->id)->exists(), 403);
-        $mailer->resend($emailLog, $request->user());
+        abort_unless(filled($emailLog->body), 422, 'Cannot re-send an email without saved body content.');
 
-        if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Email re-queued successfully.']);
+        $request->validate([
+            'recipient' => ['nullable', 'string', 'email', 'max:255'],
+        ]);
+
+        $newRecipient = $request->filled('recipient') ? trim((string) $request->input('recipient')) : null;
+        $copy = $mailer->resend($emailLog, $request->user(), $newRecipient);
+
+        $targetEmail = $newRecipient ?: $emailLog->recipient;
+        $message = "Email '{$emailLog->subject}' successfully re-queued to {$targetEmail}.";
+
+        if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'log' => [
+                    'id' => $copy->id,
+                    'recipient' => $copy->recipient,
+                    'status' => $copy->status,
+                ],
+            ]);
         }
 
-        return back()->with('success', 'Email re-queued successfully.');
+        return back()->with('success', $message);
     }
 }

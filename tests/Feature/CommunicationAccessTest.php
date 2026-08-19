@@ -73,6 +73,28 @@ class CommunicationAccessTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_resend_sent_email_with_updated_recipient(): void
+    {
+        Queue::fake();
+        [$conference, $admin] = $this->member(ConferenceRole::Admin);
+        $sentLog = $this->email($conference, $admin, 'Email Terkirim', 'sent');
+
+        $response = $this->actingAs($admin)->postJson(route('emails.resend', $sentLog), [
+            'recipient' => 'corrected.author@example.com',
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['success' => true]);
+
+        Queue::assertPushed(SendLoggedEmail::class);
+        $this->assertDatabaseHas('email_logs', [
+            'sender_user_id' => $admin->id,
+            'recipient' => 'corrected.author@example.com',
+            'subject' => 'Email Terkirim',
+            'status' => 'queued',
+        ]);
+    }
+
     public function test_every_staff_role_can_update_profile_identity(): void
     {
         $user = User::factory()->create(['must_change_password' => false]);

@@ -103,13 +103,21 @@ class ConferenceMailer
         return $log;
     }
 
-    public function resend(EmailLog $original, User $sender): EmailLog
+    public function resend(EmailLog $original, User $sender, ?string $newRecipient = null): EmailLog
     {
+        $targetRecipient = ! empty($newRecipient) ? trim($newRecipient) : $original->recipient;
+
         $copy = EmailLog::create([
-            'conference_id' => $original->conference_id, 'submission_id' => $original->submission_id,
-            'template_key' => $original->template_key, 'recipient' => $original->recipient, 'cc' => $original->cc ?? [],
-            'subject' => $original->subject, 'body' => $original->body, 'sender_user_id' => $sender->id,
-            'sender_name' => $original->sender_name, 'status' => 'queued',
+            'conference_id' => $original->conference_id,
+            'submission_id' => $original->submission_id,
+            'template_key' => $original->template_key,
+            'recipient' => $targetRecipient,
+            'cc' => $original->cc ?? [],
+            'subject' => $original->subject,
+            'body' => $original->body,
+            'sender_user_id' => $sender->id,
+            'sender_name' => $original->sender_name,
+            'status' => 'queued',
         ]);
         $actionUrl = null;
         if (preg_match('/https?:\/\/[^\s<">]+/', (string) $copy->body, $matches)) {
