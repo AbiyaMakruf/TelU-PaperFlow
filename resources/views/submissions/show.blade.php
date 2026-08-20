@@ -18,7 +18,7 @@
                     $allEditorialPassed = $requiredItemIds->isNotEmpty() && $requiredItemIds->diff($checkedItemIds)->isEmpty();
                 }
             @endphp
-            <x-status-badge :status="$submission->status" />
+            <x-status-badge :submission="$submission" />
             @if($submission->submission_source === 'google_form')
                 <span class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700">
                     <span>📑</span> Google Form
