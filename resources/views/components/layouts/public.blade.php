@@ -13,12 +13,12 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-warm text-ink antialiased">
-    <header class="sticky top-0 z-50 border-b border-white/10 bg-navy text-white">
+    <header class="fixed top-0 inset-x-0 z-50 border-b border-white/10 bg-navy text-white shadow-md">
         <div class="container-page flex min-h-18 items-center justify-between gap-3 py-3 sm:min-h-20">
             <x-brand class="text-white" />
         </div>
     </header>
-    <main class="container-page py-7 sm:py-14">
+    <main class="container-page pt-24 pb-7 sm:pt-28 sm:pb-14">
         @if (session('success'))
             <div class="mb-6 rounded-xl border border-success/20 bg-success/10 px-5 py-4 text-sm font-bold text-success">{{ session('success') }}</div>
         @endif
