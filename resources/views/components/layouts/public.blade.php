@@ -13,14 +13,12 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-warm text-ink antialiased">
-    <header class="fixed top-0 left-0 right-0 w-full z-50 border-b border-white/10 bg-navy text-white shadow-md">
+    <header class="border-b border-white/10 bg-navy text-white">
         <div class="container-page flex min-h-18 items-center justify-between gap-3 py-3 sm:min-h-20">
             <x-brand class="text-white" />
         </div>
     </header>
-    <!-- Layout spacer matching exact fixed header height to preserve natural document flow -->
-    <div class="h-[96px] sm:h-[104px]" aria-hidden="true"></div>
-    <main class="container-page mt-10 sm:mt-16 lg:mt-[140px] pb-8 sm:pb-16">
+    <main class="container-page py-7 sm:py-14">
         @if (session('success'))
             <div class="mb-6 rounded-xl border border-success/20 bg-success/10 px-5 py-4 text-sm font-bold text-success">{{ session('success') }}</div>
         @endif
