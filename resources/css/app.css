@@ -44,12 +44,22 @@ html, body {
     .form-input { @apply min-h-12 w-full rounded-xl border border-navy/15 bg-white px-4 text-sm text-ink outline-none placeholder:text-slate-400 focus:border-orange focus:ring-4 focus:ring-orange/10; }
     .nav-link { @apply flex items-center gap-3 rounded-xl px-4 py-3 text-white/65 hover:bg-white/8 hover:text-white; }
     .nav-link-active { @apply bg-orange text-white shadow-lg shadow-orange/15; }
-    .badge { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-extrabold; }
-    .badge-primary { @apply bg-navy/10 text-navy; }
-    .badge-warning { @apply bg-warning/15 text-amber-700; }
-    .badge-success { @apply bg-success/12 text-success; }
-    .badge-danger { @apply bg-danger/10 text-danger; }
-    .badge-info { @apply bg-info/10 text-info; }
+    .badge { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-extrabold border border-transparent; }
+    .badge-primary { @apply bg-navy/10 text-navy border-navy/20; }
+    .badge-warning { @apply bg-amber-100 text-amber-900 border-amber-300; }
+    .badge-amber { @apply bg-amber-100 text-amber-900 border-amber-300; }
+    .badge-orange { @apply bg-orange/15 text-orange-800 border-orange/30; }
+    .badge-indigo { @apply bg-indigo-100 text-indigo-800 border-indigo-300; }
+    .badge-blue { @apply bg-blue-100 text-blue-800 border-blue-300; }
+    .badge-sky { @apply bg-sky-100 text-sky-800 border-sky-300; }
+    .badge-purple { @apply bg-purple-100 text-purple-800 border-purple-300; }
+    .badge-teal { @apply bg-teal-100 text-teal-800 border-teal-300; }
+    .badge-rose { @apply bg-rose-100 text-rose-800 border-rose-300; }
+    .badge-success { @apply bg-emerald-100 text-emerald-800 border-emerald-300; }
+    .badge-danger { @apply bg-red-100 text-red-800 border-red-300; }
+    .badge-info { @apply bg-sky-100 text-sky-800 border-sky-300; }
+    .badge-slate { @apply bg-slate-100 text-slate-700 border-slate-300; }
+    .badge-overdue { @apply bg-rose-600 text-white border-rose-700 font-black animate-pulse shadow-2xs; }
     .eyebrow { @apply text-xs font-black uppercase tracking-[.2em] text-orange; }
     .page-title { @apply mt-2 break-words text-2xl font-black tracking-tight text-navy sm:text-3xl; }
     .page-subtitle { @apply mt-2 max-w-3xl text-sm leading-6 text-muted; }

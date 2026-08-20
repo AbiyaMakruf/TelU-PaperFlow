@@ -180,7 +180,7 @@
                                 <p class="max-w-xs truncate text-xs text-muted">{{ $submission->title }}</p>
                             </td>
                             <td>{{ $submission->conference?->name ?? 'Unknown Conference' }}</td>
-                            <td><x-status-badge :status="$submission->status" /></td>
+                            <td><x-status-badge :submission="$submission" /></td>
                             <td>{{ $submission->editor?->name ?? $submission->reviewer?->name ?? 'Unassigned' }}</td>
                         </tr>
                     @empty
@@ -199,7 +199,7 @@
                                 <p class="truncate font-black text-navy">{{ $submission->paper_id ?: $submission->paper_code ?: 'Unassigned ID' }}</p>
                                 <p class="mt-1 line-clamp-2 text-sm">{{ $submission->title }}</p>
                             </div>
-                            <x-status-badge :status="$submission->status" />
+                            <x-status-badge :submission="$submission" />
                         </div>
                         <div class="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
                             <span class="truncate">{{ $submission->conference?->name ?? 'Unknown Conference' }}</span>

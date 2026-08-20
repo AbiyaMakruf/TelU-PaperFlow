@@ -2,7 +2,7 @@
     <div class="mx-auto max-w-5xl space-y-6 sm:space-y-8">
         <div class="flex items-center justify-between gap-4">
             <p class="eyebrow truncate">Author Portal &middot; {{ $submission->conference->name }}</p>
-            <span class="badge badge-{{ $submission->status->color() }} shrink-0">{{ $submission->status->label() }}</span>
+            <x-status-badge :submission="$submission" class="shrink-0" />
         </div>
 
         <div class="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">

@@ -38,9 +38,18 @@ enum SubmissionStatus: string
     public function color(): string
     {
         return match ($this) {
+            self::Submitted => 'info',
+            self::NeedsAuthorCorrection => 'warning',
+            self::ReadyForAssignment => 'indigo',
+            self::EditorialReview => 'blue',
+            self::WaitingAuthorRevision => 'amber',
+            self::ReviewerReview => 'purple',
+            self::ReviewerChangesRequested => 'orange',
+            self::ReadyForEdas => 'teal',
+            self::EdasFixRequired => 'rose',
             self::Done => 'success',
-            self::Rejected, self::Withdrawn => 'danger',
-            default => 'primary',
+            self::Withdrawn => 'slate',
+            self::Rejected => 'danger',
         };
     }
 

@@ -218,7 +218,7 @@
                                     <p class="mt-1 text-xs text-muted">No reviewer assigned</p>
                                 @endif
                             </td>
-                            <td class="text-center"><x-status-badge :status="$submission->status" /></td>
+                            <td class="text-center"><x-status-badge :submission="$submission" /></td>
                             <td @click.stop class="text-center">
                                 @if($submission->portalLinkSent())
                                     <div class="inline-flex flex-col items-center gap-1">
@@ -321,7 +321,7 @@
                         </div>
 
                         <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-                            <x-status-badge :status="$submission->status" />
+                            <x-status-badge :submission="$submission" />
                             <span class="text-xs text-muted font-medium">
                                 Submitted: {{ $submission->submitted_at?->format('d M Y') ?? '-' }}
                             </span>
