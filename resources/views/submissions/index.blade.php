@@ -220,20 +220,19 @@
                             </td>
                             <td class="text-center"><x-status-badge :submission="$submission" /></td>
                             <td @click.stop class="text-center">
-                                <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
-                                    @csrf
+                                <div class="inline-flex items-center gap-2">
                                     @if($submission->portalLinkSent())
-                                        <button type="submit" class="btn btn-secondary text-xs py-1 px-2.5 font-bold text-slate-700 hover:text-orange hover:border-orange shadow-2xs inline-flex items-center gap-1.5" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }} &bull; Click to resend email to author">
-                                            <span class="size-2 rounded-full bg-emerald-500 shrink-0" aria-hidden="true"></span>
-                                            <span>✉️ Resend Link</span>
+                                        <span class="size-2.5 rounded-full bg-emerald-500 shrink-0 shadow-2xs" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }}" aria-hidden="true"></span>
+                                        <button type="button" onclick="openPortalLinkModal('{{ route('submissions.send-portal-link', $submission) }}', '{{ e($submission->paper_id ?: $submission->paper_code) }}', '{{ addslashes($submission->title) }}', '{{ e($submission->corresponding_author_name) }}', '{{ e($submission->corresponding_author_email) }}', true, '{{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }}')" class="btn btn-secondary text-xs py-1 px-2.5 font-bold text-slate-700 hover:text-orange hover:border-orange shadow-2xs" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }} &bull; Click to confirm resend link">
+                                            ✉️ Resend Link
                                         </button>
                                     @else
-                                        <button type="submit" class="btn text-xs py-1 px-2.5 font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 hover:border-amber-400 shadow-2xs inline-flex items-center gap-1.5" title="Not sent yet &bull; Click to send portal access link to author">
-                                            <span class="size-2 rounded-full bg-amber-500 animate-pulse shrink-0" aria-hidden="true"></span>
-                                            <span>✉️ Send Link</span>
+                                        <span class="size-2.5 rounded-full bg-amber-500 animate-pulse shrink-0 shadow-2xs" title="Portal link email has not been sent yet" aria-hidden="true"></span>
+                                        <button type="button" onclick="openPortalLinkModal('{{ route('submissions.send-portal-link', $submission) }}', '{{ e($submission->paper_id ?: $submission->paper_code) }}', '{{ addslashes($submission->title) }}', '{{ e($submission->corresponding_author_name) }}', '{{ e($submission->corresponding_author_email) }}', false, '')" class="btn text-xs py-1 px-2.5 font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 hover:border-amber-400 shadow-2xs" title="Not sent yet &bull; Click to confirm send link">
+                                            ✉️ Send Link
                                         </button>
                                     @endif
-                                </form>
+                                </div>
                             </td>
                             <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->deadline_at->format('d M Y') }}</p>@endif</td>
                         </tr>
@@ -340,21 +339,23 @@
                                 </div>
                             </div>
                             <div class="flex items-center justify-between gap-2 border-t border-slate-200/60 pt-2" @click.stop>
-                                <span class="text-[11px] text-muted font-bold">Portal Link Email</span>
-                                <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
-                                    @csrf
+                                <div class="flex items-center gap-2 min-w-0">
                                     @if($submission->portalLinkSent())
-                                        <button type="submit" class="btn btn-secondary text-xs py-1 px-2.5 font-bold text-slate-700 hover:text-orange shadow-2xs inline-flex items-center gap-1.5" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }} &bull; Click to resend email to author">
-                                            <span class="size-2 rounded-full bg-emerald-500 shrink-0" aria-hidden="true"></span>
-                                            <span>✉️ Resend Link</span>
-                                        </button>
+                                        <span class="size-2.5 rounded-full bg-emerald-500 shrink-0 shadow-2xs" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }}" aria-hidden="true"></span>
                                     @else
-                                        <button type="submit" class="btn text-xs py-1 px-2.5 font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 hover:border-amber-400 shadow-2xs inline-flex items-center gap-1.5" title="Not sent yet &bull; Click to send portal access link to author">
-                                            <span class="size-2 rounded-full bg-amber-500 animate-pulse shrink-0" aria-hidden="true"></span>
-                                            <span>✉️ Send Link</span>
-                                        </button>
+                                        <span class="size-2.5 rounded-full bg-amber-500 animate-pulse shrink-0 shadow-2xs" title="Portal link email has not been sent yet" aria-hidden="true"></span>
                                     @endif
-                                </form>
+                                    <span class="text-[11px] text-muted font-bold truncate">Portal Link Email</span>
+                                </div>
+                                @if($submission->portalLinkSent())
+                                    <button type="button" onclick="openPortalLinkModal('{{ route('submissions.send-portal-link', $submission) }}', '{{ e($submission->paper_id ?: $submission->paper_code) }}', '{{ addslashes($submission->title) }}', '{{ e($submission->corresponding_author_name) }}', '{{ e($submission->corresponding_author_email) }}', true, '{{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }}')" class="btn btn-secondary text-xs py-1 px-2.5 font-bold text-slate-700 hover:text-orange shadow-2xs" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }} &bull; Click to confirm resend link">
+                                        ✉️ Resend Link
+                                    </button>
+                                @else
+                                    <button type="button" onclick="openPortalLinkModal('{{ route('submissions.send-portal-link', $submission) }}', '{{ e($submission->paper_id ?: $submission->paper_code) }}', '{{ addslashes($submission->title) }}', '{{ e($submission->corresponding_author_name) }}', '{{ e($submission->corresponding_author_email) }}', false, '')" class="btn text-xs py-1 px-2.5 font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 hover:border-amber-400 shadow-2xs" title="Not sent yet &bull; Click to confirm send link">
+                                        ✉️ Send Link
+                                    </button>
+                                @endif
                             </div>
                         </div>
 
@@ -546,6 +547,94 @@
                         <button type="button" @click="show = false" class="btn btn-ghost">Cancel</button>
                         <button class="btn btn-primary">Execute Bulk Status Update</button>
                     </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Single Send / Resend Author Portal Link Confirmation Modal -->
+        <div id="portal-link-confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/60 backdrop-blur-xs">
+            <div class="card w-full max-w-lg p-6 bg-white space-y-4 shadow-2xl rounded-2xl border border-slate-200" @click.away="closePortalLinkModal()">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="size-9 rounded-xl bg-orange/15 text-orange flex items-center justify-center text-lg font-bold">✉️</span>
+                        <div>
+                            <h3 id="portal-modal-title" class="text-base font-black text-navy">Confirm Send Author Portal Link</h3>
+                            <p class="text-[11px] text-muted">Send private author portal access token link via email</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closePortalLinkModal()" class="text-slate-400 hover:text-navy font-bold text-lg">&times;</button>
+                </div>
+
+                <form id="portal-link-confirm-form" method="POST" action="" class="space-y-4">
+                    @csrf
+                    <div class="space-y-1.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-muted font-extrabold uppercase text-[10px]">Paper ID / Code:</span>
+                            <span id="portal-modal-paper-id" class="font-mono font-bold text-navy text-[11px]"></span>
+                        </div>
+                        <span class="text-muted font-extrabold uppercase text-[10px] block pt-1">Paper Title:</span>
+                        <p id="portal-modal-paper-title" class="font-bold text-navy text-xs leading-snug break-words"></p>
+                    </div>
+
+                    <div class="space-y-1 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+                        <span class="text-muted font-extrabold uppercase text-[10px]">Corresponding Author Recipient:</span>
+                        <p id="portal-modal-author" class="font-bold text-navy text-xs break-words"></p>
+                    </div>
+
+                    <div id="portal-modal-status-box" class="p-3.5 rounded-xl border text-xs">
+                        <p id="portal-modal-status-text" class="font-medium text-xs leading-snug"></p>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                        <button type="button" onclick="closePortalLinkModal()" class="btn border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs py-2.5 px-4 font-bold rounded-xl">
+                            Cancel
+                        </button>
+                        <button type="submit" id="portal-modal-submit-btn" class="btn bg-orange hover:bg-orange-dark text-white text-xs font-black py-2.5 px-5 shadow-sm rounded-xl flex items-center gap-2">
+                            <span>🚀 Confirm &amp; Send Portal Link</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
+
+    <script>
+    window.openPortalLinkModal = function(url, paperId, paperTitle, authorName, authorEmail, isSent, sentAt) {
+        const modal = document.getElementById('portal-link-confirm-modal');
+        const form = document.getElementById('portal-link-confirm-form');
+        const titleEl = document.getElementById('portal-modal-title');
+        const paperIdEl = document.getElementById('portal-modal-paper-id');
+        const paperTitleEl = document.getElementById('portal-modal-paper-title');
+        const authorEl = document.getElementById('portal-modal-author');
+        const statusBox = document.getElementById('portal-modal-status-box');
+        const statusText = document.getElementById('portal-modal-status-text');
+        const submitBtn = document.getElementById('portal-modal-submit-btn');
+
+        if (!modal || !form) return;
+
+        form.action = url;
+        paperIdEl.textContent = paperId;
+        paperTitleEl.textContent = paperTitle;
+        authorEl.textContent = authorName + ' (' + authorEmail + ')';
+
+        if (isSent) {
+            titleEl.textContent = 'Confirm Resend Author Portal Link';
+            statusBox.className = 'p-3.5 rounded-xl border text-xs bg-emerald-50/90 border-emerald-200 text-emerald-900';
+            statusText.innerHTML = '<strong>✓ Sent Previously:</strong> Last sent on <strong>' + sentAt + '</strong>. Re-sending will queue a new email notification containing the author portal link.';
+            submitBtn.querySelector('span').textContent = '🔄 Confirm & Resend Portal Link';
+        } else {
+            titleEl.textContent = 'Confirm Send Author Portal Link';
+            statusBox.className = 'p-3.5 rounded-xl border text-xs bg-amber-50/90 border-amber-200 text-amber-900';
+            statusText.innerHTML = '<strong>⏳ First-Time Send:</strong> This paper has not received an author portal access link email yet.';
+            submitBtn.querySelector('span').textContent = '🚀 Confirm & Send Portal Link';
+        }
+
+        modal.classList.remove('hidden');
+    };
+
+    window.closePortalLinkModal = function() {
+        const modal = document.getElementById('portal-link-confirm-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+    </script>
 </x-layouts.app>
