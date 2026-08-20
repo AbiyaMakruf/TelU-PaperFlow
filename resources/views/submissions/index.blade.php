@@ -220,31 +220,20 @@
                             </td>
                             <td class="text-center"><x-status-badge :submission="$submission" /></td>
                             <td @click.stop class="text-center">
-                                @if($submission->portalLinkSent())
-                                    <div class="inline-flex flex-col items-center gap-1">
-                                        <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700 border border-emerald-200" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y H:i') }}">
-                                            ✓ Sent ({{ $submission->portalLinkSentAt()?->format('d M H:i') }})
-                                        </span>
-                                        <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
-                                            @csrf
-                                            <button type="submit" class="btn btn-secondary text-[10px] py-0.5 px-2 font-bold text-navy hover:text-orange hover:border-orange shadow-2xs" title="Resend Author Portal link email to author">
-                                                ✉️ Resend Link
-                                            </button>
-                                        </form>
-                                    </div>
-                                @else
-                                    <div class="inline-flex flex-col items-center gap-1">
-                                        <span class="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200">
-                                            ⏳ Not Sent
-                                        </span>
-                                        <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
-                                            @csrf
-                                            <button type="submit" class="btn btn-secondary text-[10px] py-0.5 px-2 font-bold text-navy hover:text-orange hover:border-orange shadow-2xs" title="Send Author Portal link email to author">
-                                                ✉️ Send Link
-                                            </button>
-                                        </form>
-                                    </div>
-                                @endif
+                                <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
+                                    @csrf
+                                    @if($submission->portalLinkSent())
+                                        <button type="submit" class="btn btn-secondary text-xs py-1 px-2.5 font-bold text-slate-700 hover:text-orange hover:border-orange shadow-2xs inline-flex items-center gap-1.5" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }} &bull; Click to resend email to author">
+                                            <span class="size-2 rounded-full bg-emerald-500 shrink-0" aria-hidden="true"></span>
+                                            <span>✉️ Resend Link</span>
+                                        </button>
+                                    @else
+                                        <button type="submit" class="btn text-xs py-1 px-2.5 font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 hover:border-amber-400 shadow-2xs inline-flex items-center gap-1.5" title="Not sent yet &bull; Click to send portal access link to author">
+                                            <span class="size-2 rounded-full bg-amber-500 animate-pulse shrink-0" aria-hidden="true"></span>
+                                            <span>✉️ Send Link</span>
+                                        </button>
+                                    @endif
+                                </form>
                             </td>
                             <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->deadline_at->format('d M Y') }}</p>@endif</td>
                         </tr>
@@ -352,31 +341,20 @@
                             </div>
                             <div class="flex items-center justify-between gap-2 border-t border-slate-200/60 pt-2" @click.stop>
                                 <span class="text-[11px] text-muted font-bold">Portal Link Email</span>
-                                @if($submission->portalLinkSent())
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700 border border-emerald-200">
-                                            <span>✓ Sent ({{ $submission->portalLinkSentAt()?->format('d M H:i') }})</span>
-                                        </span>
-                                        <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
-                                            @csrf
-                                            <button type="submit" class="btn btn-secondary text-[10px] py-1 px-2 font-bold text-navy hover:text-orange">
-                                                ✉️ Resend Link
-                                            </button>
-                                        </form>
-                                    </div>
-                                @else
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">
-                                            <span>⏳ Not Sent</span>
-                                        </span>
-                                        <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
-                                            @csrf
-                                            <button type="submit" class="btn btn-secondary text-[10px] py-1 px-2 font-bold text-navy hover:text-orange">
-                                                ✉️ Send Link
-                                            </button>
-                                        </form>
-                                    </div>
-                                @endif
+                                <form method="POST" action="{{ route('submissions.send-portal-link', $submission) }}" class="inline-block">
+                                    @csrf
+                                    @if($submission->portalLinkSent())
+                                        <button type="submit" class="btn btn-secondary text-xs py-1 px-2.5 font-bold text-slate-700 hover:text-orange shadow-2xs inline-flex items-center gap-1.5" title="Sent at {{ $submission->portalLinkSentAt()?->format('d M Y, H:i') }} &bull; Click to resend email to author">
+                                            <span class="size-2 rounded-full bg-emerald-500 shrink-0" aria-hidden="true"></span>
+                                            <span>✉️ Resend Link</span>
+                                        </button>
+                                    @else
+                                        <button type="submit" class="btn text-xs py-1 px-2.5 font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 hover:border-amber-400 shadow-2xs inline-flex items-center gap-1.5" title="Not sent yet &bull; Click to send portal access link to author">
+                                            <span class="size-2 rounded-full bg-amber-500 animate-pulse shrink-0" aria-hidden="true"></span>
+                                            <span>✉️ Send Link</span>
+                                        </button>
+                                    @endif
+                                </form>
                             </div>
                         </div>
 
