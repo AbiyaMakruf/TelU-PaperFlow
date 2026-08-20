@@ -1,11 +1,11 @@
 <x-layouts.public :title="$submission->paper_code">
-    <div class="mx-auto max-w-5xl">
+    <div class="mx-auto max-w-5xl space-y-6 sm:space-y-8">
         <div class="flex items-center justify-between gap-4">
             <p class="eyebrow truncate">Author Portal &middot; {{ $submission->conference->name }}</p>
             <span class="badge badge-{{ $submission->status->color() }} shrink-0">{{ $submission->status->label() }}</span>
         </div>
 
-        <div class="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1.4fr_.6fr]">
+        <div class="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
             <section class="min-w-0 space-y-6">
                 <!-- Edit Detail Submission Card -->
                 <div class="card p-4 sm:p-6" x-data="{ openEdit: false }">
