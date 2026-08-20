@@ -210,4 +210,19 @@ class Submission extends Model
 
         return $timestamp ? $timestamp->clone()->setTimezone($tz) : null;
     }
+
+    public function formattedDeadline(?string $format = 'd F Y, 23:59 \G\M\T+7'): ?string
+    {
+        if (! $this->deadline_at) {
+            return null;
+        }
+
+        $tz = auth()->user()?->conference?->timezone ?? 'Asia/Jakarta';
+
+        if ($this->deadline_at->hour === 23 && $this->deadline_at->minute === 59) {
+            return $this->deadline_at->format($format);
+        }
+
+        return $this->deadline_at->clone()->setTimezone($tz)->format($format);
+    }
 }
