@@ -13,7 +13,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-warm text-ink antialiased">
-    <header class="sticky top-0 z-50 border-b border-white/10 bg-navy/95 text-white backdrop-blur-md">
+    <header class="sticky top-0 z-50 border-b border-white/10 bg-navy text-white">
         <div class="container-page flex min-h-18 items-center justify-between gap-3 py-3 sm:min-h-20">
             <x-brand class="text-white" />
         </div>
