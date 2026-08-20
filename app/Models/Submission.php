@@ -187,13 +187,17 @@ class Submission extends Model
 
     public function portalLinkSentAt(): ?Carbon
     {
+        $tz = auth()->user()?->conference?->timezone ?? 'Asia/Jakarta';
+
         if ($this->relationLoaded('emailLogs')) {
             $log = $this->emailLogs
                 ->filter(fn ($log) => in_array($log->template_key, ['submission_received', 'portal_access_link'], true) && $log->status !== 'failed')
                 ->sortByDesc(fn ($log) => $log->sent_at ?? $log->created_at)
                 ->first();
 
-            return $log?->sent_at ?? $log?->created_at;
+            $timestamp = $log?->sent_at ?? $log?->created_at;
+
+            return $timestamp ? $timestamp->clone()->setTimezone($tz) : null;
         }
 
         $log = $this->emailLogs()
@@ -202,6 +206,8 @@ class Submission extends Model
             ->latest()
             ->first();
 
-        return $log?->sent_at ?? $log?->created_at;
+        $timestamp = $log?->sent_at ?? $log?->created_at;
+
+        return $timestamp ? $timestamp->clone()->setTimezone($tz) : null;
     }
 }
