@@ -188,7 +188,10 @@ class Submission extends Model
     public function portalLinkSentAt(): ?Carbon
     {
         if ($this->relationLoaded('emailLogs')) {
-            $log = $this->emailLogs->first(fn ($log) => in_array($log->template_key, ['submission_received', 'portal_access_link'], true) && $log->status !== 'failed');
+            $log = $this->emailLogs
+                ->filter(fn ($log) => in_array($log->template_key, ['submission_received', 'portal_access_link'], true) && $log->status !== 'failed')
+                ->sortByDesc(fn ($log) => $log->sent_at ?? $log->created_at)
+                ->first();
 
             return $log?->sent_at ?? $log?->created_at;
         }
