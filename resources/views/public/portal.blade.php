@@ -133,7 +133,7 @@
                                 <div class="min-w-0">
                                     <span class="text-xs font-bold text-muted">Revision Deadline:</span>
                                     <p class="mt-0.5 text-xs font-extrabold {{ $submission->isOverdue() ? 'text-rose-700' : 'text-navy' }}">
-                                        {{ $submission->deadline_at->timezone('Asia/Jakarta')->format('d F Y, 23:59 \G\M\T+7') }}
+                                        {{ $submission->formattedDeadline() }}
                                     </p>
                                 </div>
                                 @if($submission->isOverdue())

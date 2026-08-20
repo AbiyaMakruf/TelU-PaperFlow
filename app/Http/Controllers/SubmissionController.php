@@ -874,9 +874,7 @@ class SubmissionController extends Controller
             }
 
             if ($request->boolean('send_email')) {
-                $deadlineFormatted = $submission->deadline_at
-                    ? $submission->deadline_at->timezone('Asia/Jakarta')->format('d F Y, 23:59 \G\M\T+7')
-                    : 'Please follow the deadline communicated by the committee.';
+                $deadlineFormatted = $submission->formattedDeadline() ?? 'Please follow the deadline communicated by the committee.';
 
                 $mailer->queue($submission->load('conference'), 'revision_requested', [
                     'feedback' => $bodyText ?? '',

@@ -32,7 +32,7 @@ class ConferenceMailer
             'paper_title' => $submission->title,
             'author_name' => $submission->corresponding_author_name,
             'author_phone' => $submission->corresponding_author_phone ?: '-',
-            'deadline' => $submission->deadline_at?->timezone('Asia/Jakarta')->format('d F Y, 23:59 \G\M\T+7') ?? 'Please follow the deadline communicated by the committee.',
+            'deadline' => $submission->formattedDeadline() ?? 'Please follow the deadline communicated by the committee.',
             'editor_name' => $sender?->name ?? 'Editorial Team',
             'editor_job_title' => $sender?->job_title ?? 'Publication Committee',
             'editor_affiliation' => $sender?->affiliation ?? $submission->conference->name,

@@ -234,7 +234,7 @@
                                     @endif
                                 </div>
                             </td>
-                            <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->deadline_at->format('d M Y') }}</p>@endif</td>
+                            <td>{{ $submission->submitted_at?->format('d M Y') ?? '-' }}@if($submission->deadline_at)<p class="mt-1 text-xs {{ $submission->isOverdue() ? 'text-danger font-bold':'text-muted' }}">Deadline {{ $submission->formattedDeadline('d M Y') }}</p>@endif</td>
                         </tr>
                         <tr x-show="open" x-cloak>
                             <td colspan="8" class="bg-gradient-to-r from-slate-50 via-indigo-50/30 to-slate-50 px-6 py-4 border-y border-indigo-100/80 shadow-inner">
@@ -374,7 +374,7 @@
                             <div><span class="text-muted font-bold block">Primary Author</span><p class="font-semibold text-navy">{{ $submission->corresponding_author_name }} ({{ $submission->corresponding_author_email }})</p></div>
                             <div><span class="text-muted font-bold block">Manuscript Format</span><p class="font-semibold text-navy">{{ $submission->manuscript_format === 'latex' ? 'LaTeX' : ($submission->manuscript_format === 'docx' ? 'DOCX' : 'Not confirmed') }}</p></div>
                             @if($submission->deadline_at)
-                                <div><span class="text-muted font-bold block">Deadline</span><p class="font-semibold {{ $submission->isOverdue() ? 'text-danger font-bold' : 'text-navy' }}">{{ $submission->deadline_at->format('d M Y') }}</p></div>
+                                <div><span class="text-muted font-bold block">Deadline</span><p class="font-semibold {{ $submission->isOverdue() ? 'text-danger font-bold' : 'text-navy' }}">{{ $submission->formattedDeadline('d M Y') }}</p></div>
                             @endif
                         </div>
                     </article>
