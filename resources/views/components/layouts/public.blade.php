@@ -18,7 +18,7 @@
             <x-brand class="text-white" />
         </div>
     </header>
-    <main class="container-page pt-24 pb-7 sm:pt-28 sm:pb-14">
+    <main class="container-page pt-28 pb-7 sm:pt-36 sm:pb-14">
         @if (session('success'))
             <div class="mb-6 rounded-xl border border-success/20 bg-success/10 px-5 py-4 text-sm font-bold text-success">{{ session('success') }}</div>
         @endif
