@@ -184,4 +184,38 @@ class EdasReconciliationTest extends TestCase
         $res2 = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.index', $conference));
         $res2->assertSee('Submitted');
     }
+
+    public function test_export_reconciliation_supports_pdf_and_csv_formats(): void
+    {
+        [$conference, $admin] = $this->createConferenceWithRoles();
+
+        $csvContent = "Paper ID,Title\n1570990010,Test Missing Paper";
+        $csvFile = UploadedFile::fake()->createWithContent('edas.csv', $csvContent);
+        $this->actingAs($admin)->post(route('conferences.edas-reconciliation.upload', $conference), ['csv_file' => $csvFile]);
+
+        // PDF export
+        $pdfRes = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.export', [
+            'conference' => $conference,
+            'format' => 'pdf',
+        ]));
+        $pdfRes->assertOk();
+        $pdfRes->assertSee('EDAS CSV Reconciliation Summary Report');
+        $pdfRes->assertSee('1570990010');
+
+        // CSV All export
+        $csvAllRes = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.export', [
+            'conference' => $conference,
+            'format' => 'csv_all',
+        ]));
+        $csvAllRes->assertOk();
+        $csvAllRes->assertHeader('content-type', 'text/csv; charset=UTF-8');
+
+        // CSV Missing export
+        $csvMissingRes = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.export', [
+            'conference' => $conference,
+            'format' => 'csv_missing',
+        ]));
+        $csvMissingRes->assertOk();
+        $csvMissingRes->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
 }
