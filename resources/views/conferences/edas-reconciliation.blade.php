@@ -4,37 +4,15 @@
 
         <!-- Header Card -->
         <div class="card p-6 bg-white border border-slate-200 text-navy shadow-sm">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="space-y-1.5 min-w-0">
-                    <div class="flex items-center gap-2">
-                        <span class="badge bg-orange text-white text-xs font-black uppercase tracking-wider px-2.5 py-1">Conference Workflow</span>
-                        <span class="badge bg-navy/10 text-navy text-xs font-bold px-2.5 py-1">📌 {{ $activeConference->name }}</span>
-                    </div>
-                    <h1 class="text-xl sm:text-2xl font-black tracking-tight text-navy">EDAS CSV Reconciliation</h1>
-                    <p class="text-xs text-slate-600 leading-relaxed max-w-3xl">
-                        Cross-check manuscript records from EDAS against live Paperflow submissions for <strong>{{ $activeConference->name }}</strong>. Data is persisted securely in the database and visible to all conference staff.
-                    </p>
+            <div class="space-y-1.5 min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="badge bg-orange text-white text-xs font-black uppercase tracking-wider px-2.5 py-1">Conference Workflow</span>
+                    <span class="badge bg-navy/10 text-navy text-xs font-bold px-2.5 py-1">📌 {{ $activeConference->name }}</span>
                 </div>
-
-                @if($reconciledData)
-                    <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start md:self-auto">
-                        <form method="POST" action="{{ route('conferences.edas-reconciliation.refresh', $activeConference) }}">
-                            @csrf
-                            <button type="submit" class="btn border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-black px-4 py-2.5 transition flex items-center gap-2 shadow-2xs" title="Re-sync reconciliation table with latest database submissions">
-                                <span>🔄 Refresh Data</span>
-                            </button>
-                        </form>
-
-                        @can('update', $activeConference)
-                            <form method="POST" action="{{ route('conferences.edas-reconciliation.reset', $activeConference) }}" onsubmit="return confirm('Are you sure you want to clear the current EDAS reconciliation data from the database?');">
-                                @csrf
-                                <button type="submit" class="btn border border-navy/20 bg-navy/5 hover:bg-navy/10 text-navy text-xs font-bold px-4 py-2.5 transition flex items-center gap-2" title="Clear current reconciliation data and upload a new CSV file">
-                                    <span>🗑️ Reset Data</span>
-                                </button>
-                            </form>
-                        @endcan
-                    </div>
-                @endif
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight text-navy">EDAS CSV Reconciliation</h1>
+                <p class="text-xs text-slate-600 leading-relaxed max-w-3xl">
+                    Cross-check manuscript records from EDAS against live Paperflow submissions for <strong>{{ $activeConference->name }}</strong>. Data is persisted securely in the database and visible to all conference staff.
+                </p>
             </div>
         </div>
 
@@ -177,18 +155,41 @@
 
                         <!-- Actions & Search Box -->
                         <div class="flex flex-wrap items-center gap-2.5">
-                            <input type="text" x-model="searchQuery" placeholder="Search Paper ID or Title..." class="form-input text-xs py-2 px-3 min-w-[220px]">
+                            <input type="text" x-model="searchQuery" placeholder="Search Paper ID or Title..." class="form-input text-xs py-2 px-3 min-w-[200px] sm:min-w-[220px]">
 
                             <form method="POST" action="{{ route('conferences.edas-reconciliation.refresh', $activeConference) }}" class="inline-block">
                                 @csrf
-                                <button type="submit" class="btn btn-secondary text-xs font-extrabold py-2 px-3 flex items-center gap-1.5 text-navy hover:text-orange" title="Re-sync reconciliation table with latest database submissions">
-                                    <span>🔄 Refresh</span>
+                                <button type="submit" class="btn btn-secondary text-xs font-extrabold py-2 px-3 flex items-center gap-1.5 text-navy hover:text-orange shadow-2xs" title="Re-sync reconciliation table with latest database submissions">
+                                    <span>🔄 Refresh Data</span>
                                 </button>
                             </form>
 
-                            <a href="{{ route('conferences.edas-reconciliation.export-missing', $activeConference) }}" class="btn btn-secondary text-xs font-bold py-2 px-3 flex items-center gap-1.5" title="Download CSV file of EDAS papers not yet submitted in Paperflow">
-                                📥 Export Missing CSV
-                            </a>
+                            <!-- Export Dropdown -->
+                            <div x-data="{ exportOpen: false }" class="relative inline-block">
+                                <button type="button" @click="exportOpen = !exportOpen" class="btn btn-secondary text-xs font-extrabold py-2 px-3 flex items-center gap-1.5 text-navy hover:text-orange shadow-2xs" title="Export reconciliation reports">
+                                    <span>📥 Export Report ▾</span>
+                                </button>
+                                <div x-show="exportOpen" @click.away="exportOpen = false" x-cloak class="absolute right-0 mt-2 w-56 rounded-xl bg-white p-2 shadow-xl border border-slate-200 z-50 text-left">
+                                    <a class="block px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition" href="{{ route('conferences.edas-reconciliation.export', ['conference' => $activeConference, 'format' => 'csv_missing']) }}">
+                                        📄 Missing Papers (.csv)
+                                    </a>
+                                    <a class="block px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition" href="{{ route('conferences.edas-reconciliation.export', ['conference' => $activeConference, 'format' => 'csv_all']) }}">
+                                        📊 Full Reconciliation (.csv)
+                                    </a>
+                                    <a class="block px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition" target="_blank" href="{{ route('conferences.edas-reconciliation.export', ['conference' => $activeConference, 'format' => 'pdf']) }}">
+                                        🖨️ PDF Report (Print)
+                                    </a>
+                                </div>
+                            </div>
+
+                            @can('update', $activeConference)
+                                <form method="POST" action="{{ route('conferences.edas-reconciliation.reset', $activeConference) }}" onsubmit="return confirm('Are you sure you want to clear the current EDAS reconciliation data from the database?');" class="inline-block">
+                                    @csrf
+                                    <button type="submit" class="btn border border-navy/20 bg-navy/5 hover:bg-navy/10 text-navy text-xs font-bold py-2 px-3 flex items-center gap-1.5 shadow-2xs" title="Clear current reconciliation data and upload a new CSV file">
+                                        <span>🗑️ Reset Data</span>
+                                    </button>
+                                </form>
+                            @endcan
                         </div>
                     </div>
 

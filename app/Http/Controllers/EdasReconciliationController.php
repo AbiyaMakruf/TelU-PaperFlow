@@ -316,6 +316,54 @@ class EdasReconciliationController extends Controller
             ->with('success', 'EDAS reconciliation data successfully cleared from database.');
     }
 
+    public function export(Request $request, Conference $conference)
+    {
+        $conference = $this->resolveConference($conference);
+        $this->authorize('view', $conference);
+
+        $storedEdasData = $conference->settings['edas_reconciliation'] ?? null;
+        if (! $storedEdasData) {
+            return back()->withErrors(['csv_file' => 'No active reconciliation data available for export.']);
+        }
+
+        $calculated = $this->calculateReconciliation($conference, $storedEdasData);
+        $format = $request->query('format', 'csv_missing');
+
+        if ($format === 'pdf') {
+            return view('conferences.edas-reconciliation-pdf', [
+                'activeConference' => $conference,
+                'reconciledData' => $calculated,
+            ]);
+        }
+
+        if ($format === 'csv_all') {
+            $items = $calculated['items'] ?? [];
+
+            return response()->streamDownload(function () use ($items) {
+                $output = fopen('php://output', 'w');
+                fputcsv($output, ['No', 'EDAS Paper ID', 'EDAS Paper Title', 'Paperflow Status', 'Paperflow Paper Code', 'Paperflow Title', 'Author Name', 'Author Email', 'Submission Status', 'Warning Note']);
+                foreach ($items as $item) {
+                    $sub = $item['paperflow_submission'];
+                    fputcsv($output, [
+                        $item['row_number'],
+                        $item['edas_paper_id'],
+                        $item['edas_title'],
+                        $item['status_state'] === 'submitted' ? 'Submitted' : 'Missing',
+                        $sub['paper_code'] ?? '-',
+                        $sub['title'] ?? '-',
+                        $sub['author_name'] ?? '-',
+                        $sub['author_email'] ?? '-',
+                        $sub['status_label'] ?? '-',
+                        $item['warning_message'] ?? '-',
+                    ]);
+                }
+                fclose($output);
+            }, 'edas-reconciliation-all-'.$conference->slug.'-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }
+
+        return $this->exportMissing($request, $conference);
+    }
+
     public function exportMissing(Request $request, Conference $conference)
     {
         $conference = $this->resolveConference($conference);
