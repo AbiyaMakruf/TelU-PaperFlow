@@ -37,6 +37,51 @@ class PrivateFileStorage
         }
     }
 
+    public function putFromLocalPath(string $localFilePath, string $destinationPath, ?string $mimeType = null): void
+    {
+        $stream = fopen($localFilePath, 'r');
+        $response = Http::withToken($this->secret())
+            ->withHeaders(['apikey' => $this->secret(), 'x-upsert' => 'true'])
+            ->withBody($stream, $mimeType ?: 'application/octet-stream')
+            ->post($this->objectUrl($destinationPath));
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException('Gagal mengunggah file ke penyimpanan Supabase: '.$response->body());
+        }
+    }
+
+    public function checkBucket(): array
+    {
+        try {
+            $response = Http::withToken($this->secret())
+                ->withHeaders(['apikey' => $this->secret()])
+                ->get($this->storageUrl('/bucket/'.$this->bucket()));
+
+            if ($response->failed()) {
+                return [
+                    'ok' => false,
+                    'status' => $response->status(),
+                    'error' => $response->body(),
+                ];
+            }
+
+            return [
+                'ok' => true,
+                'data' => $response->json(),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ok' => false,
+                'status' => 500,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
     public function temporaryUrl(string $path, int $expiresIn = 300): ?string
     {
         if (! $this->usesSupabase()) {
