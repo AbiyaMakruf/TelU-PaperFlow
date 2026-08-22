@@ -46,6 +46,40 @@ class SubmissionController extends Controller
             : $user->conferenceMemberships()->where('is_active', true)->pluck('conference_id');
         $query = $visibleSubmissions->for($user);
 
+        $preset = $request->string('preset')->toString();
+        if ($preset === 'my_tasks') {
+            $query->where(function ($q) use ($user) {
+                $q->where('editor_id', $user->id)
+                    ->orWhere('reviewer_id', $user->id);
+            })->whereNotIn('status', [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn]);
+        } elseif ($preset === 'revision') {
+            $query->where('status', SubmissionStatus::WaitingAuthorRevision);
+        } elseif ($preset === 'edas') {
+            $query->where('status', SubmissionStatus::ReadyForEdas);
+        }
+
+        // Count metrics for quick preset tabs in a single aggregated query
+        $countQuery = $visibleSubmissions->for($user);
+        if ($request->filled('conference')) {
+            $countQuery->where('conference_id', $request->string('conference'));
+        }
+        $presetMetrics = (clone $countQuery)->selectRaw("
+            COUNT(*) as total_all,
+            COUNT(CASE WHEN (editor_id = ? OR reviewer_id = ?) AND status NOT IN (?, ?, ?) THEN 1 END) as my_tasks,
+            COUNT(CASE WHEN status = ? THEN 1 END) as waiting_revision,
+            COUNT(CASE WHEN status = ? THEN 1 END) as ready_edas
+        ", [
+            $user->id, $user->id,
+            SubmissionStatus::Done->value, SubmissionStatus::Rejected->value, SubmissionStatus::Withdrawn->value,
+            SubmissionStatus::WaitingAuthorRevision->value,
+            SubmissionStatus::ReadyForEdas->value,
+        ])->first();
+
+        $totalAllCount = (int) ($presetMetrics->total_all ?? 0);
+        $myTasksCount = (int) ($presetMetrics->my_tasks ?? 0);
+        $waitingRevisionCount = (int) ($presetMetrics->waiting_revision ?? 0);
+        $readyEdasCount = (int) ($presetMetrics->ready_edas ?? 0);
+
         $sort = $request->string('sort')->toString();
         $direction = $request->string('direction')->lower()->toString() === 'asc' ? 'asc' : 'desc';
         $sortColumns = [
@@ -143,16 +177,19 @@ class SubmissionController extends Controller
                 'email' => $person->email,
                 'whatsapp' => $person->whatsapp(),
                 'whatsapp_raw' => $person->whatsapp_country_code && $person->whatsapp_number ? $person->whatsapp_country_code.$person->whatsapp_number : null,
-                'job_title' => $person->job_title ?: 'Staf Publikasi',
-                'affiliation' => $person->affiliation ?: 'Paperflow Team',
-                'memberships' => $memberships->values(),
+                'committee_role' => $person->committee_role,
+                'affiliation' => $person->affiliation,
+                'memberships' => $memberships->values()->all(),
                 'total_editor_papers' => $totalEditor,
                 'total_reviewer_papers' => $totalReviewer,
                 'total_assigned_papers' => $totalEditor + $totalReviewer,
             ]];
         });
 
-        return view('submissions.index', compact('submissions', 'conferences', 'staff', 'staffData'));
+        return view('submissions.index', compact(
+            'submissions', 'conferences', 'staff', 'staffData',
+            'totalAllCount', 'myTasksCount', 'waitingRevisionCount', 'readyEdasCount', 'preset'
+        ));
     }
 
     public function show(Submission $submission, VisibleEmailLogs $visibleEmailLogs): View

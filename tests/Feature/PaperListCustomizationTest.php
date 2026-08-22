@@ -127,4 +127,76 @@ class PaperListCustomizationTest extends TestCase
         $submission->unsetRelation('emailLogs');
         $this->assertCount(2, $submission->emailLogs);
     }
+
+    public function test_paper_list_quick_presets_filter_correctly(): void
+    {
+        $superadmin = User::factory()->create(['is_super_admin' => true]);
+        $conference = app(ConferenceProvisioner::class)->create([
+            'name' => 'Preset Conf',
+            'slug' => 'preset-conf',
+            'status' => 'active',
+        ], $superadmin);
+
+        $editor = User::factory()->create(['name' => 'Editor Guy']);
+        $conference->memberships()->create([
+            'user_id' => $editor->id,
+            'role' => \App\Enums\ConferenceRole::Editorial,
+            'is_active' => true,
+        ]);
+
+        $subMyTask = Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => 'TASK-001',
+            'paper_code' => 'TASK-001',
+            'title' => 'My Assigned Paper',
+            'corresponding_author_name' => 'Author A',
+            'corresponding_author_email' => 'a@example.com',
+            'editor_id' => $editor->id,
+            'status' => \App\Enums\SubmissionStatus::EditorialReview,
+            'submitted_at' => now(),
+        ]);
+
+        $subRevision = Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => 'REV-002',
+            'paper_code' => 'REV-002',
+            'title' => 'Revision Needed Paper',
+            'corresponding_author_name' => 'Author B',
+            'corresponding_author_email' => 'b@example.com',
+            'status' => \App\Enums\SubmissionStatus::WaitingAuthorRevision,
+            'submitted_at' => now(),
+        ]);
+
+        $subEdas = Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => 'EDAS-003',
+            'paper_code' => 'EDAS-003',
+            'title' => 'Ready for EDAS Paper',
+            'corresponding_author_name' => 'Author C',
+            'corresponding_author_email' => 'c@example.com',
+            'status' => \App\Enums\SubmissionStatus::ReadyForEdas,
+            'submitted_at' => now(),
+        ]);
+
+        // Preset: my_tasks for editor
+        $resMy = $this->actingAs($editor)->get(route('submissions.index', ['preset' => 'my_tasks']));
+        $resMy->assertOk();
+        $resMy->assertSee('TASK-001');
+        $resMy->assertDontSee('REV-002');
+        $resMy->assertDontSee('EDAS-003');
+
+        // Preset: revision
+        $resRev = $this->actingAs($superadmin)->get(route('submissions.index', ['preset' => 'revision']));
+        $resRev->assertOk();
+        $resRev->assertSee('REV-002');
+        $resRev->assertDontSee('TASK-001');
+        $resRev->assertDontSee('EDAS-003');
+
+        // Preset: edas
+        $resEdas = $this->actingAs($superadmin)->get(route('submissions.index', ['preset' => 'edas']));
+        $resEdas->assertOk();
+        $resEdas->assertSee('EDAS-003');
+        $resEdas->assertDontSee('TASK-001');
+        $resEdas->assertDontSee('REV-002');
+    }
 }
