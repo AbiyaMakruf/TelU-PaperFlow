@@ -279,27 +279,23 @@
                                         }
                                     @endphp
                                     <div class="flex flex-col gap-2.5 p-3.5 rounded-xl border sm:flex-row sm:items-start sm:justify-between {{ $cardBg }}">
-                                        <div class="min-w-0 flex-1">
+                                        <div class="min-w-0 flex-1 space-y-2.5">
                                             <p class="text-xs font-extrabold break-words {{ $titleColor }}">{{ $item->title }}</p>
                                             @if($item->description)
-                                                <div class="mt-1 text-[11px] text-slate-600 leading-relaxed break-words flex items-start gap-1.5">
-                                                    <span class="font-bold text-slate-500 shrink-0">📋 Guideline:</span>
-                                                    <span>{{ $item->description }}</span>
+                                                <div class="space-y-0.5">
+                                                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">Guideline</span>
+                                                    <p class="text-[11px] text-slate-600 leading-relaxed break-words">{{ $item->description }}</p>
                                                 </div>
                                             @endif
                                             @if(!$res?->is_checked && $res?->note)
-                                                <div class="mt-2 p-2.5 rounded-lg bg-rose-100/80 border border-rose-300/80 text-rose-950 text-[11px] leading-relaxed shadow-2xs">
-                                                    <div class="flex items-start gap-1.5">
-                                                        <span class="font-extrabold text-rose-800 shrink-0">✍️ Editor's Revision Note:</span>
-                                                        <span class="font-semibold text-rose-950 break-words">{{ $res->note }}</span>
-                                                    </div>
+                                                <div class="p-2.5 rounded-lg bg-rose-100/80 border border-rose-300/80 text-rose-950 space-y-1 shadow-2xs">
+                                                    <span class="text-[10px] font-black uppercase tracking-wider text-rose-800 block">Editor's Revision Note</span>
+                                                    <p class="text-[11px] font-semibold text-rose-950 leading-relaxed break-words">{{ $res->note }}</p>
                                                 </div>
                                             @elseif($res?->note)
-                                                <div class="mt-2 p-2 rounded-lg bg-slate-100/90 border border-slate-200 text-slate-800 text-[11px] leading-relaxed">
-                                                    <div class="flex items-start gap-1.5">
-                                                        <span class="font-bold text-slate-700 shrink-0">💬 Editor Note:</span>
-                                                        <span class="font-medium text-slate-800 break-words">{{ $res->note }}</span>
-                                                    </div>
+                                                <div class="p-2 rounded-lg bg-slate-100/90 border border-slate-200 text-slate-800 space-y-0.5">
+                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 block">Editor Note</span>
+                                                    <p class="text-[11px] font-medium text-slate-800 leading-relaxed break-words">{{ $res->note }}</p>
                                                 </div>
                                             @endif
                                         </div>
