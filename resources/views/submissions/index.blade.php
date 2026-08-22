@@ -35,17 +35,17 @@
         </a>
 
         <a href="{{ $presetUrl('my_tasks') }}" class="px-3.5 py-2 text-xs rounded-xl font-black transition shrink-0 flex items-center gap-1.5 shadow-2xs {{ $activePreset === 'my_tasks' ? 'bg-orange text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
-            <span>👤 My Assigned Tasks</span>
+            <span>My Assigned Tasks</span>
             <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === 'my_tasks' ? 'bg-white/20 text-white' : 'bg-orange/10 text-orange-dark font-extrabold' }}">{{ number_format($myTasksCount) }}</span>
         </a>
 
         <a href="{{ $presetUrl('revision') }}" class="px-3.5 py-2 text-xs rounded-xl font-black transition shrink-0 flex items-center gap-1.5 shadow-2xs {{ $activePreset === 'revision' ? 'bg-rose-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
-            <span>🔄 Waiting Author Revision</span>
+            <span>Waiting Author Revision</span>
             <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === 'revision' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700' }}">{{ number_format($waitingRevisionCount) }}</span>
         </a>
 
         <a href="{{ $presetUrl('edas') }}" class="px-3.5 py-2 text-xs rounded-xl font-black transition shrink-0 flex items-center gap-1.5 shadow-2xs {{ $activePreset === 'edas' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
-            <span>🛡️ Ready for EDAS</span>
+            <span>Ready for EDAS</span>
             <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === 'edas' ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-700' }}">{{ number_format($readyEdasCount) }}</span>
         </a>
     </div>
@@ -139,8 +139,9 @@
 
     <!-- Main Table Container with Instant Live Search -->
     <div x-data="papersManager({{ json_encode($staffData) }}, '{{ request('search', '') }}')">
-        <!-- Instant Live Search Bar -->
-        <div class="mt-5 card p-2.5 sm:p-3 bg-white border border-slate-200 shadow-2xs rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <!-- Instant Live Search Bar & Show Per Page Toolbar -->
+        <div class="mt-5 card p-3 sm:p-4 bg-white border border-slate-200 shadow-2xs rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <!-- Search Box -->
             <div class="relative flex-1 min-w-0">
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -152,30 +153,58 @@
                     x-model="searchQuery" 
                     @input="handleSearchInput()" 
                     placeholder="Live search by paper ID, title, author name, or email..." 
-                    class="form-input pl-10 pr-9 py-2 text-xs sm:text-sm w-full rounded-xl border-slate-200 focus:border-navy"
+                    class="form-input pl-11 pr-10 py-2.5 text-xs sm:text-sm w-full rounded-xl border-slate-200 focus:border-navy"
                 >
                 <button 
                     type="button" 
                     x-show="searchQuery.length > 0" 
                     @click="clearSearch()" 
                     x-cloak 
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-navy text-sm font-bold"
+                    class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-navy text-base font-bold"
                     title="Clear search"
                 >
                     &times;
                 </button>
             </div>
 
-            <div class="flex items-center justify-between sm:justify-end gap-3 text-xs text-slate-500 shrink-0 px-1 sm:px-0">
-                <div x-show="isLoading" x-cloak class="flex items-center gap-1.5 text-orange font-bold text-xs animate-pulse">
-                    <svg class="animate-spin size-3.5" viewBox="0 0 24 24" fill="none">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                    </svg>
-                    <span>Searching...</span>
-                </div>
-                <div id="submissions-total-count" class="font-bold text-navy text-[11px] sm:text-xs">
-                    Showing {{ $submissions->firstItem() ?? 0 }} - {{ $submissions->lastItem() ?? 0 }} of {{ $submissions->total() }} papers
+            <!-- Controls on the right: Show Per Page + Total count + Loading -->
+            <div class="flex items-center justify-between md:justify-end gap-3 text-xs text-slate-600 shrink-0">
+                <!-- Show Per Page Selector -->
+                <form method="GET" action="{{ route('submissions.index') }}" class="flex items-center gap-1.5 font-bold">
+                    @foreach(request()->except(['per_page', 'page']) as $key => $val)
+                        @if(is_array($val))
+                            @foreach($val as $v)
+                                <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
+                            @endforeach
+                        @else
+                            <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                        @endif
+                    @endforeach
+                    <label for="per_page_select_top" class="whitespace-nowrap text-[11px] sm:text-xs text-slate-500 font-bold">Per page:</label>
+                    <select id="per_page_select_top" name="per_page" onchange="this.form.submit()" class="form-input text-xs py-2 px-2.5 rounded-xl w-auto font-bold bg-slate-50 border-slate-200 hover:bg-slate-100 transition shadow-2xs">
+                        <option value="10" @selected(request('per_page') === '10')>10</option>
+                        <option value="20" @selected(request('per_page') === '20' || !request('per_page'))>20</option>
+                        <option value="30" @selected(request('per_page') === '30')>30</option>
+                        <option value="40" @selected(request('per_page') === '40')>40</option>
+                        <option value="50" @selected(request('per_page') === '50')>50</option>
+                        <option value="all" @selected(request('per_page') === 'all')>All</option>
+                    </select>
+                </form>
+
+                <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+                <!-- Status & Count -->
+                <div class="flex items-center gap-2">
+                    <div x-show="isLoading" x-cloak class="flex items-center gap-1.5 text-orange font-bold text-xs animate-pulse">
+                        <svg class="animate-spin size-3.5" viewBox="0 0 24 24" fill="none">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <span class="hidden sm:inline">Searching...</span>
+                    </div>
+                    <div id="submissions-total-count" class="font-bold text-navy text-[11px] sm:text-xs whitespace-nowrap">
+                        {{ $submissions->firstItem() ?? 0 }} - {{ $submissions->lastItem() ?? 0 }} of {{ $submissions->total() }} papers
+                    </div>
                 </div>
             </div>
         </div>
@@ -453,28 +482,8 @@
                 @endforelse
             </div>
         </div>
-        <div id="submissions-pagination-container" class="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <form method="GET" action="{{ route('submissions.index') }}" class="flex items-center gap-2 text-xs font-bold text-slate-600">
-                @foreach(request()->except(['per_page', 'page']) as $key => $val)
-                    @if(is_array($val))
-                        @foreach($val as $v)
-                            <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
-                        @endforeach
-                    @else
-                        <input type="hidden" name="{{ $key }}" value="{{ $val }}">
-                    @endif
-                @endforeach
-                <label for="per_page_select_bottom" class="whitespace-nowrap">Show per page:</label>
-                <select id="per_page_select_bottom" name="per_page" onchange="this.form.submit()" class="form-input text-xs py-1.5 px-3 rounded-lg w-auto font-bold bg-white border-slate-300 shadow-2xs">
-                    <option value="10" @selected(request('per_page') === '10')>10</option>
-                    <option value="20" @selected(request('per_page') === '20' || !request('per_page'))>20</option>
-                    <option value="30" @selected(request('per_page') === '30')>30</option>
-                    <option value="40" @selected(request('per_page') === '40')>40</option>
-                    <option value="50" @selected(request('per_page') === '50')>50</option>
-                    <option value="all" @selected(request('per_page') === 'all')>All</option>
-                </select>
-            </form>
-            <div>{{ $submissions->links() }}</div>
+        <div id="submissions-pagination-container" class="mt-6 flex items-center justify-end">
+            {{ $submissions->links() }}
         </div>
 
         <!-- PIC Details Modal -->
