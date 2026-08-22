@@ -54,7 +54,7 @@
     <div x-data="{ mobileFilterOpen: {{ request()->except(['preset', 'search', 'page']) ? 'true' : 'false' }}, showDateFilter: {{ request('date_from') || request('date_to') ? 'true' : 'false' }} }" class="card mt-4 p-4 sm:p-5">
         <button type="button" @click="mobileFilterOpen = !mobileFilterOpen" class="flex w-full items-center justify-between font-bold text-navy md:hidden">
             <span class="flex items-center gap-2 text-xs sm:text-sm">
-                <span>⚙️ Advanced Filters</span>
+                <span>Advanced Filters</span>
                 @if(request()->except(['preset', 'search', 'page']))
                     <span class="badge badge-primary text-[10px]">Active</span>
                 @endif
@@ -112,8 +112,8 @@
             <!-- Collapsible Date Range -->
             <div class="pt-1">
                 <button type="button" @click="showDateFilter = !showDateFilter" class="text-xs font-bold text-slate-600 hover:text-navy inline-flex items-center gap-1.5 transition">
-                    <span>📅 Filter by Submission Date</span>
-                    <span class="text-[10px] text-orange" x-text="showDateFilter ? '▲ Hide' : '▼ Show'"></span>
+                    <span>Filter by Submission Date</span>
+                    <span class="text-[10px] text-orange" x-text="showDateFilter ? 'Hide −' : 'Show +'"></span>
                 </button>
 
                 <div x-show="showDateFilter" x-collapse class="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 max-w-xl">
