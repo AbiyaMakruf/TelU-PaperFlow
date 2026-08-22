@@ -143,7 +143,7 @@
         <div class="mt-5 card p-3 sm:p-4 bg-white border border-slate-200 shadow-2xs rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             <!-- Search Box -->
             <div class="relative flex-1 min-w-0">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                     <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
@@ -153,7 +153,7 @@
                     x-model="searchQuery" 
                     @input="handleSearchInput()" 
                     placeholder="Live search by paper ID, title, author name, or email..." 
-                    class="form-input pl-11 pr-10 py-2.5 text-xs sm:text-sm w-full rounded-xl border-slate-200 focus:border-navy"
+                    class="form-input !pl-12 sm:!pl-14 pr-10 py-2.5 text-xs sm:text-sm w-full rounded-xl border-slate-200 focus:border-navy"
                 >
                 <button 
                     type="button" 
