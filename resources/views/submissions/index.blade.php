@@ -19,33 +19,58 @@
         </div>
     </div>
 
-    <!-- Filter Form Container -->
-    <div x-data="{ mobileFilterOpen: {{ request()->query() ? 'true' : 'false' }} }" class="card mt-7 p-4 sm:p-5">
+    <!-- Quick Presets Bar -->
+    <div class="mt-6 flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        @php
+            $activePreset = request('preset', '');
+            $presetUrl = fn (?string $p) => route('submissions.index', array_merge(
+                request()->except(['preset', 'page', 'status']),
+                $p ? ['preset' => $p] : []
+            ));
+        @endphp
+
+        <a href="{{ $presetUrl(null) }}" class="px-3.5 py-2 text-xs rounded-xl font-black transition shrink-0 flex items-center gap-1.5 shadow-2xs {{ $activePreset === '' && !request('status') ? 'bg-navy text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
+            <span>All Papers</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === '' && !request('status') ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700' }}">{{ number_format($totalAllCount) }}</span>
+        </a>
+
+        <a href="{{ $presetUrl('my_tasks') }}" class="px-3.5 py-2 text-xs rounded-xl font-black transition shrink-0 flex items-center gap-1.5 shadow-2xs {{ $activePreset === 'my_tasks' ? 'bg-orange text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
+            <span>👤 My Assigned Tasks</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === 'my_tasks' ? 'bg-white/20 text-white' : 'bg-orange/10 text-orange-dark font-extrabold' }}">{{ number_format($myTasksCount) }}</span>
+        </a>
+
+        <a href="{{ $presetUrl('revision') }}" class="px-3.5 py-2 text-xs rounded-xl font-black transition shrink-0 flex items-center gap-1.5 shadow-2xs {{ $activePreset === 'revision' ? 'bg-rose-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
+            <span>🔄 Waiting Author Revision</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === 'revision' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700' }}">{{ number_format($waitingRevisionCount) }}</span>
+        </a>
+
+        <a href="{{ $presetUrl('edas') }}" class="px-3.5 py-2 text-xs rounded-xl font-black transition shrink-0 flex items-center gap-1.5 shadow-2xs {{ $activePreset === 'edas' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
+            <span>🛡️ Ready for EDAS</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === 'edas' ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-700' }}">{{ number_format($readyEdasCount) }}</span>
+        </a>
+    </div>
+
+    <!-- Advanced Filter Card -->
+    <div x-data="{ mobileFilterOpen: {{ request()->except(['preset', 'search', 'page']) ? 'true' : 'false' }}, showDateFilter: {{ request('date_from') || request('date_to') ? 'true' : 'false' }} }" class="card mt-4 p-4 sm:p-5">
         <button type="button" @click="mobileFilterOpen = !mobileFilterOpen" class="flex w-full items-center justify-between font-bold text-navy md:hidden">
-            <span class="flex items-center gap-2 text-sm">
-                🔍 Filter &amp; Search
-                @if(request()->query())
+            <span class="flex items-center gap-2 text-xs sm:text-sm">
+                <span>⚙️ Advanced Filters</span>
+                @if(request()->except(['preset', 'search', 'page']))
                     <span class="badge badge-primary text-[10px]">Active</span>
                 @endif
             </span>
-            <span class="text-xs text-orange" x-text="mobileFilterOpen ? 'Close −' : 'Open +'"></span>
+            <span class="text-xs text-orange font-bold" x-text="mobileFilterOpen ? 'Close −' : 'Open Filter +'"></span>
         </button>
 
         <form x-show="mobileFilterOpen || window.innerWidth >= 768" x-collapse class="mt-4 md:mt-0 space-y-4">
+            @if(request('preset'))
+                <input type="hidden" name="preset" value="{{ request('preset') }}">
+            @endif
+            @if(request('search'))
+                <input type="hidden" name="search" value="{{ request('search') }}">
+            @endif
+
             <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                    <label class="form-label">Search</label>
-                    <input class="form-input" name="search" value="{{ request('search') }}" placeholder="Search code, title, author...">
-                </div>
-                <div>
-                    <label class="form-label">Conference</label>
-                    <select class="form-input" name="conference">
-                        <option value="">All conferences</option>
-                        @foreach($conferences as $conference)
-                            <option value="{{ $conference->id }}" @selected(request('conference') === $conference->id)>{{ $conference->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
                 <div>
                     <label class="form-label">Paper Status</label>
                     <select class="form-input" name="status">
@@ -74,42 +99,87 @@
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">Submitted From</label>
-                    <input class="form-input" type="date" name="date_from" value="{{ request('date_from') }}">
-                </div>
-                <div>
-                    <label class="form-label">Submitted To</label>
-                    <input class="form-input" type="date" name="date_to" value="{{ request('date_to') }}">
-                </div>
-                <div>
-                    <label class="form-label">Items Per Page</label>
-                    <select class="form-input" name="per_page">
-                        <option value="10" @selected(request('per_page') === '10')>10 per page</option>
-                        <option value="20" @selected(request('per_page') === '20' || !request('per_page'))>20 per page</option>
-                        <option value="30" @selected(request('per_page') === '30')>30 per page</option>
-                        <option value="40" @selected(request('per_page') === '40')>40 per page</option>
-                        <option value="50" @selected(request('per_page') === '50')>50 per page</option>
-                        <option value="all" @selected(request('per_page') === 'all')>All papers</option>
+                    <label class="form-label">Conference</label>
+                    <select class="form-input" name="conference">
+                        <option value="">All conferences</option>
+                        @foreach($conferences as $conference)
+                            <option value="{{ $conference->id }}" @selected(request('conference') === $conference->id)>{{ $conference->name }}</option>
+                        @endforeach
                     </select>
                 </div>
-                <div>
-                    <label class="form-label">Additional Filters</label>
-                    <label class="check-row h-12 py-0 px-4 flex items-center cursor-pointer">
-                        <input type="checkbox" name="overdue" value="1" @checked(request('overdue'))>
-                        <span class="text-xs font-extrabold text-navy">Overdue Only</span>
-                    </label>
+            </div>
+
+            <!-- Collapsible Date Range -->
+            <div class="pt-1">
+                <button type="button" @click="showDateFilter = !showDateFilter" class="text-xs font-bold text-slate-600 hover:text-navy inline-flex items-center gap-1.5 transition">
+                    <span>📅 Filter by Submission Date</span>
+                    <span class="text-[10px] text-orange" x-text="showDateFilter ? '▲ Hide' : '▼ Show'"></span>
+                </button>
+
+                <div x-show="showDateFilter" x-collapse class="mt-3 grid gap-4 grid-cols-1 sm:grid-cols-2 max-w-xl">
+                    <div>
+                        <label class="form-label">Submitted From</label>
+                        <input class="form-input" type="date" name="date_from" value="{{ request('date_from') }}">
+                    </div>
+                    <div>
+                        <label class="form-label">Submitted To</label>
+                        <input class="form-input" type="date" name="date_to" value="{{ request('date_to') }}">
+                    </div>
                 </div>
             </div>
+
             <div class="flex flex-wrap items-center gap-3 pt-3 border-t border-navy/8">
-                <button class="btn btn-primary px-6 w-full sm:w-auto">Apply Filter</button>
+                <button type="submit" class="btn btn-primary px-6 w-full sm:w-auto">Apply Filter</button>
                 @if(request()->query())
-                    <a class="btn btn-ghost w-full sm:w-auto text-center" href="{{ route('submissions.index') }}">Reset Filter</a>
+                    <a class="btn btn-ghost w-full sm:w-auto text-center" href="{{ route('submissions.index') }}">Reset All Filters</a>
                 @endif
             </div>
         </form>
     </div>
 
-    <div x-data="{ selected: [], bulkAction: '', activePic: null, staffMap: {{ json_encode($staffData) }} }">
+    <!-- Main Table Container with Instant Live Search -->
+    <div x-data="papersManager({{ json_encode($staffData) }}, '{{ request('search', '') }}')">
+        <!-- Instant Live Search Bar -->
+        <div class="mt-5 card p-2.5 sm:p-3 bg-white border border-slate-200 shadow-2xs rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div class="relative flex-1 min-w-0">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input 
+                    type="text" 
+                    x-model="searchQuery" 
+                    @input="handleSearchInput()" 
+                    placeholder="Live search by paper ID, title, author name, or email..." 
+                    class="form-input pl-10 pr-9 py-2 text-xs sm:text-sm w-full rounded-xl border-slate-200 focus:border-navy"
+                >
+                <button 
+                    type="button" 
+                    x-show="searchQuery.length > 0" 
+                    @click="clearSearch()" 
+                    x-cloak 
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-navy text-sm font-bold"
+                    title="Clear search"
+                >
+                    &times;
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between sm:justify-end gap-3 text-xs text-slate-500 shrink-0 px-1 sm:px-0">
+                <div x-show="isLoading" x-cloak class="flex items-center gap-1.5 text-orange font-bold text-xs animate-pulse">
+                    <svg class="animate-spin size-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span>Searching...</span>
+                </div>
+                <div id="submissions-total-count" class="font-bold text-navy text-[11px] sm:text-xs">
+                    Showing {{ $submissions->firstItem() ?? 0 }} - {{ $submissions->lastItem() ?? 0 }} of {{ $submissions->total() }} papers
+                </div>
+            </div>
+        </div>
+
         <!-- Floating Bulk Bar -->
         <div x-show="selected.length > 0" x-cloak class="sticky top-4 z-40 my-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-900 p-4 text-white shadow-2xl">
             <div class="text-sm font-bold">
@@ -155,7 +225,7 @@
             ]));
         @endphp
 
-        <div class="card mt-6 overflow-hidden">
+        <div id="submissions-table-container" class="card mt-6 overflow-hidden">
             <!-- Desktop Table View -->
             <div class="hidden overflow-x-auto md:block">
                 <table class="data-table">
@@ -383,7 +453,7 @@
                 @endforelse
             </div>
         </div>
-        <div class="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div id="submissions-pagination-container" class="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <form method="GET" action="{{ route('submissions.index') }}" class="flex items-center gap-2 text-xs font-bold text-slate-600">
                 @foreach(request()->except(['per_page', 'page']) as $key => $val)
                     @if(is_array($val))
@@ -599,6 +669,70 @@
     </div>
 
     <script>
+    window.papersManager = function(staffData, initialSearch) {
+        return {
+            selected: [],
+            bulkAction: '',
+            activePic: null,
+            staffMap: staffData,
+            searchQuery: initialSearch || '',
+            isLoading: false,
+            searchTimeout: null,
+
+            handleSearchInput() {
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => {
+                    this.performLiveSearch();
+                }, 300);
+            },
+
+            clearSearch() {
+                this.searchQuery = '';
+                this.performLiveSearch();
+            },
+
+            performLiveSearch() {
+                this.isLoading = true;
+                const url = new URL(window.location.href);
+                if (this.searchQuery.trim() !== '') {
+                    url.searchParams.set('search', this.searchQuery.trim());
+                } else {
+                    url.searchParams.delete('search');
+                }
+                url.searchParams.delete('page');
+
+                window.history.replaceState({}, '', url.toString());
+
+                fetch(url.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.text())
+                .then(html => {
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const newTable = doc.getElementById('submissions-table-container');
+                    const currentTable = document.getElementById('submissions-table-container');
+                    if (newTable && currentTable) {
+                        currentTable.innerHTML = newTable.innerHTML;
+                    }
+                    const newPagination = doc.getElementById('submissions-pagination-container');
+                    const currentPagination = document.getElementById('submissions-pagination-container');
+                    if (newPagination && currentPagination) {
+                        currentPagination.innerHTML = newPagination.innerHTML;
+                    }
+                    const newCount = doc.getElementById('submissions-total-count');
+                    const currentCount = document.getElementById('submissions-total-count');
+                    if (newCount && currentCount) {
+                        currentCount.innerHTML = newCount.innerHTML;
+                    }
+                })
+                .catch(err => console.error('Live search error:', err))
+                .finally(() => {
+                    this.isLoading = false;
+                });
+            }
+        };
+    };
+
     window.openPortalLinkModal = function(url, paperId, paperTitle, authorName, authorEmail, isSent, sentAt) {
         const modal = document.getElementById('portal-link-confirm-modal');
         const form = document.getElementById('portal-link-confirm-form');
