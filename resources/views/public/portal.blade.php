@@ -211,7 +211,7 @@
                         <h3 class="font-extrabold text-amber-950 text-sm">Important Revision Instructions</h3>
                         <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
                             <li>Please inspect the <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card below to see specific items requiring correction (marked with <strong class="text-rose-700 font-extrabold">✕ Revision Needed</strong>).</li>
-                            <li><strong>Always use the Latest Manuscript File (v{{ $targetVersion ?? ($targetManuscript?->version_number ?? '1') }})</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it. You can download this file from the <strong>Submission Details</strong> card above (under <em>{{ $statusLabel ?? 'Latest' }} Manuscript Files</em>) or from the <strong>File Version History</strong> section at the bottom of this page.</li>
+                            <li><strong>Always use the Latest Manuscript File</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it. You can download this file from the <strong>Submission Details</strong> card above (under <em>{{ $statusLabel ?? 'Latest' }} Manuscript Files</em>) or from the <strong>File Version History</strong> section at the bottom of this page.</li>
                             <li><strong>Only modify the specific items requested for correction</strong>. Please leave all other already compliant sections untouched.</li>
                         </ul>
                     </div>
