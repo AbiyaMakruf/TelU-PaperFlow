@@ -278,37 +278,40 @@
                                             $badgeText = 'Under Review';
                                         }
                                     @endphp
-                                    <div class="flex flex-col gap-2.5 p-3.5 rounded-xl border sm:flex-row sm:items-start sm:justify-between {{ $cardBg }}">
-                                        <div class="min-w-0 flex-1 space-y-2.5">
+                                    <div class="p-3.5 rounded-xl border space-y-2.5 {{ $cardBg }}">
+                                        {{-- Header row: Title & Badge side-by-side on mobile & desktop --}}
+                                        <div class="flex items-start justify-between gap-2.5">
                                             <p class="text-xs font-extrabold break-words {{ $titleColor }}">{{ $item->title }}</p>
-
-                                            @if(!$res?->is_checked && $res?->note)
-                                                <div class="space-y-0.5">
-                                                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-700 block">Editor's Revision Note</span>
-                                                    <p class="text-[11px] font-medium text-slate-800 leading-relaxed break-words">{{ $res->note }}</p>
-                                                </div>
-                                            @elseif($res?->note)
-                                                <div class="space-y-0.5">
-                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-700 block">Editor Note</span>
-                                                    <p class="text-[11px] font-medium text-slate-800 leading-relaxed break-words">{{ $res->note }}</p>
-                                                </div>
-                                            @endif
-
-                                            @if($item->description)
-                                                <details class="group/guideline text-[11px] text-slate-600 pt-0.5">
-                                                    <summary class="cursor-pointer font-bold text-slate-500 hover:text-navy transition select-none inline-flex items-center gap-1 list-none focus:outline-none">
-                                                        <span>View Guideline</span>
-                                                        <svg class="size-3 transition-transform group-open/guideline:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                                        </svg>
-                                                    </summary>
-                                                    <p class="mt-2 pl-4 py-0.5 border-l-2 border-slate-300 text-slate-600 leading-relaxed break-words">{{ $item->description }}</p>
-                                                </details>
-                                            @endif
+                                            <span class="badge {{ $badgeClass }} shrink-0">
+                                                {{ $badgeText }}
+                                            </span>
                                         </div>
-                                        <span class="badge {{ $badgeClass }} shrink-0 self-start sm:self-auto">
-                                            {{ $badgeText }}
-                                        </span>
+
+                                        {{-- Editor Revision Note --}}
+                                        @if(!$res?->is_checked && $res?->note)
+                                            <div class="space-y-0.5">
+                                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-700 block">Editor's Revision Note</span>
+                                                <p class="text-[11px] font-medium text-slate-800 leading-relaxed break-words">{{ $res->note }}</p>
+                                            </div>
+                                        @elseif($res?->note)
+                                            <div class="space-y-0.5">
+                                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-700 block">Editor Note</span>
+                                                <p class="text-[11px] font-medium text-slate-800 leading-relaxed break-words">{{ $res->note }}</p>
+                                            </div>
+                                        @endif
+
+                                        {{-- Collapsible Guideline --}}
+                                        @if($item->description)
+                                            <details class="group/guideline text-[11px] text-slate-600 pt-0.5">
+                                                <summary class="cursor-pointer font-bold text-slate-500 hover:text-navy transition select-none inline-flex items-center gap-1 list-none focus:outline-none">
+                                                    <span>View Guideline</span>
+                                                    <svg class="size-3 transition-transform group-open/guideline:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </summary>
+                                                <p class="mt-2 pl-4 py-0.5 border-l-2 border-slate-300 text-slate-600 leading-relaxed break-words">{{ $item->description }}</p>
+                                            </details>
+                                        @endif
                                     </div>
                                 @endforeach
                             @endforeach
