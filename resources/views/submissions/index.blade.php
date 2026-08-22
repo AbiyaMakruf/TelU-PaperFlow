@@ -142,25 +142,23 @@
         <!-- Instant Live Search Bar & Show Per Page Toolbar -->
         <div class="mt-5 card p-3 sm:p-4 bg-white border border-slate-200 shadow-2xs rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             <!-- Search Box -->
-            <div class="relative flex-1 min-w-0">
-                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
+            <div class="flex-1 min-w-0 flex items-center gap-3 w-full rounded-xl border border-navy/15 bg-white px-4 py-1 focus-within:border-orange focus-within:ring-4 focus-within:ring-orange/10 transition shadow-2xs">
+                <svg class="size-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
                 <input 
                     type="text" 
                     x-model="searchQuery" 
                     @input="handleSearchInput()" 
                     placeholder="Live search by paper ID, title, author name, or email..." 
-                    class="form-input !pl-12 sm:!pl-14 pr-10 py-2.5 text-xs sm:text-sm w-full rounded-xl border-slate-200 focus:border-navy"
+                    class="w-full bg-transparent text-xs sm:text-sm text-ink outline-none placeholder:text-slate-400 py-1.5 border-0 focus:ring-0 focus:outline-none"
                 >
                 <button 
                     type="button" 
                     x-show="searchQuery.length > 0" 
                     @click="clearSearch()" 
                     x-cloak 
-                    class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-navy text-base font-bold"
+                    class="text-slate-400 hover:text-navy text-base font-bold shrink-0 px-1"
                     title="Clear search"
                 >
                     &times;
