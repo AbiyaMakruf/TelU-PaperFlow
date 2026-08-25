@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ConferenceRole;
+use App\Enums\SubmissionStatus;
 use App\Models\Submission;
 use App\Models\User;
 use App\Services\ConferenceProvisioner;
@@ -128,7 +130,7 @@ class PaperListCustomizationTest extends TestCase
         $this->assertCount(2, $submission->emailLogs);
     }
 
-    public function test_paper_list_quick_presets_filter_correctly(): void
+    public function test_my_assigned_tasks_preset_includes_all_assigned_statuses(): void
     {
         $superadmin = User::factory()->create(['is_super_admin' => true]);
         $conference = app(ConferenceProvisioner::class)->create([
@@ -140,7 +142,7 @@ class PaperListCustomizationTest extends TestCase
         $editor = User::factory()->create(['name' => 'Editor Guy']);
         $conference->memberships()->create([
             'user_id' => $editor->id,
-            'role' => \App\Enums\ConferenceRole::Editorial,
+            'role' => ConferenceRole::Editorial,
             'is_active' => true,
         ]);
 
@@ -152,51 +154,40 @@ class PaperListCustomizationTest extends TestCase
             'corresponding_author_name' => 'Author A',
             'corresponding_author_email' => 'a@example.com',
             'editor_id' => $editor->id,
-            'status' => \App\Enums\SubmissionStatus::EditorialReview,
+            'status' => SubmissionStatus::EditorialReview,
             'submitted_at' => now(),
         ]);
 
-        $subRevision = Submission::create([
+        $subCompletedTask = Submission::create([
             'conference_id' => $conference->id,
-            'paper_id' => 'REV-002',
-            'paper_code' => 'REV-002',
-            'title' => 'Revision Needed Paper',
+            'paper_id' => 'DONE-002',
+            'paper_code' => 'DONE-002',
+            'title' => 'Completed Assigned Paper',
             'corresponding_author_name' => 'Author B',
             'corresponding_author_email' => 'b@example.com',
-            'status' => \App\Enums\SubmissionStatus::WaitingAuthorRevision,
+            'reviewer_id' => $editor->id,
+            'status' => SubmissionStatus::Done,
             'submitted_at' => now(),
         ]);
 
-        $subEdas = Submission::create([
+        $subUnassigned = Submission::create([
             'conference_id' => $conference->id,
-            'paper_id' => 'EDAS-003',
-            'paper_code' => 'EDAS-003',
-            'title' => 'Ready for EDAS Paper',
+            'paper_id' => 'OTHER-003',
+            'paper_code' => 'OTHER-003',
+            'title' => 'Unassigned Paper',
             'corresponding_author_name' => 'Author C',
             'corresponding_author_email' => 'c@example.com',
-            'status' => \App\Enums\SubmissionStatus::ReadyForEdas,
+            'status' => SubmissionStatus::ReadyForEdas,
             'submitted_at' => now(),
         ]);
 
-        // Preset: my_tasks for editor
         $resMy = $this->actingAs($editor)->get(route('submissions.index', ['preset' => 'my_tasks']));
         $resMy->assertOk();
         $resMy->assertSee('TASK-001');
-        $resMy->assertDontSee('REV-002');
-        $resMy->assertDontSee('EDAS-003');
+        $resMy->assertSee('DONE-002');
+        $resMy->assertDontSee('OTHER-003');
 
-        // Preset: revision
-        $resRev = $this->actingAs($superadmin)->get(route('submissions.index', ['preset' => 'revision']));
-        $resRev->assertOk();
-        $resRev->assertSee('REV-002');
-        $resRev->assertDontSee('TASK-001');
-        $resRev->assertDontSee('EDAS-003');
-
-        // Preset: edas
-        $resEdas = $this->actingAs($superadmin)->get(route('submissions.index', ['preset' => 'edas']));
-        $resEdas->assertOk();
-        $resEdas->assertSee('EDAS-003');
-        $resEdas->assertDontSee('TASK-001');
-        $resEdas->assertDontSee('REV-002');
+        $resMy->assertDontSee('preset=revision');
+        $resMy->assertDontSee('preset=edas');
     }
 }

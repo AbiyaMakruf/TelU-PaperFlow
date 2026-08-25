@@ -51,11 +51,7 @@ class SubmissionController extends Controller
             $query->where(function ($q) use ($user) {
                 $q->where('editor_id', $user->id)
                     ->orWhere('reviewer_id', $user->id);
-            })->whereNotIn('status', [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn]);
-        } elseif ($preset === 'revision') {
-            $query->where('status', SubmissionStatus::WaitingAuthorRevision);
-        } elseif ($preset === 'edas') {
-            $query->where('status', SubmissionStatus::ReadyForEdas);
+            });
         }
 
         // Count metrics for quick preset tabs in a single aggregated query
@@ -63,22 +59,15 @@ class SubmissionController extends Controller
         if ($request->filled('conference')) {
             $countQuery->where('conference_id', $request->string('conference'));
         }
-        $presetMetrics = (clone $countQuery)->selectRaw("
+        $presetMetrics = (clone $countQuery)->selectRaw('
             COUNT(*) as total_all,
-            COUNT(CASE WHEN (editor_id = ? OR reviewer_id = ?) AND status NOT IN (?, ?, ?) THEN 1 END) as my_tasks,
-            COUNT(CASE WHEN status = ? THEN 1 END) as waiting_revision,
-            COUNT(CASE WHEN status = ? THEN 1 END) as ready_edas
-        ", [
+            COUNT(CASE WHEN editor_id = ? OR reviewer_id = ? THEN 1 END) as my_tasks
+        ', [
             $user->id, $user->id,
-            SubmissionStatus::Done->value, SubmissionStatus::Rejected->value, SubmissionStatus::Withdrawn->value,
-            SubmissionStatus::WaitingAuthorRevision->value,
-            SubmissionStatus::ReadyForEdas->value,
         ])->first();
 
         $totalAllCount = (int) ($presetMetrics->total_all ?? 0);
         $myTasksCount = (int) ($presetMetrics->my_tasks ?? 0);
-        $waitingRevisionCount = (int) ($presetMetrics->waiting_revision ?? 0);
-        $readyEdasCount = (int) ($presetMetrics->ready_edas ?? 0);
 
         $sort = $request->string('sort')->toString();
         $direction = $request->string('direction')->lower()->toString() === 'asc' ? 'asc' : 'desc';
@@ -188,7 +177,7 @@ class SubmissionController extends Controller
 
         return view('submissions.index', compact(
             'submissions', 'conferences', 'staff', 'staffData',
-            'totalAllCount', 'myTasksCount', 'waitingRevisionCount', 'readyEdasCount', 'preset'
+            'totalAllCount', 'myTasksCount', 'preset'
         ));
     }
 

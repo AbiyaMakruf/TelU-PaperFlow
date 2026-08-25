@@ -39,15 +39,6 @@
             <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === 'my_tasks' ? 'bg-white/20 text-white' : 'bg-orange/10 text-orange-dark font-extrabold' }}">{{ number_format($myTasksCount) }}</span>
         </a>
 
-        <a href="{{ $presetUrl('revision') }}" class="px-3.5 py-2 text-xs rounded-xl font-black transition shrink-0 flex items-center gap-1.5 shadow-2xs {{ $activePreset === 'revision' ? 'bg-rose-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
-            <span>Waiting Author Revision</span>
-            <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === 'revision' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700' }}">{{ number_format($waitingRevisionCount) }}</span>
-        </a>
-
-        <a href="{{ $presetUrl('edas') }}" class="px-3.5 py-2 text-xs rounded-xl font-black transition shrink-0 flex items-center gap-1.5 shadow-2xs {{ $activePreset === 'edas' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
-            <span>Ready for EDAS</span>
-            <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $activePreset === 'edas' ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-700' }}">{{ number_format($readyEdasCount) }}</span>
-        </a>
     </div>
 
     <!-- Advanced Filter Card -->
