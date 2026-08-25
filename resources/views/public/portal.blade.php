@@ -18,7 +18,7 @@
                                 <button type="button" disabled class="btn text-xs bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shrink-0" title="Editing is locked because this paper is {{ strtolower($submission->status->label()) }}.">
                                     Edit Submission Details
                                 </button>
-                                <span class="text-[11px] text-slate-500 font-medium italic">Details locked (workflow {{ strtolower($submission->status->label()) }})</span>
+                                <span class="text-[11px] text-slate-500 font-medium italic">Edit locked (workflow {{ strtolower($submission->status->label()) }})</span>
                             </div>
                         @else
                             <button type="button" @click="openEdit = !openEdit" class="btn btn-secondary text-xs shrink-0 self-start sm:self-auto">
@@ -116,13 +116,27 @@
                                     <!-- IEEE PDF eXpress Passed Camera-Ready PDF Download Card (RED BUTTON) -->
                                     <a href="{{ route('author.files.download', [$token, $cameraReadyPdf]) }}" download="{{ $cameraReadyPdf->original_name }}" class="group p-3.5 sm:p-4 rounded-2xl border border-rose-200/80 bg-rose-50/60 hover:bg-rose-100/80 hover:border-rose-300 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden mt-3 cursor-pointer">
                                         <div class="min-w-0 flex-1 space-y-1">
-                                            <span class="text-[11px] font-extrabold text-rose-700 uppercase tracking-wider block">IEEE PDF eXpress Verified (EDAS Camera-Ready PDF)</span>
-                                            <p class="text-xs text-rose-950 leading-relaxed font-medium">Certified camera-ready PDF file verified through IEEE PDF eXpress and submitted to EDAS final manuscript.</p>
+                                            <span class="text-[11px] font-extrabold text-rose-700 uppercase tracking-wider block">IEEE PDF eXpress Verified</span>
+                                            <p class="text-xs text-rose-950 leading-relaxed font-medium">Certified PDF file verified through IEEE PDF eXpress and submitted to EDAS final manuscript.</p>
                                         </div>
                                         <span class="btn text-[11px] sm:text-xs py-2 px-3.5 bg-rose-600 group-hover:bg-rose-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
                                             Download
                                         </span>
                                     </a>
+                                @endif
+
+                                @if($isFinalVersion || $submission->status === \App\Enums\SubmissionStatus::Done)
+                                    <div class="mt-3.5 p-3.5 sm:p-4 rounded-xl border border-emerald-200 bg-emerald-50/70 text-xs text-emerald-950 space-y-1 shadow-2xs">
+                                        <div class="flex items-start gap-2.5">
+                                            <svg class="size-4 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                            </svg>
+                                            <div class="space-y-1">
+                                                <p class="font-extrabold text-emerald-950 text-xs">Editorial Process Complete &amp; EDAS Final Manuscript Uploaded</p>
+                                                <p class="text-emerald-900 leading-relaxed font-medium">The editorial review for your manuscript is complete and your paper complies with all formatting guidelines. The editorial team has uploaded the final camera-ready manuscript to the EDAS system on your behalf. If you notice any discrepancies, please contact your assigned editor using the contact details provided at least 1 week prior to the conference date.</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 @endif
                             </div>
                         @endif
