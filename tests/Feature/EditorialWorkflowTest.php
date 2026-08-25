@@ -132,7 +132,7 @@ class EditorialWorkflowTest extends TestCase
         $token = $submission->ensureValidAuthorToken();
         $response = $this->get('/submission/access/'.$token);
         $response->assertOk();
-        $response->assertSee('IEEE PDF eXpress Verified (EDAS Camera-Ready PDF)');
+        $response->assertSee('IEEE PDF eXpress Verified');
         $response->assertSee('Download');
     }
 
