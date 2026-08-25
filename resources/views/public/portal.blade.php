@@ -12,12 +12,14 @@
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="min-w-0">
                             <h2 class="text-lg font-black text-navy">Submission Details</h2>
-                            <p class="text-xs text-muted">Paper ID, paper title, author contact information, and co-authors list.</p>
                         </div>
                         @if(in_array($submission->status, [\App\Enums\SubmissionStatus::Done, \App\Enums\SubmissionStatus::Withdrawn, \App\Enums\SubmissionStatus::Rejected], true))
-                            <button type="button" disabled class="btn text-xs bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shrink-0 self-start sm:self-auto" title="Submission details cannot be edited after completion">
-                                Edit Submission Details
-                            </button>
+                            <div class="flex flex-col items-start sm:items-end gap-1">
+                                <button type="button" disabled class="btn text-xs bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shrink-0" title="Editing is locked because this paper is {{ strtolower($submission->status->label()) }}.">
+                                    Edit Submission Details
+                                </button>
+                                <span class="text-[11px] text-slate-500 font-medium italic">Details locked (workflow {{ strtolower($submission->status->label()) }})</span>
+                            </div>
                         @else
                             <button type="button" @click="openEdit = !openEdit" class="btn btn-secondary text-xs shrink-0 self-start sm:self-auto">
                                 <span x-text="openEdit ? 'Cancel Edit' : 'Edit Submission Details'"></span>
@@ -85,13 +87,12 @@
                                 <div class="grid gap-3 {{ $targetGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
                                     @if($targetManuscript)
                                         <!-- Manuscript Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-orange/20 bg-amber-50/60 hover:bg-amber-100/90 hover:border-orange/40 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
-                                            <div class="min-w-0 flex-1 space-y-0.5">
-                                                <span class="text-[10px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Manuscript</span>
-                                                <p class="text-xs font-bold text-navy truncate" title="{{ $targetManuscript->original_name }}">{{ $targetManuscript->original_name }}</p>
-                                                <span class="text-[11px] text-muted font-medium block">{{ number_format($targetManuscript->size / 1024, 0) }} KB</span>
+                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" download="{{ $targetManuscript->original_name }}" class="group p-3.5 sm:p-4 rounded-2xl border border-orange/20 bg-amber-50/60 hover:bg-amber-100/90 hover:border-orange/40 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
+                                            <div class="min-w-0 flex-1 space-y-1">
+                                                <span class="text-[11px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Editable Manuscript</span>
+                                                <p class="text-xs text-navy leading-relaxed font-medium">Latest editable manuscript source file (DOCX or LaTeX ZIP package) incorporating previous editorial and formatting revisions.</p>
                                             </div>
-                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
+                                            <span class="btn text-[11px] sm:text-xs py-2 px-3.5 bg-orange group-hover:bg-orange-dark text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
                                                 Download
                                             </span>
                                         </a>
@@ -99,13 +100,12 @@
 
                                     @if($targetGuidancePdf)
                                         <!-- Revision Guide Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-indigo-200/80 bg-indigo-50/60 hover:bg-indigo-100/80 hover:border-indigo-300 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
-                                            <div class="min-w-0 flex-1 space-y-0.5">
-                                                <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Revision Guide</span>
-                                                <p class="text-xs font-bold text-indigo-950 truncate" title="{{ $targetGuidancePdf->original_name }}">{{ $targetGuidancePdf->original_name }}</p>
-                                                <span class="text-[11px] text-indigo-700 font-medium block">PDF Guide &middot; {{ number_format($targetGuidancePdf->size / 1024, 0) }} KB</span>
+                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" download="{{ $targetGuidancePdf->original_name }}" class="group p-3.5 sm:p-4 rounded-2xl border border-indigo-200/80 bg-indigo-50/60 hover:bg-indigo-100/80 hover:border-indigo-300 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
+                                            <div class="min-w-0 flex-1 space-y-1">
+                                                <span class="text-[11px] font-extrabold text-indigo-700 uppercase tracking-wider block">Revision Guidance Document</span>
+                                                <p class="text-xs text-indigo-950 leading-relaxed font-medium">Visual PDF guide containing specific editorial annotations and markups to guide your required revisions.</p>
                                             </div>
-                                            <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
+                                            <span class="btn text-[11px] sm:text-xs py-2 px-3.5 bg-indigo-600 group-hover:bg-indigo-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
                                                 Download
                                             </span>
                                         </a>
@@ -114,14 +114,13 @@
 
                                 @if($cameraReadyPdf)
                                     <!-- IEEE PDF eXpress Passed Camera-Ready PDF Download Card (RED BUTTON) -->
-                                    <a href="{{ route('author.files.download', [$token, $cameraReadyPdf]) }}" class="group p-3 sm:p-3.5 rounded-2xl border border-rose-200/80 bg-rose-50/60 hover:bg-rose-100/80 hover:border-rose-300 transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs w-full min-w-0 overflow-hidden mt-3 cursor-pointer">
-                                        <div class="min-w-0 flex-1 space-y-0.5">
-                                            <span class="text-[10px] font-extrabold text-rose-700 uppercase tracking-wider block">IEEE PDF eXpress Verified (EDAS Camera-Ready PDF)</span>
-                                            <p class="text-xs font-bold text-rose-950 truncate" title="{{ $cameraReadyPdf->original_name }}">{{ $cameraReadyPdf->original_name }}</p>
-                                            <span class="text-[11px] text-rose-700 font-medium block">Passed IEEE PDF eXpress &amp; Uploaded to EDAS &middot; {{ number_format($cameraReadyPdf->size / 1024, 0) }} KB</span>
+                                    <a href="{{ route('author.files.download', [$token, $cameraReadyPdf]) }}" download="{{ $cameraReadyPdf->original_name }}" class="group p-3.5 sm:p-4 rounded-2xl border border-rose-200/80 bg-rose-50/60 hover:bg-rose-100/80 hover:border-rose-300 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden mt-3 cursor-pointer">
+                                        <div class="min-w-0 flex-1 space-y-1">
+                                            <span class="text-[11px] font-extrabold text-rose-700 uppercase tracking-wider block">IEEE PDF eXpress Verified (EDAS Camera-Ready PDF)</span>
+                                            <p class="text-xs text-rose-950 leading-relaxed font-medium">Certified camera-ready PDF file verified through IEEE PDF eXpress and submitted to EDAS final manuscript.</p>
                                         </div>
-                                        <span class="btn text-[11px] sm:text-xs py-1.5 px-2.5 sm:py-2 sm:px-3.5 bg-rose-600 group-hover:bg-rose-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
-                                            Download PDF
+                                        <span class="btn text-[11px] sm:text-xs py-2 px-3.5 bg-rose-600 group-hover:bg-rose-700 text-white font-extrabold shadow-2xs rounded-xl shrink-0 transition-colors duration-200">
+                                            Download
                                         </span>
                                     </a>
                                 @endif
@@ -287,15 +286,10 @@
                                             </span>
                                         </div>
 
-                                        {{-- Editor Revision Note --}}
+                                        {{-- Editor Revision Note: shown only when not passed --}}
                                         @if(!$res?->is_checked && $res?->note)
                                             <div class="space-y-0.5">
                                                 <span class="text-[10px] font-black uppercase tracking-wider text-slate-700 block">Editor's Revision Note</span>
-                                                <p class="text-[11px] font-medium text-slate-800 leading-relaxed break-words">{{ $res->note }}</p>
-                                            </div>
-                                        @elseif($res?->note)
-                                            <div class="space-y-0.5">
-                                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-700 block">Editor Note</span>
                                                 <p class="text-[11px] font-medium text-slate-800 leading-relaxed break-words">{{ $res->note }}</p>
                                             </div>
                                         @endif
