@@ -599,23 +599,21 @@
 
                                  <!-- Final Page Count Card (Shown when allPassed is true) -->
                                 <template x-if="allPassed">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3.5 text-xs mb-3">
-                                        <div>
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-xs mb-3 shadow-2xs">
+                                        <div class="space-y-2 rounded-xl bg-white border border-slate-200 p-3.5">
                                         <label class="form-label text-xs font-bold text-emerald-950 flex items-center justify-between mb-1">
                                             <span>Final Page Count (Camera-Ready / Post-Editorial Edit) <span class="text-rose-600 font-black">*</span></span>
                                             @if($submission->initial_page_count)
                                                 <span class="text-[11px] font-semibold text-emerald-800">Initial: {{ $submission->initial_page_count }} pp</span>
                                             @endif
                                         </label>
-                                        <input id="final-page-count" type="number" min="1" max="500" required class="form-input text-xs bg-white border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Final camera-ready page count)" :disabled="!isEditorialActive">
-                                        <small class="text-[11px] text-emerald-800 font-medium mt-1 block">⚠️ Mandatory: Enter the final manuscript page count after editorial formatting before approving &amp; sending to Reviewer.</small>
+                                        <input id="final-page-count" type="number" min="1" max="500" required class="form-input text-xs" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="Enter the final manuscript page count after editorial formatting" :disabled="!isEditorialActive">
                                         </div>
-                                        <div class="space-y-2 border-t md:border-t-0 md:border-l border-emerald-200 pt-3 md:pt-0 md:pl-3">
-                                            <label class="form-label text-xs font-bold text-emerald-950">IEEE PDF eXpress File <span class="text-rose-600">*</span></label>
-                                            @if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="text-[11px] font-bold text-rose-700 hover:underline">Download current file</a>@endif
+                                        <div class="space-y-2 rounded-xl bg-white border border-slate-200 p-3.5">
+                                            <div class="flex items-center justify-between gap-2"><label class="form-label text-xs font-bold text-navy mb-0">IEEE PDF eXpress File <span class="text-rose-600">*</span></label>@if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="text-[11px] font-bold text-navy hover:text-orange hover:underline">Download current file</a>@endif</div>
                                             <input type="file" name="pdf_express_file" form="pdf-express-form" accept="application/pdf" class="form-input text-xs bg-white" :disabled="!isEditorialActive" {{ $submission->hasPdfExpress() ? '' : 'required' }}>
-                                            <button type="submit" form="pdf-express-form" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
-                                            @if($submission->pdf_express_uploaded_at)<p class="text-[11px] text-emerald-800">Last uploaded: {{ $submission->pdf_express_uploaded_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>@endif
+                                            <button type="submit" form="pdf-express-form" :disabled="!isEditorialActive" class="btn btn-primary text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
+                                            @if($submission->pdf_express_uploaded_at)<p class="text-[11px] text-muted">Last uploaded: {{ $submission->pdf_express_uploaded_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>@endif
                                         </div>
                                     </div>
                                 </template>
@@ -709,21 +707,23 @@
             <details class="card overflow-hidden max-w-full min-w-0" id="pdfexpress-edas-accordion">
                 <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
                     <div class="min-w-0">
-                        <h2 class="text-sm sm:text-base font-black text-navy">IEEE PDF eXpress &amp; EDAS Management</h2>
-                        <p class="text-[11px] text-muted font-normal truncate">Reviewer PDF compliance status and EDAS upload error details.</p>
+                        <h2 class="text-sm sm:text-base font-black text-navy">EDAS Management</h2>
+                        <p class="text-[11px] text-muted font-normal truncate">EDAS upload status</p>
                     </div>
                     <div class="flex items-center gap-3 shrink-0" id="pdf-express-badge-container">
-                        @if(($submission->pdf_express_status ?? '') === 'passed')
+                        @if($submission->status === \App\Enums\SubmissionStatus::Done && !empty($submission->edas_warnings))
+                            <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-800 border border-amber-300">Uploaded to EDAS with warnings</span>
+                        @elseif($submission->status === \App\Enums\SubmissionStatus::Done)
                             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-800 border border-emerald-300">
-                                PDF eXpress: Passed
+                                Uploaded to EDAS without warnings
                             </span>
-                        @elseif(($submission->pdf_express_status ?? '') === 'failed')
+                        @elseif($submission->edas_error_note)
                             <span class="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-black text-rose-800 border border-rose-300">
-                                PDF eXpress: Failed
+                                EDAS upload error
                             </span>
                         @else
                             <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-800 border border-amber-300">
-                                PDF eXpress: Pending
+                                Upload to EDAS: Pending
                             </span>
                         @endif
                         <span class="text-xs text-muted">▼</span>
@@ -732,9 +732,9 @@
 
                 <div class="p-4 sm:p-6 bg-white space-y-4">
                     @if($submission->hasPdfExpress())
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5">
-                            <div><p class="text-xs font-extrabold text-emerald-950">IEEE PDF eXpress File</p><p class="text-[11px] text-emerald-800">Available to all staff members with access to this paper.</p></div>
-                            <a href="{{ route('submissions.pdf-express.download', $submission) }}" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs shrink-0">Download PDF eXpress File</a>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                            <div><p class="text-xs font-extrabold text-navy">IEEE PDF eXpress File</p></div>
+                            <a href="{{ route('submissions.pdf-express.download', $submission) }}" class="btn btn-primary text-xs shrink-0">Download PDF eXpress File</a>
                         </div>
                     @endif
                     @can('reviewerReview', $submission)

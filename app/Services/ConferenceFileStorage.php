@@ -101,7 +101,7 @@ class ConferenceFileStorage
     {
         $file = new FileVersion([
             'disk' => $attributes['disk'], 'storage_path' => $attributes['storage_path'], 'original_name' => $downloadName,
-            'external_id' => $attributes['external_id'] ?? null, 'external_url' => $attributes['external_url'] ?? null,
+            'external_id' => $attributes['external_id'] ?? null,
         ]);
         $file->setRelation('submission', new Submission(['conference_id' => $conference->id]));
         $file->submission->setRelation('conference', $conference);
