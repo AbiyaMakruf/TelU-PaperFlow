@@ -27,6 +27,7 @@ class Submission extends Model
         'submitted_at', 'validated_at', 'completed_at', 'edas_reference', 'edas_notes', 'lock_version',
         'deadline_at', 'edas_submitted_at', 'edas_submitted_by', 'edas_approved_at', 'edas_approved_by',
         'pdf_express_status', 'edas_error_note', 'revision_substatus',
+        'pdf_express_disk', 'pdf_express_storage_path', 'pdf_express_original_name', 'pdf_express_mime_type', 'pdf_express_size', 'pdf_express_checksum', 'pdf_express_external_provider', 'pdf_express_external_id', 'pdf_express_external_url', 'pdf_express_uploaded_at', 'pdf_express_uploaded_by', 'edas_warnings',
     ];
 
     protected $hidden = ['author_token_hash', 'author_token_encrypted'];
@@ -45,6 +46,7 @@ class Submission extends Model
             'validated_at' => 'datetime',
             'completed_at' => 'datetime',
             'deadline_at' => 'datetime', 'edas_submitted_at' => 'datetime', 'edas_approved_at' => 'datetime',
+            'pdf_express_uploaded_at' => 'datetime', 'edas_warnings' => 'array',
         ];
     }
 
@@ -73,6 +75,16 @@ class Submission extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewer_id');
+    }
+
+    public function pdfExpressUploader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'pdf_express_uploaded_by');
+    }
+
+    public function hasPdfExpress(): bool
+    {
+        return filled($this->pdf_express_storage_path);
     }
 
     public function getSafeAuthorToken(): ?string
@@ -130,7 +142,9 @@ class Submission extends Model
 
     public function files(): HasMany
     {
-        return $this->hasMany(FileVersion::class)->orderByDesc('version_number');
+        return $this->hasMany(FileVersion::class)->where(function ($query) {
+            $query->whereNull('file_category')->orWhere('file_category', '!=', 'camera_ready_pdf');
+        })->orderByDesc('version_number');
     }
 
     public function reviewCycles(): HasMany

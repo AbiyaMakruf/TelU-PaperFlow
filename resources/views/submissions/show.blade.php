@@ -721,6 +721,18 @@
                 </summary>
 
                 <div class="p-4 sm:p-6 bg-white space-y-4">
+                    @can('editorialReview', $submission)
+                        @if($isEditorialActive)
+                            <form method="POST" action="{{ route('submissions.pdf-express.upload', $submission) }}" enctype="multipart/form-data" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+                                @csrf
+                                <div class="flex items-center justify-between gap-3"><div><p class="text-xs font-extrabold text-emerald-950">IEEE PDF eXpress File</p><p class="text-[11px] text-emerald-800">Upload or replace the verified PDF eXpress file. It is available to the Reviewer for EDAS upload.</p></div>
+                                    @if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="btn bg-rose-600 text-white text-[11px] py-1.5 px-3 shrink-0">Download PDF</a>@endif</div>
+                                @if($submission->pdf_express_uploaded_at)<p class="text-[11px] text-emerald-900">Last uploaded: {{ $submission->pdf_express_uploaded_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>@endif
+                                <input type="file" name="pdf_express_file" accept="application/pdf" required class="form-input text-xs bg-white">
+                                <button class="btn bg-emerald-600 hover:bg-emerald-700 text-white text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
+                            </form>
+                        @endif
+                    @endcan
                     @can('reviewerReview', $submission)
                         <div id="pdfexpress-edas-section" class="space-y-4 min-w-0" x-data="{
                             isReviewerActive: {{ json_encode($isReviewerActive) }},
@@ -736,41 +748,16 @@
                             </div>
                             <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" enctype="multipart/form-data" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 min-w-0">
                                 @csrf
-                                <div>
-                                    <label class="form-label text-xs">IEEE PDF eXpress / EDAS Upload Status *</label>
-                                    <select class="form-input text-xs font-bold" name="pdf_express_status" x-model="statusState" :disabled="!isReviewerActive">
-                                        <option value="pending">⏳ Pending Verification</option>
-                                        <option value="passed">✓ Passed &amp; EDAS Uploaded Successfully</option>
-                                        <option value="failed">✕ Failed / EDAS Error Encountered</option>
-                                    </select>
+                                <input type="hidden" name="pdf_express_status" value="passed">
+                                <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-950"><strong>PDF eXpress file received from Editor.</strong> Upload it to EDAS, record any warnings below, then either return the paper or complete it.</div>
+
+                                <div class="space-y-2" x-data="{ warnings: @js(old('edas_warnings', $submission->edas_warnings ?? [''])) }">
+                                    <label class="form-label text-xs">EDAS Warnings (Internal Log)</label>
+                                    <template x-for="(warning, index) in warnings" :key="index"><div class="flex gap-2"><input class="form-input text-xs" name="edas_warnings[]" x-model="warnings[index]" placeholder="Describe an EDAS warning"><button type="button" @click="warnings.splice(index, 1)" class="btn btn-secondary text-xs">Remove</button></div></template>
+                                    <button type="button" @click="warnings.push('')" class="text-xs font-bold text-navy">+ Add warning</button>
                                 </div>
 
-                                <div x-show="statusState === 'passed'" x-cloak style="display: none;" class="space-y-2">
-                                    <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-950 space-y-2 shadow-2xs">
-                                        <div class="flex items-center gap-2 font-extrabold text-xs text-emerald-900">
-                                            <span class="text-base">📄</span>
-                                            <span>IEEE PDF eXpress Camera-Ready PDF File</span>
-                                        </div>
-                                        <p class="text-[11px] text-emerald-800 leading-relaxed font-medium">
-                                            Please upload the final camera-ready PDF file that has passed IEEE PDF eXpress verification and was uploaded to EDAS without errors. Once uploaded, authors will be able to download this verified PDF file directly from their portal.
-                                        </p>
-                                        <div class="pt-1">
-                                            <label class="form-label text-xs font-bold text-emerald-950 mb-1">Upload IEEE PDF eXpress Passed File (PDF format, Max 25 MB)</label>
-                                            <input type="file" name="camera_ready_pdf" accept="application/pdf" class="form-input text-xs bg-white py-2 border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20" :disabled="!isReviewerActive">
-                                        </div>
-                                        @php
-                                            $existingCameraReadyPdf = $submission->files->firstWhere('file_category', 'camera_ready_pdf');
-                                        @endphp
-                                        @if($existingCameraReadyPdf)
-                                            <div class="mt-2 pt-2 border-t border-emerald-200/80 flex items-center justify-between gap-2">
-                                                <span class="text-[11px] font-bold text-emerald-900 truncate">Current File: {{ $existingCameraReadyPdf->original_name }} ({{ number_format($existingCameraReadyPdf->size / 1024, 0) }} KB)</span>
-                                                <a href="{{ route('submissions.files.download', [$submission, $existingCameraReadyPdf]) }}" class="btn text-[11px] py-1 px-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shrink-0 transition">
-                                                    Download PDF
-                                                </a>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
+                                @if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="btn bg-rose-600 text-white text-xs">Download PDF eXpress File</a>@else<p class="text-xs text-rose-700">The Editor has not uploaded a PDF eXpress file yet.</p>@endif
 
                                 <div x-show="statusState === 'failed'" x-cloak style="display: none;">
                                     <div class="flex items-center justify-between mb-1">
@@ -786,16 +773,12 @@
                                 </div>
 
                                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2 border-t border-navy/10" x-show="isReviewerActive">
-                                    <button type="submit" name="action" value="save_status" :disabled="!isReviewerActive" class="btn btn-secondary px-4 py-2 text-xs font-bold w-full sm:w-auto" x-show="statusState === 'pending'">
-                                        Save Reviewer Notes
+                                    <button type="submit" name="action" value="reviewer_changes" :disabled="!isReviewerActive" class="btn bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition">
+                                        Save &amp; Return to Editor
                                     </button>
 
-                                    <button type="submit" name="action" value="reviewer_changes" :disabled="!isReviewerActive" class="btn bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition" x-show="statusState === 'failed'">
-                                        ↩️ Save &amp; Return to Editorial (EDAS Error)
-                                    </button>
-
-                                    <button type="submit" name="action" value="reviewer_approve" :disabled="!isReviewerActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition" x-show="statusState === 'passed'">
-                                        🏁 Mark Uploaded to EDAS (Complete Paper)
+                                    <button type="submit" name="action" value="reviewer_approve" :disabled="!isReviewerActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition">
+                                        Confirm EDAS Upload &amp; Complete Paper
                                     </button>
                                 </div>
                             </form>

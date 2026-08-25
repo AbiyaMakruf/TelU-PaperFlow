@@ -71,7 +71,7 @@
                             $filesInTargetVersion = $submission->files->where('version_number', $targetVersion);
                             $targetManuscript = $filesInTargetVersion->firstWhere('file_category', 'editable_manuscript') ?? $filesInTargetVersion->first();
                             $targetGuidancePdf = $filesInTargetVersion->firstWhere('file_category', 'revision_guidance_pdf');
-                            $cameraReadyPdf = $submission->files->firstWhere('file_category', 'camera_ready_pdf');
+                            $cameraReadyPdf = $submission->status === \App\Enums\SubmissionStatus::Done && $submission->hasPdfExpress();
                             $statusLabel = $isFinalVersion ? 'Final' : 'Latest';
                         @endphp
                         @if($targetManuscript || $cameraReadyPdf)
@@ -114,7 +114,7 @@
 
                                 @if($cameraReadyPdf)
                                     <!-- IEEE PDF eXpress Passed Camera-Ready PDF Download Card (RED BUTTON) -->
-                                    <a href="{{ route('author.files.download', [$token, $cameraReadyPdf]) }}" download="{{ $cameraReadyPdf->original_name }}" class="group p-3.5 sm:p-4 rounded-2xl border border-rose-200/80 bg-rose-50/60 hover:bg-rose-100/80 hover:border-rose-300 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden mt-3 cursor-pointer">
+                                    <a href="{{ route('author.pdf-express.download', $token) }}" class="group p-3.5 sm:p-4 rounded-2xl border border-rose-200/80 bg-rose-50/60 hover:bg-rose-100/80 hover:border-rose-300 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden mt-3 cursor-pointer">
                                         <div class="min-w-0 flex-1 space-y-1">
                                             <span class="text-[11px] font-extrabold text-rose-700 uppercase tracking-wider block">IEEE PDF eXpress Verified</span>
                                             <p class="text-xs text-rose-950 leading-relaxed font-medium">Certified PDF file verified through IEEE PDF eXpress and submitted to EDAS final manuscript.</p>

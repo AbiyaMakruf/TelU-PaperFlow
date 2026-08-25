@@ -504,7 +504,8 @@ class SubmissionController extends Controller
             'pdf_express_status' => ['required', Rule::in(['pending', 'passed', 'failed'])],
             'edas_reference' => ['nullable', 'string', 'max:255'],
             'edas_error_note' => ['nullable', 'string', 'max:5000'],
-            'camera_ready_pdf' => ['nullable', 'file', 'mimes:pdf', 'max:25600'],
+            'edas_warnings' => ['nullable', 'array', 'max:30'],
+            'edas_warnings.*' => ['nullable', 'string', 'max:1000'],
             'action' => ['nullable', 'string', Rule::in(['reviewer_changes', 'reviewer_approve', 'save_status'])],
         ]);
 
@@ -512,36 +513,8 @@ class SubmissionController extends Controller
             'pdf_express_status' => $validated['pdf_express_status'],
             'edas_reference' => $validated['edas_reference'] ?? $submission->edas_reference,
             'edas_error_note' => $validated['edas_error_note'] ?? null,
+            'edas_warnings' => collect($validated['edas_warnings'] ?? [])->filter()->values()->all() ?: null,
         ]);
-
-        if ($request->hasFile('camera_ready_pdf')) {
-            $pdfFile = $request->file('camera_ready_pdf');
-            $version = $submission->files()->max('version_number') ?: 1;
-            $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-camera-ready-'.Str::slug(pathinfo($pdfFile->getClientOriginalName(), PATHINFO_FILENAME)).'.pdf';
-            try {
-                $storedPdf = $storage->put($submission->conference, $pdfFile, $path, $submission->paper_code.'-V'.$version.'-CameraReadyPDF');
-                $submission->files()->create([
-                    'version_number' => $version,
-                    'label' => 'IEEE PDF eXpress Passed Camera-Ready PDF',
-                    'source' => 'reviewer',
-                    'file_category' => 'camera_ready_pdf',
-                    'disk' => $storedPdf['disk'],
-                    'storage_path' => $storedPdf['storage_path'],
-                    'original_name' => $pdfFile->getClientOriginalName(),
-                    'mime_type' => 'application/pdf',
-                    'size' => $pdfFile->getSize(),
-                    'checksum' => hash_file('sha256', $pdfFile->getRealPath()),
-                    'uploaded_by' => $request->user()->id,
-                    'notes' => 'Validated IEEE PDF eXpress camera-ready PDF file uploaded to EDAS.',
-                    'is_final' => true,
-                    'external_provider' => $storedPdf['external_provider'],
-                    'external_id' => $storedPdf['external_id'],
-                    'external_url' => $storedPdf['external_url'],
-                ]);
-            } catch (Throwable $e) {
-                report($e);
-            }
-        }
 
         $action = $validated['action'] ?? null;
 
@@ -625,6 +598,42 @@ class SubmissionController extends Controller
         }
 
         return back()->with('success', 'IEEE PDF eXpress status and EDAS notes updated successfully.');
+    }
+
+    public function uploadPdfExpress(Request $request, Submission $submission, ConferenceFileStorage $storage): RedirectResponse
+    {
+        $this->authorize('editorialReview', $submission);
+        abort_unless($submission->status === SubmissionStatus::EditorialReview, 422);
+        $validated = $request->validate(['pdf_express_file' => ['required', 'file', 'mimes:pdf', 'max:25600']]);
+        $file = $validated['pdf_express_file'];
+        $path = $submission->conference->slug.'/'.$submission->id.'/pdf-express.pdf';
+        $stored = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-pdf-express');
+        $previous = $submission->only(['pdf_express_disk', 'pdf_express_storage_path', 'pdf_express_external_id']);
+        $submission->update([
+            'pdf_express_status' => 'passed', 'pdf_express_disk' => $stored['disk'], 'pdf_express_storage_path' => $stored['storage_path'],
+            'pdf_express_original_name' => $file->getClientOriginalName(), 'pdf_express_mime_type' => 'application/pdf', 'pdf_express_size' => $file->getSize(),
+            'pdf_express_checksum' => hash_file('sha256', $file->getRealPath()), 'pdf_express_external_provider' => $stored['external_provider'],
+            'pdf_express_external_id' => $stored['external_id'], 'pdf_express_external_url' => $stored['external_url'],
+            'pdf_express_uploaded_at' => now(), 'pdf_express_uploaded_by' => $request->user()->id,
+        ]);
+        if (filled($previous['pdf_express_storage_path']) && $previous['pdf_express_storage_path'] !== $stored['storage_path']) {
+            try {
+                $storage->deleteSubmissionPdf($submission->conference, ['disk' => $previous['pdf_express_disk'], 'storage_path' => $previous['pdf_express_storage_path'], 'external_id' => $previous['pdf_express_external_id']]);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+        app(AuditLogger::class)->record('pdf_express_uploaded', $submission, $submission->conference, [], ['uploaded_at' => now()->toIso8601String()]);
+
+        return back()->with('success', 'IEEE PDF eXpress file uploaded successfully.');
+    }
+
+    public function downloadPdfExpress(Submission $submission, ConferenceFileStorage $storage): RedirectResponse|BinaryFileResponse
+    {
+        $this->authorize('view', $submission);
+        abort_unless($submission->hasPdfExpress(), 404);
+
+        return $storage->downloadSubmissionPdf($submission->conference, ['disk' => $submission->pdf_express_disk, 'storage_path' => $submission->pdf_express_storage_path, 'external_id' => $submission->pdf_express_external_id, 'external_url' => $submission->pdf_express_external_url], Str::slug($submission->paper_id).'-pdf-express.pdf');
     }
 
     public function preview(Request $request, Submission $submission, FileVersion $file, ConferenceFileStorage $storage): View|BinaryFileResponse
@@ -1162,6 +1171,9 @@ class SubmissionController extends Controller
     {
         if (! $submission->reviewer_id) {
             throw new DomainException('A Reviewer PIC must be assigned before sending the paper to Reviewer.');
+        }
+        if (! $submission->hasPdfExpress()) {
+            throw new DomainException('An IEEE PDF eXpress file must be uploaded before sending the paper to Reviewer.');
         }
         $this->ensureChecklistComplete($submission, ReviewStage::Editorial);
         $workflow->transition($submission, SubmissionStatus::ReviewerReview, $request->user(), $note);

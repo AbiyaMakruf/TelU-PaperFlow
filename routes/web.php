@@ -124,6 +124,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/papers/{submission}/correction', [SubmissionController::class, 'requestCorrection'])->name('submissions.correction');
         Route::post('/papers/{submission}/assign', [SubmissionController::class, 'assign'])->name('submissions.assign');
         Route::post('/papers/{submission}/edas-status', [SubmissionController::class, 'updateEdasStatus'])->name('submissions.edas-status');
+        Route::post('/papers/{submission}/pdf-express', [SubmissionController::class, 'uploadPdfExpress'])->name('submissions.pdf-express.upload');
+        Route::get('/papers/{submission}/pdf-express', [SubmissionController::class, 'downloadPdfExpress'])->middleware('throttle:file-download')->name('submissions.pdf-express.download');
         Route::put('/papers/{submission}/checklist/{stage}', [SubmissionController::class, 'saveChecklist'])->name('submissions.checklist');
         Route::post('/papers/{submission}/advance', [SubmissionController::class, 'advance'])->name('submissions.advance');
         Route::post('/papers/{submission}/feedback', [SubmissionController::class, 'addFeedback'])->middleware('throttle:editorial-email')->name('submissions.feedback');
@@ -208,6 +210,7 @@ Route::prefix('submission')->group(function () {
     Route::post('/access/{token}/revision', [AuthorPortalController::class, 'uploadRevision'])->middleware('throttle:author-revision')->name('author.revision');
     Route::post('/access/{token}/uploads/{attempt}/retry', [AuthorPortalController::class, 'retryUpload'])->middleware('throttle:author-revision')->name('author.uploads.retry');
     Route::get('/access/{token}/files/{file}', [AuthorPortalController::class, 'download'])->name('author.files.download');
+    Route::get('/access/{token}/pdf-express', [AuthorPortalController::class, 'downloadPdfExpress'])->name('author.pdf-express.download');
 });
 
 Route::get('/{conference:slug}/submit', [PublicSubmissionController::class, 'show'])->name('public.submission.show');

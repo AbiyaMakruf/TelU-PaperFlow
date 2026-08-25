@@ -46,6 +46,7 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($editor)->put(route('submissions.checklist', [$submission, ReviewStage::Editorial->value]), [
             'items' => [$editorialItem->id => ['checked' => '1', 'note' => 'Sesuai']],
         ])->assertRedirect();
+        $this->uploadPdfExpress($editor, $submission);
         $this->actingAs($editor)->post(route('submissions.advance', $submission), [
             'action' => 'send_reviewer',
             'final_page_count' => 6,
@@ -102,13 +103,14 @@ class EditorialWorkflowTest extends TestCase
         $this->actingAs($editor)->put(route('submissions.checklist', [$submission, 'editorial']), [
             'items' => [$editorialItem->id => ['checked' => '1']],
         ]);
+        $this->uploadPdfExpress($editor, $submission);
         $this->actingAs($editor)->post(route('submissions.advance', $submission), ['action' => 'send_reviewer', 'final_page_count' => 6]);
 
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), ['action' => 'reviewer_approve']);
         $this->assertSame(SubmissionStatus::Done, $submission->fresh()->status);
     }
 
-    public function test_reviewer_can_upload_camera_ready_pdf_when_passed_and_author_can_see_download_button(): void
+    public function test_editor_can_upload_pdf_express_and_author_sees_it_only_after_completion(): void
     {
         Storage::fake('private');
         [, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
@@ -118,22 +120,23 @@ class EditorialWorkflowTest extends TestCase
 
         $pdf = UploadedFile::fake()->create('camera_ready_final.pdf', 500, 'application/pdf');
 
-        $this->actingAs($reviewer)->post(route('submissions.edas-status', $submission), [
-            'pdf_express_status' => 'passed',
-            'camera_ready_pdf' => $pdf,
-        ])->assertRedirect();
-
-        $this->assertDatabaseHas('file_versions', [
-            'submission_id' => $submission->id,
-            'file_category' => 'camera_ready_pdf',
-            'original_name' => 'camera_ready_final.pdf',
+        $this->actingAs($editor)->post(route('submissions.pdf-express.upload', $submission), ['pdf_express_file' => $pdf])->assertRedirect();
+        $this->assertDatabaseHas('submissions', [
+            'id' => $submission->id,
+            'pdf_express_original_name' => 'camera_ready_final.pdf',
         ]);
 
         $token = $submission->ensureValidAuthorToken();
         $response = $this->get('/submission/access/'.$token);
         $response->assertOk();
-        $response->assertSee('IEEE PDF eXpress Verified');
-        $response->assertSee('Download');
+        $response->assertDontSee('IEEE PDF eXpress Verified');
+    }
+
+    private function uploadPdfExpress(User $editor, Submission $submission): void
+    {
+        $this->actingAs($editor)->post(route('submissions.pdf-express.upload', $submission), [
+            'pdf_express_file' => UploadedFile::fake()->create('pdf-express.pdf', 500, 'application/pdf'),
+        ])->assertRedirect();
     }
 
     public function test_conference_admin_can_export_visible_papers_as_csv(): void

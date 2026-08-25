@@ -124,6 +124,14 @@ class AuthorPortalController extends Controller
         return $storage->download($file);
     }
 
+    public function downloadPdfExpress(string $token, ConferenceFileStorage $storage): RedirectResponse|BinaryFileResponse
+    {
+        $submission = $this->submissionFor($token);
+        abort_unless($submission->status === SubmissionStatus::Done && $submission->hasPdfExpress(), 404);
+
+        return $storage->downloadSubmissionPdf($submission->conference, ['disk' => $submission->pdf_express_disk, 'storage_path' => $submission->pdf_express_storage_path, 'external_id' => $submission->pdf_express_external_id, 'external_url' => $submission->pdf_express_external_url], Str::slug($submission->paper_id).'-pdf-express.pdf');
+    }
+
     public function retryUpload(string $token, UploadAttempt $attempt, ConferenceFileStorage $storage): RedirectResponse
     {
         $submission = $this->submissionFor($token);

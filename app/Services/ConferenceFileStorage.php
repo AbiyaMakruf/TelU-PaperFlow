@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Conference;
 use App\Models\FileVersion;
+use App\Models\Submission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -93,6 +94,30 @@ class ConferenceFileStorage
         }
 
         return response()->download($this->privateStorage->localPath($file->storage_path), $file->original_name);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function downloadSubmissionPdf(Conference $conference, array $attributes, string $downloadName): RedirectResponse|BinaryFileResponse
+    {
+        $file = new FileVersion([
+            'disk' => $attributes['disk'], 'storage_path' => $attributes['storage_path'], 'original_name' => $downloadName,
+            'external_id' => $attributes['external_id'] ?? null, 'external_url' => $attributes['external_url'] ?? null,
+        ]);
+        $file->setRelation('submission', new Submission(['conference_id' => $conference->id]));
+        $file->submission->setRelation('conference', $conference);
+
+        return $this->download($file);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function deleteSubmissionPdf(Conference $conference, array $attributes): void
+    {
+        if (($attributes['disk'] ?? null) === 'google_drive') {
+            $this->googleDrive->delete($conference, $attributes['external_id'] ?? $attributes['storage_path']);
+
+            return;
+        }
+        $this->privateStorage->delete($attributes['storage_path']);
     }
 
     /** @return array{path:string,cleanup:bool} */

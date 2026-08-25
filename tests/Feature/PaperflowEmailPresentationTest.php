@@ -15,6 +15,7 @@ use App\Notifications\PaperflowResetPassword;
 use App\Services\ConferenceProvisioner;
 use App\Services\SubmissionWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -101,6 +102,9 @@ class PaperflowEmailPresentationTest extends TestCase
         foreach ($checklist->items as $item) {
             ReviewItemResult::create(['review_cycle_id' => $edCycle->id, 'checklist_item_id' => $item->id, 'is_checked' => true]);
         }
+        $this->actingAs($editor)->post(route('submissions.pdf-express.upload', $submission), [
+            'pdf_express_file' => UploadedFile::fake()->create('pdf-express.pdf', 500, 'application/pdf'),
+        ]);
 
         $this->actingAs($editor)->post(route('submissions.advance', $submission), [
             'action' => 'send_reviewer',

@@ -178,6 +178,13 @@ class GoogleDriveStorage
         }
     }
 
+    public function delete(Conference $conference, string $fileId): void
+    {
+        if ($this->connected($conference)) {
+            $this->client($conference)->delete("https://www.googleapis.com/drive/v3/files/{$fileId}", ['supportsAllDrives' => 'true'])->throw();
+        }
+    }
+
     private function resolveFolderId(Conference $conference): string
     {
         $name = $this->folderName($conference);
