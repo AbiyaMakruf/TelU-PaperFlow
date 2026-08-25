@@ -367,19 +367,14 @@
                         }
                     }" id="editorial-checklist-container" class="space-y-6">
                         <details class="card overflow-hidden max-w-full min-w-0" @if($submission->status === \App\Enums\SubmissionStatus::EditorialReview) open @endif>
-                            <summary class="cursor-pointer list-none p-4 sm:p-6 text-base sm:text-lg font-black text-navy flex items-center justify-between select-none">
-                                <span>Editorial Compliance Checklist (16 IEEE Rules)</span>
-                                <span class="text-orange font-bold text-xl">+</span>
+                            <summary class="cursor-pointer list-none p-4 sm:p-6 text-base sm:text-lg font-black text-navy flex items-center justify-between gap-3 select-none">
+                                <div class="min-w-0"><span>Editorial Compliance Checklist</span>@if(! $isEditorialActive)<p class="mt-1 text-[11px] font-semibold text-amber-700">Read only — available during Editorial Review in Progress.</p>@endif</div>
+                                <span class="text-orange font-bold text-xl shrink-0">+</span>
                             </summary>
                             <form id="pdf-express-form" method="POST" action="{{ route('submissions.pdf-express.upload', $submission) }}" enctype="multipart/form-data">@csrf</form>
                             <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 border-t border-navy/10 p-4 sm:p-6" id="checklist-form-{{ $stage->value }}">
                                 @csrf
                                 @method('PUT')
-
-                                <div class="editorial-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isEditorialActive ? 'display: none;' : '' }}">
-                                    <span class="text-base shrink-0">ℹ️</span>
-                                    <span>Editorial checklist is in <strong>Read Only</strong> mode because current paper status is <strong class="editorial-status-name">{{ $submission->status->label() }}</strong>. Checklist can only be modified during Editorial Review in Progress.</span>
-                                </div>
 
                                 <!-- Quick Batch Action Buttons (Check All / Uncheck All) -->
                                 <div class="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-xl border border-navy/10">
@@ -599,7 +594,7 @@
 
                                  <!-- Final Page Count Card (Shown when allPassed is true) -->
                                 <template x-if="allPassed">
-                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-xs mb-3 shadow-2xs">
+                                    <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 border border-slate-200 p-3 sm:p-4 text-xs mb-3 shadow-2xs">
                                         <div class="space-y-2 rounded-xl bg-white border border-slate-200 p-3.5">
                                         <label class="form-label text-xs font-bold text-emerald-950 flex items-center justify-between mb-1">
                                             <span>Final Page Count (Camera-Ready / Post-Editorial Edit) <span class="text-rose-600 font-black">*</span></span>
@@ -611,8 +606,8 @@
                                         </div>
                                         <div class="space-y-2 rounded-xl bg-white border border-slate-200 p-3.5">
                                             <div class="flex items-center justify-between gap-2"><label class="form-label text-xs font-bold text-navy mb-0">IEEE PDF eXpress File <span class="text-rose-600">*</span></label>@if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="text-[11px] font-bold text-navy hover:text-orange hover:underline">Download current file</a>@endif</div>
-                                            <input type="file" name="pdf_express_file" form="pdf-express-form" accept="application/pdf" class="form-input text-xs bg-white" :disabled="!isEditorialActive" {{ $submission->hasPdfExpress() ? '' : 'required' }}>
-                                            <button type="submit" form="pdf-express-form" :disabled="!isEditorialActive" class="btn btn-primary text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
+                                            <input type="file" name="pdf_express_file" form="pdf-express-form" accept="application/pdf" class="form-input h-10 w-full px-2 text-xs leading-none bg-white" :disabled="!isEditorialActive" {{ $submission->hasPdfExpress() ? '' : 'required' }}>
+                                            <button type="submit" form="pdf-express-form" :disabled="!isEditorialActive" class="btn btn-primary w-full text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
                                             @if($submission->pdf_express_uploaded_at)<p class="text-[11px] text-muted">Last uploaded: {{ $submission->pdf_express_uploaded_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>@endif
                                         </div>
                                     </div>
@@ -708,9 +703,9 @@
                 <summary class="flex cursor-pointer items-center justify-between p-4 sm:p-5 font-black text-navy bg-slate-50 hover:bg-slate-100 transition select-none border-b border-navy/8">
                     <div class="min-w-0">
                         <h2 class="text-sm sm:text-base font-black text-navy">EDAS Management</h2>
-                        <p class="text-[11px] text-muted font-normal truncate">EDAS upload status</p>
+                        <p class="text-[11px] {{ $isReviewerActive ? 'text-muted' : 'text-amber-700 font-semibold' }} font-normal truncate">{{ $isReviewerActive ? 'EDAS upload status' : 'EDAS management is read only at the current workflow stage.' }}</p>
                     </div>
-                    <div class="flex items-center gap-3 shrink-0" id="pdf-express-badge-container">
+                    <div class="flex items-center gap-2 shrink-0" id="pdf-express-badge-container">
                         @if($submission->status === \App\Enums\SubmissionStatus::Done && !empty($submission->edas_warnings))
                             <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-800 border border-amber-300">Uploaded to EDAS with warnings</span>
                         @elseif($submission->status === \App\Enums\SubmissionStatus::Done)
@@ -746,10 +741,6 @@
                                 $refs.noteInput.value = current ? current + '\n' + msg : msg;
                             }
                         }">
-                            <div class="pdfexpress-read-only-banner rounded-xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-900 flex items-center gap-2 font-bold select-none" style="{{ $isReviewerActive ? 'display: none;' : '' }}">
-                                <span class="text-base shrink-0">ℹ️</span>
-                                <span>PDF eXpress &amp; EDAS settings are in <strong>Read Only</strong> mode because current paper status is <strong class="pdfexpress-status-name">{{ $submission->status->label() }}</strong>.</span>
-                            </div>
                             <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" enctype="multipart/form-data" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 min-w-0">
                                 @csrf
                                 <input type="hidden" name="pdf_express_status" value="passed">
@@ -761,7 +752,7 @@
                                     <button type="button" @click="warnings.push('')" class="text-xs font-bold text-navy">+ Add warning</button>
                                 </div>
 
-                                @if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="btn bg-rose-600 text-white text-xs">Download PDF eXpress File</a>@else<p class="text-xs text-rose-700">The Editor has not uploaded a PDF eXpress file yet.</p>@endif
+                                @if(! $submission->hasPdfExpress())<p class="text-xs text-rose-700">The Editor has not uploaded a PDF eXpress file yet.</p>@endif
 
                                 <div x-show="statusState === 'failed'" x-cloak style="display: none;">
                                     <div class="flex items-center justify-between mb-1">
