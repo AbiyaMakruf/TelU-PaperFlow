@@ -133,7 +133,7 @@
                                             </svg>
                                             <div class="space-y-1">
                                                 <p class="font-extrabold text-emerald-950 text-xs">Editorial Process Complete &amp; EDAS Final Manuscript Uploaded</p>
-                                                <p class="text-emerald-900 leading-relaxed font-medium">The editorial review for your manuscript is complete and your paper complies with all formatting guidelines. The editorial team has uploaded the final camera-ready manuscript to the EDAS system on your behalf. If you notice any discrepancies, please contact your assigned editor using the contact details provided at least 1 week prior to the conference date.</p>
+                                                <p class="text-emerald-900 leading-relaxed font-medium">The editorial review for your manuscript is complete and your paper complies with all formatting guidelines. The editorial team has uploaded the final camera-ready manuscript to the EDAS system on your behalf. If you notice any discrepancies, please contact your assigned editor using the contact details provided at least one week prior to the conference date.</p>
                                             </div>
                                         </div>
                                     </div>
