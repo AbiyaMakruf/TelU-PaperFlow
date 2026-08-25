@@ -77,14 +77,28 @@ Do not update `submissions.status` directly when a transition should be validate
 
 ## Key Feature Capabilities
 
-- **GCP-Style Workspace Selector**: Header & draw- **Interactive Chart.js Dashboard Analytics**: 3 interactive visual charts on the dashboard: 14-day continuous submission trend line chart with smooth gradient area fill, paper status ratio doughnut chart, and PIC Editor/Reviewer workload & turnaround bar chart.
+- **Interactive Chart.js Dashboard Analytics**: 3 interactive visual charts on the dashboard: 14-day continuous submission trend line chart with smooth gradient area fill, paper status ratio doughnut chart, and PIC Editor/Reviewer workload & turnaround bar chart.
 - **Ultrawide & 34-Inch Monitor Layout Optimization**: Constrained main layout container (`max-w-[1600px]`) and `.container-page` / landing page (`max-w-[1400px]`) to ensure balanced, centered presentation on 34-inch ultrawide (3440px / 21:9) displays without horizontal stretching.
 - **Staff Author-Portal Preview Action ("Buka Portal Author")**: Direct header action button on paper detail page allowing staff to inspect the exact portal view seen by authors (`/submission/access/{token}`).
 - **Staff Editable Submission Details & Original Identifier Preservation**: Superadmin and Conference Admin can edit submission metadata (Paper ID, Title, Primary Author Name/Email/Phone, Manuscript Format, Initial & Final Page Counts) on the paper detail page (`/papers/{id}`). Original paper code, title, and email (`original_paper_code`, `original_title`, `original_author_email`) are preserved in database migrations to ensure subsequent CSV imports or Webhook re-submissions match existing papers seamlessly even after manual Paper ID modification.
 - **Paper Detail Accordion Sections**: Converted Catatan Internal, Feedback & Komunikasi Author, and Versioning File cards into collapsible `<details>` accordions with `<summary>` headers to keep paper detail pages clean and compact.
 - **Initial & Final Page Count Tracking**: Captures initial page count during PIC assignment and final page count during editorial approval, displaying side-by-side differential metrics (`Awal: 8 hal → Final: 6 hal (-2 hal)`).
-- **Conference-Scoped EDAS Reconciliation**: Scoped to conference sub-navigation (`/conferences/{id}/edas-reconciliation`) with simplified CSV column mapping requiring only Paper ID (mandatory) and Paper Title (optional).
-- **Manual Author Portal Link Email Action**: Dedicated "Send Author Portal Link" button and tracking column in paper list with bulk action capability.
+- **Conference-Scoped EDAS Reconciliation & PDF Report Export**: Scoped to conference sub-navigation (`/conferences/{id}/edas-reconciliation`) with database-persisted reconciliation data, live refresh, tolerant ID matching, and export dropdown supporting both CSV and formatted PDF reports.
+- **Paper List Quick Workflow Presets & Instant Live Search**:
+  - Emoji-free preset tabs (`All Papers`, `My Assigned Tasks`, `Waiting Author Revision`, `Ready for EDAS`) calculated in a single aggregated SQL count query to prevent $N+1$ query count regressions.
+  - Instant debounced live search swapping DOM table/pagination containers via `DOMParser()` without full page reload, built with a Flex Input Group structure preventing icon and text overlap.
+  - Aligned `Per page:` dropdown side-by-side with the search bar in the top toolbar.
+- **Manual Author Portal Link Action & Send Tracking**: Dedicated "Send Author Portal Link" action button with confirmation modal, status indicator dots, and Asia/Jakarta (GMT+7) timestamp tooltips with bulk action support.
+- **Simplified Workflow Status Label (`Completed`)**: Streamlined the terminal approval status label from `Completed / Done` to `Completed` across all badges, notifications, and portal interfaces.
+- **Author Portal Presentation & Editorial Completion Banner**:
+  - Cleaned Submission Details card by removing redundant subheaders and replacing technical file metadata (filename/size) with clear, professional English explanations.
+  - Standardized all card download buttons to `Download` with forced attachment downloading (`Content-Disposition: attachment`).
+  - Added an Editorial Completion Notice banner upon workflow completion informing authors that the camera-ready manuscript was verified and submitted to EDAS on their behalf, with guidance to contact the assigned editor at least one week prior to the conference if discrepancies exist.
+  - Added explicit disabled helper text (`Edit locked (workflow completed)`) when paper details editing is disabled.
+  - Renamed editorial contact card to `Assigned Editor` with a full-width `Contact Editor via WhatsApp` button.
+  - Automatically hides editor revision notes on compliant items (`✓ Passed`) while keeping detailed feedback on revision-required items.
+- **Supabase Storage Migration CLI Tool (`paperflow:migrate-storage`)**: Batch migration artisan command (`php artisan paperflow:migrate-storage {--dry-run} {--batch=50}`) to migrate local files and upload attempts to Supabase Storage with bucket health verification.
+- **Database Backup & Checkpoint Restore Tool**: Superadmin database backup export and JSON checkpoint restore commands (`php artisan paperflow:backup` / `paperflow:restore`).
 - **Direct External URL Download Support**: CSV / Webhook imported papers with external URLs (e.g. Google Drive/Sheets) download/redirect directly without requiring Google Drive OAuth setup.
 - **Updated Workflow Status Labels**: Status labels updated for better editorial clarity (`Waiting for Editor Assignment`, `Editorial Review in Progress`, `Pre-EDAS Technical Review`).
 - **GCP-Style Workspace Selector**: Header & drawer active conference selector scoping `VisibleSubmissions` to `session('active_conference_id')`.
@@ -315,8 +329,8 @@ php artisan migrate --force
 
 Current baseline:
 
-- **100 tests**
-- **486 assertions**
+- **127 tests**
+- **646 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)
