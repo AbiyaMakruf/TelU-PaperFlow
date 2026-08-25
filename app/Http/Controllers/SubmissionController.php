@@ -633,7 +633,7 @@ class SubmissionController extends Controller
         $this->authorize('view', $submission);
         abort_unless($submission->hasPdfExpress(), 404);
 
-        return $storage->downloadSubmissionPdf($submission->conference, ['disk' => $submission->pdf_express_disk, 'storage_path' => $submission->pdf_express_storage_path, 'external_id' => $submission->pdf_express_external_id, 'external_url' => $submission->pdf_express_external_url], Str::slug($submission->paper_id).'-pdf-express.pdf');
+        return $storage->downloadSubmissionPdf($submission->conference, $submission->pdfExpressStorageData(), Str::slug($submission->paper_id).'-pdf-express.pdf');
     }
 
     public function preview(Request $request, Submission $submission, FileVersion $file, ConferenceFileStorage $storage): View|BinaryFileResponse

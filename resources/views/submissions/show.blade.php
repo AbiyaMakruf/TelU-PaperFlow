@@ -371,6 +371,7 @@
                                 <span>Editorial Compliance Checklist (16 IEEE Rules)</span>
                                 <span class="text-orange font-bold text-xl">+</span>
                             </summary>
+                            <form id="pdf-express-form" method="POST" action="{{ route('submissions.pdf-express.upload', $submission) }}" enctype="multipart/form-data">@csrf</form>
                             <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 border-t border-navy/10 p-4 sm:p-6" id="checklist-form-{{ $stage->value }}">
                                 @csrf
                                 @method('PUT')
@@ -598,15 +599,24 @@
 
                                  <!-- Final Page Count Card (Shown when allPassed is true) -->
                                 <template x-if="allPassed">
-                                    <div class="rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3.5 text-xs mb-3">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3.5 text-xs mb-3">
+                                        <div>
                                         <label class="form-label text-xs font-bold text-emerald-950 flex items-center justify-between mb-1">
                                             <span>Final Page Count (Camera-Ready / Post-Editorial Edit) <span class="text-rose-600 font-black">*</span></span>
                                             @if($submission->initial_page_count)
                                                 <span class="text-[11px] font-semibold text-emerald-800">Initial: {{ $submission->initial_page_count }} pp</span>
                                             @endif
                                         </label>
-                                        <input type="number" min="1" max="500" required class="form-input text-xs bg-white border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Final camera-ready page count)" :disabled="!isEditorialActive">
+                                        <input id="final-page-count" type="number" min="1" max="500" required class="form-input text-xs bg-white border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="e.g. 6 (Final camera-ready page count)" :disabled="!isEditorialActive">
                                         <small class="text-[11px] text-emerald-800 font-medium mt-1 block">⚠️ Mandatory: Enter the final manuscript page count after editorial formatting before approving &amp; sending to Reviewer.</small>
+                                        </div>
+                                        <div class="space-y-2 border-t md:border-t-0 md:border-l border-emerald-200 pt-3 md:pt-0 md:pl-3">
+                                            <label class="form-label text-xs font-bold text-emerald-950">IEEE PDF eXpress File <span class="text-rose-600">*</span></label>
+                                            @if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="text-[11px] font-bold text-rose-700 hover:underline">Download current file</a>@endif
+                                            <input type="file" name="pdf_express_file" form="pdf-express-form" accept="application/pdf" class="form-input text-xs bg-white" :disabled="!isEditorialActive" {{ $submission->hasPdfExpress() ? '' : 'required' }}>
+                                            <button type="submit" form="pdf-express-form" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
+                                            @if($submission->pdf_express_uploaded_at)<p class="text-[11px] text-emerald-800">Last uploaded: {{ $submission->pdf_express_uploaded_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>@endif
+                                        </div>
                                     </div>
                                 </template>
 
@@ -630,7 +640,7 @@
                                     <template x-if="allPassed">
                                         <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
                                             <template x-if="hasReviewer">
-                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive || !document.getElementById('final-page-count').value || !{{ $submission->hasPdfExpress() ? 'true' : 'false' }}" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                                                     ✓ Approve &amp; Send to Reviewer
                                                 </button>
                                             </template>
@@ -721,18 +731,12 @@
                 </summary>
 
                 <div class="p-4 sm:p-6 bg-white space-y-4">
-                    @can('editorialReview', $submission)
-                        @if($isEditorialActive)
-                            <form method="POST" action="{{ route('submissions.pdf-express.upload', $submission) }}" enctype="multipart/form-data" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
-                                @csrf
-                                <div class="flex items-center justify-between gap-3"><div><p class="text-xs font-extrabold text-emerald-950">IEEE PDF eXpress File</p><p class="text-[11px] text-emerald-800">Upload or replace the verified PDF eXpress file. It is available to the Reviewer for EDAS upload.</p></div>
-                                    @if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="btn bg-rose-600 text-white text-[11px] py-1.5 px-3 shrink-0">Download PDF</a>@endif</div>
-                                @if($submission->pdf_express_uploaded_at)<p class="text-[11px] text-emerald-900">Last uploaded: {{ $submission->pdf_express_uploaded_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>@endif
-                                <input type="file" name="pdf_express_file" accept="application/pdf" required class="form-input text-xs bg-white">
-                                <button class="btn bg-emerald-600 hover:bg-emerald-700 text-white text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
-                            </form>
-                        @endif
-                    @endcan
+                    @if($submission->hasPdfExpress())
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5">
+                            <div><p class="text-xs font-extrabold text-emerald-950">IEEE PDF eXpress File</p><p class="text-[11px] text-emerald-800">Available to all staff members with access to this paper.</p></div>
+                            <a href="{{ route('submissions.pdf-express.download', $submission) }}" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs shrink-0">Download PDF eXpress File</a>
+                        </div>
+                    @endif
                     @can('reviewerReview', $submission)
                         <div id="pdfexpress-edas-section" class="space-y-4 min-w-0" x-data="{
                             isReviewerActive: {{ json_encode($isReviewerActive) }},
@@ -1698,5 +1702,14 @@
         if (!str) return '';
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+    document.addEventListener('DOMContentLoaded', () => {
+        const pdf = document.getElementById('pdfexpress-edas-accordion');
+        const files = document.getElementById('file-version-table')?.closest('details');
+        const notes = document.getElementById('internal-notes-accordion');
+        if (pdf && files && notes && notes.parentElement === pdf.parentElement) {
+            notes.parentElement.insertBefore(pdf, notes);
+            notes.parentElement.insertBefore(files, notes);
+        }
+    });
     </script>
 </x-layouts.app>

@@ -84,7 +84,22 @@ class Submission extends Model
 
     public function hasPdfExpress(): bool
     {
-        return filled($this->pdf_express_storage_path);
+        return filled($this->pdf_express_storage_path) || $this->legacyPdfExpressFile() !== null;
+    }
+
+    public function pdfExpressStorageData(): array
+    {
+        if (filled($this->pdf_express_storage_path)) {
+            return ['disk' => $this->pdf_express_disk, 'storage_path' => $this->pdf_express_storage_path, 'external_id' => $this->pdf_express_external_id, 'external_url' => $this->pdf_express_external_url];
+        }
+        $file = $this->legacyPdfExpressFile();
+
+        return ['disk' => $file?->disk, 'storage_path' => $file?->storage_path, 'external_id' => $file?->external_id, 'external_url' => $file?->external_url];
+    }
+
+    public function legacyPdfExpressFile(): ?FileVersion
+    {
+        return FileVersion::query()->where('submission_id', $this->id)->where('file_category', 'camera_ready_pdf')->orderByDesc('is_final')->orderByDesc('version_number')->first();
     }
 
     public function getSafeAuthorToken(): ?string
