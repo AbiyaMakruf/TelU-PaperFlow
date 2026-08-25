@@ -259,6 +259,7 @@
                     $allowed = auth()->user()->can('editorialReview', $submission);
                     $template = $submission->conference->checklistTemplates->where('stage', $stage)->where('is_active', true)->first();
                     $isEditorialActive = ($submission->status === \App\Enums\SubmissionStatus::EditorialReview);
+                    $isPdfExpressEditable = in_array($submission->status, [\App\Enums\SubmissionStatus::EditorialReview, \App\Enums\SubmissionStatus::ReviewerReview], true);
                     $isReviewerActive = in_array($submission->status, [\App\Enums\SubmissionStatus::ReviewerReview, \App\Enums\SubmissionStatus::EdasFixRequired, \App\Enums\SubmissionStatus::ReadyForEdas], true);
 
                     if ($isEditorialActive && $stage === \App\Enums\ReviewStage::Editorial && $template) {
@@ -300,6 +301,8 @@
                         savingChecklist: false,
                         autoSaveStatus: '',
                         isEditorialActive: {{ json_encode($isEditorialActive) }},
+                        isPdfExpressEditable: {{ json_encode($isPdfExpressEditable) }},
+                        pdfExpressName: '',
                         get allPassed() {
                             return this.requiredIds.length > 0 && this.checkedCount >= this.requiredIds.length;
                         },
@@ -606,8 +609,11 @@
                                         </div>
                                         <div class="space-y-2 rounded-xl bg-white border border-slate-200 p-3.5">
                                             <div class="flex items-center justify-between gap-2"><label class="form-label text-xs font-bold text-navy mb-0">IEEE PDF eXpress File <span class="text-rose-600">*</span></label>@if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="text-[11px] font-bold text-navy hover:text-orange hover:underline">Download current file</a>@endif</div>
-                                            <input type="file" name="pdf_express_file" form="pdf-express-form" accept="application/pdf" class="form-input h-10 w-full px-2 text-xs leading-none bg-white" :disabled="!isEditorialActive" {{ $submission->hasPdfExpress() ? '' : 'required' }}>
-                                            <button type="submit" form="pdf-express-form" :disabled="!isEditorialActive" class="btn btn-primary w-full text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
+                                            <input id="pdf-express-file" type="file" name="pdf_express_file" form="pdf-express-form" accept="application/pdf" class="sr-only" :disabled="!isPdfExpressEditable" @change="pdfExpressName = $event.target.files[0]?.name || ''" {{ $submission->hasPdfExpress() ? '' : 'required' }}>
+                                            <label for="pdf-express-file" class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 text-xs" :class="!isPdfExpressEditable ? 'cursor-not-allowed opacity-60' : 'hover:border-navy'">
+                                                <span class="rounded-md bg-slate-100 px-2 py-1 font-bold text-navy">Choose file</span><span class="truncate text-muted" x-text="pdfExpressName || 'No file selected'"></span>
+                                            </label>
+                                            <button type="submit" form="pdf-express-form" :disabled="!isPdfExpressEditable" class="btn btn-primary w-full text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
                                             @if($submission->pdf_express_uploaded_at)<p class="text-[11px] text-muted">Last uploaded: {{ $submission->pdf_express_uploaded_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>@endif
                                         </div>
                                     </div>
@@ -744,8 +750,6 @@
                             <form method="POST" action="{{ route('submissions.edas-status', $submission) }}" enctype="multipart/form-data" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 min-w-0">
                                 @csrf
                                 <input type="hidden" name="pdf_express_status" value="passed">
-                                <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-950"><strong>PDF eXpress file received from Editor.</strong> Upload it to EDAS, record any warnings below, then either return the paper or complete it.</div>
-
                                 <div class="space-y-2" x-data="{ warnings: @js(old('edas_warnings', $submission->edas_warnings ?? [''])) }">
                                     <label class="form-label text-xs">EDAS Warnings (Internal Log)</label>
                                     <template x-for="(warning, index) in warnings" :key="index"><div class="flex gap-2"><input class="form-input text-xs" name="edas_warnings[]" x-model="warnings[index]" placeholder="Describe an EDAS warning"><button type="button" @click="warnings.splice(index, 1)" class="btn btn-secondary text-xs">Remove</button></div></template>

@@ -105,8 +105,9 @@ class ConferenceFileStorage
         ]);
         $file->setRelation('submission', new Submission(['conference_id' => $conference->id]));
         $file->submission->setRelation('conference', $conference);
+        $copy = $this->temporaryCopy($file);
 
-        return $this->download($file);
+        return response()->download($copy['path'], $downloadName)->deleteFileAfterSend($copy['cleanup']);
     }
 
     /** @param array<string, mixed> $attributes */

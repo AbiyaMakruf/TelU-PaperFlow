@@ -603,7 +603,7 @@ class SubmissionController extends Controller
     public function uploadPdfExpress(Request $request, Submission $submission, ConferenceFileStorage $storage): RedirectResponse
     {
         $this->authorize('editorialReview', $submission);
-        abort_unless($submission->status === SubmissionStatus::EditorialReview, 422);
+        abort_unless(in_array($submission->status, [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview], true), 422);
         $validated = $request->validate(['pdf_express_file' => ['required', 'file', 'mimes:pdf', 'max:25600']]);
         $file = $validated['pdf_express_file'];
         $path = $submission->conference->slug.'/'.$submission->id.'/pdf-express.pdf';
