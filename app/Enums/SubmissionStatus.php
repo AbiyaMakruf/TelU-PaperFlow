@@ -29,7 +29,7 @@ enum SubmissionStatus: string
             self::ReviewerChangesRequested => 'Reviewer Revision Requested',
             self::ReadyForEdas => 'Ready for EDAS Upload',
             self::EdasFixRequired => 'EDAS Correction Required',
-            self::Done => 'Completed / Done',
+            self::Done => 'Completed',
             self::Withdrawn => 'Withdrawn',
             self::Rejected => 'Rejected',
         };

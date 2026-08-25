@@ -82,17 +82,20 @@ class PrivateFileStorage
         }
     }
 
-    public function temporaryUrl(string $path, int $expiresIn = 300): ?string
+    public function temporaryUrl(string $path, int $expiresIn = 300, ?string $downloadName = null): ?string
     {
         if (! $this->usesSupabase()) {
             return null;
         }
 
+        $payload = ['expiresIn' => $expiresIn];
+        if ($downloadName) {
+            $payload['download'] = $downloadName;
+        }
+
         $response = Http::withToken($this->secret())
             ->withHeaders(['apikey' => $this->secret()])
-            ->post($this->storageUrl('/object/sign/'.$this->bucket().'/'.$this->encodePath($path)), [
-                'expiresIn' => $expiresIn,
-            ])
+            ->post($this->storageUrl('/object/sign/'.$this->bucket().'/'.$this->encodePath($path)), $payload)
             ->throw();
 
         $signedUrl = $response->json('signedURL') ?? $response->json('signedUrl');

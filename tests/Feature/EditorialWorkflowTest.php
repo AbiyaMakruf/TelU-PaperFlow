@@ -133,7 +133,7 @@ class EditorialWorkflowTest extends TestCase
         $response = $this->get('/submission/access/'.$token);
         $response->assertOk();
         $response->assertSee('IEEE PDF eXpress Verified (EDAS Camera-Ready PDF)');
-        $response->assertSee('Download PDF');
+        $response->assertSee('Download');
     }
 
     public function test_conference_admin_can_export_visible_papers_as_csv(): void

@@ -88,7 +88,7 @@ class ConferenceFileStorage
             return redirect()->away($externalUrl);
         }
 
-        if ($url = $this->privateStorage->temporaryUrl($file->storage_path)) {
+        if ($url = $this->privateStorage->temporaryUrl($file->storage_path, 300, $file->original_name)) {
             return redirect()->away($url);
         }
 

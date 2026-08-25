@@ -372,7 +372,7 @@ class PublicSubmissionTest extends TestCase
 
         $response = $this->get(route('author.portal', $token));
         $response->assertOk();
-        $response->assertSee('Completed / Done');
+        $response->assertSee('Completed');
         $response->assertSee('Edit Submission Details');
         $response->assertSee('disabled');
         $response->assertDontSee('Editorial Compliance Checklist Monitoring');

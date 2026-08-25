@@ -784,7 +784,7 @@ class SubmissionController extends Controller
 
         try {
             if (in_array($action, ['revert_done_to_editorial', 'revert_done_to_reviewer', 'revert_done_to_edas'], true) && $submission->status !== SubmissionStatus::Done) {
-                throw new DomainException('Revert action can only be executed on Completed / Done submissions.');
+                throw new DomainException('Revert action can only be executed on Completed submissions.');
             }
 
             match ($action) {
