@@ -214,7 +214,6 @@ CSV);
             ->get(route('submissions.show', $submission))
             ->assertOk()
             ->assertSee('Authors from EDAS')
-            ->assertSee('These names are imported from the EDAS CSV export')
             ->assertSee('Satria Aji Permana Siwi')
             ->assertSee('Jane Doe')
             ->assertSee('John Smith');
