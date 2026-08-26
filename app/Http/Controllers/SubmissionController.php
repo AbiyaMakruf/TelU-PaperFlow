@@ -515,6 +515,10 @@ class SubmissionController extends Controller
     {
         $this->authorize('reviewerReview', $submission);
 
+        if (! in_array($submission->status, [SubmissionStatus::ReviewerReview, SubmissionStatus::EdasFixRequired, SubmissionStatus::ReadyForEdas], true)) {
+            abort(403, 'EDAS management is read only at the current workflow stage.');
+        }
+
         $validated = $request->validate([
             'pdf_express_status' => ['required', Rule::in(['pending', 'passed', 'failed'])],
             'edas_reference' => ['nullable', 'string', 'max:255'],

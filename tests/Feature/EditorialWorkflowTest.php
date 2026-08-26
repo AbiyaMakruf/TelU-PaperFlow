@@ -110,6 +110,31 @@ class EditorialWorkflowTest extends TestCase
         $this->assertSame(SubmissionStatus::Done, $submission->fresh()->status);
     }
 
+    public function test_edas_management_is_read_only_outside_the_reviewer_workflow_stage_and_editor_can_see_reviewer_warnings(): void
+    {
+        [$conference, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+        $submission->update([
+            'editor_id' => $editor->id,
+            'reviewer_id' => $reviewer->id,
+            'status' => SubmissionStatus::EditorialReview,
+            'edas_error_note' => 'EDAS requires the manuscript to be corrected before upload.',
+            'edas_warnings' => ['The EDAS upload reported a font embedding warning.'],
+        ]);
+
+        $this->actingAs($reviewer)->post(route('submissions.edas-status', $submission), [
+            'pdf_express_status' => 'passed',
+            'edas_warnings' => ['This must not be saved.'],
+        ])->assertForbidden();
+
+        $this->assertSame(['The EDAS upload reported a font embedding warning.'], $submission->fresh()->edas_warnings);
+        $this->actingAs($editor)->get(route('submissions.show', $submission))
+            ->assertOk()
+            ->assertSee('EDAS Return Note:')
+            ->assertSee('EDAS requires the manuscript to be corrected before upload.')
+            ->assertSee('EDAS Warnings (Reviewer Internal Log)')
+            ->assertSee('The EDAS upload reported a font embedding warning.');
+    }
+
     public function test_editor_can_upload_pdf_express_and_author_sees_it_only_after_completion(): void
     {
         Storage::fake('private');

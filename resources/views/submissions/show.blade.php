@@ -784,8 +784,8 @@
                                 <input type="hidden" name="pdf_express_status" value="passed">
                                 <div class="space-y-2" x-data="{ warnings: @js(old('edas_warnings', $submission->edas_warnings ?? [''])) }">
                                     <label class="form-label text-xs">EDAS Warnings (Internal Log)</label>
-                                    <template x-for="(warning, index) in warnings" :key="index"><div class="flex gap-2"><input class="form-input text-xs" name="edas_warnings[]" x-model="warnings[index]" placeholder="Describe an EDAS warning"><button type="button" @click="warnings.splice(index, 1)" class="btn btn-secondary text-xs">Remove</button></div></template>
-                                    <button type="button" @click="warnings.push('')" class="text-xs font-bold text-navy">+ Add warning</button>
+                                    <template x-for="(warning, index) in warnings" :key="index"><div class="flex gap-2"><input class="form-input text-xs" name="edas_warnings[]" x-model="warnings[index]" placeholder="Describe an EDAS warning" :disabled="!isReviewerActive" @disabled(! $isReviewerActive)><button type="button" :disabled="!isReviewerActive" @click="if (isReviewerActive) warnings.splice(index, 1)" class="btn btn-secondary text-xs disabled:cursor-not-allowed disabled:opacity-50">Remove</button></div></template>
+                                    <button type="button" :disabled="!isReviewerActive" @click="if (isReviewerActive) warnings.push('')" class="text-xs font-bold text-navy disabled:cursor-not-allowed disabled:opacity-50">+ Add warning</button>
                                 </div>
 
                                 @if(! $submission->hasPdfExpress())<p class="text-xs text-rose-700">The Editor has not uploaded a PDF eXpress file yet.</p>@endif
@@ -816,14 +816,26 @@
                         </div>
                     @else
                         <div class="space-y-3 text-xs min-w-0">
-                            @if(($submission->pdf_express_status ?? '') === 'failed' && $submission->edas_error_note)
+                            @if($submission->edas_error_note)
                                 <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 break-words">
-                                    <p class="font-extrabold text-xs">EDAS Error Notes:</p>
+                                    <p class="font-extrabold text-xs">EDAS Return Note:</p>
                                     <p class="mt-1 whitespace-pre-line leading-relaxed text-xs">{{ $submission->edas_error_note }}</p>
                                 </div>
                             @endif
                         </div>
                     @endcan
+                    @cannot('reviewerReview', $submission)
+                        @if(! empty($submission->edas_warnings))
+                            <div class="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-950 break-words">
+                                <p class="font-extrabold">EDAS Warnings (Reviewer Internal Log)</p>
+                                <ul class="mt-2 list-disc space-y-1.5 pl-4 leading-relaxed">
+                                    @foreach($submission->edas_warnings as $warning)
+                                        <li>{{ $warning }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    @endcannot
                     @can('editorialReview', $submission)
                         @if($submission->status === \App\Enums\SubmissionStatus::ReadyForEdas)
                             <div class="pt-4 border-t border-navy/10 space-y-3">
