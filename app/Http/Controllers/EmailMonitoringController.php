@@ -122,7 +122,7 @@ class EmailMonitoringController extends Controller
         $logs = $logsQuery->paginate($perPage)->withQueryString();
         $scheduledReminders = ScheduledRevisionReminder::query()
             ->with(['conference', 'submission', 'editor', 'emailLog'])
-            ->whereIn('conference_id', (clone $base)->select('conference_id')->distinct())
+            ->whereIn('conference_id', (clone $base)->reorder()->select('conference_id')->distinct())
             ->latest('scheduled_for')->limit(100)->get();
 
         return view('operations.emails', compact(
