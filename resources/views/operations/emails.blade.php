@@ -7,6 +7,31 @@
         </div>
     </div>
 
+    <div class="mt-6 card overflow-hidden">
+        <div class="border-b border-navy/10 px-5 py-4">
+            <h2 class="text-sm font-black text-navy">Scheduled Deadline Reminders</h2>
+            <p class="mt-1 text-xs text-muted">Delayed revision reminders are monitored separately from regular email delivery logs.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="data-table min-w-[780px]">
+                <thead><tr><th>Planned Send Time</th><th>Type / Paper</th><th>Recipient</th><th>Status</th><th>Details</th></tr></thead>
+                <tbody>
+                    @forelse($scheduledReminders as $reminder)
+                        <tr>
+                            <td class="whitespace-nowrap text-xs font-bold text-slate-700">{{ $reminder->scheduled_for?->timezone('Asia/Jakarta')->format('d M Y, H:i \W\I\B') }}</td>
+                            <td class="text-xs"><p class="font-bold text-navy">{{ $reminder->kind === 'editor_revision_deadline_digest' ? 'Editor PIC digest' : 'Author reminder' }}</p><p class="text-muted">{{ $reminder->submission?->paper_code ?? $reminder->conference?->name }}</p></td>
+                            <td class="text-xs font-semibold text-slate-700">{{ $reminder->recipient }}</td>
+                            <td><span class="badge badge-{{ $reminder->status === 'sent' ? 'success' : ($reminder->status === 'failed' ? 'danger' : ($reminder->status === 'cancelled' ? 'slate' : 'warning')) }} text-[10px]">{{ ucfirst($reminder->status) }}</span></td>
+                            <td class="max-w-md text-[11px] text-muted">{{ $reminder->reason ?: $reminder->error ?: 'Scheduled for delivery.' }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="py-8 text-center text-sm text-muted">No delayed deadline reminders have been scheduled.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Top Key Metrics Cards Grid -->
     <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <a href="{{ route('emails.index', ['status' => 'sent']) }}" class="card p-4 hover:border-emerald-400 transition shadow-sm group">

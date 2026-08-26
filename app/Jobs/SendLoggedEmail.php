@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\PaperflowMail;
 use App\Models\EmailLog;
+use App\Models\ScheduledRevisionReminder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Mail;
@@ -87,12 +88,14 @@ class SendLoggedEmail implements ShouldQueue
             }
             $pending->send($mail);
             $this->emailLog->update(['status' => 'sent', 'sent_at' => now(), 'error' => null]);
+            ScheduledRevisionReminder::where('email_log_id', $this->emailLog->id)->where('status', 'queued')->update(['status' => 'sent', 'sent_at' => now(), 'reason' => 'Email delivered successfully.']);
         } catch (Throwable $exception) {
             $this->emailLog->update([
                 'status' => 'failed',
                 'attempts' => $this->attempts(),
                 'error' => mb_substr($exception->getMessage(), 0, 5000),
             ]);
+            ScheduledRevisionReminder::where('email_log_id', $this->emailLog->id)->where('status', 'queued')->update(['status' => 'failed', 'error' => mb_substr($exception->getMessage(), 0, 5000), 'reason' => 'Email delivery failed.']);
 
             throw $exception;
         }

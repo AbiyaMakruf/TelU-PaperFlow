@@ -10,6 +10,7 @@ use App\Models\UploadAttempt;
 use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceMailer;
 use App\Services\PhoneNumber;
+use App\Services\RevisionDeadlineReminderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -90,7 +91,7 @@ class AuthorPortalController extends Controller
             $to = $from === SubmissionStatus::NeedsAuthorCorrection
                 ? SubmissionStatus::Submitted
                 : SubmissionStatus::EditorialReview;
-            $submission->update(['status' => $to, 'revision_substatus' => 'revised_by_author']);
+            $submission->update(['status' => $to, 'revision_substatus' => 'revised_by_author', 'deadline_at' => null]);
             $submission->statusHistory()->create([
                 'from_status' => $from,
                 'to_status' => $to,
@@ -98,6 +99,7 @@ class AuthorPortalController extends Controller
                 'created_at' => now(),
             ]);
         });
+        app(RevisionDeadlineReminderService::class)->cancelForSubmission($submission, 'Cancelled because the author uploaded a revision.');
 
         $paperUrl = route('submissions.show', $submission);
         $subject = "[Paperflow] Author Revision Uploaded: Paper {$submission->paper_code} - {$submission->title}";
@@ -150,7 +152,8 @@ class AuthorPortalController extends Controller
         $submission->files()->create(['version_number' => $version, 'label' => $attempt->label, 'source' => 'author', 'disk' => $stored['disk'], 'storage_path' => $stored['storage_path'], 'original_name' => $attempt->original_name, 'mime_type' => $attempt->mime_type, 'size' => $attempt->size, 'checksum' => hash_file('sha256', $absolute), 'notes' => $attempt->notes, 'external_provider' => $stored['external_provider'], 'external_id' => $stored['external_id'], 'external_url' => $stored['external_url']]);
         Storage::disk('local')->delete($attempt->temporary_path);
         $attempt->update(['status' => 'completed', 'retried_at' => now(), 'attempts' => $attempt->attempts + 1]);
-        $submission->update(['status' => SubmissionStatus::EditorialReview]);
+        $submission->update(['status' => SubmissionStatus::EditorialReview, 'revision_substatus' => 'revised_by_author', 'deadline_at' => null]);
+        app(RevisionDeadlineReminderService::class)->cancelForSubmission($submission, 'Cancelled because the author retry upload succeeded.');
 
         return back()->with('success', 'Revision file successfully re-uploaded.');
     }

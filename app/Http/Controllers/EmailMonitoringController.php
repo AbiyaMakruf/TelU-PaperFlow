@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmailLog;
+use App\Models\ScheduledRevisionReminder;
 use App\Services\ConferenceMailer;
 use App\Services\VisibleEmailLogs;
 use Illuminate\Http\JsonResponse;
@@ -63,6 +64,8 @@ class EmailMonitoringController extends Controller
             'submission_received' => 'Submission Confirmation',
             'paper_completed' => 'Paper Completed',
             'deadline_reminder' => 'Deadline Reminder',
+            'revision_deadline_author' => 'Revision Deadline Reminder (Author)',
+            'revision_deadline_editor_digest' => 'Revision Deadline Digest (Editor PIC)',
             'staff_notification' => 'Staff Notification',
         ];
 
@@ -117,6 +120,10 @@ class EmailMonitoringController extends Controller
         };
 
         $logs = $logsQuery->paginate($perPage)->withQueryString();
+        $scheduledReminders = ScheduledRevisionReminder::query()
+            ->with(['conference', 'submission', 'editor', 'emailLog'])
+            ->whereIn('conference_id', (clone $base)->select('conference_id')->distinct())
+            ->latest('scheduled_for')->limit(100)->get();
 
         return view('operations.emails', compact(
             'logs',
@@ -127,7 +134,7 @@ class EmailMonitoringController extends Controller
             'successRateToday',
             'overallSuccessRate',
             'trendLabels',
-            'sentTrendValues',
+            'sentTrendValues', 'scheduledReminders',
             'failedTrendValues',
             'templateLabels',
             'templateValues'

@@ -16,6 +16,7 @@ use App\Services\AuditLogger;
 use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceMailer;
 use App\Services\PhoneNumber;
+use App\Services\RevisionDeadlineReminderService;
 use App\Services\SubmissionWorkflow;
 use App\Services\VisibleEmailLogs;
 use App\Services\VisibleSubmissions;
@@ -890,6 +891,7 @@ class SubmissionController extends Controller
                 $days = (int) ($validated['revision_days'] ?? 7);
                 $deadlineAt = now('Asia/Jakarta')->addDays($days)->setTime(23, 59, 59);
                 $submission->update(['deadline_at' => $deadlineAt]);
+                app(RevisionDeadlineReminderService::class)->schedule($submission);
                 $deadlineFormatted = $deadlineAt->format('d F Y, 23:59 \G\M\T+7');
 
                 $mailer->queue($submission->load('conference'), 'revision_requested', [

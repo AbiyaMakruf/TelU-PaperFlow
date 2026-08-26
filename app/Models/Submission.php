@@ -199,7 +199,7 @@ class Submission extends Model
 
     public function isOverdue(): bool
     {
-        return $this->deadline_at?->isPast() && ! in_array($this->status, [SubmissionStatus::Done, SubmissionStatus::Rejected, SubmissionStatus::Withdrawn], true);
+        return $this->deadline_at?->isPast() && in_array($this->status, [SubmissionStatus::NeedsAuthorCorrection, SubmissionStatus::WaitingAuthorRevision], true);
     }
 
     public function portalLinkSent(): bool

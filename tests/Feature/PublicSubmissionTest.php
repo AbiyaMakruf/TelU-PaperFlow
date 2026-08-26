@@ -208,6 +208,7 @@ class PublicSubmissionTest extends TestCase
             'corresponding_author_name' => 'Rani',
             'corresponding_author_email' => 'rani@example.com',
             'status' => SubmissionStatus::WaitingAuthorRevision,
+            'deadline_at' => now()->addDay(),
             'author_token_hash' => hash('sha256', $token),
             'author_token_expires_at' => now()->addDay(),
         ]);
@@ -220,6 +221,7 @@ class PublicSubmissionTest extends TestCase
         $response->assertSessionHas('success', 'Revision file successfully uploaded and returned to the editorial queue.');
 
         $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
+        $this->assertNull($submission->fresh()->deadline_at);
         $this->assertCount(1, $submission->files);
     }
 
