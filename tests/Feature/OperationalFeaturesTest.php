@@ -6,10 +6,14 @@ use App\Enums\ConferenceRole;
 use App\Enums\SubmissionStatus;
 use App\Models\AuditLog;
 use App\Models\Conference;
+use App\Models\ScheduledRevisionReminder;
 use App\Models\Submission;
 use App\Models\User;
 use App\Notifications\WorkflowNotification;
+use App\Services\RevisionDeadlineReminderService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class OperationalFeaturesTest extends TestCase
@@ -56,6 +60,27 @@ class OperationalFeaturesTest extends TestCase
         $leaveResponse->assertRedirect(route('admin.users.index'));
         $this->assertEquals($superadmin->id, auth()->id());
         $this->assertNull(session('impersonated_by'));
+    }
+
+    public function test_revision_reminder_uses_the_same_wib_calendar_day_as_the_author_portal_deadline(): void
+    {
+        Queue::fake();
+        [$conference, $admin, $submission] = $this->fixture();
+        $submission->update([
+            'editor_id' => $admin->id,
+            'status' => SubmissionStatus::WaitingAuthorRevision,
+            // This mirrors the persisted end-of-day value used by existing papers.
+            'deadline_at' => Carbon::create(2026, 9, 2, 23, 59, 59, 'UTC'),
+        ]);
+
+        app(RevisionDeadlineReminderService::class)->schedule($submission->fresh());
+
+        $reminder = ScheduledRevisionReminder::where('submission_id', $submission->id)
+            ->where('kind', 'author_revision_deadline')
+            ->firstOrFail();
+
+        $this->assertSame('2026-09-02', $reminder->deadline_date->toDateString());
+        $this->assertSame('2026-09-02 08:00', $reminder->scheduled_for->setTimezone('Asia/Jakarta')->format('Y-m-d H:i'));
     }
 
     private function fixture(): array

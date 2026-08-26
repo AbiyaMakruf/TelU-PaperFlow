@@ -6,6 +6,7 @@ use App\Enums\SubmissionStatus;
 use App\Jobs\ProcessScheduledRevisionReminder;
 use App\Models\ScheduledRevisionReminder;
 use App\Models\Submission;
+use Carbon\Carbon;
 
 class RevisionDeadlineReminderService
 {
@@ -19,7 +20,7 @@ class RevisionDeadlineReminderService
 
         // Revision deadlines and their reminders are operationally fixed to WIB.
         $timezone = 'Asia/Jakarta';
-        $deadline = $submission->deadline_at->clone()->setTimezone($timezone);
+        $deadline = $this->operationalDeadline($submission, $timezone);
         $scheduledFor = $deadline->clone()->startOfDay()->setTime(8, 0)->utc();
         $deadlineDate = $deadline->toDateString();
         if ($scheduledFor->lessThanOrEqualTo(now($timezone))) {
@@ -120,6 +121,30 @@ class RevisionDeadlineReminderService
     {
         $reminder = ScheduledRevisionReminder::create($attributes);
         ProcessScheduledRevisionReminder::dispatch($reminder->id)->delay($reminder->scheduled_for);
+    }
+
+    /**
+     * Revision deadlines set at 23:59 represent the end of the selected WIB
+     * calendar day. PostgreSQL may hydrate that legacy wall-clock value as UTC,
+     * so converting its instant would incorrectly move the reminder to tomorrow.
+     */
+    private function operationalDeadline(Submission $submission, string $timezone): Carbon
+    {
+        $deadline = $submission->deadline_at->clone();
+
+        if ($deadline->hour === 23 && $deadline->minute === 59) {
+            return Carbon::create(
+                $deadline->year,
+                $deadline->month,
+                $deadline->day,
+                $deadline->hour,
+                $deadline->minute,
+                $deadline->second,
+                $timezone,
+            );
+        }
+
+        return $deadline->setTimezone($timezone);
     }
 
     private function cancel(ScheduledRevisionReminder $reminder, string $reason): void
