@@ -3,18 +3,8 @@
         <div class="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start min-w-0">
         <div class="min-w-0">
             <p class="eyebrow truncate">{{ $submission->conference?->name ?? 'Conference' }} &middot; internal code {{ $submission->paper_code }}</p>
-            <div class="flex items-start gap-2 min-w-0">
-                <h1 class="page-title leading-tight break-words min-w-0">{{ $submission->paper_id ?: $submission->paper_code }}</h1>
-                <button type="button" data-copy="{{ $submission->paper_id ?: $submission->paper_code }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper ID copied.')" class="mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-navy hover:border-orange hover:text-orange transition" title="Copy Paper ID" aria-label="Copy Paper ID">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                </button>
-            </div>
-            <div class="mt-1 flex items-start gap-2 min-w-0">
-                <p class="page-subtitle leading-snug break-words max-w-full min-w-0">{{ $submission->title }}</p>
-                <button type="button" data-copy="{{ $submission->title }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper title copied.')" class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-navy hover:border-orange hover:text-orange transition" title="Copy Paper Title" aria-label="Copy Paper Title">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg>
-                </button>
-            </div>
+            <h1 class="page-title leading-tight break-words">{{ $submission->paper_id ?: $submission->paper_code }} <button type="button" data-copy="{{ $submission->paper_id ?: $submission->paper_code }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper ID copied.')" class="inline-flex size-5 translate-y-[-0.08em] items-center justify-center rounded text-slate-400 hover:text-orange transition" title="Copy Paper ID" aria-label="Copy Paper ID"><svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></h1>
+            <p class="page-subtitle leading-snug break-words max-w-full">{{ $submission->title }} <button type="button" data-copy="{{ $submission->title }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper title copied.')" class="inline-flex size-4 translate-y-[-0.05em] items-center justify-center rounded text-slate-400 hover:text-orange transition" title="Copy Paper Title" aria-label="Copy Paper Title"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg></button></p>
         </div>
         <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto" id="paper-status-badge-container">
             @php

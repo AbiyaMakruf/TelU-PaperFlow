@@ -268,18 +268,14 @@
                                 <input type="checkbox" value="{{ $submission->id }}" x-model="selected">
                             </td>
                             <td>
-                                <a href="{{ route('submissions.show', $submission) }}" @click.stop class="font-black text-navy hover:text-orange hover:underline block">
-                                    {{ $submission->paper_id ?: $submission->paper_code }}
-                                </a>
+                                <div class="flex items-center gap-1"><a href="{{ route('submissions.show', $submission) }}" @click.stop class="font-black text-navy hover:text-orange hover:underline">{{ $submission->paper_id ?: $submission->paper_code }}</a><button type="button" @click.stop data-copy="{{ $submission->paper_id ?: $submission->paper_code }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper ID copied.')" class="inline-flex size-4 items-center justify-center text-slate-400 hover:text-orange" title="Copy Paper ID"><svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg></button></div>
                                 <p class="mt-1 text-xs text-muted">{{ $submission->conference?->name ?? 'Unknown Conference' }}</p>
                                 @if($submission->is_flagged_duplicate)
                                     <span class="mt-1 inline-block rounded bg-rose-100 px-2 py-0.5 text-[10px] font-extrabold text-rose-700" title="{{ $submission->duplicate_notes }}">⚠️ Potential Duplicate</span>
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('submissions.show', $submission) }}" @click.stop class="block max-w-lg font-bold text-navy hover:text-orange hover:underline" title="{{ $submission->title }}">
-                                    {{ $submission->title }}
-                                </a>
+                                <div class="flex items-start gap-1"><a href="{{ route('submissions.show', $submission) }}" @click.stop class="block max-w-lg font-bold text-navy hover:text-orange hover:underline" title="{{ $submission->title }}">{{ $submission->title }}</a><button type="button" @click.stop data-copy="{{ $submission->title }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper title copied.')" class="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center text-slate-400 hover:text-orange" title="Copy Paper Title"><svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg></button></div>
                             </td>
                             <td>
                                 @if($submission->manuscript_format === 'latex')
@@ -373,9 +369,7 @@
                         <div class="flex items-start justify-between gap-2 min-w-0">
                             <div class="flex items-center gap-2 min-w-0" @click.stop>
                                 <input type="checkbox" value="{{ $submission->id }}" x-model="selected" class="shrink-0">
-                                <a href="{{ route('submissions.show', $submission) }}" class="truncate font-black text-navy hover:text-orange text-base">
-                                    {{ $submission->paper_id ?: $submission->paper_code }}
-                                </a>
+                                <a href="{{ route('submissions.show', $submission) }}" class="truncate font-black text-navy hover:text-orange text-base">{{ $submission->paper_id ?: $submission->paper_code }}</a><button type="button" @click.stop data-copy="{{ $submission->paper_id ?: $submission->paper_code }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper ID copied.')" class="inline-flex size-4 shrink-0 items-center justify-center text-slate-400 hover:text-orange" title="Copy Paper ID"><svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg></button>
                             </div>
                             <div class="shrink-0">
                                 @if($submission->manuscript_format === 'latex')
@@ -387,9 +381,7 @@
                         </div>
 
                         <div>
-                            <a href="{{ route('submissions.show', $submission) }}" @click.stop class="block font-bold text-navy hover:text-orange text-sm leading-snug">
-                                {{ $submission->title }}
-                            </a>
+                            <div class="flex items-start gap-1"><a href="{{ route('submissions.show', $submission) }}" @click.stop class="block font-bold text-navy hover:text-orange text-sm leading-snug">{{ $submission->title }}</a><button type="button" @click.stop data-copy="{{ $submission->title }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper title copied.')" class="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center text-slate-400 hover:text-orange" title="Copy Paper Title"><svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg></button></div>
                             <p class="mt-1 text-xs text-muted truncate">{{ $submission->conference?->name ?? 'Unknown Conference' }}</p>
                             @if($submission->is_flagged_duplicate)
                                 <span class="mt-1 inline-block rounded bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">⚠️ Potential Duplicate</span>
@@ -667,6 +659,23 @@
     </div>
 
     <script>
+    window.copyPaperflowText = async (value, successMessage) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: successMessage, type: 'success' } }));
+        } catch (error) {
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            const copied = document.execCommand('copy');
+            textarea.remove();
+            window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: copied ? successMessage : 'Unable to copy text.', type: copied ? 'success' : 'error' } }));
+        }
+    };
+
     window.papersManager = function(staffData, initialSearch) {
         return {
             selected: [],
