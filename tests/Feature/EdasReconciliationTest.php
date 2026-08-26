@@ -153,6 +153,41 @@ class EdasReconciliationTest extends TestCase
         $res->assertSee('ID format mismatch');
     }
 
+    public function test_edas_export_authors_are_persisted_displayed_and_exported(): void
+    {
+        [$conference, $admin] = $this->createConferenceWithRoles();
+
+        $csvFile = UploadedFile::fake()->createWithContent('edas.csv', <<<'CSV'
+#,Title,Authors
+1571255297,Knowledge Graph,"Satria Aji Permana Siwi; Jane Doe; John Smith"
+CSV);
+
+        $this->actingAs($admin)
+            ->post(route('conferences.edas-reconciliation.upload', $conference), ['csv_file' => $csvFile])
+            ->assertRedirect();
+
+        $conference->refresh();
+        $this->assertSame(
+            'Satria Aji Permana Siwi; Jane Doe; John Smith',
+            $conference->settings['edas_reconciliation']['raw_items'][0]['edas_authors']
+        );
+
+        $this->actingAs($admin)
+            ->get(route('conferences.edas-reconciliation.index', $conference))
+            ->assertOk()
+            ->assertSee('EDAS Authors (3)')
+            ->assertSee('Satria Aji Permana Siwi')
+            ->assertSee('Jane Doe')
+            ->assertSee('John Smith');
+
+        $export = $this->actingAs($admin)
+            ->get(route('conferences.edas-reconciliation.export', ['conference' => $conference, 'format' => 'csv_all']));
+
+        $export->assertOk();
+        $this->assertStringContainsString('EDAS Authors', $export->streamedContent());
+        $this->assertStringContainsString('Satria Aji Permana Siwi; Jane Doe; John Smith', $export->streamedContent());
+    }
+
     public function test_refresh_route_updates_reconciliation_live(): void
     {
         [$conference, $admin] = $this->createConferenceWithRoles();

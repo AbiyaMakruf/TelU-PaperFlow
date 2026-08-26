@@ -66,6 +66,8 @@ html, body {
     .back-link { @apply inline-flex items-center gap-2 text-sm font-extrabold text-navy hover:text-orange; }
     button[data-copy] { flex: none; overflow: visible; line-height: 1; }
     button[data-copy] > svg { display: block; overflow: visible; }
+    .data-table button[data-copy] { flex: 0 0 0.875rem; width: 0.875rem; height: 0.875rem; }
+    .data-table button[data-copy] > svg { width: 0.75rem; height: 0.75rem; }
     .check-row { @apply flex items-start gap-3 rounded-xl border border-navy/10 bg-warm/60 p-4; }
     .data-table { @apply w-full min-w-[500px] text-left text-sm; }
     .data-table th { @apply bg-navy/[.035] px-6 py-3 text-xs font-extrabold uppercase tracking-wider text-muted; }

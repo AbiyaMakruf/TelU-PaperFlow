@@ -63,8 +63,8 @@
                     <h3 class="text-sm font-extrabold text-navy flex items-center gap-1.5">
                         <span>💡 Supported CSV Format</span>
                     </h3>
-                    <p class="text-xs text-slate-600 leading-relaxed">
-                        The system automatically detects columns based on EDAS CSV header names. Paper ID is required:
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                        The system automatically detects the EDAS export columns <code>#</code>, <code>Title</code>, and <code>Authors</code>. Paper ID is required:
                     </p>
                     <ul class="space-y-2 text-xs text-slate-700 font-medium">
                         <li class="flex items-start gap-2">
@@ -74,6 +74,10 @@
                         <li class="flex items-start gap-2">
                             <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
                             <span><strong>Paper Title (Optional):</strong> Header <code>title</code>, <code>Paper Title</code>, or <code>Name</code></span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
+                            <span><strong>Authors (Optional):</strong> Header <code>Authors</code>. Separate multiple names with a semicolon (<code>;</code>).</span>
                         </li>
                     </ul>
                     <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-[11px] text-emerald-900 leading-normal space-y-1">
@@ -206,13 +210,13 @@
                                     <th class="text-right">Action</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @foreach($reconciledData['items'] as $item)
+                            @foreach($reconciledData['items'] as $item)
                                     @php
-                                        $rowSearch = strtolower($item['edas_paper_id'] . ' ' . $item['edas_title'] . ' ' . ($item['paperflow_submission']['title'] ?? '') . ' ' . ($item['warning_message'] ?? ''));
+                                        $rowSearch = strtolower($item['edas_paper_id'] . ' ' . $item['edas_title'] . ' ' . implode(' ', $item['edas_authors'] ?? []) . ' ' . ($item['paperflow_submission']['title'] ?? '') . ' ' . ($item['warning_message'] ?? ''));
                                         $hasWarning = ! empty($item['warning_message']);
                                     @endphp
-                                    <tr x-show="(activeTab === 'all' || (activeTab === 'missing' && '{{ $item['status_state'] }}' === 'missing') || (activeTab === 'submitted' && '{{ $item['status_state'] }}' === 'submitted') || (activeTab === 'warnings' && {{ $hasWarning ? 'true' : 'false' }})) && (!searchQuery || {{ Js::from($rowSearch) }}.includes(searchQuery.toLowerCase()))" class="hover:bg-slate-50/80 transition">
+                            <tbody x-data="{ open: false }" x-show="(activeTab === 'all' || (activeTab === 'missing' && '{{ $item['status_state'] }}' === 'missing') || (activeTab === 'submitted' && '{{ $item['status_state'] }}' === 'submitted') || (activeTab === 'warnings' && {{ $hasWarning ? 'true' : 'false' }})) && (!searchQuery || {{ Js::from($rowSearch) }}.includes(searchQuery.toLowerCase()))">
+                                    <tr @click="open = !open" class="cursor-pointer hover:bg-slate-50/80 transition" title="Click to view EDAS authors">
                                         <td class="text-center text-xs font-bold text-muted">{{ $item['row_number'] }}</td>
                                         <td class="font-mono font-bold text-xs whitespace-nowrap text-navy">
                                             {{ $item['edas_paper_id'] }}
@@ -255,7 +259,7 @@
                                                 <span class="text-xs text-muted italic">Not found in Paperflow</span>
                                             @endif
                                         </td>
-                                        <td class="text-right whitespace-nowrap">
+                                        <td @click.stop class="text-right whitespace-nowrap">
                                             @if($item['paperflow_submission'])
                                                 <a href="{{ route('submissions.show', $item['paperflow_submission']['id']) }}" class="btn btn-secondary text-xs py-1 px-2.5 font-bold" target="_blank">
                                                     Open Paper ↗
@@ -265,8 +269,22 @@
                                             @endif
                                         </td>
                                     </tr>
-                                @endforeach
+                                    <tr x-show="open" x-cloak>
+                                        <td colspan="6" class="bg-slate-50 px-6 py-4">
+                                            <p class="text-[10px] font-black uppercase tracking-wider text-muted">EDAS Authors ({{ count($item['edas_authors'] ?? []) }})</p>
+                                            @if(! empty($item['edas_authors']))
+                                                <ol class="mt-2 grid gap-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-3">
+                                                    @foreach($item['edas_authors'] as $author)
+                                                        <li class="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold">{{ $loop->iteration }}. {{ $author }}</li>
+                                                    @endforeach
+                                                </ol>
+                                            @else
+                                                <p class="mt-2 text-xs italic text-muted">No author names were included in the EDAS CSV row.</p>
+                                            @endif
+                                        </td>
+                                    </tr>
                             </tbody>
+                            @endforeach
                         </table>
                     </div>
 

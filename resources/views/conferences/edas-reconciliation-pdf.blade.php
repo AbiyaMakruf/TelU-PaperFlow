@@ -61,6 +61,7 @@
                 <th style="width: 30px; text-align: center;">No</th>
                 <th style="width: 100px;">EDAS Paper ID</th>
                 <th>EDAS Paper Title</th>
+                <th>EDAS Authors</th>
                 <th style="width: 110px;">Status</th>
                 <th>Matching Paperflow Submission</th>
             </tr>
@@ -76,6 +77,7 @@
                             <div class="warning-text">⚠️ {{ $item['warning_message'] }}</div>
                         @endif
                     </td>
+                    <td>{{ implode('; ', $item['edas_authors'] ?? []) ?: '-' }}</td>
                     <td>
                         @if($item['status_state'] === 'submitted')
                             <span class="badge badge-success">✓ Submitted</span>
