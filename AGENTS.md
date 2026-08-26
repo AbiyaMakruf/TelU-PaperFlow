@@ -66,10 +66,10 @@ Typical workflow:
 3. Admin assigns Editorial and Reviewer PICs, confirms whether the editable manuscript is DOCX or LaTeX, and optionally sets a deadline. Mandatory reassignment reasons are required when replacing existing PICs.
 4. Editorial completes 16 required IEEE compliance checklist items (with accordion guidance) and may request author revision. Editor can auto-generate revision feedback from unchecked items.
 5. Author receives notification and opens tokenized portal (`/submission/access/{token}`) where live checklist monitoring appears after revision request. Author can edit submission details and upload editable revision + optional PDF Petunjuk Revisi.
-6. Editorial sends the paper to Reviewer.
-7. Reviewer inspects editor's work, sets IEEE PDF eXpress status (`Pending`, `Passed`, `Failed`), logs EDAS error notes (with quick-error preset buttons), requests changes, or marks ready for EDAS.
-8. Editorial records EDAS upload reference and notes.
-9. Reviewer approves the EDAS result; only then is the paper marked Done.
+6. Editorial uploads the verified IEEE PDF eXpress file, completes the mandatory final page count, and sends the paper to Reviewer.
+7. Reviewer receives the PDF eXpress file, uploads it to EDAS, records structured EDAS warnings and/or an error note, then either returns the paper to Editorial or marks it completed.
+8. Editorial corrects and replaces the PDF eXpress file when the Reviewer returns the paper because of an EDAS issue.
+9. Only the Reviewer completing the EDAS result marks the paper Done. Authors can download the PDF eXpress file only after this terminal state.
 
 Reject and Withdraw are explicit terminal actions. Every status transition writes status history, audit data, and in-app notifications for relevant assignees.
 
@@ -107,7 +107,7 @@ Do not update `submissions.status` directly when a transition should be validate
 - **IEEE Editorial Checklist**: 16 default IEEE formatting rules with guidance accordions and auto-generated revision feedback templates.
 - **Interactive CC Email Chips**: Alpine.js tag input for CC emails with remove buttons.
 - **Author Live Checklist Monitoring**: Live checklist results card on author portal visible after editor requests revision / sends feedback.
-- **Reviewer EDAS & PDF eXpress Management**: Reviewer-restricted controls for IEEE PDF eXpress status and EDAS error logging.
+- **Editorial PDF eXpress & Reviewer EDAS Management**: Editorial can upload/re-upload a single replacement IEEE PDF eXpress file (old storage objects are removed); Reviewer uploads it to EDAS, records structured warnings, returns corrections, or completes the paper. EDAS controls are disabled and server-rejected outside the active Reviewer stage.
 - **PIC Workload Summary Matrix & Staff Modal**: Dashboard workload matrix table and interactive Alpine.js PIC detail modal displaying workload, email, WhatsApp, and conference roles.
 - **Separated Internal Notes & Author Feedback**: Dedicated confidential Catatan Internal card and author-facing Komunikasi Author card with CC email chips and WhatsApp action.
 - **Full Mobile Responsiveness & Viewport Fit**: 100% fit on 320px–430px mobile screens without horizontal overflow, compact header truncation, and consistent outer card margins.
@@ -132,7 +132,7 @@ Do not update `submissions.status` directly when a transition should be validate
 - **Streamlined Author Portal Header & Mobile Fit**: Minimalist Author Portal header displaying eyebrow and status badge without redundant paper title/code text. Mobile-optimized manuscript download cards preventing button clipping on 320px–430px viewports.
 - **Non-Destructive Final Version Deletion**: Deleting a file version marked as `Final` soft-deletes the version without automatically flagging the remaining latest version as `is_final = true` in the database; Author Portal and staff views safely fall back to the latest remaining version with `Latest` label until staff explicitly sets a new final version.
 - **Mandatory Final Page Count Validation**: `final_page_count` is enforced as mandatory before approving a paper and sending it to the Reviewer, backed by controller validation rules and `SubmissionWorkflow` domain exception protection.
-- **IEEE PDF eXpress Camera-Ready PDF File Upload & Author Download Action**: Reviewers can upload the verified camera-ready PDF file (`file_category = 'camera_ready_pdf'`, max 25MB PDF) when status is set to `Passed`. Author Portal displays a prominent red download button card (`bg-rose-600`) with standardized card hover darkening behavior.
+- **IEEE PDF eXpress File Upload & Author Download Action**: Editorial uploads/replaces the verified PDF eXpress file (max 25MB PDF) without file-version history. Authorized staff can download it at any time; Author Portal exposes it only after Reviewer completion and forces a `{paperid}-pdf-express.pdf` download name.
 - **Superadmin Password-Protected Clean Slate System Purge**: Superadmin-only development reset action (`POST /admin/system/purge` handled by `SystemPurgeController`) with mandatory current password verification. Wipes all non-superadmin users, conferences, submissions, file version histories, email/audit logs, and physical local/cloud file storage while keeping active Superadmin accounts intact. Accessible via `/monitoring?tab=purge` tab and `/admin/users` quick action button with modal confirmation.
 - **Dynamic Checklist Item Re-indexing**: `ChecklistController` strips input array keys via `array_values($payload['items'])` and `resources/js/app.js` prefixes newly appended dynamic template items with `new_${Date.now()}_${length}`, preventing PostgreSQL 32-bit `sort_order` integer overflow crashes when adding custom IEEE checklist items.
 - **Ngrok Warning Bypass**: Global `SkipNgrokWarning` middleware and launcher request header `--request-header-add "ngrok-skip-browser-warning: true"` automatically bypass free ngrok interstitial warning pages.
@@ -176,7 +176,7 @@ Conference email is created by `ConferenceMailer`, logged in `email_logs`, queue
 - `resources/views/emails/paperflow.blade.php`
 - `resources/views/emails/paperflow-text.blade.php`
 
-Email is HTML-first with a plain-text fallback. It uses the conference sender name, primary/accent colors, and optional logo. Password-reset and SMTP diagnostic messages use the same Paperflow design.
+Email is HTML-first with a plain-text fallback. It uses the conference sender name, primary/accent colors, and optional logo. Password-reset and SMTP diagnostic messages use the same Paperflow design. Workflow notifications for assignment, reviewer handoff, EDAS return/completion, author revision, and completed-paper revert use `WorkflowEmailContent` to render consistent Paper ID/title cards. EDAS warning cards are rendered only if warning entries exist.
 
 Conference Admin can preview edited templates live and queue a test-send before saving. Conference-level and template-level default CC recipients appear in the editorial composer but remain removable. Email logs persist the rendered body and sender user: Conference Admin sees conference email, superadmin sees all email, and Editorial sees only email they sent. Failed email with a stored body can be re-sent from monitoring or the paper history.
 
@@ -189,6 +189,8 @@ php artisan optimize:clear
 php artisan queue:restart
 php artisan queue:work --tries=3
 ```
+
+On the current shared Hostinger deployment, no system process manager is available. The tracked `scripts/paperflow-queue-worker.sh` runner is invoked by an hPanel Custom Cron Job (`/bin/sh /home/u374025150/domains/paperflow.info/public_html/scripts/paperflow-queue-worker.sh`). It uses `flock`, PHP 8.2, database queue processing, and `--stop-when-empty`; schedule it at the operational interval. This is a shared-hosting fallback, not a substitute for a VPS-managed persistent worker.
 
 ## Conference branding
 
@@ -222,6 +224,9 @@ Laravel migrations in `database/migrations` are the source of truth. Latest appl
 - `2026_08_11_000100_add_initial_and_final_page_counts_to_submissions.php`
 - `2026_08_11_083459_add_submission_source_to_submissions_table.php`
 - `2026_08_13_000100_update_revision_requested_email_styling.php`
+- `2026_08_26_000100_move_pdf_express_to_submission_file.php`
+- `2026_08_26_000200_create_scheduled_revision_reminders_table.php`
+- `2026_08_26_000300_update_paper_completed_email_template.php`
 
 Application tables are server-only. RLS is enabled without anon/authenticated policies because the browser does not use Supabase Data API for these tables. Laravel connects with the server database role.
 

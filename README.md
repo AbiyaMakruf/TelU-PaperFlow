@@ -26,8 +26,9 @@ Paperflow is an enterprise academic conference editorial workflow application bu
 - **Interactive Chart.js Dashboard Analytics:** 3 visual dashboard charts including a 14-day continuous submission trend line with smooth gradient area fill, paper status ratio doughnut chart, and Person in Charge (PIC) Editor/Reviewer workload & turnaround bar chart.
 - **16-Point IEEE Editorial Compliance Checklist:** Interactive compliance checklist with guidance accordions, automated revision feedback template generation, and dynamic item re-indexing to prevent PostgreSQL 32-bit `sort_order` overflow crashes.
 - **Private Tokenized Author Portal:** Passwordless portal (`/submission/access/{token}`) providing authors with live checklist monitoring, submission detail updates, editable revision DOCX/ZIP uploads, and PDF guidance file downloads.
-- **IEEE PDF eXpress & Camera-Ready File Management:** Reviewer-managed IEEE PDF eXpress status logging (`Pending`, `Passed`, `Failed`), EDAS quick-error presets, and camera-ready PDF file upload with standardized red download cards (`bg-rose-600`).
-- **Conference-Scoped EDAS Reconciliation:** Sub-navigation tool (`/conferences/{id}/edas-reconciliation`) featuring simplified CSV column mapping (Paper ID & Paper Title) to detect missing EDAS submissions.
+- **IEEE PDF eXpress & EDAS Management:** Editorial uploads and can replace the verified IEEE PDF eXpress file; Reviewer uploads it to EDAS, records structured warnings, returns corrections when needed, and marks the paper completed only after EDAS is confirmed.
+- **Conference-Scoped EDAS Reconciliation:** Sub-navigation tool (`/conferences/{id}/edas-reconciliation`) imports EDAS Paper ID, Title, and a dynamic semicolon-separated author list, with expandable author rows and matching/export support.
+- **Workflow Email Design:** Branded HTML email cards standardize Paper ID/title across assignment, review, EDAS return/completion, revert, and author-revision workflow notifications. EDAS warning logs are included only when present.
 - **Superadmin Password-Protected Clean Slate System Purge:** Dedicated development reset tool (`POST /admin/system/purge`) requiring Superadmin password verification to wipe all non-superadmin database records and physical file storage while keeping active Superadmin accounts intact.
 - **Dual File Storage Architecture:** Choose per conference between private Supabase Storage (signed URLs) or an authorized Google Drive folder, complete with temporary local upload attempt retry mechanisms.
 - **E.164 Multi-Country Phone Parsing & WhatsApp Integration:** International phone number parsing with mutator normalization (`+628...`) and direct `wa.me` click-to-chat integration with pre-filled checklist revision drafts.
@@ -198,7 +199,7 @@ php artisan storage:link
 php artisan queue:restart
 ```
 
-Ensure a persistent supervisor or process manager keeps `php artisan queue:work --tries=3` running continuously for email delivery and background jobs.
+Ensure a persistent supervisor or process manager keeps `php artisan queue:work --tries=3` running continuously for email delivery and background jobs. On shared Hostinger plans without a process manager, configure a Cron Job to invoke `/bin/sh /home/u374025150/domains/paperflow.info/public_html/scripts/paperflow-queue-worker.sh` at the required interval. The script locks execution, uses PHP 8.2, and exits when the ready queue is empty; adapt the absolute path for other deployments.
 
 ---
 
