@@ -20,6 +20,7 @@ use App\Services\RevisionDeadlineReminderService;
 use App\Services\SubmissionWorkflow;
 use App\Services\VisibleEmailLogs;
 use App\Services\VisibleSubmissions;
+use App\Services\WorkflowEmailContent;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -1202,9 +1203,8 @@ class SubmissionController extends Controller
 
         if ($submission->reviewer?->email) {
             $paperUrl = route('submissions.show', $submission);
-            $subject = "[Paperflow] Ready for Review: Paper {$submission->paper_code} - {$submission->title}";
-            $noteText = $note ?: 'No additional notes provided by editor.';
-            $body = "Dear {$submission->reviewer->name},\n\nEditor {$request->user()->name} has completed the IEEE compliance checklist and sent paper {$submission->paper_code} for peer & technical review in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nEditor Note: {$noteText}\n\nPlease log in to Paperflow to inspect the checklist and update the review / EDAS status:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Editorial Team";
+            $subject = "[Paperflow] Paper {$submission->paper_code} Ready for Review";
+            $body = "Dear {$submission->reviewer->name},\n\nEditor {$request->user()->name} has completed the editorial compliance review and uploaded the IEEE PDF eXpress file. The manuscript is now ready for your review and subsequent EDAS upload.\n\n".WorkflowEmailContent::paperCard($submission)."\n\nPlease open the paper in Paperflow, review the IEEE PDF eXpress file, upload it to EDAS, and record any EDAS warnings or required corrections.\n\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Editorial Team";
             $mailer->sendNotification($submission, $submission->reviewer->email, $subject, $body, $request->user(), templateKey: 'send_reviewer');
         }
     }
@@ -1216,9 +1216,12 @@ class SubmissionController extends Controller
 
         if ($submission->editor?->email) {
             $paperUrl = route('submissions.show', $submission);
-            $subject = "[Paperflow] Reviewer Requested Changes: Paper {$submission->paper_code} - {$submission->title}";
-            $noteText = $note ?: 'No additional notes provided by reviewer.';
-            $body = "Dear {$submission->editor->name},\n\nReviewer {$request->user()->name} has inspected paper {$submission->paper_code} and requested changes before proceeding.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nReviewer Note: {$noteText}\n\nPlease log in to Paperflow to review the feedback and communicate with the author:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Reviewer Team";
+            $subject = "[Paperflow] Paper {$submission->paper_code} Returned for EDAS Corrections";
+            $errorDetails = array_filter([
+                $note ? "EDAS Error Note: {$note}" : null,
+                ...collect($submission->edas_warnings ?? [])->map(fn ($warning) => "EDAS Warning: {$warning}")->all(),
+            ]);
+            $body = "Dear {$submission->editor->name},\n\nReviewer {$request->user()->name} returned this paper because EDAS reported an issue that requires editorial correction before the upload can be completed.\n\n".WorkflowEmailContent::paperCard($submission)."\n\n".WorkflowEmailContent::listCard('EDAS Error and Warning Log', $errorDetails)."\n\nPlease open the paper in Paperflow, review the EDAS log, correct the manuscript as needed, and upload a replacement IEEE PDF eXpress file.\n\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Reviewer Team";
             $mailer->sendNotification($submission, $submission->editor->email, $subject, $body, $request->user(), templateKey: 'reviewer_changes');
         }
     }
@@ -1246,8 +1249,9 @@ class SubmissionController extends Controller
 
         if ($submission->editor?->email) {
             $paperUrl = route('submissions.show', $submission);
-            $subject = "[Paperflow] Uploaded to EDAS & Completed by Reviewer: Paper {$submission->paper_code} - {$submission->title}";
-            $body = "Dear {$submission->editor->name},\n\nReviewer {$request->user()->name} has uploaded paper {$submission->paper_code} to EDAS without errors and marked it completed (Done) in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nEDAS Reference: {$submission->fresh()->edas_reference}\nReviewer Note: {$statusNote}\n\nView details in Paperflow:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Reviewer Team";
+            $subject = "[Paperflow] Paper {$submission->paper_code} Marked Completed by Reviewer";
+            $warnings = $submission->edas_warnings ?? [];
+            $body = "Dear {$submission->editor->name},\n\nReviewer {$request->user()->name} has completed the EDAS upload and marked this paper as completed.\n\n".WorkflowEmailContent::paperCard($submission)."\n\n".WorkflowEmailContent::listCard('EDAS Warnings Recorded by Reviewer', $warnings)."\n\nYou can review the completed paper and the recorded EDAS status in Paperflow.\n\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Reviewer Team";
             $mailer->sendNotification($submission, $submission->editor->email, $subject, $body, $request->user(), templateKey: 'reviewer_approve');
         }
 
@@ -1263,9 +1267,9 @@ class SubmissionController extends Controller
 
         if ($submission->reviewer?->email) {
             $paperUrl = route('submissions.show', $submission);
-            $subject = "[Paperflow] Returned due to EDAS Error: Paper {$submission->paper_code} - {$submission->title}";
+            $subject = "[Paperflow] Paper {$submission->paper_code} Returned for EDAS Review";
             $noteText = $note ?: 'EDAS upload error encountered.';
-            $body = "Dear {$submission->reviewer->name},\n\nEditor {$request->user()->name} returned paper {$submission->paper_code} due to an issue encountered during EDAS upload in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nEDAS Error Note: {$noteText}\n\nPlease log in to Paperflow to inspect the EDAS error details and update the status:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Editorial Team";
+            $body = "Dear {$submission->reviewer->name},\n\nEditor {$request->user()->name} returned this paper for further EDAS review.\n\n".WorkflowEmailContent::paperCard($submission)."\n\n".WorkflowEmailContent::listCard('EDAS Return Details', [$noteText])."\n\nPlease open the paper in Paperflow, review the reported issue, and update the EDAS status after the correction is verified.\n\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Editorial Team";
             $mailer->sendNotification($submission, $submission->reviewer->email, $subject, $body, $request->user(), templateKey: 'edas_fix');
         }
     }
@@ -1275,9 +1279,9 @@ class SubmissionController extends Controller
         $workflow->transition($submission, $to, $request->user(), $note ?? 'Dibalikkan dari Selesai oleh Admin Conference');
 
         $paperUrl = route('submissions.show', $submission);
-        $subject = "[Paperflow] Completed Paper Reverted by Admin: Paper {$submission->paper_code} - {$submission->title}";
+        $subject = "[Paperflow] Paper {$submission->paper_code} Reverted by Conference Admin";
         $noteText = $note ?: 'Reverted by Conference Admin.';
-        $body = "Dear Editorial & Reviewer Team,\n\nConference Admin {$request->user()->name} has reverted completed paper {$submission->paper_code} back to {$to->label()} in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nAdmin Note: {$noteText}\n\nPlease log in to Paperflow to inspect the paper status and resume processing:\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Administration";
+        $body = "Dear Editorial & Reviewer Team,\n\nConference Admin {$request->user()->name} has reverted this completed paper to {$to->label()}.\n\n".WorkflowEmailContent::paperCard($submission, ['Reverted To' => $to->label(), 'Revert Reason' => $noteText])."\n\nPlease open the paper in Paperflow and resume the required workflow actions.\n\n{$paperUrl}\n\nBest regards,\n{$request->user()->name}\n{$submission->conference->name} Administration";
 
         if ($submission->editor?->email) {
             $mailer->sendNotification($submission, $submission->editor->email, $subject, $body, $request->user(), templateKey: 'revert_done');

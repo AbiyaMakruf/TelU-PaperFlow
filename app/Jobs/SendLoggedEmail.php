@@ -47,6 +47,7 @@ class SendLoggedEmail implements ShouldQueue
                 'assigned_editor' => 'Open Paper & Complete Checklist',
                 'assigned_reviewer' => 'Open Paper & Review',
                 'author_revision_uploaded' => 'Inspect Updated Paper',
+                'send_reviewer', 'reviewer_changes', 'reviewer_approve', 'edas_fix', 'revert_done' => 'Open Paper in Paperflow',
                 default => 'Track Submission',
             };
             $body = $this->body;

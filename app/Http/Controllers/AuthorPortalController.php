@@ -11,6 +11,7 @@ use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceMailer;
 use App\Services\PhoneNumber;
 use App\Services\RevisionDeadlineReminderService;
+use App\Services\WorkflowEmailContent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -102,9 +103,12 @@ class AuthorPortalController extends Controller
         app(RevisionDeadlineReminderService::class)->cancelForSubmission($submission, 'Cancelled because the author uploaded a revision.');
 
         $paperUrl = route('submissions.show', $submission);
-        $subject = "[Paperflow] Author Revision Uploaded: Paper {$submission->paper_code} - {$submission->title}";
-        $notesText = ! empty($validated['notes']) ? $validated['notes'] : 'No author notes provided.';
-        $body = "Dear Editorial Team,\n\nAuthor {$submission->corresponding_author_name} has uploaded a new revision manuscript version for paper {$submission->paper_code} in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nAuthor Notes: {$notesText}\n\nPlease log in to Paperflow to inspect the updated manuscript files and checklist:\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$submission->conference->name}";
+        $subject = "[Paperflow] Paper {$submission->paper_code} Revision Uploaded";
+        $authorNotes = filled($validated['notes'] ?? null) ? ['Author Notes' => $validated['notes']] : [];
+        $body = "Dear Editorial Team,\n\n{$submission->corresponding_author_name} has uploaded a revised editable manuscript.\n\n".WorkflowEmailContent::paperCard($submission, [
+            'Corresponding Author' => $submission->corresponding_author_name,
+            ...$authorNotes,
+        ])."\n\nPlease open the paper in Paperflow to inspect the updated manuscript and continue the editorial checklist.\n\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$submission->conference->name}";
 
         if ($submission->editor?->email) {
             app(ConferenceMailer::class)->sendNotification($submission, $submission->editor->email, $subject, $body, templateKey: 'author_revision_uploaded');

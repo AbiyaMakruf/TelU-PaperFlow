@@ -80,6 +80,9 @@ class PaperflowEmailPresentationTest extends TestCase
             'recipient' => 'editor@conf.org',
             'template_key' => 'assigned_editor',
         ]);
+        $assignedEditorEmail = EmailLog::query()->where('template_key', 'assigned_editor')->latest()->firstOrFail();
+        $this->assertSame('[Paperflow] Paper EMAIL-001 Assigned to You as Editor', $assignedEditorEmail->subject);
+        $this->assertStringContainsString('Paper Details', $assignedEditorEmail->body);
 
         // 2. Assign Reviewer -> Email to Reviewer
         $workflow->assign($submission->fresh(), $reviewer, ConferenceRole::Reviewer, $admin);
@@ -87,6 +90,9 @@ class PaperflowEmailPresentationTest extends TestCase
             'recipient' => 'reviewer@conf.org',
             'template_key' => 'assigned_reviewer',
         ]);
+        $assignedReviewerEmail = EmailLog::query()->where('template_key', 'assigned_reviewer')->latest()->firstOrFail();
+        $this->assertSame('[Paperflow] Paper EMAIL-001 Assigned to You as Reviewer', $assignedReviewerEmail->subject);
+        $this->assertStringContainsString('Paper Details', $assignedReviewerEmail->body);
 
         // 3. Send Reviewer -> Email to Reviewer
         $submission->update(['status' => SubmissionStatus::EditorialReview]);
@@ -115,6 +121,10 @@ class PaperflowEmailPresentationTest extends TestCase
             'recipient' => 'reviewer@conf.org',
             'template_key' => 'send_reviewer',
         ]);
+        $reviewEmail = EmailLog::query()->where('template_key', 'send_reviewer')->latest()->firstOrFail();
+        $this->assertSame('[Paperflow] Paper EMAIL-001 Ready for Review', $reviewEmail->subject);
+        $this->assertStringContainsString('uploaded the IEEE PDF eXpress file', $reviewEmail->body);
+        $this->assertStringNotContainsString('Editor Note:', $reviewEmail->body);
 
         // 4. Reviewer Changes -> Email to Editor
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), [
@@ -125,9 +135,13 @@ class PaperflowEmailPresentationTest extends TestCase
             'recipient' => 'editor@conf.org',
             'template_key' => 'reviewer_changes',
         ]);
+        $changesEmail = EmailLog::query()->where('template_key', 'reviewer_changes')->latest()->firstOrFail();
+        $this->assertSame('[Paperflow] Paper EMAIL-001 Returned for EDAS Corrections', $changesEmail->subject);
+        $this->assertStringContainsString('EDAS Error and Warning Log', $changesEmail->body);
+        $this->assertStringContainsString('Please fix formatting.', $changesEmail->body);
 
         // 5. Reviewer Approve -> Email to Editor
-        $submission->update(['status' => SubmissionStatus::ReviewerReview]);
+        $submission->update(['status' => SubmissionStatus::ReviewerReview, 'edas_warnings' => ['A font embedding warning was recorded in EDAS.']]);
 
         $this->actingAs($reviewer)->post(route('submissions.advance', $submission), [
             'action' => 'reviewer_approve',
@@ -137,6 +151,10 @@ class PaperflowEmailPresentationTest extends TestCase
             'recipient' => 'editor@conf.org',
             'template_key' => 'reviewer_approve',
         ]);
+        $completedByReviewerEmail = EmailLog::query()->where('template_key', 'reviewer_approve')->latest()->firstOrFail();
+        $this->assertSame('[Paperflow] Paper EMAIL-001 Marked Completed by Reviewer', $completedByReviewerEmail->subject);
+        $this->assertStringContainsString('EDAS Warnings Recorded by Reviewer', $completedByReviewerEmail->body);
+        $this->assertStringContainsString('A font embedding warning was recorded in EDAS.', $completedByReviewerEmail->body);
         $completedEmail = EmailLog::query()->where('template_key', 'paper_completed')->latest()->firstOrFail();
         $this->assertStringContainsString('Final Manuscript Details', $completedEmail->body);
         $this->assertStringContainsString('EMAIL-001', $completedEmail->body);

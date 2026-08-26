@@ -149,12 +149,18 @@ class SubmissionWorkflow
 
             $paperUrl = route('submissions.show', $submission);
             if ($role === ConferenceRole::Editorial) {
-                $subject = "[Paperflow] Assigned as Editor: Paper {$submission->paper_code} - {$submission->title}";
-                $body = "Dear {$assignee->name},\n\nYou have been assigned as Editorial PIC for paper {$submission->paper_code} in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nAuthor: {$submission->corresponding_author_name} ({$submission->corresponding_author_email})\n\nPlease log in to Paperflow to inspect the manuscript and complete the IEEE compliance checklist:\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$submission->conference->name}";
+                $subject = "[Paperflow] Paper {$submission->paper_code} Assigned to You as Editor";
+                $body = "Dear {$assignee->name},\n\nYou have been assigned as the Editorial PIC for this paper.\n\n".WorkflowEmailContent::paperCard($submission, [
+                    'Corresponding Author' => $submission->corresponding_author_name,
+                    'Author Email' => $submission->corresponding_author_email,
+                ])."\n\nPlease open the paper in Paperflow, inspect the manuscript, and complete the editorial compliance checklist.\n\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$submission->conference->name}";
                 app(ConferenceMailer::class)->sendNotification($submission, $assignee->email, $subject, $body, $actor, templateKey: 'assigned_editor');
             } else {
-                $subject = "[Paperflow] Assigned as Reviewer: Paper {$submission->paper_code} - {$submission->title}";
-                $body = "Dear {$assignee->name},\n\nYou have been assigned as Reviewer PIC for paper {$submission->paper_code} in {$submission->conference->name}.\n\nPaper Code: {$submission->paper_code}\nTitle: {$submission->title}\nAuthor: {$submission->corresponding_author_name} ({$submission->corresponding_author_email})\n\nPlease log in to Paperflow to inspect the review status and IEEE PDF eXpress / EDAS details:\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$submission->conference->name}";
+                $subject = "[Paperflow] Paper {$submission->paper_code} Assigned to You as Reviewer";
+                $body = "Dear {$assignee->name},\n\nYou have been assigned as the Reviewer PIC for this paper.\n\n".WorkflowEmailContent::paperCard($submission, [
+                    'Corresponding Author' => $submission->corresponding_author_name,
+                    'Author Email' => $submission->corresponding_author_email,
+                ])."\n\nPlease open the paper in Paperflow to review the editorial result, IEEE PDF eXpress file, and EDAS upload status.\n\n{$paperUrl}\n\nBest regards,\nPaperflow Workflow System\n{$submission->conference->name}";
                 app(ConferenceMailer::class)->sendNotification($submission, $assignee->email, $subject, $body, $actor, templateKey: 'assigned_reviewer');
             }
 
