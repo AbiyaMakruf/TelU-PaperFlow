@@ -137,6 +137,12 @@ class PaperflowEmailPresentationTest extends TestCase
             'recipient' => 'editor@conf.org',
             'template_key' => 'reviewer_approve',
         ]);
+        $completedEmail = EmailLog::query()->where('template_key', 'paper_completed')->latest()->firstOrFail();
+        $this->assertStringContainsString('Final Manuscript Details', $completedEmail->body);
+        $this->assertStringContainsString('EMAIL-001', $completedEmail->body);
+        $this->assertStringContainsString('Email Workflow Paper', $completedEmail->body);
+        $this->assertStringContainsString('completed the IEEE PDF eXpress process and uploaded the final manuscript to EDAS', $completedEmail->body);
+        $this->assertStringContainsString('Open Author Portal', $completedEmail->body);
     }
 
     public function test_revision_requested_email_does_not_corrupt_html_table_or_cta_url_and_prevents_double_encoding(): void

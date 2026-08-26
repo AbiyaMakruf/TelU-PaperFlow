@@ -1251,7 +1251,9 @@ class SubmissionController extends Controller
             $mailer->sendNotification($submission, $submission->editor->email, $subject, $body, $request->user(), templateKey: 'reviewer_approve');
         }
 
-        $mailer->queue($submission->load('conference'), 'paper_completed', []);
+        $mailer->queue($submission->load('conference'), 'paper_completed', [
+            'portal_url' => route('author.portal', $this->authorToken($submission)),
+        ]);
     }
 
     private function edasFix(Request $request, Submission $submission, SubmissionWorkflow $workflow, ?string $note, ConferenceMailer $mailer): void
@@ -1298,7 +1300,9 @@ class SubmissionController extends Controller
         }
         $submission->update(['edas_approved_at' => now(), 'edas_approved_by' => $request->user()->id, 'edas_notes' => $validated['note'] ?? $submission->edas_notes]);
         $workflow->transition($submission->fresh(), SubmissionStatus::Done, $request->user(), $validated['note'] ?? null);
-        $mailer->queue($submission->load('conference'), 'paper_completed', []);
+        $mailer->queue($submission->load('conference'), 'paper_completed', [
+            'portal_url' => route('author.portal', $this->authorToken($submission)),
+        ]);
     }
 
     private function authorToken(Submission $submission): string
