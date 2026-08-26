@@ -17,7 +17,8 @@ class RevisionDeadlineReminderService
             return;
         }
 
-        $timezone = $submission->conference->timezone ?: 'Asia/Jakarta';
+        // Revision deadlines and their reminders are operationally fixed to WIB.
+        $timezone = 'Asia/Jakarta';
         $deadline = $submission->deadline_at->clone()->setTimezone($timezone);
         $scheduledFor = $deadline->clone()->startOfDay()->setTime(8, 0);
         $deadlineDate = $deadline->toDateString();
