@@ -125,7 +125,7 @@
                                     </a>
                                 @endif
 
-                                @if($isFinalVersion || $submission->status === \App\Enums\SubmissionStatus::Done)
+                                @if($submission->status === \App\Enums\SubmissionStatus::Done)
                                     <div class="mt-3.5 p-3.5 sm:p-4 rounded-xl border border-emerald-200 bg-emerald-50/70 text-xs text-emerald-950 space-y-1 shadow-2xs">
                                         <div class="flex items-start gap-2.5">
                                             <svg class="size-4 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

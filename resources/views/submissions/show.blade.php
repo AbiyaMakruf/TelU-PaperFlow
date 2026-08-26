@@ -303,6 +303,8 @@
                         isEditorialActive: {{ json_encode($isEditorialActive) }},
                         isPdfExpressEditable: {{ json_encode($isPdfExpressEditable) }},
                         pdfExpressName: '',
+                        finalPageCount: @js(old('final_page_count', $submission->final_page_count)),
+                        pdfExpressReady: {{ json_encode($submission->hasPdfExpress()) }},
                         setPdfExpressFile(file) {
                             if (!file || !this.isPdfExpressEditable) return;
                             const input = document.getElementById('pdf-express-file');
@@ -313,6 +315,9 @@
                         },
                         get allPassed() {
                             return this.requiredIds.length > 0 && this.checkedCount >= this.requiredIds.length;
+                        },
+                        get canSendToReviewer() {
+                            return this.isEditorialActive && this.hasReviewer && this.allPassed && Number(this.finalPageCount) > 0 && this.pdfExpressReady;
                         },
                         updateCheckedState() {
                             if (!this.isEditorialActive) return;
@@ -613,7 +618,7 @@
                                                 <span class="text-[11px] font-semibold text-emerald-800">Initial: {{ $submission->initial_page_count }} pp</span>
                                             @endif
                                         </label>
-                                        <input id="final-page-count" type="number" min="1" max="500" required class="form-input text-xs" name="final_page_count" value="{{ old('final_page_count', $submission->final_page_count) }}" placeholder="Enter the final manuscript page count after editorial formatting" :disabled="!isEditorialActive">
+                                        <input id="final-page-count" x-model="finalPageCount" type="number" min="1" max="500" required class="form-input text-xs" name="final_page_count" placeholder="Enter the final manuscript page count after editorial formatting" :disabled="!isEditorialActive">
                                         </div>
                                         <div class="space-y-2 rounded-xl bg-white border border-slate-200 p-3.5">
                                             <div class="flex items-center justify-between gap-2"><label class="form-label text-xs font-bold text-navy mb-0">IEEE PDF eXpress File <span class="text-rose-600">*</span></label>@if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="text-[11px] font-bold text-navy hover:text-orange hover:underline">Download current file</a>@endif</div>
@@ -647,7 +652,7 @@
                                     <template x-if="allPassed">
                                         <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
                                             <template x-if="hasReviewer">
-                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!isEditorialActive || !document.getElementById('final-page-count').value || !{{ $submission->hasPdfExpress() ? 'true' : 'false' }}" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <button type="submit" name="action" value="approve_and_send_reviewer" @click="await prepareFeedbackSubmit()" :disabled="!canSendToReviewer" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 text-xs font-extrabold w-full sm:w-auto shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                                                     ✓ Approve &amp; Send to Reviewer
                                                 </button>
                                             </template>
@@ -659,6 +664,9 @@
                                         </div>
                                     </template>
                                 </div>
+                                <template x-if="allPassed && !canSendToReviewer && hasReviewer">
+                                    <p class="text-[11px] font-bold text-amber-700 text-right">Complete the remaining requirement: <span x-show="!finalPageCount">enter Final Page Count</span><span x-show="!finalPageCount && !pdfExpressReady"> and </span><span x-show="!pdfExpressReady">upload IEEE PDF eXpress File</span>.</p>
+                                </template>
                                 <template x-if="allPassed && !hasReviewer">
                                     <p class="text-[11px] font-bold text-amber-700 text-right mt-2">
                                         ⚠️ Reviewer PIC has not been assigned yet. Please select &amp; save a Reviewer PIC in the sidebar.
