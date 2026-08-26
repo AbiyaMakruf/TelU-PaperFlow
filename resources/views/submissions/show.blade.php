@@ -3,8 +3,18 @@
         <div class="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start min-w-0">
         <div class="min-w-0">
             <p class="eyebrow truncate">{{ $submission->conference?->name ?? 'Conference' }} &middot; internal code {{ $submission->paper_code }}</p>
-            <h1 class="page-title leading-tight break-words">{{ $submission->paper_id ?: $submission->paper_code }}</h1>
-            <p class="page-subtitle leading-snug break-words max-w-full">{{ $submission->title }}</p>
+            <div class="flex items-start gap-2 min-w-0">
+                <h1 class="page-title leading-tight break-words min-w-0">{{ $submission->paper_id ?: $submission->paper_code }}</h1>
+                <button type="button" data-copy="{{ $submission->paper_id ?: $submission->paper_code }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper ID copied.')" class="mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-navy hover:border-orange hover:text-orange transition" title="Copy Paper ID" aria-label="Copy Paper ID">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+            </div>
+            <div class="mt-1 flex items-start gap-2 min-w-0">
+                <p class="page-subtitle leading-snug break-words max-w-full min-w-0">{{ $submission->title }}</p>
+                <button type="button" data-copy="{{ $submission->title }}" onclick="window.copyPaperflowText(this.dataset.copy, 'Paper title copied.')" class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-navy hover:border-orange hover:text-orange transition" title="Copy Paper Title" aria-label="Copy Paper Title">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+            </div>
         </div>
         <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto" id="paper-status-badge-container">
             @php
@@ -1713,6 +1723,22 @@
         if (!str) return '';
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+    window.copyPaperflowText = async (value, successMessage) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: successMessage, type: 'success' } }));
+        } catch (error) {
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            const copied = document.execCommand('copy');
+            textarea.remove();
+            window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: copied ? successMessage : 'Unable to copy text.', type: copied ? 'success' : 'error' } }));
+        }
+    };
     document.addEventListener('DOMContentLoaded', () => {
         const pdf = document.getElementById('pdfexpress-edas-accordion');
         const files = document.getElementById('file-version-table')?.closest('details');
