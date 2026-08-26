@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('pdf_express_external_id')->nullable();
             $table->text('pdf_express_external_url')->nullable();
             $table->timestamp('pdf_express_uploaded_at')->nullable();
-            $table->foreignUlid('pdf_express_uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('pdf_express_uploaded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->json('edas_warnings')->nullable();
         });
 
