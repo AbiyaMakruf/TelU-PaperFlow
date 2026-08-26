@@ -873,7 +873,9 @@ class SubmissionController extends Controller
         }
 
         $bodyText = $validated['body']
-            ?? (($validated['action'] ?? null) === 'approve_and_send_reviewer' ? 'Editorial compliance checklist approved and submission sent to Reviewer.' : null);
+            ?? (($validated['action'] ?? null) === 'approve_and_send_reviewer'
+                ? 'Your manuscript has met all editorial requirements and will now proceed to IEEE PDF eXpress verification and final upload to EDAS. You do not need to upload anything further at this stage.'
+                : null);
 
         if (! empty($bodyText)) {
             $feedback = $submission->feedback()->create([
