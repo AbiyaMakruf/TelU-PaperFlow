@@ -20,7 +20,7 @@ class RevisionDeadlineReminderService
         // Revision deadlines and their reminders are operationally fixed to WIB.
         $timezone = 'Asia/Jakarta';
         $deadline = $submission->deadline_at->clone()->setTimezone($timezone);
-        $scheduledFor = $deadline->clone()->startOfDay()->setTime(8, 0);
+        $scheduledFor = $deadline->clone()->startOfDay()->setTime(8, 0)->utc();
         $deadlineDate = $deadline->toDateString();
         if ($scheduledFor->lessThanOrEqualTo(now($timezone))) {
             return;

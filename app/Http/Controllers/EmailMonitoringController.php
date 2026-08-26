@@ -123,7 +123,7 @@ class EmailMonitoringController extends Controller
         $scheduledReminders = ScheduledRevisionReminder::query()
             ->with(['conference', 'submission', 'editor', 'emailLog'])
             ->whereIn('conference_id', (clone $base)->reorder()->select('conference_id')->distinct())
-            ->latest('scheduled_for')->limit(100)->get();
+            ->orderBy('scheduled_for')->limit(100)->get();
 
         return view('operations.emails', compact(
             'logs',
