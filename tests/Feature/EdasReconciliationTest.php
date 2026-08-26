@@ -188,6 +188,38 @@ CSV);
         $this->assertStringContainsString('Satria Aji Permana Siwi; Jane Doe; John Smith', $export->streamedContent());
     }
 
+    public function test_edas_authors_appear_in_the_matching_paper_details(): void
+    {
+        [$conference, $admin] = $this->createConferenceWithRoles();
+
+        $submission = Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => '1571255297',
+            'paper_code' => 'ICOICT-5297',
+            'title' => 'Knowledge Graph',
+            'corresponding_author_name' => 'Paperflow Author',
+            'corresponding_author_email' => 'author@example.com',
+            'submitted_at' => now(),
+        ]);
+        $csvFile = UploadedFile::fake()->createWithContent('edas.csv', <<<'CSV'
+#,Title,Authors
+1571255297,Knowledge Graph,"Satria Aji Permana Siwi; Jane Doe; John Smith"
+CSV);
+
+        $this->actingAs($admin)
+            ->post(route('conferences.edas-reconciliation.upload', $conference), ['csv_file' => $csvFile])
+            ->assertRedirect();
+
+        $this->actingAs($admin)
+            ->get(route('submissions.show', $submission))
+            ->assertOk()
+            ->assertSee('Authors from EDAS')
+            ->assertSee('These names are imported from the EDAS CSV export')
+            ->assertSee('Satria Aji Permana Siwi')
+            ->assertSee('Jane Doe')
+            ->assertSee('John Smith');
+    }
+
     public function test_refresh_route_updates_reconciliation_live(): void
     {
         [$conference, $admin] = $this->createConferenceWithRoles();

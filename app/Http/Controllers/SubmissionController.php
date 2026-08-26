@@ -207,8 +207,22 @@ class SubmissionController extends Controller
         $whatsappUrl = PhoneNumber::whatsappDigits($submission->corresponding_author_phone)
             ? 'https://wa.me/'.PhoneNumber::whatsappDigits($submission->corresponding_author_phone).'?text='.rawurlencode($whatsappText)
             : null;
+        $submissionCodes = collect([$submission->paper_id, $submission->paper_code, $submission->original_paper_code])
+            ->filter()
+            ->map(fn (string $code) => $this->normalizeExternalPaperId($code));
+        $edasRow = collect($submission->conference->settings['edas_reconciliation']['raw_items'] ?? [])
+            ->first(fn (array $row) => $submissionCodes->contains($this->normalizeExternalPaperId($row['edas_paper_id'] ?? '')));
+        $edasAuthors = collect(preg_split('/[;\r\n]+/', (string) ($edasRow['edas_authors'] ?? '')) ?: [])
+            ->map(fn (string $author) => trim(preg_replace('/\s+/', ' ', $author) ?? ''))
+            ->filter()
+            ->values();
 
-        return view('submissions.show', compact('submission', 'editors', 'reviewers', 'emailLogs', 'defaultCc', 'whatsappUrl'));
+        return view('submissions.show', compact('submission', 'editors', 'reviewers', 'emailLogs', 'defaultCc', 'whatsappUrl', 'edasAuthors'));
+    }
+
+    private function normalizeExternalPaperId(?string $code): string
+    {
+        return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) $code) ?? '');
     }
 
     public function accept(Request $request, Submission $submission, SubmissionWorkflow $workflow): RedirectResponse|JsonResponse

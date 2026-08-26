@@ -194,6 +194,23 @@
                     @endforeach
                 </dl>
 
+                @if($edasAuthors->isNotEmpty())
+                    <div class="mt-5 rounded-xl border border-sky-200 bg-sky-50/70 p-4">
+                        <div class="flex items-start gap-3">
+                            <span class="mt-0.5 text-base" aria-hidden="true">👥</span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-black text-navy">Authors from EDAS</h3>
+                                <p class="mt-1 text-xs leading-relaxed text-slate-600">These names are imported from the EDAS CSV export and may include the corresponding author and co-authors.</p>
+                                <ol class="mt-3 grid gap-2 text-xs text-slate-700 sm:grid-cols-2">
+                                    @foreach($edasAuthors as $author)
+                                        <li class="rounded-lg border border-sky-100 bg-white px-3 py-2 font-semibold">{{ $loop->iteration }}. {{ $author }}</li>
+                                    @endforeach
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <div class="mt-5 border-t border-navy/10 pt-4 flex flex-wrap items-center gap-3">
                     @if($latestFile)
                         <a href="{{ route('submissions.files.download', [$submission, $latestFile]) }}" class="btn text-xs py-2 px-4 inline-flex items-center gap-1.5 font-black shadow-xs bg-orange hover:bg-orange-dark text-white rounded-xl transition" title="Download latest manuscript version (v{{ $latestFile->version_number }} - {{ $latestFile->original_name }})">
