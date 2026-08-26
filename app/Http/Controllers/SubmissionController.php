@@ -606,9 +606,9 @@ class SubmissionController extends Controller
         abort_unless(in_array($submission->status, [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview], true), 422);
         $validated = $request->validate(['pdf_express_file' => ['required', 'file', 'mimes:pdf', 'max:25600']]);
         $file = $validated['pdf_express_file'];
-        $path = $submission->conference->slug.'/'.$submission->id.'/pdf-express.pdf';
+        $path = $submission->conference->slug.'/'.$submission->id.'/pdf-express-'.Str::uuid().'.pdf';
         $stored = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-pdf-express');
-        $previous = $submission->only(['pdf_express_disk', 'pdf_express_storage_path', 'pdf_express_external_id']);
+        $previous = $submission->hasPdfExpress() ? $submission->pdfExpressStorageData() : [];
         $submission->update([
             'pdf_express_status' => 'passed', 'pdf_express_disk' => $stored['disk'], 'pdf_express_storage_path' => $stored['storage_path'],
             'pdf_express_original_name' => $file->getClientOriginalName(), 'pdf_express_mime_type' => 'application/pdf', 'pdf_express_size' => $file->getSize(),
@@ -616,9 +616,9 @@ class SubmissionController extends Controller
             'pdf_express_external_id' => $stored['external_id'], 'pdf_express_external_url' => $stored['external_url'],
             'pdf_express_uploaded_at' => now(), 'pdf_express_uploaded_by' => $request->user()->id,
         ]);
-        if (filled($previous['pdf_express_storage_path']) && $previous['pdf_express_storage_path'] !== $stored['storage_path']) {
+        if (filled($previous['storage_path'] ?? null) && $previous['storage_path'] !== $stored['storage_path']) {
             try {
-                $storage->deleteSubmissionPdf($submission->conference, ['disk' => $previous['pdf_express_disk'], 'storage_path' => $previous['pdf_express_storage_path'], 'external_id' => $previous['pdf_express_external_id']]);
+                $storage->deleteSubmissionPdf($submission->conference, $previous);
             } catch (Throwable $e) {
                 report($e);
             }

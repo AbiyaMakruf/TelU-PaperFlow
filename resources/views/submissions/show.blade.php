@@ -303,6 +303,14 @@
                         isEditorialActive: {{ json_encode($isEditorialActive) }},
                         isPdfExpressEditable: {{ json_encode($isPdfExpressEditable) }},
                         pdfExpressName: '',
+                        setPdfExpressFile(file) {
+                            if (!file || !this.isPdfExpressEditable) return;
+                            const input = document.getElementById('pdf-express-file');
+                            const transfer = new DataTransfer();
+                            transfer.items.add(file);
+                            input.files = transfer.files;
+                            this.pdfExpressName = file.name;
+                        },
                         get allPassed() {
                             return this.requiredIds.length > 0 && this.checkedCount >= this.requiredIds.length;
                         },
@@ -610,8 +618,8 @@
                                         <div class="space-y-2 rounded-xl bg-white border border-slate-200 p-3.5">
                                             <div class="flex items-center justify-between gap-2"><label class="form-label text-xs font-bold text-navy mb-0">IEEE PDF eXpress File <span class="text-rose-600">*</span></label>@if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="text-[11px] font-bold text-navy hover:text-orange hover:underline">Download current file</a>@endif</div>
                                             <input id="pdf-express-file" type="file" name="pdf_express_file" form="pdf-express-form" accept="application/pdf" class="sr-only" :disabled="!isPdfExpressEditable" @change="pdfExpressName = $event.target.files[0]?.name || ''" {{ $submission->hasPdfExpress() ? '' : 'required' }}>
-                                            <label for="pdf-express-file" class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 text-xs" :class="!isPdfExpressEditable ? 'cursor-not-allowed opacity-60' : 'hover:border-navy'">
-                                                <span class="rounded-md bg-slate-100 px-2 py-1 font-bold text-navy">Choose file</span><span class="truncate text-muted" x-text="pdfExpressName || 'No file selected'"></span>
+                                            <label for="pdf-express-file" @dragover.prevent @drop.prevent="setPdfExpressFile($event.dataTransfer.files[0])" class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-2.5 text-xs transition" :class="!isPdfExpressEditable ? 'cursor-not-allowed opacity-60' : 'hover:border-navy hover:bg-slate-50'">
+                                                <span class="rounded-md bg-slate-100 px-2 py-1 font-bold text-navy">Choose or drop file</span><span class="truncate text-muted" x-text="pdfExpressName || 'No file selected'"></span>
                                             </label>
                                             <button type="submit" form="pdf-express-form" :disabled="!isPdfExpressEditable" class="btn btn-primary w-full text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
                                             @if($submission->pdf_express_uploaded_at)<p class="text-[11px] text-muted">Last uploaded: {{ $submission->pdf_express_uploaded_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>@endif
