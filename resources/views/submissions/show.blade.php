@@ -403,7 +403,7 @@
                                 <div class="min-w-0"><span>Editorial Compliance Checklist</span>@if(! $isEditorialActive)<p class="mt-1 text-[11px] font-semibold text-amber-700">Read only — available during Editorial Review in Progress.</p>@endif</div>
                                 <span class="text-orange font-bold text-xl shrink-0">+</span>
                             </summary>
-                            <form id="pdf-express-form" method="POST" action="{{ route('submissions.pdf-express.upload', $submission) }}" enctype="multipart/form-data">@csrf</form>
+                            <form id="pdf-express-form" method="POST" action="{{ route('submissions.pdf-express.upload', $submission) }}" enctype="multipart/form-data" @submit.prevent="window.submitPaperflowForm($event)">@csrf</form>
                             <form method="POST" action="{{ route('submissions.checklist', [$submission, $stage->value]) }}" @submit.prevent="window.submitPaperflowForm($event)" class="space-y-4 border-t border-navy/10 p-4 sm:p-6" id="checklist-form-{{ $stage->value }}">
                                 @csrf
                                 @method('PUT')
@@ -636,14 +636,14 @@
                                         </label>
                                         <input id="final-page-count" x-model="finalPageCount" type="number" min="1" max="500" required class="form-input text-xs" name="final_page_count" placeholder="Enter the final manuscript page count after editorial formatting" :disabled="!isEditorialActive">
                                         </div>
-                                        <div class="space-y-2 rounded-xl bg-white border border-slate-200 p-3.5">
-                                            <div class="flex items-center justify-between gap-2"><label class="form-label text-xs font-bold text-navy mb-0">IEEE PDF eXpress File <span class="text-rose-600">*</span></label>@if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="text-[11px] font-bold text-navy hover:text-orange hover:underline">Download current file</a>@endif</div>
+                                        <div id="pdf-express-upload-card" class="space-y-2 rounded-xl bg-white border border-slate-200 p-3.5">
+                                            <div class="flex items-center justify-between gap-2"><label class="form-label text-xs font-bold text-navy mb-0">IEEE PDF eXpress File <span class="text-rose-600">*</span></label><span id="pdf-express-current-download">@if($submission->hasPdfExpress())<a href="{{ route('submissions.pdf-express.download', $submission) }}" class="text-[11px] font-bold text-navy hover:text-orange hover:underline">Download current file</a>@endif</span></div>
                                             <input id="pdf-express-file" type="file" name="pdf_express_file" form="pdf-express-form" accept="application/pdf" class="sr-only" :disabled="!isPdfExpressEditable" @change="pdfExpressName = $event.target.files[0]?.name || ''" {{ $submission->hasPdfExpress() ? '' : 'required' }}>
                                             <label for="pdf-express-file" @dragover.prevent @drop.prevent="setPdfExpressFile($event.dataTransfer.files[0])" class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-2.5 text-xs transition" :class="!isPdfExpressEditable ? 'cursor-not-allowed opacity-60' : 'hover:border-navy hover:bg-slate-50'">
                                                 <span class="rounded-md bg-slate-100 px-2 py-1 font-bold text-navy">Choose or drop file</span><span class="truncate text-muted" x-text="pdfExpressName || 'No file selected'"></span>
                                             </label>
-                                            <button type="submit" form="pdf-express-form" :disabled="!isPdfExpressEditable" class="btn btn-primary w-full text-xs">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</button>
-                                            @if($submission->pdf_express_uploaded_at)<p class="text-[11px] text-muted">Last uploaded: {{ $submission->pdf_express_uploaded_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>@endif
+                                            <button id="pdf-express-upload-button" type="submit" form="pdf-express-form" :disabled="!isPdfExpressEditable" class="btn btn-primary w-full text-xs"><span id="pdf-express-upload-button-label">{{ $submission->hasPdfExpress() ? 'Replace PDF eXpress File' : 'Upload PDF eXpress File' }}</span></button>
+                                            <p id="pdf-express-last-uploaded" class="text-[11px] text-muted" @if(! $submission->pdf_express_uploaded_at) style="display: none;" @endif>Last uploaded: {{ $submission->pdf_express_uploaded_at?->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB</p>
                                         </div>
                                     </div>
                                 </template>
@@ -764,12 +764,14 @@
                 </summary>
 
                 <div class="p-4 sm:p-6 bg-white space-y-4">
-                    @if($submission->hasPdfExpress())
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-                            <div><p class="text-xs font-extrabold text-navy">IEEE PDF eXpress File</p></div>
-                            <a href="{{ route('submissions.pdf-express.download', $submission) }}" class="btn btn-primary text-xs shrink-0">Download PDF eXpress File</a>
-                        </div>
-                    @endif
+                    <div id="pdf-express-edas-download-card">
+                        @if($submission->hasPdfExpress())
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                                <div><p class="text-xs font-extrabold text-navy">IEEE PDF eXpress File</p></div>
+                                <a href="{{ route('submissions.pdf-express.download', $submission) }}" class="btn btn-primary text-xs shrink-0">Download PDF eXpress File</a>
+                            </div>
+                        @endif
+                    </div>
                     @can('reviewerReview', $submission)
                         <div id="pdfexpress-edas-section" class="space-y-4 min-w-0" x-data="{
                             isReviewerActive: {{ json_encode($isReviewerActive) }},
@@ -788,7 +790,7 @@
                                     <button type="button" :disabled="!isReviewerActive" @click="if (isReviewerActive) warnings.push('')" class="text-xs font-bold text-navy disabled:cursor-not-allowed disabled:opacity-50">+ Add warning</button>
                                 </div>
 
-                                @if(! $submission->hasPdfExpress())<p class="text-xs text-rose-700">The Editor has not uploaded a PDF eXpress file yet.</p>@endif
+                                @if(! $submission->hasPdfExpress())<p id="pdf-express-missing-for-edas" class="text-xs text-rose-700">The Editor has not uploaded a PDF eXpress file yet.</p>@endif
 
                                 <div x-show="statusState === 'failed'" x-cloak style="display: none;">
                                     <div class="flex items-center justify-between mb-1">
@@ -1573,6 +1575,39 @@
                         tbody.insertAdjacentHTML('afterbegin', newRowHtml);
                     }
                     form.reset();
+                } else if (data.pdf_express_upload) {
+                    const checklistContainer = document.getElementById('editorial-checklist-container');
+                    if (checklistContainer?._x_dataStack) {
+                        checklistContainer._x_dataStack.forEach(stack => {
+                            stack.pdfExpressReady = true;
+                            stack.pdfExpressName = '';
+                        });
+                    }
+
+                    const fileInput = document.getElementById('pdf-express-file');
+                    if (fileInput) fileInput.value = '';
+
+                    const downloadContainer = document.getElementById('pdf-express-current-download');
+                    if (downloadContainer) {
+                        downloadContainer.innerHTML = `<a href="${escapeHtml(data.pdf_express_upload.download_url)}" class="text-[11px] font-bold text-navy hover:text-orange hover:underline">Download current file</a>`;
+                    }
+
+                    const uploadLabel = document.getElementById('pdf-express-upload-button-label');
+                    if (uploadLabel) uploadLabel.textContent = 'Replace PDF eXpress File';
+
+                    const uploadedAt = document.getElementById('pdf-express-last-uploaded');
+                    if (uploadedAt) {
+                        uploadedAt.textContent = `Last uploaded: ${data.pdf_express_upload.uploaded_at}`;
+                        uploadedAt.style.display = '';
+                    }
+
+                    const edasEmptyState = document.getElementById('pdf-express-missing-for-edas');
+                    if (edasEmptyState) edasEmptyState.remove();
+
+                    const edasDownloadCard = document.getElementById('pdf-express-edas-download-card');
+                    if (edasDownloadCard) {
+                        edasDownloadCard.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5"><div><p class="text-xs font-extrabold text-navy">IEEE PDF eXpress File</p></div><a href="${escapeHtml(data.pdf_express_upload.download_url)}" class="btn btn-primary text-xs shrink-0">Download PDF eXpress File</a></div>`;
+                    }
                 } else if (data.is_unfinal) {
                     const tbody = document.getElementById('file-version-table-body');
                     if (tbody) {

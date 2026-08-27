@@ -157,6 +157,24 @@ class EditorialWorkflowTest extends TestCase
         $response->assertDontSee('IEEE PDF eXpress Verified');
     }
 
+    public function test_editor_can_upload_pdf_express_via_ajax_without_a_page_redirect(): void
+    {
+        Storage::fake('private');
+        [, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+        $this->actingAs($admin)->post(route('submissions.accept', $submission));
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial', 'manuscript_format' => 'docx']);
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
+
+        $response = $this->actingAs($editor)->postJson(route('submissions.pdf-express.upload', $submission), [
+            'pdf_express_file' => UploadedFile::fake()->create('ajax-camera-ready.pdf', 500, 'application/pdf'),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('pdf_express_upload.original_name', 'ajax-camera-ready.pdf')
+            ->assertJsonStructure(['pdf_express_upload' => ['download_url', 'uploaded_at']]);
+    }
+
     private function uploadPdfExpress(User $editor, Submission $submission): void
     {
         $this->actingAs($editor)->post(route('submissions.pdf-express.upload', $submission), [

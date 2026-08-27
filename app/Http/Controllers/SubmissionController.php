@@ -620,7 +620,7 @@ class SubmissionController extends Controller
         return back()->with('success', 'IEEE PDF eXpress status and EDAS notes updated successfully.');
     }
 
-    public function uploadPdfExpress(Request $request, Submission $submission, ConferenceFileStorage $storage): RedirectResponse
+    public function uploadPdfExpress(Request $request, Submission $submission, ConferenceFileStorage $storage): RedirectResponse|JsonResponse
     {
         $this->authorize('editorialReview', $submission);
         abort_unless(in_array($submission->status, [SubmissionStatus::EditorialReview, SubmissionStatus::ReviewerReview], true), 422);
@@ -644,6 +644,20 @@ class SubmissionController extends Controller
             }
         }
         app(AuditLogger::class)->record('pdf_express_uploaded', $submission, $submission->conference, [], ['uploaded_at' => now()->toIso8601String()]);
+
+        if ($request->expectsJson()) {
+            $fresh = $submission->fresh();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'IEEE PDF eXpress file uploaded successfully.',
+                'pdf_express_upload' => [
+                    'download_url' => route('submissions.pdf-express.download', $fresh),
+                    'uploaded_at' => $fresh->pdf_express_uploaded_at?->timezone('Asia/Jakarta')->format('d M Y, H:i').' WIB',
+                    'original_name' => $fresh->pdf_express_original_name,
+                ],
+            ]);
+        }
 
         return back()->with('success', 'IEEE PDF eXpress file uploaded successfully.');
     }
