@@ -41,8 +41,11 @@ class CommunicationAccessTest extends TestCase
         $own = $this->email($conference, $admin, 'Email milik admin');
 
         $this->actingAs($editor)->get(route('emails.index'))->assertForbidden();
+        $this->actingAs($editor)->get(route('emails.deadline-reminders'))->assertForbidden();
         $this->actingAs($admin)->get(route('emails.index'))
             ->assertOk()->assertSee($own->subject);
+        $this->actingAs($admin)->get(route('emails.deadline-reminders'))
+            ->assertOk()->assertSee('Deadline Reminder Monitoring');
     }
 
     public function test_email_monitoring_is_scoped_to_active_workspace(): void
@@ -137,28 +140,28 @@ class CommunicationAccessTest extends TestCase
             $this->reminder($conference, $submission, 'REM-PAGE-'.str_pad((string) $index, 2, '0', STR_PAD_LEFT), $today->clone()->addHours(10)->addMinutes($index), 'scheduled');
         }
 
-        $this->actingAs($admin)->get(route('emails.index'))
+        $this->actingAs($admin)->get(route('emails.deadline-reminders'))
             ->assertOk()
             ->assertSee('REM-TODAY')
             ->assertDontSee('REM-TOMORROW')
             ->assertDontSee('REM-CANCELLED');
 
-        $this->actingAs($admin)->get(route('emails.index', ['reminder_scope' => 'tomorrow']))
+        $this->actingAs($admin)->get(route('emails.deadline-reminders', ['reminder_scope' => 'tomorrow']))
             ->assertOk()
             ->assertSee('REM-TOMORROW')
             ->assertDontSee('REM-CANCELLED');
 
-        $this->actingAs($admin)->get(route('emails.index', ['reminder_scope' => 'sent_today']))
+        $this->actingAs($admin)->get(route('emails.deadline-reminders', ['reminder_scope' => 'sent_today']))
             ->assertOk()
             ->assertSee('REM-SENT-TODAY')
             ->assertDontSee('REM-TOMORROW');
 
-        $this->actingAs($admin)->get(route('emails.index', ['reminder_scope' => 'all', 'reminder_status' => 'cancelled']))
+        $this->actingAs($admin)->get(route('emails.deadline-reminders', ['reminder_scope' => 'all', 'reminder_status' => 'cancelled']))
             ->assertOk()
             ->assertSee('REM-CANCELLED')
             ->assertDontSee('REM-TOMORROW');
 
-        $this->actingAs($admin)->get(route('emails.index', ['reminder_per_page' => 10, 'reminder_page' => 2]))
+        $this->actingAs($admin)->get(route('emails.deadline-reminders', ['reminder_per_page' => 10, 'reminder_page' => 2]))
             ->assertOk()
             ->assertSee('REM-PAGE-11');
     }

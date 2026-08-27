@@ -7,9 +7,14 @@
         </div>
     </div>
 
+    <nav class="mt-5 flex w-full gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1.5 sm:w-fit" aria-label="Email monitoring sections">
+        <a href="{{ route('emails.index') }}" class="rounded-lg bg-navy px-3 py-2 text-xs font-black text-white shadow-sm">Email Delivery</a>
+        <a href="{{ route('emails.deadline-reminders') }}" class="rounded-lg px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-white hover:text-navy">Deadline Reminders</a>
+    </nav>
+
     <!-- Top Key Metrics Cards Grid -->
     <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <a href="{{ route('emails.index', ['status' => 'sent']) }}" class="card p-4 hover:border-emerald-400 transition shadow-sm group">
+        <a data-email-monitoring-link href="{{ route('emails.index', ['status' => 'sent']) }}" class="card p-4 hover:border-emerald-400 transition shadow-sm group">
             <div class="flex items-center justify-between">
                 <p class="text-[11px] font-black uppercase tracking-wider text-slate-400">Sent Today</p>
                 <span class="size-2 rounded-full bg-emerald-500"></span>
@@ -35,7 +40,7 @@
             </p>
         </div>
 
-        <a href="{{ route('emails.index', ['status' => 'failed']) }}" class="card p-4 hover:border-rose-400 transition shadow-sm group">
+        <a data-email-monitoring-link href="{{ route('emails.index', ['status' => 'failed']) }}" class="card p-4 hover:border-rose-400 transition shadow-sm group">
             <div class="flex items-center justify-between">
                 <p class="text-[11px] font-black uppercase tracking-wider text-slate-400">Failed Delivery</p>
                 <span class="size-2 rounded-full bg-rose-500"></span>
@@ -48,7 +53,7 @@
             </p>
         </a>
 
-        <a href="{{ route('emails.index', ['status' => 'queued']) }}" class="card p-4 hover:border-amber-400 transition shadow-sm group">
+        <a data-email-monitoring-link href="{{ route('emails.index', ['status' => 'queued']) }}" class="card p-4 hover:border-amber-400 transition shadow-sm group">
             <div class="flex items-center justify-between">
                 <p class="text-[11px] font-black uppercase tracking-wider text-slate-400">In Queue</p>
                 <span class="size-2 rounded-full bg-amber-500"></span>
@@ -61,7 +66,7 @@
             </p>
         </a>
 
-        <a href="{{ route('emails.index') }}" class="card p-4 hover:border-navy/30 transition shadow-sm group">
+        <a data-email-monitoring-link href="{{ route('emails.index') }}" class="card p-4 hover:border-navy/30 transition shadow-sm group">
             <div class="flex items-center justify-between">
                 <p class="text-[11px] font-black uppercase tracking-wider text-slate-400">Total Email Logs</p>
                 <span class="size-2 rounded-full bg-navy"></span>
@@ -76,9 +81,9 @@
     </div>
 
     <!-- Analytics Charts Suite (14-Day Trend & Template Category Breakdown) -->
-    <div class="mt-6 grid gap-6 xl:grid-cols-3">
+    <div class="mt-6 grid gap-6 lg:grid-cols-2">
         <!-- 14-Day Email Volume Trend Line Chart -->
-        <div class="card p-5 xl:col-span-2 space-y-4">
+        <div class="card p-5 space-y-4">
             <div class="flex items-center justify-between border-b border-navy/8 pb-3">
                 <div>
                     <h2 class="font-black text-navy text-sm sm:text-base">14-Day Email Dispatch Trend</h2>
@@ -98,87 +103,55 @@
             </div>
         </div>
 
-        <!-- Template Category Distribution Doughnut Chart -->
+        <!-- Template Category Distribution Bar Chart -->
         <div class="card p-5 space-y-4">
             <div class="border-b border-navy/8 pb-3">
                 <h2 class="font-black text-navy text-sm sm:text-base">Template Breakdown</h2>
-                <p class="text-xs text-muted">Distribution of system &amp; staff notification types</p>
+                <p class="text-xs text-muted">Delivery volume by system and staff notification template</p>
             </div>
-            <div class="h-56 sm:h-64 w-full flex items-center justify-center">
+            <div class="h-56 w-full sm:h-64">
                 <canvas id="emailTemplateChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Paper-List Style Unified Filter Card -->
-    <div x-data="{ mobileFilterOpen: {{ request()->query() ? 'true' : 'false' }} }" class="card mt-7 p-4 sm:p-5">
-        <button type="button" @click="mobileFilterOpen = !mobileFilterOpen" class="flex w-full items-center justify-between font-bold text-navy md:hidden">
-            <span class="flex items-center gap-2 text-sm">
-                🔍 Filter &amp; Search Email Logs
-                @if(request()->query())
-                    <span class="badge badge-primary text-[10px]">Active</span>
-                @endif
-            </span>
-            <span class="text-xs text-orange" x-text="mobileFilterOpen ? 'Close −' : 'Open +'"></span>
-        </button>
+    <div id="email-log-monitoring-content">
+        <!-- Paper-list style live search and page-size toolbar -->
+        <div class="mt-7 card p-3 sm:p-4">
+            <form id="email-log-filter-form" method="GET" action="{{ route('emails.index') }}" class="space-y-3">
+                <div class="flex flex-col items-stretch justify-between gap-3 md:flex-row md:items-center">
+                    <div class="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-navy/15 bg-white px-4 py-1 shadow-2xs transition focus-within:border-orange focus-within:ring-4 focus-within:ring-orange/10">
+                        <svg class="size-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" /></svg>
+                        <input data-live-search class="w-full border-0 bg-transparent py-1.5 text-xs text-ink outline-none placeholder:text-slate-400 focus:ring-0 sm:text-sm" name="search" value="{{ request('search') }}" placeholder="Live search by email, subject, or paper ID...">
+                        @if(request('search'))<button data-clear-live-search type="button" class="shrink-0 px-1 text-base font-bold text-slate-400 hover:text-navy">&times;</button>@endif
+                    </div>
+                    <div class="flex items-center justify-between gap-3 text-xs text-slate-600 md:justify-end">
+                        <label class="flex items-center gap-1.5 whitespace-nowrap font-bold text-slate-500">Per page:
+                            <select data-live-change class="form-input w-auto rounded-xl border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold shadow-2xs" name="per_page">
+                                @foreach(['10', '20', '30', '50', '100'] as $option)<option value="{{ $option }}" @selected(request('per_page', '30') === $option)>{{ $option }}</option>@endforeach
+                            </select>
+                        </label>
+                        <span data-live-loading class="hidden items-center gap-1.5 font-bold text-orange"><span class="size-3 animate-spin rounded-full border-2 border-orange border-t-transparent"></span>Updating...</span>
+                        <span class="whitespace-nowrap text-[11px] font-bold text-navy sm:text-xs">{{ $logs->firstItem() ?? 0 }}–{{ $logs->lastItem() ?? 0 }} of {{ number_format($logs->total()) }}</span>
+                    </div>
+                </div>
 
-        <form method="GET" action="{{ route('emails.index') }}" x-show="mobileFilterOpen || window.innerWidth >= 768" x-collapse class="mt-4 md:mt-0 space-y-4">
-            <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                    <label class="form-label">Search</label>
-                    <input class="form-input" name="search" value="{{ request('search') }}" placeholder="Search email, subject, paper ID...">
-                </div>
-                <div>
-                    <label class="form-label">Delivery Status</label>
-                    <select class="form-input" name="status">
-                        <option value="">All statuses</option>
-                        <option value="sent" @selected(request('status') === 'sent')>✓ Sent</option>
-                        <option value="failed" @selected(request('status') === 'failed')>✕ Failed</option>
-                        <option value="queued" @selected(request('status') === 'queued')>🕒 Queued</option>
-                        <option value="sending" @selected(request('status') === 'sending')>⏳ Sending</option>
+                <div class="flex flex-wrap items-center gap-2 border-t border-navy/8 pt-3">
+                    <select data-live-change class="form-input w-full py-2 text-xs sm:w-auto" name="status">
+                        <option value="">All statuses</option><option value="sent" @selected(request('status') === 'sent')>Sent</option><option value="failed" @selected(request('status') === 'failed')>Failed</option><option value="queued" @selected(request('status') === 'queued')>Queued</option><option value="sending" @selected(request('status') === 'sending')>Sending</option>
                     </select>
-                </div>
-                <div>
-                    <label class="form-label">Sort Order</label>
-                    <select class="form-input" name="sort">
-                        <option value="latest" @selected(request('sort', 'latest') === 'latest')>Newest First</option>
-                        <option value="oldest" @selected(request('sort') === 'oldest')>Oldest First</option>
-                        <option value="recipient" @selected(request('sort') === 'recipient')>Recipient A-Z</option>
-                        <option value="subject" @selected(request('sort') === 'subject')>Subject A-Z</option>
+                    <select data-live-change class="form-input w-full py-2 text-xs sm:w-auto" name="sort">
+                        <option value="latest" @selected(request('sort', 'latest') === 'latest')>Newest first</option><option value="oldest" @selected(request('sort') === 'oldest')>Oldest first</option><option value="recipient" @selected(request('sort') === 'recipient')>Recipient A–Z</option><option value="subject" @selected(request('sort') === 'subject')>Subject A–Z</option>
                     </select>
+                    <button type="button" data-toggle-date-filter class="btn btn-secondary px-3 py-2 text-xs">Date range</button>
+                    @if(request()->query())<a data-live-link href="{{ route('emails.index') }}" class="btn btn-ghost px-3 py-2 text-xs">Reset</a>@endif
                 </div>
-                <div>
-                    <label class="form-label">Items Per Page</label>
-                    <select class="form-input" name="per_page">
-                        <option value="10" @selected(request('per_page') === '10')>10 per page</option>
-                        <option value="20" @selected(request('per_page') === '20')>20 per page</option>
-                        <option value="30" @selected(request('per_page', '30') === '30')>30 per page</option>
-                        <option value="50" @selected(request('per_page') === '50')>50 per page</option>
-                        <option value="100" @selected(request('per_page') === '100')>100 per page</option>
-                        <option value="all" @selected(request('per_page') === 'all')>All records</option>
-                    </select>
+                <div data-date-filter class="{{ request('date_from') || request('date_to') ? '' : 'hidden' }} grid max-w-xl grid-cols-1 gap-3 border-t border-navy/8 pt-3 sm:grid-cols-2">
+                    <label class="form-label text-xs">Date from <input class="form-input mt-1" type="date" name="date_from" value="{{ request('date_from') }}"></label>
+                    <div><label class="form-label text-xs">Date to <input class="form-input mt-1" type="date" name="date_to" value="{{ request('date_to') }}"></label><button type="submit" class="btn btn-primary mt-2 px-3 py-2 text-xs">Apply date range</button></div>
                 </div>
-                <div>
-                    <label class="form-label">Date From</label>
-                    <input class="form-input" type="date" name="date_from" value="{{ request('date_from') }}">
-                </div>
-                <div>
-                    <label class="form-label">Date To</label>
-                    <input class="form-input" type="date" name="date_to" value="{{ request('date_to') }}">
-                </div>
-            </div>
-
-            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-navy/10 pt-4">
-                <p class="text-xs text-muted font-bold">Showing {{ $logs->firstItem() ?? 0 }}-{{ $logs->lastItem() ?? 0 }} of {{ number_format($logs->total()) }} email logs</p>
-                <div class="flex items-center gap-2">
-                    @if(request()->query())
-                        <a href="{{ route('emails.index') }}" class="btn btn-secondary text-xs py-2 px-4">Reset Filters</a>
-                    @endif
-                    <button type="submit" class="btn btn-primary text-xs py-2 px-5">Apply Filter &amp; Search</button>
-                </div>
-            </div>
-        </form>
-    </div>
+            </form>
+        </div>
 
     <!-- Email Logs Table Container -->
     <div class="mt-6 card shadow-sm overflow-hidden">
@@ -268,11 +241,14 @@
         </div>
 
         <div class="p-4 border-t border-navy/10 bg-slate-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>{{ $logs->links() }}</div>
+            <div data-email-pagination>{{ $logs->links() }}</div>
             <p class="text-xs text-muted font-bold text-right">Total Logs Found: {{ number_format($logs->total()) }}</p>
         </div>
     </div>
+</div>
 
+{{-- Deadline reminder monitoring moved to the dedicated deadline-reminders page. --}}
+{{--
     @php
         $reminderQueryBase = request()->except(['reminder_scope', 'reminder_status', 'reminder_page', 'reminder_per_page']);
         $reminderLink = fn (array $overrides = []) => route('emails.index', array_merge($reminderQueryBase, [
@@ -438,6 +414,7 @@
             </div>
         @endif
     </details>
+--}}
 
     <!-- 1. View Body HTML Preview Modal -->
     <div id="email-preview-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/60 backdrop-blur-xs">
@@ -623,6 +600,74 @@
             detail: { message: 'Copied recipient email address: ' + email, type: 'success' }
         }));
     };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const root = document.getElementById('email-log-monitoring-content');
+        if (!root) return;
+
+        let searchTimeout;
+        const setLoading = (loading) => root.querySelector('[data-live-loading]')?.classList.toggle('hidden', !loading);
+        const load = async (url) => {
+            setLoading(true);
+            try {
+                const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!response.ok) throw new Error('Unable to refresh email logs.');
+                const documentResponse = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const replacement = documentResponse.getElementById('email-log-monitoring-content');
+                if (!replacement) throw new Error('Email monitoring response is incomplete.');
+                root.innerHTML = replacement.innerHTML;
+                window.history.replaceState({}, '', url);
+            } catch (error) {
+                console.error(error);
+                window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: 'Unable to refresh email logs. Please try again.', type: 'error' } }));
+            } finally {
+                setLoading(false);
+            }
+        };
+        const loadForm = (form) => {
+            const url = new URL(form.action);
+            const values = new FormData(form);
+            values.forEach((value, key) => value ? url.searchParams.set(key, value) : url.searchParams.delete(key));
+            url.searchParams.delete('page');
+            load(url.toString());
+        };
+
+        root.addEventListener('submit', (event) => {
+            const form = event.target.closest('#email-log-filter-form');
+            if (!form) return;
+            event.preventDefault();
+            loadForm(form);
+        });
+        root.addEventListener('input', (event) => {
+            if (!event.target.matches('[data-live-search]')) return;
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => loadForm(event.target.closest('form')), 300);
+        });
+        root.addEventListener('change', (event) => {
+            if (event.target.matches('[data-live-change]')) loadForm(event.target.closest('form'));
+        });
+        root.addEventListener('click', (event) => {
+            const dateToggle = event.target.closest('[data-toggle-date-filter]');
+            if (dateToggle) {
+                root.querySelector('[data-date-filter]')?.classList.toggle('hidden');
+                return;
+            }
+            const clearSearch = event.target.closest('[data-clear-live-search]');
+            if (clearSearch) {
+                const input = root.querySelector('[data-live-search]');
+                if (input) { input.value = ''; loadForm(input.closest('form')); }
+                return;
+            }
+            const link = event.target.closest('a[data-live-link], [data-email-pagination] a');
+            if (link) { event.preventDefault(); load(link.href); }
+        });
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('a[data-email-monitoring-link]');
+            if (!link) return;
+            event.preventDefault();
+            load(link.href);
+        });
+    });
     </script>
 
     <!-- Chart.js Engine & Initialization Script -->
@@ -700,40 +745,39 @@
             });
         }
 
-        // 2. Doughnut Chart: Template Category Distribution
+        // 2. Horizontal Bar Chart: Template Category Distribution
         const ctxTemplate = document.getElementById('emailTemplateChart')?.getContext('2d');
         if (ctxTemplate) {
             new Chart(ctxTemplate, {
-                type: 'doughnut',
+                type: 'bar',
                 data: {
                     labels: @json($templateLabels),
                     datasets: [{
+                        label: 'Email logs',
                         data: @json($templateValues),
-                        backgroundColor: [
-                            '#102a43', '#f47c20', '#10b981', '#3b82f6',
-                            '#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4',
-                            '#64748b', '#14b8a6', '#6366f1', '#d97706'
-                        ],
-                        borderWidth: 2,
-                        borderColor: '#ffffff',
-                        hoverOffset: 6
+                        backgroundColor: '#f47c20',
+                        borderColor: '#d85e09',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        maxBarThickness: 22,
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    indexAxis: 'y',
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { font: { size: 11, weight: 'bold' }, boxWidth: 12, padding: 12 }
-                        },
+                        legend: { display: false },
                         tooltip: {
                             backgroundColor: '#102a43',
                             padding: 10,
                             cornerRadius: 8,
                         }
                     },
-                    cutout: '65%'
+                    scales: {
+                        x: { beginAtZero: true, ticks: { precision: 0, color: '#64748b', font: { size: 11 } }, grid: { color: 'rgba(16, 42, 67, 0.06)' } },
+                        y: { ticks: { color: '#475569', font: { size: 10, weight: 'bold' } }, grid: { display: false } },
+                    },
                 }
             });
         }

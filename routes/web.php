@@ -107,6 +107,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/monitoring', [MonitoringController::class, 'index'])->name('admin.monitoring.index');
         Route::post('/monitoring/failed-jobs/{uuid}/retry', [MonitoringController::class, 'retry'])->middleware('superadmin')->name('admin.monitoring.retry');
         Route::get('/email-monitoring', [EmailMonitoringController::class, 'index'])->name('emails.index');
+        Route::get('/email-monitoring/deadline-reminders', [EmailMonitoringController::class, 'deadlineReminders'])->name('emails.deadline-reminders');
         Route::get('/email-monitoring/{emailLog}/body', [EmailMonitoringController::class, 'body'])->name('emails.body');
         Route::post('/email-monitoring/{emailLog}/resend', [EmailMonitoringController::class, 'resend'])->name('emails.resend');
         Route::get('/editor-performance', EditorPerformanceController::class)->name('editor-performance.index');
