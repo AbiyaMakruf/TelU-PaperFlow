@@ -273,32 +273,170 @@
         </div>
     </div>
 
-    <details class="mt-6 card overflow-hidden">
-        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 marker:content-none">
-            <div>
-                <h2 class="text-sm font-black text-navy">Scheduled Deadline Reminders</h2>
-                <p class="mt-1 text-xs text-muted">{{ $scheduledReminders->count() }} delayed reminder(s), ordered from the nearest planned send time.</p>
+    @php
+        $reminderQueryBase = request()->except(['reminder_scope', 'reminder_status', 'reminder_page', 'reminder_per_page']);
+        $reminderLink = fn (array $overrides = []) => route('emails.index', array_merge($reminderQueryBase, [
+            'reminder_scope' => $reminderScope,
+            'reminder_status' => $reminderStatus,
+            'reminder_per_page' => $reminderPerPage,
+        ], $overrides));
+        $scopeLabel = match ($reminderScope) {
+            'tomorrow' => 'Tomorrow',
+            'sent_today' => 'Sent Today',
+            'needs_attention' => 'Needs Attention',
+            'all' => 'All Reminders',
+            default => 'Today',
+        };
+    @endphp
+
+    <details class="mt-6 card overflow-hidden" @if($reminderScope === 'today' && $scheduledReminders->isNotEmpty()) open @endif>
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 sm:px-5 marker:content-none">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-sm font-black text-navy">Scheduled Deadline Reminders</h2>
+                    <span class="badge badge-primary text-[10px]">{{ $scopeLabel }}</span>
+                    @if($scheduledReminders->total() > 0)
+                        <span class="text-[11px] font-bold text-slate-500">{{ number_format($scheduledReminders->total()) }} result(s)</span>
+                    @endif
+                </div>
+                <p class="mt-1 text-xs text-muted">WIB schedule. Today is shown by default; use the filters to review another period or reminder status.</p>
             </div>
             <span class="text-lg font-black text-navy" aria-hidden="true">⌄</span>
         </summary>
-        <div class="border-t border-navy/10 overflow-x-auto">
+
+        <div class="border-t border-navy/10 p-4 sm:p-5">
+            <div class="flex flex-wrap gap-2">
+                @foreach([
+                    'today' => 'Today',
+                    'tomorrow' => 'Tomorrow',
+                    'sent_today' => 'Sent Today',
+                    'needs_attention' => 'Needs Attention',
+                    'all' => 'All Reminders',
+                ] as $scope => $label)
+                    <a href="{{ $reminderLink(['reminder_scope' => $scope, 'reminder_status' => $scope === 'needs_attention' ? 'all' : $reminderStatus]) }}"
+                        class="rounded-lg border px-3 py-2 text-xs font-black transition {{ $reminderScope === $scope ? 'border-navy bg-navy text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-navy/40 hover:text-navy' }}">
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
+
+            <div class="mt-4 border-t border-navy/10 pt-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="mr-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Status</span>
+                    @foreach([
+                        'all' => ['All statuses', (int) ($reminderStatusCounts?->total ?? 0)],
+                        'scheduled' => ['Scheduled', (int) ($reminderStatusCounts?->scheduled ?? 0)],
+                        'queued' => ['Queued', (int) ($reminderStatusCounts?->queued ?? 0)],
+                        'processing' => ['Processing', (int) ($reminderStatusCounts?->processing ?? 0)],
+                        'sent' => ['Sent', (int) ($reminderStatusCounts?->sent ?? 0)],
+                        'cancelled' => ['Cancelled', (int) ($reminderStatusCounts?->cancelled ?? 0)],
+                        'failed' => ['Failed', (int) ($reminderStatusCounts?->failed ?? 0)],
+                    ] as $status => [$label, $count])
+                        <a href="{{ $reminderLink(['reminder_status' => $status]) }}"
+                            class="rounded-full border px-2.5 py-1 text-[11px] font-bold transition {{ $reminderStatus === $status ? 'border-orange bg-orange text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-orange/50 hover:text-orange' }}">
+                            {{ $label }} <span class="ml-0.5 opacity-80">{{ number_format($count) }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
+            <form method="GET" action="{{ route('emails.index') }}" class="mt-4 flex flex-col gap-3 border-t border-navy/10 pt-4 sm:flex-row sm:items-end sm:justify-between">
+                @foreach($reminderQueryBase as $key => $value)
+                    @if(is_scalar($value))
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endif
+                @endforeach
+                <input type="hidden" name="reminder_scope" value="{{ $reminderScope }}">
+                <input type="hidden" name="reminder_status" value="{{ $reminderStatus }}">
+                <div class="flex items-end gap-2">
+                    <div>
+                        <label class="form-label text-[11px]">Reminders per page</label>
+                        <select name="reminder_per_page" class="form-input py-2 text-xs" onchange="this.form.submit()">
+                            @foreach([10, 20, 30, 50] as $option)
+                                <option value="{{ $option }}" @selected($reminderPerPage === $option)>{{ $option }} per page</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @if($reminderScope !== 'today' || $reminderStatus !== 'all')
+                        <a href="{{ $reminderLink(['reminder_scope' => 'today', 'reminder_status' => 'all']) }}" class="btn btn-secondary mb-0.5 px-3 py-2 text-xs">Reset</a>
+                    @endif
+                </div>
+                <p class="text-xs font-bold text-slate-500">
+                    Showing {{ $scheduledReminders->firstItem() ?? 0 }}–{{ $scheduledReminders->lastItem() ?? 0 }} of {{ number_format($scheduledReminders->total()) }}
+                </p>
+            </form>
+        </div>
+
+        <div class="hidden border-t border-navy/10 md:block md:overflow-x-auto">
             <table class="data-table min-w-[780px]">
                 <thead><tr><th>Planned Send Time</th><th>Type / Paper</th><th>Recipient</th><th>Status</th><th>Details</th></tr></thead>
                 <tbody>
                     @forelse($scheduledReminders as $reminder)
+                        @php
+                            $detail = $reminder->reason ?: $reminder->error ?: 'Scheduled for delivery.';
+                            $statusClass = match ($reminder->status) {
+                                'sent' => 'success',
+                                'failed' => 'danger',
+                                'cancelled' => 'slate',
+                                'processing' => 'primary',
+                                default => 'warning',
+                            };
+                        @endphp
                         <tr>
                             <td class="whitespace-nowrap text-xs font-bold text-slate-700">{{ $reminder->scheduled_for?->timezone('Asia/Jakarta')->format('d M Y, H:i \W\I\B') }}</td>
                             <td class="text-xs"><p class="font-bold text-navy">{{ $reminder->kind === 'editor_revision_deadline_digest' ? 'Editor PIC digest' : 'Author reminder' }}</p><p class="text-muted">{{ $reminder->submission?->paper_code ?? $reminder->conference?->name }}</p></td>
-                            <td class="text-xs font-semibold text-slate-700">{{ $reminder->recipient }}</td>
-                            <td><span class="badge badge-{{ $reminder->status === 'sent' ? 'success' : ($reminder->status === 'failed' ? 'danger' : ($reminder->status === 'cancelled' ? 'slate' : 'warning')) }} text-[10px]">{{ ucfirst($reminder->status) }}</span></td>
-                            <td class="max-w-md text-[11px] text-muted">{{ $reminder->reason ?: $reminder->error ?: 'Scheduled for delivery.' }}</td>
+                            <td class="max-w-[220px] break-words text-xs font-semibold text-slate-700">{{ $reminder->recipient }}</td>
+                            <td><span class="badge badge-{{ $statusClass }} text-[10px]">{{ ucfirst($reminder->status) }}</span></td>
+                            <td class="max-w-md text-[11px] text-muted">
+                                <span>{{ Str::limit($detail, 130) }}</span>
+                                @if(Str::length($detail) > 130)
+                                    <details class="mt-1"><summary class="cursor-pointer font-bold text-navy">View full details</summary><p class="mt-1 whitespace-pre-wrap">{{ $detail }}</p></details>
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="py-8 text-center text-sm text-muted">No delayed deadline reminders have been scheduled.</td></tr>
+                        <tr><td colspan="5" class="py-8 text-center text-sm text-muted">No deadline reminders match the selected filter.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+
+        <div class="divide-y divide-navy/10 border-t border-navy/10 md:hidden">
+            @forelse($scheduledReminders as $reminder)
+                @php
+                    $detail = $reminder->reason ?: $reminder->error ?: 'Scheduled for delivery.';
+                    $statusClass = match ($reminder->status) {
+                        'sent' => 'success',
+                        'failed' => 'danger',
+                        'cancelled' => 'slate',
+                        'processing' => 'primary',
+                        default => 'warning',
+                    };
+                @endphp
+                <article class="space-y-2 p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-black uppercase tracking-wide text-slate-400">{{ $reminder->kind === 'editor_revision_deadline_digest' ? 'Editor PIC digest' : 'Author reminder' }}</p>
+                            <p class="mt-0.5 break-words text-xs font-black text-navy">{{ $reminder->submission?->paper_code ?? $reminder->conference?->name }}</p>
+                        </div>
+                        <span class="badge badge-{{ $statusClass }} shrink-0 text-[10px]">{{ ucfirst($reminder->status) }}</span>
+                    </div>
+                    <dl class="grid grid-cols-[92px_1fr] gap-x-2 gap-y-1 text-xs">
+                        <dt class="font-bold text-slate-400">Planned</dt><dd class="font-semibold text-slate-700">{{ $reminder->scheduled_for?->timezone('Asia/Jakarta')->format('d M Y, H:i \W\I\B') }}</dd>
+                        <dt class="font-bold text-slate-400">Recipient</dt><dd class="break-all font-semibold text-slate-700">{{ $reminder->recipient }}</dd>
+                    </dl>
+                    <p class="border-t border-slate-100 pt-2 text-[11px] leading-relaxed text-muted">{{ $detail }}</p>
+                </article>
+            @empty
+                <p class="p-8 text-center text-sm text-muted">No deadline reminders match the selected filter.</p>
+            @endforelse
+        </div>
+
+        @if($scheduledReminders->hasPages())
+            <div class="border-t border-navy/10 bg-slate-50/30 px-4 py-3 sm:px-5">
+                {{ $scheduledReminders->onEachSide(1)->links() }}
+            </div>
+        @endif
     </details>
 
     <!-- 1. View Body HTML Preview Modal -->

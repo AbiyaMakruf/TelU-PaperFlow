@@ -3,11 +3,15 @@
 namespace Tests\Feature;
 
 use App\Enums\ConferenceRole;
+use App\Enums\SubmissionStatus;
 use App\Jobs\SendLoggedEmail;
 use App\Models\AuditLog;
 use App\Models\Conference;
 use App\Models\EmailLog;
+use App\Models\ScheduledRevisionReminder;
+use App\Models\Submission;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -110,6 +114,55 @@ class CommunicationAccessTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_filter_and_paginate_scheduled_deadline_reminders(): void
+    {
+        [$conference, $admin] = $this->member(ConferenceRole::Admin);
+        $submission = Submission::create([
+            'conference_id' => $conference->id,
+            'paper_code' => 'REM-BASE',
+            'title' => 'Reminder Base',
+            'corresponding_author_name' => 'Author',
+            'corresponding_author_email' => 'author@example.com',
+            'status' => SubmissionStatus::WaitingAuthorRevision,
+            'submitted_at' => now(),
+        ]);
+        $today = Carbon::now('Asia/Jakarta')->startOfDay();
+
+        $this->reminder($conference, $submission, 'REM-TODAY', $today->clone()->addHours(8), 'scheduled');
+        $this->reminder($conference, $submission, 'REM-TOMORROW', $today->clone()->addDay()->addHours(8), 'scheduled');
+        $this->reminder($conference, $submission, 'REM-SENT-TODAY', $today->clone()->subDay()->addHours(8), 'sent', $today->clone()->addHours(9));
+        $this->reminder($conference, $submission, 'REM-CANCELLED', $today->clone()->subDays(2)->addHours(8), 'cancelled');
+
+        foreach (range(1, 11) as $index) {
+            $this->reminder($conference, $submission, 'REM-PAGE-'.str_pad((string) $index, 2, '0', STR_PAD_LEFT), $today->clone()->addHours(10)->addMinutes($index), 'scheduled');
+        }
+
+        $this->actingAs($admin)->get(route('emails.index'))
+            ->assertOk()
+            ->assertSee('REM-TODAY')
+            ->assertDontSee('REM-TOMORROW')
+            ->assertDontSee('REM-CANCELLED');
+
+        $this->actingAs($admin)->get(route('emails.index', ['reminder_scope' => 'tomorrow']))
+            ->assertOk()
+            ->assertSee('REM-TOMORROW')
+            ->assertDontSee('REM-CANCELLED');
+
+        $this->actingAs($admin)->get(route('emails.index', ['reminder_scope' => 'sent_today']))
+            ->assertOk()
+            ->assertSee('REM-SENT-TODAY')
+            ->assertDontSee('REM-TOMORROW');
+
+        $this->actingAs($admin)->get(route('emails.index', ['reminder_scope' => 'all', 'reminder_status' => 'cancelled']))
+            ->assertOk()
+            ->assertSee('REM-CANCELLED')
+            ->assertDontSee('REM-TOMORROW');
+
+        $this->actingAs($admin)->get(route('emails.index', ['reminder_per_page' => 10, 'reminder_page' => 2]))
+            ->assertOk()
+            ->assertSee('REM-PAGE-11');
+    }
+
     public function test_every_staff_role_can_update_profile_identity(): void
     {
         $user = User::factory()->create(['must_change_password' => false]);
@@ -150,6 +203,26 @@ class CommunicationAccessTest extends TestCase
             'cc' => [],
             'status' => $status,
             'error' => $status === 'failed' ? 'SMTP unavailable' : null,
+        ]);
+    }
+
+    private function reminder(Conference $conference, Submission $submission, string $paperCode, Carbon $scheduledFor, string $status, ?Carbon $sentAt = null): ScheduledRevisionReminder
+    {
+        $reminderSubmission = $submission->replicate();
+        $reminderSubmission->paper_code = $paperCode;
+        $reminderSubmission->title = "{$paperCode} title";
+        $reminderSubmission->push();
+
+        return ScheduledRevisionReminder::create([
+            'conference_id' => $conference->id,
+            'submission_id' => $reminderSubmission->id,
+            'kind' => 'author_revision_deadline',
+            'recipient' => strtolower($paperCode).'@example.com',
+            'deadline_date' => $scheduledFor->clone()->toDateString(),
+            'scheduled_for' => $scheduledFor->clone()->utc(),
+            'status' => $status,
+            'sent_at' => $sentAt?->clone()->utc(),
+            'reason' => $status === 'cancelled' ? 'Revision was received.' : null,
         ]);
     }
 }

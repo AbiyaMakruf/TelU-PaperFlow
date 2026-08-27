@@ -6,6 +6,7 @@ use App\Enums\ConferenceRole;
 use App\Models\EmailLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class VisibleEmailLogs
 {
@@ -53,5 +54,31 @@ class VisibleEmailLogs
         }
 
         return $adminConferenceIds->isNotEmpty();
+    }
+
+    /**
+     * Return the conferences a user may inspect in communication monitoring.
+     * A null value deliberately represents an unrestricted Superadmin view.
+     *
+     * @return Collection<int, string>|null
+     */
+    public function visibleConferenceIds(User $user): ?Collection
+    {
+        $activeWorkspaceId = session('active_conference_id');
+
+        if ($user->isSuperAdmin()) {
+            return $activeWorkspaceId ? collect([$activeWorkspaceId]) : null;
+        }
+
+        $adminConferenceIds = $user->conferenceMemberships()
+            ->where('is_active', true)
+            ->whereIn('role', [ConferenceRole::Admin, 'admin', 'conference_admin'])
+            ->pluck('conference_id');
+
+        if ($activeWorkspaceId && $adminConferenceIds->contains($activeWorkspaceId)) {
+            return collect([$activeWorkspaceId]);
+        }
+
+        return $adminConferenceIds;
     }
 }

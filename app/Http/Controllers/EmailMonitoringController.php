@@ -120,10 +120,72 @@ class EmailMonitoringController extends Controller
         };
 
         $logs = $logsQuery->paginate($perPage)->withQueryString();
-        $scheduledReminders = ScheduledRevisionReminder::query()
-            ->with(['conference', 'submission', 'editor', 'emailLog'])
-            ->whereIn('conference_id', (clone $base)->reorder()->select('conference_id')->distinct())
-            ->orderBy('scheduled_for')->limit(100)->get();
+
+        $reminderScope = strtolower(trim((string) $request->query('reminder_scope', 'today')));
+        $allowedReminderScopes = ['today', 'tomorrow', 'sent_today', 'needs_attention', 'all'];
+        if (! in_array($reminderScope, $allowedReminderScopes, true)) {
+            $reminderScope = 'today';
+        }
+
+        $reminderStatus = strtolower(trim((string) $request->query('reminder_status', 'all')));
+        $allowedReminderStatuses = ['all', 'scheduled', 'queued', 'processing', 'sent', 'cancelled', 'failed'];
+        if (! in_array($reminderStatus, $allowedReminderStatuses, true)) {
+            $reminderStatus = 'all';
+        }
+
+        $reminderPerPage = (int) $request->query('reminder_per_page', 20);
+        if (! in_array($reminderPerPage, [10, 20, 30, 50], true)) {
+            $reminderPerPage = 20;
+        }
+
+        // Reminder deadlines are operationally displayed in WIB, independently of the server timezone.
+        $wibNow = now('Asia/Jakarta');
+        $reminderTodayStart = $wibNow->clone()->startOfDay()->utc();
+        $reminderTomorrowStart = $wibNow->clone()->addDay()->startOfDay()->utc();
+        $reminderDayAfterTomorrowStart = $wibNow->clone()->addDays(2)->startOfDay()->utc();
+        $visibleConferenceIds = $visible->visibleConferenceIds($request->user());
+
+        $reminderScopeQuery = ScheduledRevisionReminder::query()
+            ->when($visibleConferenceIds !== null, fn ($query) => $query->whereIn('conference_id', $visibleConferenceIds));
+
+        match ($reminderScope) {
+            'today' => $reminderScopeQuery
+                ->where('scheduled_for', '>=', $reminderTodayStart)
+                ->where('scheduled_for', '<', $reminderTomorrowStart),
+            'tomorrow' => $reminderScopeQuery
+                ->where('scheduled_for', '>=', $reminderTomorrowStart)
+                ->where('scheduled_for', '<', $reminderDayAfterTomorrowStart),
+            'sent_today' => $reminderScopeQuery
+                ->where('sent_at', '>=', $reminderTodayStart)
+                ->where('sent_at', '<', $reminderTomorrowStart),
+            'needs_attention' => $reminderScopeQuery->whereIn('status', ['failed', 'cancelled']),
+            default => null,
+        };
+
+        $reminderStatusCounts = (clone $reminderScopeQuery)
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw("SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled")
+            ->selectRaw("SUM(CASE WHEN status = 'queued' THEN 1 ELSE 0 END) as queued")
+            ->selectRaw("SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing")
+            ->selectRaw("SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent")
+            ->selectRaw("SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled")
+            ->selectRaw("SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed")
+            ->first();
+
+        $scheduledReminders = (clone $reminderScopeQuery)
+            ->when($reminderStatus !== 'all', fn ($query) => $query->where('status', $reminderStatus))
+            ->with([
+                'conference:id,name',
+                'submission:id,paper_code,title',
+                'editor:id,name',
+            ])
+            ->when(
+                $reminderScope === 'sent_today',
+                fn ($query) => $query->orderByDesc('sent_at')->orderByDesc('scheduled_for'),
+                fn ($query) => $query->orderBy('scheduled_for')->orderByDesc('created_at'),
+            )
+            ->paginate($reminderPerPage, ['*'], 'reminder_page')
+            ->withQueryString();
 
         return view('operations.emails', compact(
             'logs',
@@ -134,7 +196,12 @@ class EmailMonitoringController extends Controller
             'successRateToday',
             'overallSuccessRate',
             'trendLabels',
-            'sentTrendValues', 'scheduledReminders',
+            'sentTrendValues',
+            'scheduledReminders',
+            'reminderScope',
+            'reminderStatus',
+            'reminderPerPage',
+            'reminderStatusCounts',
             'failedTrendValues',
             'templateLabels',
             'templateValues'
