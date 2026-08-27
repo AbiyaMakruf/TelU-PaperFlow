@@ -159,6 +159,12 @@ class EmailMonitoringController extends Controller
             $reminderStatus = 'all';
         }
 
+        $reminderSearch = trim((string) $request->query('reminder_search', ''));
+        $reminderSort = strtolower(trim((string) $request->query('reminder_sort', 'planned_soon')));
+        if (! in_array($reminderSort, ['planned_soon', 'planned_latest', 'recipient'], true)) {
+            $reminderSort = 'planned_soon';
+        }
+
         $reminderPerPage = (int) $request->query('reminder_per_page', 20);
         if (! in_array($reminderPerPage, [10, 20, 30, 50], true)) {
             $reminderPerPage = 20;
@@ -201,16 +207,43 @@ class EmailMonitoringController extends Controller
 
         $scheduledReminders = (clone $reminderScopeQuery)
             ->when($reminderStatus !== 'all', fn ($query) => $query->where('status', $reminderStatus))
+            ->when($reminderSearch !== '', function ($query) use ($reminderSearch) {
+                $term = strtolower($reminderSearch);
+                $query->where(function ($searchQuery) use ($term) {
+                    $searchQuery->whereRaw('LOWER(recipient) LIKE ?', ["%{$term}%"])
+                        ->orWhereHas('submission', function ($submissionQuery) use ($term) {
+                            $submissionQuery->whereRaw('LOWER(paper_code) LIKE ?', ["%{$term}%"])
+                                ->orWhereRaw('LOWER(paper_id) LIKE ?', ["%{$term}%"])
+                                ->orWhereRaw('LOWER(title) LIKE ?', ["%{$term}%"]);
+                        });
+                });
+            })
             ->with([
                 'conference:id,name',
                 'submission:id,paper_code,title',
                 'editor:id,name',
             ])
-            ->when(
-                $reminderScope === 'sent_today',
-                fn ($query) => $query->orderByDesc('sent_at')->orderByDesc('scheduled_for'),
-                fn ($query) => $query->orderBy('scheduled_for')->orderByDesc('created_at'),
-            )
+            ->tap(function ($query) use ($reminderScope, $reminderSort) {
+                if ($reminderSort === 'recipient') {
+                    $query->orderBy('recipient')->orderBy('scheduled_for');
+
+                    return;
+                }
+
+                if ($reminderSort === 'planned_latest') {
+                    $query->orderByDesc('scheduled_for')->orderByDesc('created_at');
+
+                    return;
+                }
+
+                if ($reminderScope === 'sent_today') {
+                    $query->orderByDesc('sent_at')->orderByDesc('scheduled_for');
+
+                    return;
+                }
+
+                $query->orderBy('scheduled_for')->orderByDesc('created_at');
+            })
             ->paginate($reminderPerPage, ['*'], 'reminder_page')
             ->withQueryString();
 
@@ -266,6 +299,8 @@ class EmailMonitoringController extends Controller
             'scheduledReminders' => $scheduledReminders,
             'reminderScope' => $reminderScope,
             'reminderStatus' => $reminderStatus,
+            'reminderSearch' => $reminderSearch,
+            'reminderSort' => $reminderSort,
             'reminderPerPage' => $reminderPerPage,
             'reminderStatusCounts' => $reminderStatusCounts,
             'reminderOverview' => $reminderOverview,

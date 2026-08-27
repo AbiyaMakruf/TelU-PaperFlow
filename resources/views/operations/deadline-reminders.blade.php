@@ -1,9 +1,11 @@
 <x-layouts.app title="Deadline Reminder Monitoring · Paperflow" heading="Deadline Reminder Monitoring">
     @php
-        $reminderQueryBase = request()->except(['reminder_scope', 'reminder_status', 'reminder_page', 'reminder_per_page']);
+        $reminderQueryBase = request()->except(['reminder_scope', 'reminder_status', 'reminder_search', 'reminder_sort', 'reminder_page', 'reminder_per_page']);
         $reminderLink = fn (array $overrides = []) => route('emails.deadline-reminders', array_merge($reminderQueryBase, [
             'reminder_scope' => $reminderScope,
             'reminder_status' => $reminderStatus,
+            'reminder_search' => $reminderSearch,
+            'reminder_sort' => $reminderSort,
             'reminder_per_page' => $reminderPerPage,
         ], $overrides));
         $scopeLabel = match ($reminderScope) {
@@ -23,7 +25,7 @@
         </div>
     </div>
 
-    <nav class="mt-5 flex w-full gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1.5 sm:w-fit" aria-label="Email monitoring sections">
+    <nav class="mt-5 inline-flex w-fit max-w-full gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1.5" aria-label="Email monitoring sections">
         <a href="{{ route('emails.index') }}" class="rounded-lg px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-white hover:text-navy">Email Delivery</a>
         <a href="{{ route('emails.deadline-reminders') }}" class="rounded-lg bg-navy px-3 py-2 text-xs font-black text-white shadow-sm">Deadline Reminders</a>
     </nav>
@@ -42,21 +44,38 @@
 
     <div id="deadline-reminder-monitoring-content" class="mt-7 card overflow-hidden">
         <div class="p-4 sm:p-5">
-            <div class="flex flex-wrap gap-2">
-                @foreach(['today' => 'Today', 'tomorrow' => 'Tomorrow', 'sent_today' => 'Sent Today', 'needs_attention' => 'Needs Attention', 'all' => 'All Reminders'] as $scope => $label)
-                    <a data-reminder-live-link href="{{ $reminderLink(['reminder_scope' => $scope, 'reminder_status' => $scope === 'needs_attention' ? 'all' : $reminderStatus]) }}" class="rounded-lg border px-3 py-2 text-xs font-black transition {{ $reminderScope === $scope ? 'border-navy bg-navy text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-navy/40 hover:text-navy' }}">{{ $label }}</a>
-                @endforeach
-            </div>
-            <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-navy/10 pt-4"><span class="mr-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Status</span>
-                @foreach(['all' => ['All statuses', (int) ($reminderStatusCounts?->total ?? 0)], 'scheduled' => ['Scheduled', (int) ($reminderStatusCounts?->scheduled ?? 0)], 'queued' => ['Queued', (int) ($reminderStatusCounts?->queued ?? 0)], 'processing' => ['Processing', (int) ($reminderStatusCounts?->processing ?? 0)], 'sent' => ['Sent', (int) ($reminderStatusCounts?->sent ?? 0)], 'cancelled' => ['Cancelled', (int) ($reminderStatusCounts?->cancelled ?? 0)], 'failed' => ['Failed', (int) ($reminderStatusCounts?->failed ?? 0)]] as $status => [$label, $count])
-                    <a data-reminder-live-link href="{{ $reminderLink(['reminder_status' => $status]) }}" class="rounded-full border px-2.5 py-1 text-[11px] font-bold transition {{ $reminderStatus === $status ? 'border-orange bg-orange text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-orange/50 hover:text-orange' }}">{{ $label }} <span class="ml-0.5 opacity-80">{{ number_format($count) }}</span></a>
-                @endforeach
-            </div>
-            <form id="deadline-reminder-filter-form" method="GET" action="{{ route('emails.deadline-reminders') }}" class="mt-4 flex flex-col gap-3 border-t border-navy/10 pt-4 sm:flex-row sm:items-end sm:justify-between">
+            <form id="deadline-reminder-filter-form" method="GET" action="{{ route('emails.deadline-reminders') }}" class="space-y-3">
                 @foreach($reminderQueryBase as $key => $value) @if(is_scalar($value))<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endif @endforeach
-                <input type="hidden" name="reminder_scope" value="{{ $reminderScope }}"><input type="hidden" name="reminder_status" value="{{ $reminderStatus }}">
-                <div class="flex items-end gap-2"><label class="form-label text-[11px]">Reminders per page<select data-reminder-live-change name="reminder_per_page" class="form-input mt-1 py-2 text-xs">@foreach([10,20,30,50] as $option)<option value="{{ $option }}" @selected($reminderPerPage === $option)>{{ $option }} per page</option>@endforeach</select></label>@if($reminderScope !== 'today' || $reminderStatus !== 'all')<a data-reminder-live-link href="{{ $reminderLink(['reminder_scope' => 'today', 'reminder_status' => 'all']) }}" class="btn btn-secondary mb-0.5 px-3 py-2 text-xs">Reset</a>@endif</div>
-                <p aria-live="polite" class="text-xs font-bold text-slate-500">Showing {{ $scheduledReminders->firstItem() ?? 0 }}–{{ $scheduledReminders->lastItem() ?? 0 }} of {{ number_format($scheduledReminders->total()) }}</p>
+                <input type="hidden" name="reminder_scope" value="{{ $reminderScope }}">
+                <input type="hidden" name="reminder_status" value="{{ $reminderStatus }}">
+                <div class="flex flex-col items-stretch justify-between gap-3 md:flex-row md:items-center">
+                    <div class="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-navy/15 bg-white px-4 py-1 shadow-2xs transition focus-within:border-orange focus-within:ring-4 focus-within:ring-orange/10">
+                        <svg class="size-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" /></svg>
+                        <input data-reminder-live-search class="w-full border-0 bg-transparent py-1.5 text-xs text-ink outline-none placeholder:text-slate-400 focus:ring-0 sm:text-sm" name="reminder_search" value="{{ $reminderSearch }}" placeholder="Live search by recipient, paper ID, or title...">
+                        @if($reminderSearch)<button data-reminder-clear-search type="button" class="shrink-0 px-1 text-base font-bold text-slate-400 hover:text-navy">&times;</button>@endif
+                    </div>
+                    <div class="flex items-center justify-between gap-3 text-xs text-slate-600 md:justify-end">
+                        <label class="flex items-center gap-1.5 whitespace-nowrap font-bold text-slate-500">Per page:
+                            <select data-reminder-live-change name="reminder_per_page" class="form-input w-auto rounded-xl border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold shadow-2xs">@foreach([10,20,30,50] as $option)<option value="{{ $option }}" @selected($reminderPerPage === $option)>{{ $option }}</option>@endforeach</select>
+                        </label>
+                        <span data-reminder-live-loading class="hidden items-center gap-1.5 font-bold text-orange"><span class="size-3 animate-spin rounded-full border-2 border-orange border-t-transparent"></span>Updating...</span>
+                        <span aria-live="polite" class="whitespace-nowrap text-[11px] font-bold text-navy sm:text-xs">{{ $scheduledReminders->firstItem() ?? 0 }}–{{ $scheduledReminders->lastItem() ?? 0 }} of {{ number_format($scheduledReminders->total()) }}</span>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 border-t border-navy/8 pt-3">
+                    <select data-reminder-live-change name="reminder_sort" class="form-input w-full py-2 text-xs sm:w-auto"><option value="planned_soon" @selected($reminderSort === 'planned_soon')>Planned time: soonest first</option><option value="planned_latest" @selected($reminderSort === 'planned_latest')>Planned time: latest first</option><option value="recipient" @selected($reminderSort === 'recipient')>Recipient A–Z</option></select>
+                    @if($reminderScope !== 'today' || $reminderStatus !== 'all' || $reminderSearch !== '' || $reminderSort !== 'planned_soon')<a data-reminder-live-link href="{{ route('emails.deadline-reminders') }}" class="btn btn-ghost px-3 py-2 text-xs">Reset</a>@endif
+                </div>
+                <div class="flex flex-wrap gap-2 border-t border-navy/8 pt-3">
+                    @foreach(['today' => 'Today', 'tomorrow' => 'Tomorrow', 'sent_today' => 'Sent Today', 'needs_attention' => 'Needs Attention', 'all' => 'All Reminders'] as $scope => $label)
+                        <a data-reminder-live-link href="{{ $reminderLink(['reminder_scope' => $scope, 'reminder_status' => $scope === 'needs_attention' ? 'all' : $reminderStatus]) }}" class="rounded-lg border px-3 py-2 text-xs font-black transition {{ $reminderScope === $scope ? 'border-navy bg-navy text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-navy/40 hover:text-navy' }}">{{ $label }}</a>
+                    @endforeach
+                </div>
+                <div class="flex flex-wrap items-center gap-2 border-t border-navy/8 pt-3"><span class="mr-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Status</span>
+                    @foreach(['all' => ['All statuses', (int) ($reminderStatusCounts?->total ?? 0)], 'scheduled' => ['Scheduled', (int) ($reminderStatusCounts?->scheduled ?? 0)], 'queued' => ['Queued', (int) ($reminderStatusCounts?->queued ?? 0)], 'processing' => ['Processing', (int) ($reminderStatusCounts?->processing ?? 0)], 'sent' => ['Sent', (int) ($reminderStatusCounts?->sent ?? 0)], 'cancelled' => ['Cancelled', (int) ($reminderStatusCounts?->cancelled ?? 0)], 'failed' => ['Failed', (int) ($reminderStatusCounts?->failed ?? 0)]] as $status => [$label, $count])
+                        <a data-reminder-live-link href="{{ $reminderLink(['reminder_status' => $status]) }}" class="rounded-full border px-2.5 py-1 text-[11px] font-bold transition {{ $reminderStatus === $status ? 'border-orange bg-orange text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-orange/50 hover:text-orange' }}">{{ $label }} <span class="ml-0.5 opacity-80">{{ number_format($count) }}</span></a>
+                    @endforeach
+                </div>
             </form>
         </div>
         <div class="hidden border-t border-navy/10 md:block md:overflow-x-auto"><table class="data-table min-w-[780px]"><thead><tr><th>Planned Send Time</th><th>Type / Paper</th><th>Recipient</th><th>Status</th><th>Details</th></tr></thead><tbody>
@@ -80,9 +99,12 @@
 
         const root = document.getElementById('deadline-reminder-monitoring-content');
         if (!root) return;
-        const load = async (url) => { try { const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }); if (!response.ok) throw new Error(); const doc = new DOMParser().parseFromString(await response.text(), 'text/html'); const replacement = doc.getElementById('deadline-reminder-monitoring-content'); if (!replacement) throw new Error(); root.innerHTML = replacement.innerHTML; window.history.replaceState({}, '', url); } catch { window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: 'Unable to refresh deadline reminders. Please try again.', type: 'error' } })); } };
+        let searchTimeout;
+        const setLoading = (loading) => root.querySelector('[data-reminder-live-loading]')?.classList.toggle('hidden', !loading);
+        const load = async (url) => { setLoading(true); try { const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }); if (!response.ok) throw new Error(); const doc = new DOMParser().parseFromString(await response.text(), 'text/html'); const replacement = doc.getElementById('deadline-reminder-monitoring-content'); if (!replacement) throw new Error(); root.innerHTML = replacement.innerHTML; window.history.replaceState({}, '', url); } catch { window.dispatchEvent(new CustomEvent('paperflow-toast', { detail: { message: 'Unable to refresh deadline reminders. Please try again.', type: 'error' } })); } finally { setLoading(false); } };
         const loadForm = (form) => { const url = new URL(form.action); new FormData(form).forEach((value, key) => value ? url.searchParams.set(key, value) : url.searchParams.delete(key)); url.searchParams.delete('reminder_page'); load(url.toString()); };
-        root.addEventListener('click', (event) => { const link = event.target.closest('[data-reminder-live-link], [data-reminder-pagination] a'); if (link) { event.preventDefault(); load(link.href); } });
+        root.addEventListener('click', (event) => { const clearSearch = event.target.closest('[data-reminder-clear-search]'); if (clearSearch) { const input = root.querySelector('[data-reminder-live-search]'); if (input) { input.value = ''; loadForm(input.closest('form')); } return; } const link = event.target.closest('[data-reminder-live-link], [data-reminder-pagination] a'); if (link) { event.preventDefault(); load(link.href); } });
+        root.addEventListener('input', (event) => { if (!event.target.matches('[data-reminder-live-search]')) return; clearTimeout(searchTimeout); searchTimeout = setTimeout(() => loadForm(event.target.closest('form')), 300); });
         root.addEventListener('change', (event) => { if (event.target.matches('[data-reminder-live-change]')) loadForm(event.target.closest('form')); });
         root.addEventListener('submit', (event) => { if (event.target.closest('#deadline-reminder-filter-form')) { event.preventDefault(); loadForm(event.target); } });
     });

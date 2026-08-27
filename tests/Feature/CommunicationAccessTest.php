@@ -161,6 +161,11 @@ class CommunicationAccessTest extends TestCase
             ->assertSee('REM-CANCELLED')
             ->assertDontSee('REM-TOMORROW');
 
+        $this->actingAs($admin)->get(route('emails.deadline-reminders', ['reminder_scope' => 'all', 'reminder_search' => 'REM-TOMORROW']))
+            ->assertOk()
+            ->assertSee('REM-TOMORROW')
+            ->assertDontSee('REM-CANCELLED');
+
         $this->actingAs($admin)->get(route('emails.deadline-reminders', ['reminder_per_page' => 10, 'reminder_page' => 2]))
             ->assertOk()
             ->assertSee('REM-PAGE-11');

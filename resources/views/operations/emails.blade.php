@@ -7,7 +7,7 @@
         </div>
     </div>
 
-    <nav class="mt-5 flex w-full gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1.5 sm:w-fit" aria-label="Email monitoring sections">
+    <nav class="mt-5 inline-flex w-fit max-w-full gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1.5" aria-label="Email monitoring sections">
         <a href="{{ route('emails.index') }}" class="rounded-lg bg-navy px-3 py-2 text-xs font-black text-white shadow-sm">Email Delivery</a>
         <a href="{{ route('emails.deadline-reminders') }}" class="rounded-lg px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-white hover:text-navy">Deadline Reminders</a>
     </nav>
