@@ -66,6 +66,9 @@
                     <a href="{{ route('conferences.edas-reconciliation.index', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'edas' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
                         <span>🔄</span> <span>EDAS Reconciliation</span>
                     </a>
+                    <a href="{{ route('conferences.data-export.index', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'data-export' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
+                        <span>📤</span> <span>Data Export</span>
+                    </a>
 
                     @can('update', $c)
                         <a href="{{ route('conferences.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'settings' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
