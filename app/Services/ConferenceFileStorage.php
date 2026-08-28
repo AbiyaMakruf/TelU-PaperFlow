@@ -52,49 +52,9 @@ class ConferenceFileStorage
     public function download(FileVersion $file, ?string $downloadName = null): RedirectResponse|BinaryFileResponse
     {
         $downloadName ??= $file->original_name;
-        $externalUrl = $file->external_url ?: (str_starts_with((string) $file->storage_path, 'http') ? $file->storage_path : null);
+        $copy = $this->temporaryCopy($file);
 
-        if ($file->disk === 'google_drive') {
-            $file->loadMissing('submission.conference');
-            $conference = $file->submission?->conference;
-
-            if ($conference && $file->external_id && $this->googleDrive->connected($conference)) {
-                try {
-                    return $this->googleDrive->download(
-                        $conference,
-                        $file->external_id,
-                        $downloadName,
-                    );
-                } catch (\Throwable $e) {
-                    if ($externalUrl) {
-                        return redirect()->away($externalUrl);
-                    }
-                    throw $e;
-                }
-            }
-
-            if ($externalUrl) {
-                return redirect()->away($externalUrl);
-            }
-
-            abort_unless($conference, 404);
-
-            return $this->googleDrive->download(
-                $conference,
-                $file->external_id ?: $file->storage_path,
-                $downloadName,
-            );
-        }
-
-        if ($externalUrl) {
-            return redirect()->away($externalUrl);
-        }
-
-        if ($url = $this->privateStorage->temporaryUrl($file->storage_path, 300, $downloadName)) {
-            return redirect()->away($url);
-        }
-
-        return response()->download($this->privateStorage->localPath($file->storage_path), $downloadName);
+        return response()->download($copy['path'], $downloadName)->deleteFileAfterSend($copy['cleanup']);
     }
 
     /** @param array<string, mixed> $attributes */

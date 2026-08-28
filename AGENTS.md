@@ -99,7 +99,7 @@ Do not update `submissions.status` directly when a transition should be validate
   - Automatically hides editor revision notes on compliant items (`✓ Passed`) while keeping detailed feedback on revision-required items.
 - **Supabase Storage Migration CLI Tool (`paperflow:migrate-storage`)**: Batch migration artisan command (`php artisan paperflow:migrate-storage {--dry-run} {--batch=50}`) to migrate local files and upload attempts to Supabase Storage with bucket health verification.
 - **Database Backup & Checkpoint Restore Tool**: Superadmin database backup export and JSON checkpoint restore commands (`php artisan paperflow:backup` / `paperflow:restore`).
-- **Direct External URL Download Support**: CSV / Webhook imported papers with external URLs (e.g. Google Drive/Sheets) download/redirect directly without requiring Google Drive OAuth setup.
+- **Direct External URL Download Support**: CSV / Webhook imported papers with external URLs (e.g. Google Drive/Sheets) are proxied by Paperflow as forced attachments without requiring Google Drive OAuth setup, so standard download filenames remain consistent.
 - **Updated Workflow Status Labels**: Status labels updated for better editorial clarity (`Waiting for Editor Assignment`, `Editorial Review in Progress`, `Pre-EDAS Technical Review`).
 - **GCP-Style Workspace Selector**: Header & drawer active conference selector scoping `VisibleSubmissions` to `session('active_conference_id')`.
 - **Duplicate Submission Detection**: Automatic flags for title similarity, corresponding author email match, or exact file checksums.
@@ -337,7 +337,7 @@ php artisan migrate --force
 Current baseline:
 
 - **135 tests**
-- **724 assertions**
+- **728 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)

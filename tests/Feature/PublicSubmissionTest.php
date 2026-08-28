@@ -213,6 +213,10 @@ class PublicSubmissionTest extends TestCase
             'author_token_expires_at' => now()->addDay(),
         ]);
 
+        $this->get(route('author.portal', $token))
+            ->assertSee('Before submitting your revision, please confirm that you have completed all corrections requested by the Editorial Team.')
+            ->assertDontSee('No editorial manuscript is available');
+
         $response = $this->post(route('author.revision', $token), [
             'paper_file' => UploadedFile::fake()->create('revision.zip', 120, 'application/zip'),
             'notes' => 'References corrected.',
@@ -252,6 +256,11 @@ class PublicSubmissionTest extends TestCase
             'storage_path' => 'paper/editorial-v1.docx',
             'original_name' => 'editorial-v1.docx',
         ]);
+
+        $this->get(route('author.portal', $token))
+            ->assertSee('Confirm your revision base file')
+            ->assertSee('I confirm that I used the latest editable manuscript uploaded by the Editorial Team as the basis for this revision.')
+            ->assertSee('I confirm that I have addressed all requested editorial corrections before submitting this revision.');
 
         $this->post(route('author.revision', $token), [
             'paper_file' => UploadedFile::fake()->create('revision.docx', 120, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
@@ -314,7 +323,7 @@ class PublicSubmissionTest extends TestCase
         $this->assertCount(2, $submission->fresh()->files);
     }
 
-    public function test_downloading_file_with_direct_external_url_redirects_without_requiring_google_drive_oauth(): void
+    public function test_downloading_file_with_direct_external_url_uses_the_standard_download_name(): void
     {
         [$conference, $form] = $this->openConference();
         $submission = Submission::create([
@@ -345,9 +354,12 @@ class PublicSubmissionTest extends TestCase
             'is_final' => false,
         ]);
 
-        $response = $this->get(route('author.files.download', ['token' => 'testtoken123', 'file' => $file]));
+        Http::fake([
+            $externalUrl => Http::response('external-file', 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
+        ]);
 
-        $response->assertRedirect($externalUrl);
+        $this->get(route('author.files.download', ['token' => 'testtoken123', 'file' => $file]))
+            ->assertDownload('paper-100-v1-author.docx');
     }
 
     /** @return array{Conference, FormVersion} */
