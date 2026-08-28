@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class FileVersion extends Model
 {
@@ -36,5 +37,20 @@ class FileVersion extends Model
     public function editorialBaseFile(): BelongsTo
     {
         return $this->belongsTo(self::class, 'based_on_file_version_id');
+    }
+
+    public function downloadNameFor(Submission $submission): string
+    {
+        $paperId = Str::slug((string) ($submission->paper_id ?: $submission->paper_code ?: 'paper'));
+        $source = match ($this->source) {
+            'editorial' => 'editorial',
+            'author' => 'author',
+            default => Str::slug((string) $this->source) ?: 'file',
+        };
+        $suffix = $this->file_category === 'revision_guidance_pdf' ? '-guidance' : '';
+        $extension = strtolower(pathinfo($this->original_name, PATHINFO_EXTENSION));
+        $filename = "{$paperId}-v{$this->version_number}-{$source}{$suffix}";
+
+        return $extension !== '' ? "{$filename}.{$extension}" : $filename;
     }
 }

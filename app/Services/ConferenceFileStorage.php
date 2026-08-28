@@ -49,8 +49,9 @@ class ConferenceFileStorage
         ];
     }
 
-    public function download(FileVersion $file): RedirectResponse|BinaryFileResponse
+    public function download(FileVersion $file, ?string $downloadName = null): RedirectResponse|BinaryFileResponse
     {
+        $downloadName ??= $file->original_name;
         $externalUrl = $file->external_url ?: (str_starts_with((string) $file->storage_path, 'http') ? $file->storage_path : null);
 
         if ($file->disk === 'google_drive') {
@@ -62,7 +63,7 @@ class ConferenceFileStorage
                     return $this->googleDrive->download(
                         $conference,
                         $file->external_id,
-                        $file->original_name,
+                        $downloadName,
                     );
                 } catch (\Throwable $e) {
                     if ($externalUrl) {
@@ -81,7 +82,7 @@ class ConferenceFileStorage
             return $this->googleDrive->download(
                 $conference,
                 $file->external_id ?: $file->storage_path,
-                $file->original_name,
+                $downloadName,
             );
         }
 
@@ -89,11 +90,11 @@ class ConferenceFileStorage
             return redirect()->away($externalUrl);
         }
 
-        if ($url = $this->privateStorage->temporaryUrl($file->storage_path, 300, $file->original_name)) {
+        if ($url = $this->privateStorage->temporaryUrl($file->storage_path, 300, $downloadName)) {
             return redirect()->away($url);
         }
 
-        return response()->download($this->privateStorage->localPath($file->storage_path), $file->original_name);
+        return response()->download($this->privateStorage->localPath($file->storage_path), $downloadName);
     }
 
     /** @param array<string, mixed> $attributes */

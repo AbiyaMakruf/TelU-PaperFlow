@@ -216,7 +216,7 @@ class PublicSubmissionTest extends TestCase
         $response = $this->post(route('author.revision', $token), [
             'paper_file' => UploadedFile::fake()->create('revision.zip', 120, 'application/zip'),
             'notes' => 'References corrected.',
-            'editorial_file_confirmation' => '1',
+            'editorial_corrections_confirmation' => '1',
         ]);
         $response->assertRedirect();
         $response->assertSessionHas('success', 'Revision file successfully uploaded and returned to the editorial queue.');
@@ -234,6 +234,7 @@ class PublicSubmissionTest extends TestCase
         $submission = Submission::create([
             'conference_id' => $conference->id,
             'form_version_id' => $form->id,
+            'paper_id' => '15700010',
             'paper_code' => 'CONF-EDITORIAL-BASE',
             'title' => 'Editorial Base Paper',
             'corresponding_author_name' => 'Rani',
@@ -256,10 +257,15 @@ class PublicSubmissionTest extends TestCase
             'paper_file' => UploadedFile::fake()->create('revision.docx', 120, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
             'editorial_base_file_id' => $editorialFile->id,
             'editorial_file_confirmation' => '1',
+            'editorial_corrections_confirmation' => '1',
         ])->assertRedirect()->assertSessionHas('success');
 
         $revision = $submission->fresh()->files()->where('source', 'author')->firstOrFail();
         $this->assertSame($editorialFile->id, $revision->based_on_file_version_id);
+        $this->assertSame('15700010-v1-editorial.docx', $editorialFile->downloadNameFor($submission));
+        $this->assertSame('15700010-v2-author.docx', $revision->downloadNameFor($submission));
+        $this->get(route('author.files.download', [$token, $revision]))
+            ->assertDownload('15700010-v2-author.docx');
     }
 
     public function test_author_revision_is_rejected_when_a_newer_editorial_file_exists(): void
@@ -301,6 +307,7 @@ class PublicSubmissionTest extends TestCase
             'paper_file' => UploadedFile::fake()->create('revision.docx', 120, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
             'editorial_base_file_id' => $oldEditorialFile->id,
             'editorial_file_confirmation' => '1',
+            'editorial_corrections_confirmation' => '1',
         ])->assertRedirect(route('author.portal', $token))->assertSessionHasErrors('editorial_base_file_id');
 
         $this->assertSame(SubmissionStatus::WaitingAuthorRevision, $submission->fresh()->status);

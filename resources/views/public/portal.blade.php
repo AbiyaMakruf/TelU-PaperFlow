@@ -92,7 +92,7 @@
                                 <div class="grid gap-3 {{ $targetGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
                                     @if($targetManuscript)
                                         <!-- Manuscript Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" download="{{ $targetManuscript->original_name }}" class="group p-3.5 sm:p-4 rounded-2xl border border-orange/20 bg-amber-50/60 hover:bg-amber-100/90 hover:border-orange/40 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
+                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3.5 sm:p-4 rounded-2xl border border-orange/20 bg-amber-50/60 hover:bg-amber-100/90 hover:border-orange/40 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
                                             <div class="min-w-0 flex-1 space-y-1">
                                                 <span class="text-[11px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Editable Manuscript</span>
                                                 <p class="text-xs text-navy leading-relaxed font-medium">Latest editable manuscript source file (DOCX or LaTeX ZIP package) incorporating previous editorial and formatting revisions.</p>
@@ -105,7 +105,7 @@
 
                                     @if($targetGuidancePdf)
                                         <!-- Revision Guide Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" download="{{ $targetGuidancePdf->original_name }}" class="group p-3.5 sm:p-4 rounded-2xl border border-indigo-200/80 bg-indigo-50/60 hover:bg-indigo-100/80 hover:border-indigo-300 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
+                                        <a href="{{ route('author.files.download', [$token, $targetGuidancePdf]) }}" class="group p-3.5 sm:p-4 rounded-2xl border border-indigo-200/80 bg-indigo-50/60 hover:bg-indigo-100/80 hover:border-indigo-300 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
                                             <div class="min-w-0 flex-1 space-y-1">
                                                 <span class="text-[11px] font-extrabold text-indigo-700 uppercase tracking-wider block">Revision Guidance Document</span>
                                                 <p class="text-xs text-indigo-950 leading-relaxed font-medium">Visual PDF guide containing specific editorial annotations and markups to guide your required revisions.</p>
@@ -386,6 +386,7 @@
                     <form x-data="{
                             confirmationOpen: false,
                             confirmed: false,
+                            correctionsConfirmed: false,
                             submitting: false,
                             openConfirmation() {
                                 if (!this.$refs.revisionForm.reportValidity()) return;
@@ -397,10 +398,11 @@
                                     return;
                                 }
                                 this.confirmed = false;
+                                this.correctionsConfirmed = false;
                                 this.confirmationOpen = true;
                             },
                             submitRevision() {
-                                if (!this.confirmed || this.submitting) return;
+                                if (!this.correctionsConfirmed || (!{{ $latestEditorialManuscript ? 'true' : 'false' }} ? false : !this.confirmed) || this.submitting) return;
                                 this.submitting = true;
                                 this.$refs.revisionForm.submit();
                             }
@@ -438,7 +440,6 @@
                                         <div class="mt-5 rounded-xl border border-orange/25 bg-amber-50/70 p-4">
                                             <p class="text-[11px] font-black uppercase tracking-wider text-orange">Latest Editorial Manuscript</p>
                                             <p class="mt-2 text-sm font-black text-navy">Version {{ $latestEditorialManuscript->version_number }}</p>
-                                            <p class="mt-1 break-all text-xs font-medium text-slate-700">{{ $latestEditorialManuscript->original_name }}</p>
                                             <p class="mt-1 text-xs text-muted">Uploaded {{ $latestEditorialManuscript->created_at->timezone($submission->conference->timezone)->format('d M Y, H:i T') }}</p>
                                             <a href="{{ route('author.files.download', [$token, $latestEditorialManuscript]) }}" class="btn mt-3 w-full bg-orange text-xs font-extrabold text-white hover:bg-orange-dark sm:w-auto">Download Latest Editable Manuscript</a>
                                         </div>
@@ -447,20 +448,21 @@
                                             <input x-model="confirmed" type="checkbox" name="editorial_file_confirmation" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
                                             <span class="text-sm font-semibold leading-relaxed text-navy">I confirm that I used the latest editable manuscript uploaded by the Editorial Team as the basis for this revision.</span>
                                         </label>
+                                        <label class="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-orange/40 hover:bg-amber-50/40">
+                                            <input x-model="correctionsConfirmed" type="checkbox" name="editorial_corrections_confirmation" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
+                                            <span class="text-sm font-semibold leading-relaxed text-navy">I confirm that I have addressed all requested editorial corrections before submitting this revision.</span>
+                                        </label>
                                     @else
-                                        <div class="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-relaxed text-sky-950">
-                                            <p class="font-black">No editorial manuscript is available</p>
-                                            <p class="mt-1.5">No editable manuscript has been uploaded by the Editorial Team in Paperflow. This means no editorial file changes have been recorded in this system.</p>
-                                        </div>
+                                        <p class="mt-5 text-sm leading-relaxed text-slate-700">Before submitting your revision, please confirm that you have completed all corrections requested by the Editorial Team.</p>
                                         <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-orange/40 hover:bg-amber-50/40">
-                                            <input x-model="confirmed" type="checkbox" name="editorial_file_confirmation" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
-                                            <span class="text-sm font-semibold leading-relaxed text-navy">I understand that no editorial manuscript has been recorded in Paperflow and confirm that I am submitting my revised file.</span>
+                                            <input x-model="correctionsConfirmed" type="checkbox" name="editorial_corrections_confirmation" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
+                                            <span class="text-sm font-semibold leading-relaxed text-navy">I confirm that I have addressed all requested editorial corrections before submitting this revision.</span>
                                         </label>
                                     @endif
 
                                     <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                                         <button type="button" @click="confirmationOpen = false" :disabled="submitting" class="btn btn-ghost w-full sm:w-auto">Cancel</button>
-                                        <button type="button" @click="submitRevision()" :disabled="!confirmed || submitting" class="btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto" x-text="submitting ? 'Submitting...' : 'Confirm & Submit Revision'"></button>
+                                        <button type="button" @click="submitRevision()" :disabled="{{ $latestEditorialManuscript ? '!confirmed || !correctionsConfirmed' : '!correctionsConfirmed' }} || submitting" class="btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto" x-text="submitting ? 'Submitting...' : 'Confirm & Submit Revision'"></button>
                                     </div>
                                 </div>
                             </div>

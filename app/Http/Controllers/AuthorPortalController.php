@@ -50,13 +50,15 @@ class AuthorPortalController extends Controller
     {
         $submission = $this->submissionFor($token);
         abort_unless(in_array($submission->status, [SubmissionStatus::NeedsAuthorCorrection, SubmissionStatus::WaitingAuthorRevision], true), 422, 'Paper ini belum meminta revisi author.');
+        $latestEditorialFile = $this->latestEditorialEditableFile($submission);
         $validated = $request->validate([
             'paper_file' => ['required', File::types(['docx', 'zip'])->max($submission->conference->maxFileSizeMb().'mb')],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'editorial_base_file_id' => ['nullable', 'ulid'],
-            'editorial_file_confirmation' => ['accepted'],
+            'editorial_base_file_id' => $latestEditorialFile ? ['required', 'ulid'] : ['nullable', 'ulid'],
+            'editorial_file_confirmation' => $latestEditorialFile ? ['accepted'] : ['nullable'],
+            'editorial_corrections_confirmation' => ['accepted'],
         ]);
-        $editorialBaseFile = $this->validateEditorialBaseFile($submission, $validated['editorial_base_file_id'] ?? null);
+        $editorialBaseFile = $this->validateEditorialBaseFile($submission, $validated['editorial_base_file_id'] ?? null, $latestEditorialFile);
         $file = $request->file('paper_file');
         $version = ($submission->files()->withTrashed()->max('version_number') ?? 0) + 1;
         $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
@@ -139,7 +141,7 @@ class AuthorPortalController extends Controller
         $submission = $this->submissionFor($token);
         abort_unless($file->submission_id === $submission->id, 404);
 
-        return $storage->download($file);
+        return $storage->download($file, $file->downloadNameFor($submission));
     }
 
     public function downloadPdfExpress(string $token, ConferenceFileStorage $storage): RedirectResponse|BinaryFileResponse
@@ -242,13 +244,9 @@ class AuthorPortalController extends Controller
             ->firstOrFail();
     }
 
-    private function validateEditorialBaseFile(Submission $submission, ?string $acknowledgedFileId): ?FileVersion
+    private function validateEditorialBaseFile(Submission $submission, ?string $acknowledgedFileId, ?FileVersion $latestEditorialFile = null): ?FileVersion
     {
-        $latestEditorialFile = $submission->files()
-            ->where('source', 'editorial')
-            ->where('file_category', 'editable_manuscript')
-            ->orderByDesc('version_number')
-            ->first();
+        $latestEditorialFile ??= $this->latestEditorialEditableFile($submission);
 
         if ($latestEditorialFile?->id !== $acknowledgedFileId) {
             throw ValidationException::withMessages([
@@ -259,5 +257,14 @@ class AuthorPortalController extends Controller
         }
 
         return $latestEditorialFile;
+    }
+
+    private function latestEditorialEditableFile(Submission $submission): ?FileVersion
+    {
+        return $submission->files()
+            ->where('source', 'editorial')
+            ->where('file_category', 'editable_manuscript')
+            ->orderByDesc('version_number')
+            ->first();
     }
 }

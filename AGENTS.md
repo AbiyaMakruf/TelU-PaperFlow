@@ -124,7 +124,7 @@ Do not update `submissions.status` directly when a transition should be validate
 - **HTML Dataset-Bound File Deletion Modal**: Refactored paper version delete modal bindings using HTML `$el.dataset` (`data-id`, `data-version`, `data-label`, `data-url`), completely eliminating quote escaping clashes and JavaScript syntax errors in Alpine directives.
 - **Role-Scoped User Manuals & Public Author Guide**: Dedicated public standalone author user manual (`/user-manual/author`) without staff sidebar, and authenticated role-scoped staff documentation hub (`/user-manual/{role}`) covering Superadmin, Conference Admin, Editorial, Reviewer, and Viewer roles with role ecosystem matrix.
 - **Automatic Review Cycle Completion & BEFORE Column Differential**: `SubmissionWorkflow` and `AuthorPortalController` automatically mark open `ReviewCycle` records as `completed` upon revision requests and author uploads. New cycles calculate a historical differential so the "BEFORE" column accurately displays previous cycle rejection/approval states (`✕` / `✓`) against newly submitted revisions.
-- **Author Revision Editorial-Base Confirmation & Traceability**: Before an author can submit a requested revision, the Author Portal displays the latest editable manuscript uploaded by Editorial and requires explicit confirmation. The server revalidates the acknowledged file ID to reject stale submissions if a newer Editorial file exists. Each author revision and recoverable upload attempt stores `based_on_file_version_id`; staff version history displays the recorded Editorial base version. When no Editorial editable manuscript exists, the portal explains that no Editorial file changes have been recorded in Paperflow.
+- **Author Revision Editorial-Base Confirmation & Traceability**: Before an author can submit a requested revision, the Author Portal displays the latest editable manuscript uploaded by Editorial and requires explicit confirmation. The server revalidates the acknowledged file ID to reject stale submissions if a newer Editorial file exists. Each author revision and recoverable upload attempt stores `based_on_file_version_id`; staff version history displays the recorded Editorial base version. When no Editorial editable manuscript exists, the portal requires confirmation that all requested corrections were completed. Manuscript and guidance downloads are forced to `{paperid}-v{version}-{source}[-guidance].{extension}`.
 - **Favicon & Brand Assets**: Integrated SVG/PNG favicons, apple touch icons, and standard ICO branding across all Blade layouts (`app`, `guest`, `public`, `welcome`).
 - **Clean Status History Timeline Notes**: Replaced raw HTML table strings in `submission_status_histories.note` with sanitized plain text notes, and applied server-side Blade + API whitespace normalization & tag stripping.
 - **E.164 Multi-Country Phone Parsing & Automatic Normalization**: `PhoneNumber::parse()` cleans non-digits, preserves international prefixes (`+60` Malaysia, `+65` Singapore, `+1` USA, `+61` Australia, `+81` Japan, etc.), and normalizes Indonesian local formats (`08...`, `8...`) to E.164 `+628...` via Eloquent mutator across all submission ingestion endpoints.
@@ -337,7 +337,7 @@ php artisan migrate --force
 Current baseline:
 
 - **135 tests**
-- **721 assertions**
+- **724 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)

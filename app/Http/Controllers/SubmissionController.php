@@ -1126,7 +1126,7 @@ class SubmissionController extends Controller
         $this->authorize('view', $submission);
         abort_unless($file->submission_id === $submission->id, 404);
 
-        return $storage->download($file);
+        return $storage->download($file, $file->downloadNameFor($submission));
     }
 
     public function retryUpload(Request $request, Submission $submission, UploadAttempt $attempt, ConferenceFileStorage $storage): RedirectResponse|JsonResponse
