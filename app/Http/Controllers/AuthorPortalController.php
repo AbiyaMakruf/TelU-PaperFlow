@@ -7,6 +7,7 @@ use App\Enums\SubmissionStatus;
 use App\Models\FileVersion;
 use App\Models\Submission;
 use App\Models\UploadAttempt;
+use App\Services\AuditLogger;
 use App\Services\ConferenceFileStorage;
 use App\Services\ConferenceMailer;
 use App\Services\PhoneNumber;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
@@ -51,7 +53,10 @@ class AuthorPortalController extends Controller
         $validated = $request->validate([
             'paper_file' => ['required', File::types(['docx', 'zip'])->max($submission->conference->maxFileSizeMb().'mb')],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'editorial_base_file_id' => ['nullable', 'ulid'],
+            'editorial_file_confirmation' => ['accepted'],
         ]);
+        $editorialBaseFile = $this->validateEditorialBaseFile($submission, $validated['editorial_base_file_id'] ?? null);
         $file = $request->file('paper_file');
         $version = ($submission->files()->withTrashed()->max('version_number') ?? 0) + 1;
         $path = $submission->conference->slug.'/'.$submission->id.'/v'.$version.'-'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$file->getClientOriginalExtension();
@@ -59,14 +64,15 @@ class AuthorPortalController extends Controller
             $storedFile = $storage->put($submission->conference, $file, $path, $submission->paper_code.'-V'.$version);
         } catch (Throwable $e) {
             $pending = $file->storeAs('pending-uploads/'.$submission->id, Str::ulid().'-'.$file->getClientOriginalName(), 'local');
-            $submission->uploadAttempts()->create(['source' => 'author', 'label' => 'Revisi author '.$version, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size' => $file->getSize(), 'temporary_path' => $pending, 'notes' => $validated['notes'] ?? null, 'status' => 'failed', 'error' => $e->getMessage()]);
+            $submission->uploadAttempts()->create(['source' => 'author', 'based_on_file_version_id' => $editorialBaseFile?->id, 'label' => 'Revisi author '.$version, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size' => $file->getSize(), 'temporary_path' => $pending, 'notes' => $validated['notes'] ?? null, 'status' => 'failed', 'error' => $e->getMessage()]);
             report($e);
 
             return back()->withErrors(['paper_file' => 'Upload gagal. File disimpan sementara; klik Coba lagi.']);
         }
 
-        DB::transaction(function () use ($submission, $file, $version, $validated, $storedFile) {
+        DB::transaction(function () use ($submission, $file, $version, $validated, $storedFile, $editorialBaseFile) {
             $submission->files()->create([
+                'based_on_file_version_id' => $editorialBaseFile?->id,
                 'version_number' => $version,
                 'label' => 'Revisi author '.$version,
                 'source' => 'author',
@@ -96,10 +102,16 @@ class AuthorPortalController extends Controller
             $submission->statusHistory()->create([
                 'from_status' => $from,
                 'to_status' => $to,
-                'note' => 'Author mengunggah revisi.',
+                'note' => $editorialBaseFile
+                    ? "Author uploaded a revision based on Editorial version {$editorialBaseFile->version_number}."
+                    : 'Author uploaded a revision. No editorial manuscript had been recorded in Paperflow.',
                 'created_at' => now(),
             ]);
         });
+        app(AuditLogger::class)->record('submission.author_revision_uploaded', $submission, $submission->conference, [], [
+            'based_on_file_version_id' => $editorialBaseFile?->id,
+            'based_on_version_number' => $editorialBaseFile?->version_number,
+        ]);
         app(RevisionDeadlineReminderService::class)->cancelForSubmission($submission, 'Cancelled because the author uploaded a revision.');
 
         $paperUrl = route('submissions.show', $submission);
@@ -144,6 +156,7 @@ class AuthorPortalController extends Controller
         abort_unless($attempt->submission_id === $submission->id && $attempt->source === 'author' && $attempt->status === 'failed', 404);
         $absolute = Storage::disk('local')->path($attempt->temporary_path);
         abort_unless(is_file($absolute), 404);
+        $editorialBaseFile = $this->validateEditorialBaseFile($submission, $attempt->based_on_file_version_id);
         $uploaded = new UploadedFile($absolute, $attempt->original_name, $attempt->mime_type, null, true);
         $version = ($submission->files()->withTrashed()->max('version_number') ?? 0) + 1;
         try {
@@ -153,10 +166,24 @@ class AuthorPortalController extends Controller
 
             return back()->withErrors(['paper_file' => 'Retry upload failed: '.$e->getMessage()]);
         }
-        $submission->files()->create(['version_number' => $version, 'label' => $attempt->label, 'source' => 'author', 'disk' => $stored['disk'], 'storage_path' => $stored['storage_path'], 'original_name' => $attempt->original_name, 'mime_type' => $attempt->mime_type, 'size' => $attempt->size, 'checksum' => hash_file('sha256', $absolute), 'notes' => $attempt->notes, 'external_provider' => $stored['external_provider'], 'external_id' => $stored['external_id'], 'external_url' => $stored['external_url']]);
+        $submission->files()->create(['based_on_file_version_id' => $editorialBaseFile?->id, 'version_number' => $version, 'label' => $attempt->label, 'source' => 'author', 'file_category' => 'editable_manuscript', 'disk' => $stored['disk'], 'storage_path' => $stored['storage_path'], 'original_name' => $attempt->original_name, 'mime_type' => $attempt->mime_type, 'size' => $attempt->size, 'checksum' => hash_file('sha256', $absolute), 'notes' => $attempt->notes, 'external_provider' => $stored['external_provider'], 'external_id' => $stored['external_id'], 'external_url' => $stored['external_url']]);
         Storage::disk('local')->delete($attempt->temporary_path);
         $attempt->update(['status' => 'completed', 'retried_at' => now(), 'attempts' => $attempt->attempts + 1]);
+        $from = $submission->status;
         $submission->update(['status' => SubmissionStatus::EditorialReview, 'revision_substatus' => 'revised_by_author', 'deadline_at' => null]);
+        $submission->statusHistory()->create([
+            'from_status' => $from,
+            'to_status' => SubmissionStatus::EditorialReview,
+            'note' => $editorialBaseFile
+                ? "Author retry upload succeeded based on Editorial version {$editorialBaseFile->version_number}."
+                : 'Author retry upload succeeded. No editorial manuscript had been recorded in Paperflow.',
+            'created_at' => now(),
+        ]);
+        app(AuditLogger::class)->record('submission.author_revision_uploaded', $submission, $submission->conference, [], [
+            'based_on_file_version_id' => $editorialBaseFile?->id,
+            'based_on_version_number' => $editorialBaseFile?->version_number,
+            'retry_upload_attempt_id' => $attempt->id,
+        ]);
         app(RevisionDeadlineReminderService::class)->cancelForSubmission($submission, 'Cancelled because the author retry upload succeeded.');
 
         return back()->with('success', 'Revision file successfully re-uploaded.');
@@ -213,5 +240,24 @@ class AuthorPortalController extends Controller
             ->where('author_token_hash', hash('sha256', $token))
             ->where('author_token_expires_at', '>', now())
             ->firstOrFail();
+    }
+
+    private function validateEditorialBaseFile(Submission $submission, ?string $acknowledgedFileId): ?FileVersion
+    {
+        $latestEditorialFile = $submission->files()
+            ->where('source', 'editorial')
+            ->where('file_category', 'editable_manuscript')
+            ->orderByDesc('version_number')
+            ->first();
+
+        if ($latestEditorialFile?->id !== $acknowledgedFileId) {
+            throw ValidationException::withMessages([
+                'editorial_base_file_id' => $latestEditorialFile
+                    ? 'A newer editorial manuscript is available. Please download and confirm the latest file before submitting your revision.'
+                    : 'The available editorial manuscript information has changed. Please review the revision form and confirm again.',
+            ]);
+        }
+
+        return $latestEditorialFile;
     }
 }

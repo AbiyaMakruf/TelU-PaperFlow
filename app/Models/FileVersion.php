@@ -13,7 +13,7 @@ class FileVersion extends Model
     use HasFactory, HasUlids, SoftDeletes;
 
     protected $fillable = [
-        'submission_id', 'version_number', 'label', 'source', 'disk', 'storage_path',
+        'submission_id', 'based_on_file_version_id', 'version_number', 'label', 'source', 'disk', 'storage_path',
         'original_name', 'mime_type', 'size', 'file_hash', 'checksum', 'uploaded_by', 'notes', 'is_final',
         'external_provider', 'external_id', 'external_url', 'file_category',
     ];
@@ -31,5 +31,10 @@ class FileVersion extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function editorialBaseFile(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'based_on_file_version_id');
     }
 }

@@ -216,6 +216,7 @@ class PublicSubmissionTest extends TestCase
         $response = $this->post(route('author.revision', $token), [
             'paper_file' => UploadedFile::fake()->create('revision.zip', 120, 'application/zip'),
             'notes' => 'References corrected.',
+            'editorial_file_confirmation' => '1',
         ]);
         $response->assertRedirect();
         $response->assertSessionHas('success', 'Revision file successfully uploaded and returned to the editorial queue.');
@@ -223,6 +224,87 @@ class PublicSubmissionTest extends TestCase
         $this->assertSame(SubmissionStatus::EditorialReview, $submission->fresh()->status);
         $this->assertNull($submission->fresh()->deadline_at);
         $this->assertCount(1, $submission->files);
+    }
+
+    public function test_author_revision_requires_confirmation_of_the_latest_editorial_file(): void
+    {
+        Storage::fake('local');
+        [$conference, $form] = $this->openConference();
+        $token = 'editorial-base-token';
+        $submission = Submission::create([
+            'conference_id' => $conference->id,
+            'form_version_id' => $form->id,
+            'paper_code' => 'CONF-EDITORIAL-BASE',
+            'title' => 'Editorial Base Paper',
+            'corresponding_author_name' => 'Rani',
+            'corresponding_author_email' => 'rani@example.com',
+            'status' => SubmissionStatus::WaitingAuthorRevision,
+            'author_token_hash' => hash('sha256', $token),
+            'author_token_expires_at' => now()->addDay(),
+        ]);
+        $editorialFile = $submission->files()->create([
+            'version_number' => 1,
+            'label' => 'Editorially corrected manuscript',
+            'source' => 'editorial',
+            'file_category' => 'editable_manuscript',
+            'disk' => 'local',
+            'storage_path' => 'paper/editorial-v1.docx',
+            'original_name' => 'editorial-v1.docx',
+        ]);
+
+        $this->post(route('author.revision', $token), [
+            'paper_file' => UploadedFile::fake()->create('revision.docx', 120, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+            'editorial_base_file_id' => $editorialFile->id,
+            'editorial_file_confirmation' => '1',
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $revision = $submission->fresh()->files()->where('source', 'author')->firstOrFail();
+        $this->assertSame($editorialFile->id, $revision->based_on_file_version_id);
+    }
+
+    public function test_author_revision_is_rejected_when_a_newer_editorial_file_exists(): void
+    {
+        Storage::fake('local');
+        [$conference, $form] = $this->openConference();
+        $token = 'stale-editorial-base-token';
+        $submission = Submission::create([
+            'conference_id' => $conference->id,
+            'form_version_id' => $form->id,
+            'paper_code' => 'CONF-STALE-BASE',
+            'title' => 'Stale Editorial Base Paper',
+            'corresponding_author_name' => 'Rani',
+            'corresponding_author_email' => 'rani@example.com',
+            'status' => SubmissionStatus::WaitingAuthorRevision,
+            'author_token_hash' => hash('sha256', $token),
+            'author_token_expires_at' => now()->addDay(),
+        ]);
+        $oldEditorialFile = $submission->files()->create([
+            'version_number' => 1,
+            'label' => 'Editorial version 1',
+            'source' => 'editorial',
+            'file_category' => 'editable_manuscript',
+            'disk' => 'local',
+            'storage_path' => 'paper/editorial-v1.docx',
+            'original_name' => 'editorial-v1.docx',
+        ]);
+        $submission->files()->create([
+            'version_number' => 2,
+            'label' => 'Editorial version 2',
+            'source' => 'editorial',
+            'file_category' => 'editable_manuscript',
+            'disk' => 'local',
+            'storage_path' => 'paper/editorial-v2.docx',
+            'original_name' => 'editorial-v2.docx',
+        ]);
+
+        $this->from(route('author.portal', $token))->post(route('author.revision', $token), [
+            'paper_file' => UploadedFile::fake()->create('revision.docx', 120, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+            'editorial_base_file_id' => $oldEditorialFile->id,
+            'editorial_file_confirmation' => '1',
+        ])->assertRedirect(route('author.portal', $token))->assertSessionHasErrors('editorial_base_file_id');
+
+        $this->assertSame(SubmissionStatus::WaitingAuthorRevision, $submission->fresh()->status);
+        $this->assertCount(2, $submission->fresh()->files);
     }
 
     public function test_downloading_file_with_direct_external_url_redirects_without_requiring_google_drive_oauth(): void

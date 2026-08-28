@@ -187,7 +187,7 @@ class SubmissionController extends Controller
     {
         $this->authorize('view', $submission);
         $submission->load([
-            'conference', 'authors', 'editor', 'reviewer', 'files.uploader', 'feedback.author',
+            'conference', 'authors', 'editor', 'reviewer', 'files.uploader', 'files.editorialBaseFile', 'feedback.author',
             'statusHistory.actor', 'reviewCycles.template.items', 'reviewCycles.results', 'uploadAttempts.user',
         ]);
         $editors = $submission->conference->memberships()->with('user')->where('role', ConferenceRole::Editorial)->where('is_active', true)->get();

@@ -73,6 +73,11 @@
                             $targetGuidancePdf = $filesInTargetVersion->firstWhere('file_category', 'revision_guidance_pdf');
                             $cameraReadyPdf = $submission->status === \App\Enums\SubmissionStatus::Done && $submission->hasPdfExpress();
                             $statusLabel = $isFinalVersion ? 'Final' : 'Latest';
+                            $latestEditorialManuscript = $submission->files
+                                ->where('source', 'editorial')
+                                ->where('file_category', 'editable_manuscript')
+                                ->sortByDesc('version_number')
+                                ->first();
                         @endphp
                         @if($targetManuscript || $cameraReadyPdf)
                             <div class="mt-5 pt-5 border-t border-navy/10 space-y-3" style="padding-top: 1.25rem; margin-top: 1.25rem;">
@@ -224,7 +229,7 @@
                         <h3 class="font-extrabold text-amber-950 text-sm">Important Revision Instructions</h3>
                         <ul class="list-disc list-inside space-y-1.5 leading-relaxed text-amber-900 font-medium">
                             <li>Please inspect the <strong>Editorial Compliance Checklist Monitoring (Live)</strong> card below to see specific items requiring correction (marked with <strong class="text-rose-700 font-extrabold">✕ Revision Needed</strong>).</li>
-                            <li><strong>Always use the Latest Manuscript File</strong> as the base for your revisions, because the editorial team may have already performed initial formatting corrections on it. You can download this file from the <strong>Submission Details</strong> card above (under <em>{{ $statusLabel ?? 'Latest' }} Manuscript Files</em>) or from the <strong>File Version History</strong> section at the bottom of this page.</li>
+                            <li><strong>Always use the latest editable manuscript uploaded by the Editorial Team</strong> as the base for your revisions. You will be asked to confirm the exact editorial version before your revision can be submitted.</li>
                             <li><strong>Only modify the specific items requested for correction</strong>. Please leave all other already compliant sections untouched.</li>
                         </ul>
                     </div>
@@ -378,19 +383,88 @@
                 @endforeach
 
                 @if (in_array($submission->status, [\App\Enums\SubmissionStatus::NeedsAuthorCorrection, \App\Enums\SubmissionStatus::WaitingAuthorRevision], true))
-                    <form method="POST" action="{{ route('author.revision', $token) }}" enctype="multipart/form-data" class="card p-4 sm:p-6" onsubmit="const fileInput = this.querySelector('input[type=file]'); const maxBytes = {{ ($submission->conference->maxFileSizeMb() ?: 25) * 1024 * 1024 }}; if (fileInput && fileInput.files[0] && fileInput.files[0].size > maxBytes) { alert('Ukuran file ' + fileInput.files[0].name + ' (' + (fileInput.files[0].size / (1024*1024)).toFixed(1) + ' MB) melebihi batas maksimal {{ $submission->conference->maxFileSizeMb() ?: 25 }}MB. Silakan pilih file yang lebih kecil.'); fileInput.value = ''; return false; } const btn = this.querySelector('button[type=submit]'); if (btn) { btn.disabled = true; btn.innerHTML = 'Processing...'; }">
+                    <form x-data="{
+                            confirmationOpen: false,
+                            confirmed: false,
+                            submitting: false,
+                            openConfirmation() {
+                                if (!this.$refs.revisionForm.reportValidity()) return;
+                                const file = this.$refs.paperFile.files[0];
+                                const maxBytes = {{ ($submission->conference->maxFileSizeMb() ?: 25) * 1024 * 1024 }};
+                                if (file && file.size > maxBytes) {
+                                    alert('The selected file exceeds the {{ $submission->conference->maxFileSizeMb() ?: 25 }} MB limit. Please choose a smaller file.');
+                                    this.$refs.paperFile.value = '';
+                                    return;
+                                }
+                                this.confirmed = false;
+                                this.confirmationOpen = true;
+                            },
+                            submitRevision() {
+                                if (!this.confirmed || this.submitting) return;
+                                this.submitting = true;
+                                this.$refs.revisionForm.submit();
+                            }
+                        }"
+                        x-ref="revisionForm"
+                        @submit.prevent="openConfirmation()"
+                        method="POST" action="{{ route('author.revision', $token) }}" enctype="multipart/form-data" class="card p-4 sm:p-6">
                         @csrf
                         <h2 class="text-lg font-black text-navy">Upload Revision</h2>
+                        <p class="mt-1.5 text-xs leading-relaxed text-muted">Before submitting, you must confirm the latest editorial manuscript used as the basis for your revision.</p>
+                        <input type="hidden" name="editorial_base_file_id" value="{{ $latestEditorialManuscript?->id }}">
                         <label class="mt-5 block min-w-0">
                             <span class="form-label">New Editable Source File *</span>
-                            <input class="form-input min-w-0 py-3" type="file" name="paper_file" accept=".docx,.zip" required onchange="const maxBytes = {{ ($submission->conference->maxFileSizeMb() ?: 25) * 1024 * 1024 }}; if (this.files[0] && this.files[0].size > maxBytes) { alert('Ukuran file ' + this.files[0].name + ' (' + (this.files[0].size / (1024*1024)).toFixed(1) + ' MB) melebihi batas maksimal {{ $submission->conference->maxFileSizeMb() ?: 25 }}MB.'); this.value = ''; }">
+                            <input x-ref="paperFile" class="form-input min-w-0 py-3" type="file" name="paper_file" accept=".docx,.zip" required>
                             <span class="mt-2 block text-xs text-muted">Use DOCX or ZIP containing all LaTeX sources (Max {{ $submission->conference->maxFileSizeMb() ?: 25 }} MB).</span>
                         </label>
                         <label class="mt-5 block min-w-0">
                             <span class="form-label">Revision Notes</span>
                             <textarea class="form-input min-w-0 min-h-24 py-3" name="notes" placeholder="Explain the changes made..."></textarea>
                         </label>
-                        <button class="btn btn-primary mt-5 w-full sm:w-auto" type="submit">Submit Revision</button>
+                        <button class="btn btn-primary mt-5 w-full sm:w-auto" type="button" @click="openConfirmation()">Submit Revision</button>
+
+                        <template x-teleport="body">
+                            <div x-show="confirmationOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-xs" @keydown.escape.window="confirmationOpen = false">
+                                <div @click.outside="confirmationOpen = false" class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div>
+                                            <p class="text-xs font-black uppercase tracking-wider text-orange">Revision confirmation</p>
+                                            <h3 class="mt-1 text-lg font-black text-navy">Confirm your revision base file</h3>
+                                        </div>
+                                        <button type="button" @click="confirmationOpen = false" class="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-navy" aria-label="Close confirmation dialog">✕</button>
+                                    </div>
+
+                                    @if($latestEditorialManuscript)
+                                        <div class="mt-5 rounded-xl border border-orange/25 bg-amber-50/70 p-4">
+                                            <p class="text-[11px] font-black uppercase tracking-wider text-orange">Latest Editorial Manuscript</p>
+                                            <p class="mt-2 text-sm font-black text-navy">Version {{ $latestEditorialManuscript->version_number }}</p>
+                                            <p class="mt-1 break-all text-xs font-medium text-slate-700">{{ $latestEditorialManuscript->original_name }}</p>
+                                            <p class="mt-1 text-xs text-muted">Uploaded {{ $latestEditorialManuscript->created_at->timezone($submission->conference->timezone)->format('d M Y, H:i T') }}</p>
+                                            <a href="{{ route('author.files.download', [$token, $latestEditorialManuscript]) }}" class="btn mt-3 w-full bg-orange text-xs font-extrabold text-white hover:bg-orange-dark sm:w-auto">Download Latest Editable Manuscript</a>
+                                        </div>
+                                        <p class="mt-4 text-sm leading-relaxed text-slate-700">Please ensure that your revision was prepared from this exact file. It may include editorial corrections that must be retained.</p>
+                                        <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-orange/40 hover:bg-amber-50/40">
+                                            <input x-model="confirmed" type="checkbox" name="editorial_file_confirmation" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
+                                            <span class="text-sm font-semibold leading-relaxed text-navy">I confirm that I used the latest editable manuscript uploaded by the Editorial Team as the basis for this revision.</span>
+                                        </label>
+                                    @else
+                                        <div class="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-relaxed text-sky-950">
+                                            <p class="font-black">No editorial manuscript is available</p>
+                                            <p class="mt-1.5">No editable manuscript has been uploaded by the Editorial Team in Paperflow. This means no editorial file changes have been recorded in this system.</p>
+                                        </div>
+                                        <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-orange/40 hover:bg-amber-50/40">
+                                            <input x-model="confirmed" type="checkbox" name="editorial_file_confirmation" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
+                                            <span class="text-sm font-semibold leading-relaxed text-navy">I understand that no editorial manuscript has been recorded in Paperflow and confirm that I am submitting my revised file.</span>
+                                        </label>
+                                    @endif
+
+                                    <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                        <button type="button" @click="confirmationOpen = false" :disabled="submitting" class="btn btn-ghost w-full sm:w-auto">Cancel</button>
+                                        <button type="button" @click="submitRevision()" :disabled="!confirmed || submitting" class="btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto" x-text="submitting ? 'Submitting...' : 'Confirm & Submit Revision'"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </form>
                 @endif
 

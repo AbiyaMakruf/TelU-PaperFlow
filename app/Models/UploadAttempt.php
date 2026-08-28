@@ -10,7 +10,7 @@ class UploadAttempt extends Model
 {
     use HasUlids;
 
-    protected $fillable = ['submission_id', 'user_id', 'source', 'label', 'original_name', 'mime_type', 'size', 'temporary_path', 'notes', 'is_final', 'status', 'error', 'attempts', 'retried_at'];
+    protected $fillable = ['submission_id', 'based_on_file_version_id', 'user_id', 'source', 'label', 'original_name', 'mime_type', 'size', 'temporary_path', 'notes', 'is_final', 'status', 'error', 'attempts', 'retried_at'];
 
     protected function casts(): array
     {
@@ -25,5 +25,10 @@ class UploadAttempt extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function editorialBaseFile(): BelongsTo
+    {
+        return $this->belongsTo(FileVersion::class, 'based_on_file_version_id');
     }
 }

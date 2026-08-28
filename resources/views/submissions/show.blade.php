@@ -906,6 +906,13 @@
                                     <td class="min-w-[180px]">
                                         <p class="font-bold text-navy text-xs sm:text-sm break-all leading-snug">{{ $manuscriptFile->label }}</p>
                                         <p class="text-xs text-muted break-all mt-0.5">{{ $manuscriptFile->original_name }} &middot; {{ number_format($manuscriptFile->size / 1024, 0) }} KB</p>
+                                        @if($manuscriptFile->source === 'author' && $manuscriptFile->editorialBaseFile)
+                                            <p class="mt-1 inline-flex rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-900">
+                                                Based on Editorial version v{{ $manuscriptFile->editorialBaseFile->version_number }}
+                                            </p>
+                                        @elseif($manuscriptFile->source === 'author')
+                                            <p class="mt-1 text-[10px] font-medium text-slate-500">No editorial base file was recorded in Paperflow.</p>
+                                        @endif
                                         @if($manuscriptFile->notes)
                                             <button type="button" data-label="{{ $manuscriptFile->label }} (v{{ $verNum }})" data-notes="{{ $manuscriptFile->notes }}" @click="activeNotesModal = { label: $el.dataset.label, text: $el.dataset.notes }" class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 border border-amber-300/70 text-[11px] font-bold text-amber-900 transition shadow-2xs">
                                                 <svg class="size-3 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
