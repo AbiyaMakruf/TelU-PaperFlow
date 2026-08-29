@@ -532,6 +532,20 @@
                         <h2 class="text-lg font-black text-navy">Upload Revision</h2>
                         <p class="mt-1.5 text-xs leading-relaxed text-muted">Before submitting, you must confirm the latest editorial manuscript used as the basis for your revision.</p>
                         <input type="hidden" name="editorial_base_file_id" value="{{ $latestEditorialManuscript?->id }}">
+                        {{-- These inputs remain in the form because confirmation controls are teleported into the modal body. --}}
+                        <input type="hidden" name="editorial_file_confirmation" :value="confirmed ? '1' : ''">
+                        <input type="hidden" name="editorial_corrections_confirmation" :value="correctionsConfirmed ? '1' : ''">
+                        @if($errors->hasAny(['paper_file', 'editorial_base_file_id', 'editorial_file_confirmation', 'editorial_corrections_confirmation']))
+                            <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium leading-relaxed text-rose-900" role="alert">
+                                <p class="font-extrabold">Your revision could not be submitted.</p>
+                                <ul class="mt-1 list-disc space-y-0.5 pl-4">
+                                    @foreach($errors->get('paper_file') as $message)<li>{{ $message }}</li>@endforeach
+                                    @foreach($errors->get('editorial_base_file_id') as $message)<li>{{ $message }}</li>@endforeach
+                                    @foreach($errors->get('editorial_file_confirmation') as $message)<li>{{ $message }}</li>@endforeach
+                                    @foreach($errors->get('editorial_corrections_confirmation') as $message)<li>{{ $message }}</li>@endforeach
+                                </ul>
+                            </div>
+                        @endif
                         <label class="mt-5 block min-w-0">
                             <span class="form-label">New Editable Source File *</span>
                             <input x-ref="paperFile" class="form-input min-w-0 py-3" type="file" name="paper_file" accept=".docx,.zip" required>
@@ -563,17 +577,17 @@
                                         </div>
                                         <p class="mt-4 text-sm leading-relaxed text-slate-700">Please ensure that your revision was prepared from this exact file. It may include editorial corrections that must be retained.</p>
                                         <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-orange/40 hover:bg-amber-50/40">
-                                            <input x-model="confirmed" type="checkbox" name="editorial_file_confirmation" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
+                                            <input x-model="confirmed" type="checkbox" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
                                             <span class="text-sm font-semibold leading-relaxed text-navy">I confirm that I used the latest editable manuscript uploaded by the Editorial Team as the basis for this revision.</span>
                                         </label>
                                         <label class="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-orange/40 hover:bg-amber-50/40">
-                                            <input x-model="correctionsConfirmed" type="checkbox" name="editorial_corrections_confirmation" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
+                                            <input x-model="correctionsConfirmed" type="checkbox" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
                                             <span class="text-sm font-semibold leading-relaxed text-navy">I confirm that I have addressed all requested editorial corrections before submitting this revision.</span>
                                         </label>
                                     @else
                                         <p class="mt-5 text-sm leading-relaxed text-slate-700">Before submitting your revision, please confirm that you have completed all corrections requested by the Editorial Team.</p>
                                         <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-orange/40 hover:bg-amber-50/40">
-                                            <input x-model="correctionsConfirmed" type="checkbox" name="editorial_corrections_confirmation" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
+                                            <input x-model="correctionsConfirmed" type="checkbox" class="mt-0.5 size-4 rounded border-slate-300 text-orange focus:ring-orange">
                                             <span class="text-sm font-semibold leading-relaxed text-navy">I confirm that I have addressed all requested editorial corrections before submitting this revision.</span>
                                         </label>
                                     @endif

@@ -260,7 +260,9 @@ class PublicSubmissionTest extends TestCase
         $this->get(route('author.portal', $token))
             ->assertSee('Confirm your revision base file')
             ->assertSee('I confirm that I used the latest editable manuscript uploaded by the Editorial Team as the basis for this revision.')
-            ->assertSee('I confirm that I have addressed all requested editorial corrections before submitting this revision.');
+            ->assertSee('I confirm that I have addressed all requested editorial corrections before submitting this revision.')
+            ->assertSee('name="editorial_file_confirmation"', false)
+            ->assertSee('name="editorial_corrections_confirmation"', false);
 
         $this->post(route('author.revision', $token), [
             'paper_file' => UploadedFile::fake()->create('revision.docx', 120, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
