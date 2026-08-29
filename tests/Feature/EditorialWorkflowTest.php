@@ -497,6 +497,16 @@ class EditorialWorkflowTest extends TestCase
         $this->assertSame('manuscript-edited.docx', $manuscriptVersion->original_name);
         $this->assertSame('visual-guidance.pdf', $guidanceVersion->original_name);
 
+        $paperDetailHtml = $this->actingAs($editor)
+            ->get(route('submissions.show', $submission))
+            ->assertOk()
+            ->getContent();
+        $latestManuscriptUrl = route('submissions.files.download', [$submission, $manuscriptVersion]);
+        $this->assertMatchesRegularExpression(
+            '#href="'.preg_quote($latestManuscriptUrl, '#').'"[^>]*title="Download latest manuscript#',
+            $paperDetailHtml,
+        );
+
         // Author portal presents integrated download button for guidance PDF in Submission Details
         $rawToken = Str::random(64);
         $submission->update([

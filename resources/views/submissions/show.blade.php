@@ -9,7 +9,14 @@
         <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto" id="paper-status-badge-container">
             @php
                 $portalToken = $submission->ensureValidAuthorToken();
-                $latestFile = $submission->files->first();
+                $latestFile = $submission->files
+                    ->where('file_category', 'editable_manuscript')
+                    ->sortByDesc('version_number')
+                    ->first()
+                    ?? $submission->files
+                        ->reject(fn ($file) => $file->file_category === 'revision_guidance_pdf')
+                        ->sortByDesc('version_number')
+                        ->first();
                 $editorialCycle = $submission->reviewCycles()->where('stage', \App\Enums\ReviewStage::Editorial)->where('status', 'open')->first();
                 $allEditorialPassed = false;
                 if ($editorialCycle && $editorialCycle->template) {
