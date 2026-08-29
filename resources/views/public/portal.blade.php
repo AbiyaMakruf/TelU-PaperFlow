@@ -210,7 +210,7 @@
                                 <div class="grid gap-3 {{ $targetGuidancePdf ? 'sm:grid-cols-2' : 'grid-cols-1' }}">
                                     @if($targetManuscript)
                                         <!-- Manuscript Download Card -->
-                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" class="group p-3.5 sm:p-4 rounded-2xl border border-orange/20 bg-amber-50/60 hover:bg-amber-100/90 hover:border-orange/40 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
+                                        <a href="{{ route('author.files.download', [$token, $targetManuscript]) }}" @if($targetManuscript->opensImportedGoogleDriveLink($submission)) target="_blank" rel="noopener noreferrer" @endif class="group p-3.5 sm:p-4 rounded-2xl border border-orange/20 bg-amber-50/60 hover:bg-amber-100/90 hover:border-orange/40 transition-all duration-200 flex items-center justify-between gap-3 shadow-2xs w-full min-w-0 overflow-hidden cursor-pointer">
                                             <div class="min-w-0 flex-1 space-y-1">
                                                 <span class="text-[11px] font-extrabold text-orange uppercase tracking-wider block">{{ $statusLabel }} Editable Manuscript</span>
                                                 <p class="text-xs text-navy leading-relaxed font-medium">Latest editable manuscript source file (DOCX or LaTeX ZIP package) incorporating previous editorial and formatting revisions.</p>
@@ -657,7 +657,7 @@
                                         @endif
                                     </div>
                                     <div class="pt-1 flex flex-col gap-2">
-                                        <a class="btn btn-secondary text-xs w-full py-2.5 flex items-center justify-center gap-2" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}">
+                                        <a class="btn btn-secondary text-xs w-full py-2.5 flex items-center justify-center gap-2" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}" @if($manuscriptFile->opensImportedGoogleDriveLink($submission)) target="_blank" rel="noopener noreferrer" @endif>
                                             <span>Download Manuscript (v{{ $verNum }})</span>
                                         </a>
                                         @if($guidanceFile)
@@ -709,7 +709,7 @@
                                             <td class="whitespace-nowrap">{{ ucfirst($manuscriptFile->source) }}</td>
                                             <td class="whitespace-nowrap">
                                                 <div class="flex flex-col items-start gap-1 py-1">
-                                                    <a class="btn text-xs px-2.5 py-1 font-bold bg-orange hover:bg-orange-dark text-white shadow-2xs transition w-full text-center" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}">
+                                                    <a class="btn text-xs px-2.5 py-1 font-bold bg-orange hover:bg-orange-dark text-white shadow-2xs transition w-full text-center" href="{{ route('author.files.download', [$token, $manuscriptFile]) }}" @if($manuscriptFile->opensImportedGoogleDriveLink($submission)) target="_blank" rel="noopener noreferrer" @endif>
                                                         Manuscript
                                                     </a>
                                                     @if($guidanceFile)

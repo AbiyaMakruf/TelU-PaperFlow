@@ -53,4 +53,13 @@ class FileVersion extends Model
 
         return $extension !== '' ? "{$filename}.{$extension}" : $filename;
     }
+
+    public function opensImportedGoogleDriveLink(Submission $submission): bool
+    {
+        return $this->version_number === 1
+            && $this->file_category === 'editable_manuscript'
+            && $this->disk === 'google_drive'
+            && filled($this->external_url)
+            && filled(data_get($submission->answers, 'csv_imported_at'));
+    }
 }
