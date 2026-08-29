@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\ConferenceProvisioner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -106,9 +107,15 @@ class SubmissionImportTest extends TestCase
         $this->assertSame('drive-file-v1', $submission->files()->first()->storage_path);
         $this->assertFalse($submission->portalLinkSent());
 
-        $this->actingAs($user)
-            ->get(route('submissions.files.download', [$submission, $submission->files()->first()]))
-            ->assertRedirect('https://drive.google.com/file/d/drive-file-v1/view');
+        Http::fake([
+            'https://drive.google.com/uc?export=download&id=drive-file-v1' => Http::response('version-one-content', 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
+        ]);
+
+        $download = $this->actingAs($user)
+            ->get(route('submissions.files.download', [$submission, $submission->files()->first()]));
+
+        $download->assertDownload('paper-202-v1-author.docx');
+        $this->assertSame('version-one-content', file_get_contents($download->baseResponse->getFile()->getPathname()));
 
         // Staff manually sends author portal link
         $sendResponse = $this->actingAs($user)->post(route('submissions.send-portal-link', $submission));

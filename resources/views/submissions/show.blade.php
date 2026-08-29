@@ -212,7 +212,7 @@
 
                 <div class="mt-5 border-t border-navy/10 pt-4 flex flex-wrap items-center gap-3">
                     @if($latestFile)
-                        <a href="{{ route('submissions.files.download', [$submission, $latestFile]) }}" @if($latestFile->opensImportedGoogleDriveLink($submission)) target="_blank" rel="noopener noreferrer" @endif class="btn text-xs py-2 px-4 inline-flex items-center gap-1.5 font-black shadow-xs bg-orange hover:bg-orange-dark text-white rounded-xl transition" title="Download latest manuscript version (v{{ $latestFile->version_number }} - {{ $latestFile->original_name }})">
+                        <a href="{{ route('submissions.files.download', [$submission, $latestFile]) }}" class="btn text-xs py-2 px-4 inline-flex items-center gap-1.5 font-black shadow-xs bg-orange hover:bg-orange-dark text-white rounded-xl transition" title="Download latest manuscript version (v{{ $latestFile->version_number }} - {{ $latestFile->original_name }})">
                             Download Latest File (v{{ $latestFile->version_number }})
                         </a>
                     @endif
@@ -936,7 +936,7 @@
                                     <td class="text-xs truncate max-w-[120px]">{{ $manuscriptFile->uploader?->name ?? 'Author' }}</td>
                                     <td class="whitespace-nowrap">
                                         <div class="flex flex-col items-start gap-1 py-1">
-                                            <a class="btn text-xs px-2.5 py-1 font-bold bg-orange hover:bg-orange-dark text-white shadow-2xs transition w-full text-center" href="{{ route('submissions.files.download', [$submission, $manuscriptFile]) }}" @if($manuscriptFile->opensImportedGoogleDriveLink($submission)) target="_blank" rel="noopener noreferrer" @endif>
+                                            <a class="btn text-xs px-2.5 py-1 font-bold bg-orange hover:bg-orange-dark text-white shadow-2xs transition w-full text-center" href="{{ route('submissions.files.download', [$submission, $manuscriptFile]) }}">
                                                 Manuscript
                                             </a>
                                             @if($guidanceFile)
