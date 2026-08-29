@@ -45,6 +45,7 @@ class GoogleFormWebhookTest extends TestCase
         $this->assertEquals('janedoe@example.com', $submission->corresponding_author_email);
         $this->assertEquals('google_form', $submission->submission_source);
         $this->assertNotNull($submission->getSafeAuthorToken());
+        $this->assertSame('67890', $submission->files()->firstOrFail()->external_id);
     }
 
     public function test_google_form_webhook_uses_custom_column_mappings(): void

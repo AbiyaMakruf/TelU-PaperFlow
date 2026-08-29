@@ -357,11 +357,13 @@ class PublicSubmissionTest extends TestCase
         ]);
 
         Http::fake([
-            $externalUrl => Http::response('external-file', 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
+            'https://drive.google.com/uc?export=download&id=1S-VNLftQ6YwTvRUzBdqtuPrZpNKXo93B' => Http::response('external-file', 200, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
         ]);
 
-        $this->get(route('author.files.download', ['token' => 'testtoken123', 'file' => $file]))
-            ->assertDownload('paper-100-v1-author.docx');
+        $response = $this->get(route('author.files.download', ['token' => 'testtoken123', 'file' => $file]));
+
+        $response->assertDownload('paper-100-v1-author.docx');
+        $this->assertSame('external-file', file_get_contents($response->baseResponse->getFile()->getPathname()));
     }
 
     /** @return array{Conference, FormVersion} */

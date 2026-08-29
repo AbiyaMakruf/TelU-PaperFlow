@@ -9,6 +9,7 @@ use App\Models\FileVersion;
 use App\Models\Submission;
 use App\Models\SubmissionAuthor;
 use App\Services\ConferenceMailer;
+use App\Services\GoogleDriveStorage;
 use App\Services\SubmissionWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -79,6 +80,7 @@ class GoogleFormWebhookController extends Controller
             'manuscript_url',
             'manuscript_file_url',
         ]);
+        $manuscriptDriveFileId = app(GoogleDriveStorage::class)->fileIdFromUrl($manuscriptUrl);
 
         // Dynamically extract custom optional fields configured by admin
         $customAnswers = [];
@@ -178,7 +180,9 @@ class GoogleFormWebhookController extends Controller
                         'label' => "Editable Manuscript (v{$nextVersion})",
                         'source' => 'author',
                         'disk' => 'google_drive',
-                        'storage_path' => (string) $manuscriptUrl,
+                        'storage_path' => $manuscriptDriveFileId ?: (string) $manuscriptUrl,
+                        'external_provider' => $manuscriptDriveFileId ? 'google_drive' : null,
+                        'external_id' => $manuscriptDriveFileId,
                         'external_url' => (string) $manuscriptUrl,
                         'original_name' => $submission->paper_id.'-manuscript-v'.$nextVersion.'.'.$manuscriptFormat,
                         'file_category' => 'editable_manuscript',
@@ -230,7 +234,9 @@ class GoogleFormWebhookController extends Controller
                     'label' => 'Editable Manuscript (v1)',
                     'source' => 'author',
                     'disk' => 'google_drive',
-                    'storage_path' => (string) $manuscriptUrl,
+                    'storage_path' => $manuscriptDriveFileId ?: (string) $manuscriptUrl,
+                    'external_provider' => $manuscriptDriveFileId ? 'google_drive' : null,
+                    'external_id' => $manuscriptDriveFileId,
                     'external_url' => (string) $manuscriptUrl,
                     'original_name' => $paperId.'-manuscript.'.$manuscriptFormat,
                     'file_category' => 'editable_manuscript',

@@ -8,6 +8,7 @@ use App\Models\FileVersion;
 use App\Models\Submission;
 use App\Models\SubmissionAuthor;
 use App\Services\ConferenceMailer;
+use App\Services\GoogleDriveStorage;
 use App\Services\SubmissionWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -253,6 +254,7 @@ class SubmissionImportController extends Controller
                 $authorEmail = $rowData[$emailCol] ?? null;
                 $authorPhone = $phoneCol ? ($rowData[$phoneCol] ?? null) : null;
                 $manuscriptUrl = $fileCol ? ($rowData[$fileCol] ?? null) : null;
+                $manuscriptDriveFileId = app(GoogleDriveStorage::class)->fileIdFromUrl($manuscriptUrl);
 
                 if (blank($title) || blank($authorEmail)) {
                     $skippedCount++;
@@ -315,7 +317,9 @@ class SubmissionImportController extends Controller
                                 'label' => "Editable Manuscript (v{$nextVersion})",
                                 'source' => 'author',
                                 'disk' => 'google_drive',
-                                'storage_path' => (string) $manuscriptUrl,
+                                'storage_path' => $manuscriptDriveFileId ?: (string) $manuscriptUrl,
+                                'external_provider' => $manuscriptDriveFileId ? 'google_drive' : null,
+                                'external_id' => $manuscriptDriveFileId,
                                 'external_url' => (string) $manuscriptUrl,
                                 'original_name' => $existing->paper_id.'-manuscript-v'.$nextVersion.'.'.$manuscriptFormat,
                                 'file_category' => 'editable_manuscript',
@@ -372,7 +376,9 @@ class SubmissionImportController extends Controller
                             'label' => 'Editable Manuscript (v1)',
                             'source' => 'author',
                             'disk' => 'google_drive',
-                            'storage_path' => (string) $manuscriptUrl,
+                            'storage_path' => $manuscriptDriveFileId ?: (string) $manuscriptUrl,
+                            'external_provider' => $manuscriptDriveFileId ? 'google_drive' : null,
+                            'external_id' => $manuscriptDriveFileId,
                             'external_url' => (string) $manuscriptUrl,
                             'original_name' => $submission->paper_id.'-manuscript-v1.'.$manuscriptFormat,
                             'file_category' => 'editable_manuscript',

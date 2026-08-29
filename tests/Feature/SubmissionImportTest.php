@@ -64,7 +64,7 @@ class SubmissionImportTest extends TestCase
         ], $user);
 
         $csvContent = "ID Papers (#),Paper's Title,Registered Author's Name,Registered Author's Email Address,Registered Author's Phone Number,Upload the Manuscript Source\n".
-                      "PAPER-202,AI in Education,Jane Smith,jane@example.com,+62898765432,https://drive.google.com/file_v1.docx\n";
+                      "PAPER-202,AI in Education,Jane Smith,jane@example.com,+62898765432,https://drive.google.com/file/d/drive-file-v1/view\n";
 
         $file = UploadedFile::fake()->createWithContent('submissions.csv', $csvContent);
 
@@ -102,7 +102,13 @@ class SubmissionImportTest extends TestCase
         $submission = Submission::where('paper_id', 'PAPER-202')->first();
         $this->assertEquals(1, $submission->files()->count());
         $this->assertEquals('Editable Manuscript (v1)', $submission->files()->first()->label);
+        $this->assertSame('drive-file-v1', $submission->files()->first()->external_id);
+        $this->assertSame('drive-file-v1', $submission->files()->first()->storage_path);
         $this->assertFalse($submission->portalLinkSent());
+
+        $this->actingAs($user)
+            ->get(route('submissions.files.download', [$submission, $submission->files()->first()]))
+            ->assertRedirect('https://drive.google.com/file/d/drive-file-v1/view');
 
         // Staff manually sends author portal link
         $sendResponse = $this->actingAs($user)->post(route('submissions.send-portal-link', $submission));
@@ -111,7 +117,7 @@ class SubmissionImportTest extends TestCase
 
         // 2. Re-upload updated CSV with a new manuscript URL (v2)
         $csvContentV2 = "ID Papers (#),Paper's Title,Registered Author's Name,Registered Author's Email Address,Registered Author's Phone Number,Upload the Manuscript Source\n".
-                        "PAPER-202,AI in Education,Jane Smith,jane@example.com,+62898765432,https://drive.google.com/file_v2.docx\n";
+                        "PAPER-202,AI in Education,Jane Smith,jane@example.com,+62898765432,https://drive.google.com/open?id=drive-file-v2\n";
 
         $fileV2 = UploadedFile::fake()->createWithContent('submissions_v2.csv', $csvContentV2);
         $previewV2 = $this->actingAs($user)
@@ -138,6 +144,7 @@ class SubmissionImportTest extends TestCase
         $this->assertEquals(2, $submission->files()->count());
         $latestFile = $submission->files()->orderByDesc('version_number')->first();
         $this->assertEquals('Editable Manuscript (v2)', $latestFile->label);
+        $this->assertSame('drive-file-v2', $latestFile->external_id);
     }
 
     public function test_non_conference_admin_roles_cannot_import_csv(): void

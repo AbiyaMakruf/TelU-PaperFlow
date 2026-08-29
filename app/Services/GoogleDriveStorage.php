@@ -15,6 +15,42 @@ class GoogleDriveStorage
 {
     private const SCOPE = 'https://www.googleapis.com/auth/drive';
 
+    /**
+     * Extract a Google Drive file ID from the share-link formats emitted by
+     * Google Forms, Google Drive, and Google Sheets.
+     */
+    public function fileIdFromUrl(?string $url): ?string
+    {
+        if (blank($url)) {
+            return null;
+        }
+
+        $url = trim((string) $url);
+
+        if (preg_match('#(?:drive\\.google\\.com|docs\\.google\\.com)/file/d/([A-Za-z0-9_-]+)#', $url, $matches)) {
+            return $matches[1];
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        if ((str_ends_with($host, 'google.com') || str_ends_with($host, 'googleusercontent.com'))
+            && isset($query['id'])
+            && preg_match('/^[A-Za-z0-9_-]+$/', (string) $query['id'])) {
+            return (string) $query['id'];
+        }
+
+        return null;
+    }
+
+    public function publicDownloadUrl(string $fileId): string
+    {
+        return 'https://drive.google.com/uc?'.http_build_query([
+            'export' => 'download',
+            'id' => $fileId,
+        ]);
+    }
+
     public function redirectUri(): string
     {
         $custom = config('services.google_drive.redirect_uri');

@@ -94,10 +94,11 @@ class ConferenceFileStorage
         if ($file->disk === 'google_drive') {
             $file->loadMissing('submission.conference');
             $conference = $file->submission?->conference;
+            $driveFileId = $file->external_id ?: $this->googleDrive->fileIdFromUrl($externalUrl ?? (string) $file->storage_path);
 
-            if ($conference && $file->external_id && $this->googleDrive->connected($conference)) {
+            if ($conference && $driveFileId && $this->googleDrive->connected($conference)) {
                 try {
-                    $response = $this->googleDrive->download($conference, $file->external_id, $file->original_name);
+                    $response = $this->googleDrive->download($conference, $driveFileId, $file->original_name);
 
                     return ['path' => $response->getFile()->getPathname(), 'cleanup' => true];
                 } catch (\Throwable $e) {
@@ -107,27 +108,21 @@ class ConferenceFileStorage
                 }
             }
 
-            if ($externalUrl) {
-                $directory = storage_path('app/private/previews');
-                File::ensureDirectoryExists($directory);
-                $path = tempnam($directory, 'preview-');
-                Http::withOptions(['sink' => $path])->get($externalUrl)->throw();
-
-                return ['path' => $path, 'cleanup' => true];
+            if ($driveFileId) {
+                $externalUrl = $this->googleDrive->publicDownloadUrl($driveFileId);
             }
 
-            $response = $this->googleDrive->download($file->submission->conference, $file->external_id ?: $file->storage_path, $file->original_name);
+            if ($externalUrl) {
+                return $this->downloadExternalFile($externalUrl);
+            }
+
+            $response = $this->googleDrive->download($file->submission->conference, $driveFileId ?: $file->storage_path, $file->original_name);
 
             return ['path' => $response->getFile()->getPathname(), 'cleanup' => true];
         }
 
         if ($externalUrl) {
-            $directory = storage_path('app/private/previews');
-            File::ensureDirectoryExists($directory);
-            $path = tempnam($directory, 'preview-');
-            Http::withOptions(['sink' => $path])->get($externalUrl)->throw();
-
-            return ['path' => $path, 'cleanup' => true];
+            return $this->downloadExternalFile($externalUrl);
         }
 
         $url = $this->privateStorage->temporaryUrl($file->storage_path) ?: throw new \RuntimeException('Signed URL file tidak tersedia.');
@@ -137,6 +132,35 @@ class ConferenceFileStorage
         Http::withOptions(['sink' => $path])->get($url)->throw();
 
         return ['path' => $path, 'cleanup' => true];
+    }
+
+    /** @return array{path:string,cleanup:bool} */
+    private function downloadExternalFile(string $url): array
+    {
+        $directory = storage_path('app/private/previews');
+        File::ensureDirectoryExists($directory);
+        $path = tempnam($directory, 'preview-');
+        if ($path === false) {
+            throw new \RuntimeException('Unable to prepare a temporary file for download.');
+        }
+
+        try {
+            $response = Http::withOptions(['sink' => $path])->get($url)->throw();
+            $contentType = strtolower((string) $response->header('Content-Type'));
+            $sample = strtolower((string) file_get_contents($path, false, null, 0, 256));
+
+            if (str_contains($contentType, 'text/html') || str_starts_with(ltrim($sample), '<!doctype html') || str_starts_with(ltrim($sample), '<html')) {
+                throw new \RuntimeException('Google Drive returned a web page instead of the manuscript file. Make sure the file is shared with the Paperflow server or connect the conference Google Drive account.');
+            }
+
+            return ['path' => $path, 'cleanup' => true];
+        } catch (\Throwable $exception) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+
+            throw $exception;
+        }
     }
 
     public function migrateStorage(Conference $conference, string $targetProvider): int

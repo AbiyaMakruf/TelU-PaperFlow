@@ -1126,6 +1126,10 @@ class SubmissionController extends Controller
         $this->authorize('view', $submission);
         abort_unless($file->submission_id === $submission->id, 404);
 
+        if ($file->opensImportedGoogleDriveLink($submission)) {
+            return redirect()->away($file->external_url);
+        }
+
         return $storage->download($file, $file->downloadNameFor($submission));
     }
 
