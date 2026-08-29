@@ -480,4 +480,30 @@ class PublicSubmissionTest extends TestCase
         $response->assertSee('disabled');
         $response->assertDontSee('Editorial Compliance Checklist Monitoring');
     }
+
+    public function test_author_portal_displays_the_process_help_tour_with_editable_file_guidance(): void
+    {
+        [$conference] = $this->openConference();
+        $token = 'author-process-tour-token';
+        Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => '15707777',
+            'title' => 'Process Tour Paper',
+            'corresponding_author_name' => 'Author One',
+            'corresponding_author_email' => 'author@example.com',
+            'corresponding_author_phone' => '+628123456789',
+            'status' => SubmissionStatus::Submitted,
+            'author_token_hash' => hash('sha256', $token),
+            'author_token_encrypted' => $token,
+            'author_token_expires_at' => now()->addMonth(),
+        ]);
+
+        $this->get(route('author.portal', $token))
+            ->assertOk()
+            ->assertSee('How the Process Works')
+            ->assertSee('Your manuscript has been received by the system.')
+            ->assertSee('If a PDF is uploaded instead of an editable manuscript')
+            ->assertSee('PDF eXpress and EDAS Processing')
+            ->assertSee('Completed — Check EDAS');
+    }
 }

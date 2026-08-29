@@ -1,9 +1,127 @@
 <x-layouts.public :title="$submission->paper_code">
-    <div class="mx-auto max-w-5xl space-y-6 sm:space-y-8">
+    @php
+        $processSteps = [
+            [
+                'title' => 'Submission Received',
+                'description' => 'Your manuscript has been received by the system.',
+            ],
+            [
+                'title' => 'Editable File Validation',
+                'description' => 'The editorial team checks whether the uploaded manuscript can be opened and edited. If a PDF is uploaded instead of an editable manuscript, or required LaTeX source files are incomplete, the submission may be returned to you for correction.',
+            ],
+            [
+                'title' => 'Editorial Team Assignment',
+                'description' => 'An editorial team member is assigned to review your manuscript against the conference requirements.',
+            ],
+            [
+                'title' => 'Editorial Review',
+                'description' => 'The editorial team checks formatting, completeness, and technical compliance.',
+            ],
+            [
+                'title' => 'Revision Requested, If Needed',
+                'description' => 'If corrections are required, you will receive feedback and upload a revised editable manuscript through this portal.',
+            ],
+            [
+                'title' => 'Revision Rechecked',
+                'description' => 'The editorial team reviews your revision. This step may repeat until all required corrections are complete.',
+            ],
+            [
+                'title' => 'PDF eXpress and EDAS Processing',
+                'description' => 'Once your manuscript meets the requirements, the editorial team handles the IEEE PDF eXpress and EDAS processing. You do not need to upload anything further at this stage.',
+            ],
+            [
+                'title' => 'Completed — Check EDAS',
+                'description' => 'Please check that the final manuscript in EDAS is correct. If you find a discrepancy, contact your assigned editor using the details in this portal.',
+            ],
+        ];
+        $processStep = match ($submission->status) {
+            \App\Enums\SubmissionStatus::Submitted, \App\Enums\SubmissionStatus::NeedsAuthorCorrection => 2,
+            \App\Enums\SubmissionStatus::ReadyForAssignment => 3,
+            \App\Enums\SubmissionStatus::EditorialReview => 4,
+            \App\Enums\SubmissionStatus::WaitingAuthorRevision => 5,
+            \App\Enums\SubmissionStatus::ReviewerChangesRequested, \App\Enums\SubmissionStatus::EdasFixRequired => 7,
+            \App\Enums\SubmissionStatus::ReviewerReview, \App\Enums\SubmissionStatus::ReadyForEdas => 7,
+            \App\Enums\SubmissionStatus::Done => 8,
+            default => 1,
+        };
+        $processNow = match ($submission->status) {
+            \App\Enums\SubmissionStatus::WaitingAuthorRevision, \App\Enums\SubmissionStatus::NeedsAuthorCorrection => 'Action required: review the feedback and upload your revised editable manuscript.',
+            \App\Enums\SubmissionStatus::Done => 'The process is complete. Please verify the final manuscript in EDAS.',
+            default => 'No action is required from you while the editorial team progresses your manuscript.',
+        };
+    @endphp
+    <div class="mx-auto max-w-5xl space-y-6 sm:space-y-8" x-data="{ processTourOpen: false }" @keydown.escape.window="processTourOpen = false">
         <div class="flex items-center justify-between gap-4">
             <p class="eyebrow truncate">Author Portal &middot; {{ $submission->conference->name }}</p>
-            <x-status-badge :submission="$submission" class="shrink-0" />
+            <div class="flex items-center gap-2 shrink-0">
+                <button type="button" @click="processTourOpen = true" class="inline-flex items-center gap-1.5 rounded-xl border border-navy/15 bg-white px-2.5 py-2 text-[11px] font-extrabold text-navy shadow-2xs transition hover:border-orange/50 hover:bg-orange/5 hover:text-orange sm:px-3" aria-haspopup="dialog" :aria-expanded="processTourOpen.toString()">
+                    <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9.75a3.75 3.75 0 1 1 6.41 2.65c-.78.77-1.91 1.3-1.91 2.85v.75M12 18.75h.008v.008H12v-.008Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span class="hidden sm:inline">How the Process Works</span>
+                    <span class="sm:hidden">Process Help</span>
+                </button>
+                <x-status-badge :submission="$submission" class="shrink-0" />
+            </div>
         </div>
+
+        <template x-teleport="body">
+            <div x-show="processTourOpen" x-cloak class="fixed inset-0 z-[70] overflow-y-auto bg-navy/65 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="process-tour-title">
+                <div class="flex min-h-full items-center justify-center">
+                    <div @click.away="processTourOpen = false" class="w-full max-w-3xl overflow-hidden rounded-3xl border border-white/20 bg-white shadow-2xl">
+                        <div class="bg-navy px-5 py-5 text-white sm:px-7 sm:py-6">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <span class="inline-flex rounded-full bg-white/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white/90">Author guide</span>
+                                    <h1 id="process-tour-title" class="mt-2 text-lg font-black sm:text-xl">How Your Manuscript Moves Forward</h1>
+                                    <p class="mt-1 max-w-2xl text-xs leading-relaxed text-slate-200">A simple overview of what happens after you submit a manuscript and when you need to take action.</p>
+                                </div>
+                                <button type="button" @click="processTourOpen = false" class="grid size-9 shrink-0 place-items-center rounded-xl border border-white/20 text-lg text-white transition hover:bg-white/10" aria-label="Close process guide">&times;</button>
+                            </div>
+                            <div class="mt-4 rounded-2xl border border-orange/35 bg-orange/15 p-3 text-xs leading-relaxed text-white">
+                                <span class="font-black text-orange-200">What you need to do now:</span> {{ $processNow }}
+                            </div>
+                        </div>
+
+                        <div class="max-h-[65vh] overflow-y-auto px-5 py-5 sm:max-h-[68vh] sm:px-7 sm:py-6">
+                            <ol class="space-y-0">
+                                @foreach($processSteps as $index => $step)
+                                    @php
+                                        $stepNumber = $index + 1;
+                                    @endphp
+                                    <li class="relative flex gap-3 pb-5 last:pb-0 sm:gap-4">
+                                        @if(! $loop->last)
+                                            <span class="absolute left-[17px] top-9 h-[calc(100%-18px)] w-px {{ $stepNumber < $processStep ? 'bg-emerald-300' : 'bg-slate-200' }}"></span>
+                                        @endif
+                                        <span class="relative z-10 grid size-9 shrink-0 place-items-center rounded-full border-2 text-xs font-black {{ $stepNumber < $processStep ? 'border-emerald-500 bg-emerald-500 text-white' : ($stepNumber === $processStep ? 'border-orange bg-orange text-white shadow-md shadow-orange/25' : 'border-slate-200 bg-white text-slate-500') }}">
+                                            @if($stepNumber < $processStep)
+                                                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" /></svg>
+                                            @else
+                                                {{ $stepNumber }}
+                                            @endif
+                                        </span>
+                                        <div class="min-w-0 flex-1 rounded-2xl border p-3.5 sm:p-4 {{ $stepNumber === $processStep ? 'border-orange/35 bg-orange/5' : 'border-slate-200 bg-white' }}">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <h2 class="text-sm font-black text-navy">{{ $step['title'] }}</h2>
+                                                @if($stepNumber === $processStep)
+                                                    <span class="rounded-full bg-orange/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-orange">Current stage</span>
+                                                @endif
+                                            </div>
+                                            <p class="mt-1.5 text-xs leading-relaxed text-slate-600">{{ $step['description'] }}</p>
+                                        </div>
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </div>
+
+                        <div class="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-4 sm:px-7">
+                            <button type="button" @click="processTourOpen = false" class="btn btn-primary px-5 py-2.5 text-xs font-extrabold">Got It</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
 
         <div class="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
             <section class="min-w-0 space-y-6">
