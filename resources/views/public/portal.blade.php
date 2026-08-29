@@ -51,9 +51,9 @@
         };
     @endphp
     <div class="mx-auto max-w-5xl space-y-6 sm:space-y-8" x-data="{ processTourOpen: false }" @keydown.escape.window="processTourOpen = false">
-        <div class="flex items-center justify-between gap-4">
+        <div class="space-y-3 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:space-y-0">
             <p class="eyebrow truncate">Author Portal &middot; {{ $submission->conference->name }}</p>
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
                 <button type="button" @click="processTourOpen = true" class="inline-flex items-center gap-1.5 rounded-xl border border-navy/15 bg-white px-2.5 py-2 text-[11px] font-extrabold text-navy shadow-2xs transition hover:border-orange/50 hover:bg-orange/5 hover:text-orange sm:px-3" aria-haspopup="dialog" :aria-expanded="processTourOpen.toString()">
                     <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9.75a3.75 3.75 0 1 1 6.41 2.65c-.78.77-1.91 1.3-1.91 2.85v.75M12 18.75h.008v.008H12v-.008Z" />
