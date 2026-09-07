@@ -510,6 +510,8 @@ class ConferenceBroadcastController extends Controller
             '{{paper_title}}' => 'Sample Research Paper: Advances in Academic Conference Workflows',
             '{{author_name}}' => $user->name ?: 'Corresponding Author',
             '{{portal_url}}' => $portalUrl,
+            '{{action_link}}' => $paymentLink,
+            '{{action_url}}' => $paymentLink,
             '{{payment_link}}' => $paymentLink,
         ];
 
@@ -593,6 +595,8 @@ class ConferenceBroadcastController extends Controller
                 '{{paper_title}}' => $c['paper_title'],
                 '{{author_name}}' => $c['first_author_name'],
                 '{{portal_url}}' => $c['portal_url'],
+                '{{action_link}}' => $paymentLink,
+                '{{action_url}}' => $paymentLink,
                 '{{payment_link}}' => $paymentLink,
             ];
 
