@@ -17,10 +17,10 @@
             <input type="hidden" name="custom_paper_ids" :value="customPaperIds">
             <input type="hidden" name="recipient_scope" :value="recipientScope">
 
-            <div class="space-y-4 max-w-5xl mx-auto">
+            <div class="space-y-4 w-full">
 
                 <!-- STEP 1 ACCORDION CARD: TARGET AUDIENCE -->
-                <div class="card bg-white border border-slate-200 shadow-sm overflow-hidden transition-all">
+                <div class="card bg-white border border-navy/10 shadow-sm overflow-hidden transition-all">
                     <!-- Accordion Header -->
                     <button type="button" 
                             @click="toggleStep(1)" 
@@ -210,7 +210,7 @@
 
 
                 <!-- STEP 2 ACCORDION CARD: MESSAGE CONTENT & TEMPLATES -->
-                <div class="card bg-white border border-slate-200 shadow-sm overflow-hidden transition-all">
+                <div class="card bg-white border border-navy/10 shadow-sm overflow-hidden transition-all">
                     <!-- Accordion Header -->
                     <button type="button" 
                             @click="toggleStep(2)" 
@@ -313,7 +313,7 @@
 
 
                 <!-- STEP 3 ACCORDION CARD: LIVE PREVIEW, TEST SEND & LAUNCH -->
-                <div class="card bg-white border border-slate-200 shadow-sm overflow-hidden transition-all">
+                <div class="card bg-white border border-navy/10 shadow-sm overflow-hidden transition-all">
                     <!-- Accordion Header -->
                     <button type="button" 
                             @click="toggleStep(3)" 
