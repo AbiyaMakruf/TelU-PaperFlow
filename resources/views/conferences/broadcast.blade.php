@@ -201,9 +201,13 @@
                         <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 space-y-3 min-w-0 max-w-full">
                             <div class="flex items-center justify-between flex-wrap gap-2">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="text-xs font-black text-navy">Target Audience Match:</span>
-                                    <span class="badge bg-navy text-white text-xs font-bold px-2 py-0.5" x-text="matchedPapersCount + ' Papers'"></span>
-                                    <span class="badge bg-emerald-700 text-white text-xs font-bold px-2 py-0.5" x-text="totalRecipientsCount + ' Email Recipients'"></span>
+                                    <span class="text-xs font-black text-navy">Audience Match:</span>
+                                    <span class="badge bg-slate-200 text-navy text-xs font-bold px-2 py-0.5" x-text="matchedPapersCount + ' Matched'"></span>
+                                    <span class="badge bg-emerald-700 text-white text-xs font-bold px-2 py-0.5" x-text="selectedKeys.length + ' Included'"></span>
+                                    <template x-if="matchedPapersCount - selectedKeys.length > 0">
+                                        <span class="badge bg-rose-100 text-rose-700 text-xs font-bold px-2 py-0.5" x-text="(matchedPapersCount - selectedKeys.length) + ' Excluded'"></span>
+                                    </template>
+                                    <span class="badge bg-navy text-white text-xs font-bold px-2 py-0.5" x-text="totalRecipientsCount + ' Recipients'"></span>
                                 </div>
                                 <button type="button" @click="showPaperList = !showPaperList" class="text-xs font-bold text-orange hover:underline flex items-center gap-1">
                                     <span x-text="showPaperList ? 'Hide Paper List ▲' : 'Inspect & Exclude Papers ▼'"></span>
@@ -448,33 +452,32 @@
                                 <!-- Launch Summary Box -->
                                 <div class="bg-navy/5 p-4 rounded-2xl border border-navy/10 space-y-2 text-xs">
                                     <div class="flex justify-between">
-                                        <span class="text-slate-600">Selected Papers:</span>
+                                        <span class="text-slate-600">Matched Papers in Segment:</span>
                                         <strong class="text-navy" x-text="matchedPapersCount + ' papers'"></strong>
+                                    </div>
+                                    <div class="flex justify-between" x-show="matchedPapersCount - selectedKeys.length > 0">
+                                        <span class="text-slate-600">Excluded Papers:</span>
+                                        <strong class="text-rose-600 font-bold" x-text="(matchedPapersCount - selectedKeys.length) + ' papers excluded'"></strong>
+                                    </div>
+                                    <div class="flex justify-between border-t border-navy/10 pt-1.5 font-bold">
+                                        <span class="text-slate-700">Included Papers (Emails to Send):</span>
+                                        <span class="text-emerald-700 text-sm font-black" x-text="selectedKeys.length + ' papers'"></span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-600">Recipient Scope:</span>
-                                        <strong class="text-navy" x-text="recipientScope === 'all_authors' ? 'All Authors (Combined in TO)' : 'First Author Only'"></strong>
+                                        <strong class="text-navy" x-text="recipientScope === 'all_authors' ? 'All Authors' : 'First Author Only'"></strong>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-slate-600">Total Authors in TO:</span>
-                                        <strong class="text-navy font-bold" x-text="totalRecipientsCount + ' email addresses'"></strong>
-                                    </div>
-                                    <div class="flex justify-between border-t border-navy/10 pt-2 font-bold">
-                                        <span class="text-slate-700">Total Emails to Dispatch:</span>
-                                        <span class="text-emerald-700 text-sm font-black">
-                                            <span x-text="matchedPapersCount"></span> email(s) <span class="text-[11px] font-medium text-slate-500">(1 per paper)</span>
-                                        </span>
+                                        <span class="text-slate-600">Total Email Recipients:</span>
+                                        <strong class="text-navy font-black" x-text="totalRecipientsCount + ' email addresses'"></strong>
                                     </div>
                                 </div>
 
                                 <!-- Mass Blast Trigger Button -->
-                                <div class="space-y-2 pt-1">
-                                    <button type="button" @click="openConfirmModal()" :disabled="matchedPapersCount === 0 || isLoadingAudience" class="btn w-full py-3.5 text-xs font-black shadow-md flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer">
-                                        <span>🚀 Queue Broadcast: <strong x-text="matchedPapersCount"></strong> Email(s) (<strong x-text="totalRecipientsCount"></strong> Authors in TO)</span>
+                                <div class="pt-1">
+                                    <button type="button" @click="openConfirmModal()" :disabled="selectedKeys.length === 0 || isLoadingAudience" class="btn w-full py-3.5 text-xs font-black shadow-md flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer">
+                                        <span>🚀 Queue Broadcast: <strong x-text="selectedKeys.length"></strong> Email(s) (<strong x-text="totalRecipientsCount"></strong> Recipients)</span>
                                     </button>
-                                    <p class="text-[11px] text-center text-slate-500 leading-tight">
-                                        1 email will be sent per paper, placing all respective authors in the <strong>To:</strong> field.
-                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -509,20 +512,24 @@
                             <strong class="text-navy">{{ $activeConference->name }}</strong>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-slate-600">Matched Papers:</span>
+                            <span class="text-slate-600">Matched in Segment:</span>
                             <strong class="text-navy" x-text="matchedPapersCount + ' papers'"></strong>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-600">Total Emails to Send:</span>
-                            <strong class="text-emerald-700 font-extrabold" x-text="matchedPapersCount + ' email(s) (1 per paper)'"></strong>
+                        <div class="flex justify-between" x-show="matchedPapersCount - selectedKeys.length > 0">
+                            <span class="text-slate-600">Excluded Papers:</span>
+                            <strong class="text-rose-600 font-bold" x-text="(matchedPapersCount - selectedKeys.length) + ' papers'"></strong>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-slate-600">Total Authors in TO:</span>
+                            <span class="text-slate-600">Emails to Send:</span>
+                            <strong class="text-emerald-700 font-extrabold" x-text="selectedKeys.length + ' emails'"></strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Total Recipients:</span>
                             <strong class="text-navy font-extrabold" x-text="totalRecipientsCount + ' email addresses'"></strong>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-slate-600">Recipient Scope:</span>
-                            <strong class="text-navy" x-text="recipientScope === 'all_authors' ? 'All Authors (Combined in TO)' : 'First Author Only'"></strong>
+                            <strong class="text-navy" x-text="recipientScope === 'all_authors' ? 'All Authors' : 'First Author Only'"></strong>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-slate-600">Subject:</span>
@@ -857,8 +864,8 @@
                 },
 
                 openConfirmModal() {
-                    if (this.totalRecipientsCount === 0) {
-                        this.notify('No recipients are currently selected.', 'error');
+                    if (this.selectedKeys.length === 0 || this.totalRecipientsCount === 0) {
+                        this.notify('No papers or recipients are currently selected.', 'error');
                         return;
                     }
                     this.showModal = true;

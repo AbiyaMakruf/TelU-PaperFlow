@@ -572,7 +572,7 @@ class ConferenceBroadcastController extends Controller
         $filteredCandidates = $this->filterAudience($activeConference, $request);
         $selectedKeys = $validated['selected_keys'] ?? null;
 
-        if (is_array($selectedKeys) && ! empty($selectedKeys)) {
+        if (is_array($selectedKeys)) {
             $selectedKeyMap = array_flip($selectedKeys);
             $filteredCandidates = array_filter($filteredCandidates, fn ($c) => isset($selectedKeyMap[$c['key']]));
         }
