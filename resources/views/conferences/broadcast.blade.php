@@ -212,13 +212,13 @@
 
                             <!-- Expandable Paper Items Table (Horizontally contained with guaranteed side scrolling) -->
                             <div x-show="showPaperList" x-cloak class="w-full max-w-full overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-inner">
-                                <div class="min-w-[650px] max-h-72 overflow-y-auto">
+                                <div class="min-w-[700px] max-h-72 overflow-y-auto">
                                     <table class="w-full text-left text-xs table-fixed">
                                         <colgroup>
                                             <col style="width: 44px;">
-                                            <col style="width: 130px;">
-                                            <col style="width: 250px;">
-                                            <col style="width: 270px;">
+                                            <col style="width: 120px;">
+                                            <col style="width: 240px;">
+                                            <col style="width: 310px;">
                                         </colgroup>
                                         <thead class="bg-slate-100 text-slate-700 font-bold sticky top-0 z-10 border-b border-slate-200">
                                             <tr>
@@ -241,13 +241,16 @@
                                                         <span class="line-clamp-2" :title="paper.paper_title" x-text="paper.paper_title"></span>
                                                     </td>
                                                     <td class="p-2.5 align-top">
-                                                        <div class="space-y-1 min-w-0">
-                                                            <p class="font-bold text-slate-900 truncate" :title="paper.first_author_name" x-text="paper.first_author_name"></p>
-                                                            <div class="space-y-0.5">
+                                                        <div class="space-y-1.5 min-w-0">
+                                                            <p class="font-extrabold text-navy truncate text-xs" :title="paper.first_author_name" x-text="paper.first_author_name"></p>
+                                                            <div>
                                                                 <template x-if="paper.recipients && paper.recipients.length > 0">
-                                                                    <div>
+                                                                    <div class="flex flex-wrap gap-1.5 pt-0.5">
                                                                         <template x-for="recip in paper.recipients" :key="recip">
-                                                                            <span class="inline-block text-[11px] font-mono text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 mr-1 mb-1 max-w-full truncate" :title="recip" x-text="recip"></span>
+                                                                            <span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-700 bg-slate-100 border border-slate-300 rounded-md px-2 py-0.5 max-w-full shadow-2xs" :title="recip">
+                                                                                <span class="text-[10px] text-slate-400 font-sans">✉</span>
+                                                                                <span class="truncate" x-text="recip"></span>
+                                                                            </span>
                                                                         </template>
                                                                     </div>
                                                                 </template>
