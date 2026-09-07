@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\AuthorPortalController;
 use App\Http\Controllers\ChecklistController;
+use App\Http\Controllers\ConferenceBroadcastController;
 use App\Http\Controllers\ConferenceController;
 use App\Http\Controllers\ConferenceDataExportController;
 use App\Http\Controllers\ConferenceLandingController;
@@ -168,6 +169,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/conferences/{conference}/edas-reconciliation/reset', [EdasReconciliationController::class, 'reset'])->name('conferences.edas-reconciliation.reset');
         Route::get('/conferences/{conference}/edas-reconciliation/export', [EdasReconciliationController::class, 'export'])->name('conferences.edas-reconciliation.export');
         Route::get('/conferences/{conference}/edas-reconciliation/export-missing', [EdasReconciliationController::class, 'exportMissing'])->name('conferences.edas-reconciliation.export-missing');
+        Route::get('/conferences/{conference}/broadcast', [ConferenceBroadcastController::class, 'index'])->name('conferences.broadcast.index');
+        Route::post('/conferences/{conference}/broadcast/audience', [ConferenceBroadcastController::class, 'previewAudience'])->name('conferences.broadcast.audience');
+        Route::post('/conferences/{conference}/broadcast/test', [ConferenceBroadcastController::class, 'sendTest'])->name('conferences.broadcast.test');
+        Route::post('/conferences/{conference}/broadcast/send', [ConferenceBroadcastController::class, 'sendBroadcast'])->name('conferences.broadcast.send');
         Route::get('/conferences/{conference}/data-export', [ConferenceDataExportController::class, 'index'])->name('conferences.data-export.index');
         Route::get('/conferences/{conference}/data-export/download', [ConferenceDataExportController::class, 'download'])->name('conferences.data-export.download');
         Route::post('/conferences/{conference}/import/preview', [SubmissionImportController::class, 'preview'])->name('conferences.import.preview');

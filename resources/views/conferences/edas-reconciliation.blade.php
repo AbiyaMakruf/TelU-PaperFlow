@@ -165,6 +165,12 @@
                         <div class="flex flex-wrap items-center gap-2.5">
                             <input type="text" x-model="searchQuery" placeholder="Search Paper ID or Title..." class="form-input text-xs py-2 px-3 min-w-[200px] sm:min-w-[220px]">
 
+                            @can('update', $activeConference)
+                                <a href="{{ route('conferences.broadcast.index', [$activeConference, 'segment' => 'missing_edas']) }}" class="btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-black py-2 px-3 flex items-center gap-1.5 shadow-2xs transition" title="Broadcast reminder to authors of missing papers">
+                                    <span>📢 Broadcast to Missing</span>
+                                </a>
+                            @endcan
+
                             <form method="POST" action="{{ route('conferences.edas-reconciliation.refresh', $activeConference) }}" class="inline-block">
                                 @csrf
                                 <button type="submit" class="btn btn-secondary text-xs font-extrabold py-2 px-3 flex items-center gap-1.5 text-navy hover:text-orange shadow-2xs" title="Re-sync reconciliation table with latest database submissions">

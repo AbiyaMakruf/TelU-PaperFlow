@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\SendLoggedEmail;
+use App\Models\Conference;
 use App\Models\EmailLog;
 use App\Models\EmailTemplate;
 use App\Models\Submission;
@@ -160,6 +161,49 @@ class ConferenceMailer
             $actionUrl = rtrim($matches[0], '.,);');
         }
         SendLoggedEmail::dispatch($log, $body, $cc, $actionUrl);
+
+        return $log;
+    }
+
+    /**
+     * Queue a conference broadcast email to an author or external recipient.
+     *
+     * @param list<string> $cc
+     */
+    public function queueBroadcast(
+        Conference $conference,
+        ?Submission $submission,
+        string $recipient,
+        string $subject,
+        string $body,
+        array $cc = [],
+        ?User $sender = null,
+        ?string $actionUrl = null,
+        string $templateKey = 'broadcast_email'
+    ): ?EmailLog {
+        if (! $recipient || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+
+        $sender ??= Auth::user();
+        $log = EmailLog::create([
+            'conference_id' => $conference->id,
+            'submission_id' => $submission?->id,
+            'template_key' => $templateKey,
+            'recipient' => trim($recipient),
+            'cc' => array_values(array_unique(array_filter($cc, fn ($c) => filter_var($c, FILTER_VALIDATE_EMAIL)))),
+            'subject' => $subject,
+            'sender_name' => $conference->email_sender_name ?: $conference->name,
+            'sender_user_id' => $sender?->id,
+            'body' => $body,
+            'status' => 'queued',
+        ]);
+
+        if (! $actionUrl && preg_match('/https?:\/\/[^\s<">]+/', $body, $matches)) {
+            $actionUrl = rtrim($matches[0], '.,);');
+        }
+
+        SendLoggedEmail::dispatch($log, $body, $log->cc ?? [], $actionUrl);
 
         return $log;
     }

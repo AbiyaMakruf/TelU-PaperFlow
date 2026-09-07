@@ -58,6 +58,9 @@
                         <a href="{{ route('conferences.email-templates.edit', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'templates' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
                             <span>📧</span> <span>Email Templates</span>
                         </a>
+                        <a href="{{ route('conferences.broadcast.index', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'broadcast' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
+                            <span>📢</span> <span>Email Broadcast</span>
+                        </a>
                         <a href="{{ route('conferences.members.index', $c) }}" class="rounded-xl px-3.5 py-2 text-xs font-bold transition flex items-center gap-1.5 {{ $active === 'members' ? 'bg-navy text-white shadow-sm font-extrabold' : 'bg-slate-100 text-navy hover:bg-slate-200' }}">
                             <span>👥</span> <span>Team Members</span>
                         </a>
