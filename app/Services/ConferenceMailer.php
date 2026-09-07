@@ -181,7 +181,8 @@ class ConferenceMailer
         ?string $actionUrl = null,
         string $templateKey = 'broadcast_email'
     ): ?EmailLog {
-        if (! $recipient || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        $recipientEmails = array_values(array_filter(array_map('trim', explode(',', (string) $recipient)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL)));
+        if (empty($recipientEmails)) {
             return null;
         }
 
@@ -190,7 +191,7 @@ class ConferenceMailer
             'conference_id' => $conference->id,
             'submission_id' => $submission?->id,
             'template_key' => $templateKey,
-            'recipient' => trim($recipient),
+            'recipient' => implode(', ', $recipientEmails),
             'cc' => array_values(array_unique(array_filter($cc, fn ($c) => filter_var($c, FILTER_VALIDATE_EMAIL)))),
             'subject' => $subject,
             'sender_name' => $conference->email_sender_name ?: $conference->name,

@@ -268,10 +268,10 @@ class ConferenceBroadcastTest extends TestCase
         $response->assertRedirect(route('conferences.broadcast.index', $conference));
         $response->assertSessionHas('success');
 
-        // Check EmailLogs
+        // Check EmailLogs (multiple authors combined in TO header of the single email)
         $this->assertDatabaseHas('email_logs', [
             'conference_id' => $conference->id,
-            'recipient' => 'alice@example.com',
+            'recipient' => 'alice@example.com, bob@example.com',
             'template_key' => 'broadcast_email',
         ]);
 
@@ -281,7 +281,7 @@ class ConferenceBroadcastTest extends TestCase
             'template_key' => 'broadcast_email',
         ]);
 
-        $log = EmailLog::where('recipient', 'alice@example.com')->first();
+        $log = EmailLog::where('recipient', 'like', '%alice@example.com%')->first();
         $this->assertStringContainsString('Deep Learning in Edge IoT Devices', $log->body);
         $this->assertStringContainsString('https://forms.google.com/icoict-payment', $log->body);
 

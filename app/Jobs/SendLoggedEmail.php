@@ -83,7 +83,8 @@ class SendLoggedEmail implements ShouldQueue
                 accentColor: $this->emailLog->conference?->brandAccent() ?? '#f47c20',
                 logoUrl: $this->emailLog->conference?->brandLogoUrl(),
             );
-            $pending = Mail::to($this->emailLog->recipient);
+            $toRecipients = array_values(array_filter(array_map('trim', explode(',', (string) $this->emailLog->recipient)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL)));
+            $pending = Mail::to(! empty($toRecipients) ? $toRecipients : $this->emailLog->recipient);
             if ($this->cc !== []) {
                 $pending->cc($this->cc);
             }

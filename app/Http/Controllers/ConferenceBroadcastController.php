@@ -582,6 +582,7 @@ class ConferenceBroadcastController extends Controller
         $user = $request->user();
 
         $dispatchedCount = 0;
+        $totalRecipientsReached = 0;
         $skippedCount = 0;
 
         foreach ($filteredCandidates as $c) {
@@ -596,8 +597,8 @@ class ConferenceBroadcastController extends Controller
                 continue;
             }
 
-            $primaryRecipient = $emails[0];
-            $ccList = array_slice($emails, 1);
+            // Combine all author emails directly into TO header so 1 email reaches all authors in TO
+            $toRecipients = implode(', ', $emails);
 
             $replace = [
                 '{{conference}}' => $activeConference->name,
@@ -618,28 +619,30 @@ class ConferenceBroadcastController extends Controller
             $mailer->queueBroadcast(
                 conference: $activeConference,
                 submission: $c['submission'],
-                recipient: $primaryRecipient,
+                recipient: $toRecipients,
                 subject: $renderedSubject,
                 body: $renderedBody,
-                cc: $ccList,
+                cc: [],
                 sender: $user,
                 actionUrl: $paymentLink ?: $c['portal_url'],
                 templateKey: 'broadcast_email'
             );
 
-            $dispatchedCount += count($emails);
+            $dispatchedCount++;
+            $totalRecipientsReached += count($emails);
         }
 
         $auditLogger->record('conference.broadcast_sent', $activeConference, $activeConference, [], [
             'subject' => $validated['subject'],
             'recipient_scope' => $recipientScope,
             'dispatched_emails_count' => $dispatchedCount,
+            'recipients_reached' => $totalRecipientsReached,
             'skipped_papers_count' => $skippedCount,
             'payment_link' => $paymentLink,
         ]);
 
         return redirect()
             ->route('conferences.broadcast.index', $activeConference)
-            ->with('success', "Email broadcast successfully queued! {$dispatchedCount} recipient(s) dispatched.");
+            ->with('success', "Email broadcast successfully queued: {$dispatchedCount} email(s) scheduled (reaching {$totalRecipientsReached} author(s) in TO), {$skippedCount} paper(s) skipped.");
     }
 }

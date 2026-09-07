@@ -453,21 +453,27 @@
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-600">Recipient Scope:</span>
-                                        <strong class="text-navy" x-text="recipientScope === 'all_authors' ? 'All Authors' : 'First Author Only'"></strong>
+                                        <strong class="text-navy" x-text="recipientScope === 'all_authors' ? 'All Authors (Combined in TO)' : 'First Author Only'"></strong>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-600">Total Authors in TO:</span>
+                                        <strong class="text-navy font-bold" x-text="totalRecipientsCount + ' email addresses'"></strong>
                                     </div>
                                     <div class="flex justify-between border-t border-navy/10 pt-2 font-bold">
-                                        <span class="text-slate-700">Total Email Recipients:</span>
-                                        <span class="text-rose-600 text-sm font-black" x-text="totalRecipientsCount + ' recipients'"></span>
+                                        <span class="text-slate-700">Total Emails to Dispatch:</span>
+                                        <span class="text-emerald-700 text-sm font-black">
+                                            <span x-text="matchedPapersCount"></span> email(s) <span class="text-[11px] font-medium text-slate-500">(1 per paper)</span>
+                                        </span>
                                     </div>
                                 </div>
 
                                 <!-- Mass Blast Trigger Button -->
                                 <div class="space-y-2 pt-1">
-                                    <button type="button" @click="openConfirmModal()" :disabled="totalRecipientsCount === 0 || isLoadingAudience" class="btn w-full py-3.5 text-xs font-black shadow-md flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white transition">
-                                        <span>🚀 Queue Broadcast to <strong x-text="totalRecipientsCount"></strong> Recipient(s)</span>
+                                    <button type="button" @click="openConfirmModal()" :disabled="matchedPapersCount === 0 || isLoadingAudience" class="btn w-full py-3.5 text-xs font-black shadow-md flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer">
+                                        <span>🚀 Queue Broadcast: <strong x-text="matchedPapersCount"></strong> Email(s) (<strong x-text="totalRecipientsCount"></strong> Authors in TO)</span>
                                     </button>
                                     <p class="text-[11px] text-center text-slate-500 leading-tight">
-                                        Emails will be processed smoothly via Paperflow's background queue to respect SMTP rate limits.
+                                        1 email will be sent per paper, placing all respective authors in the <strong>To:</strong> field.
                                     </p>
                                 </div>
                             </div>
@@ -507,12 +513,16 @@
                             <strong class="text-navy" x-text="matchedPapersCount + ' papers'"></strong>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-slate-600">Total Recipients:</span>
-                            <strong class="text-rose-600 font-extrabold" x-text="totalRecipientsCount + ' email addresses'"></strong>
+                            <span class="text-slate-600">Total Emails to Send:</span>
+                            <strong class="text-emerald-700 font-extrabold" x-text="matchedPapersCount + ' email(s) (1 per paper)'"></strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Total Authors in TO:</span>
+                            <strong class="text-navy font-extrabold" x-text="totalRecipientsCount + ' email addresses'"></strong>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-slate-600">Recipient Scope:</span>
-                            <strong class="text-navy" x-text="recipientScope === 'all_authors' ? 'All Authors' : 'First Author Only'"></strong>
+                            <strong class="text-navy" x-text="recipientScope === 'all_authors' ? 'All Authors (Combined in TO)' : 'First Author Only'"></strong>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-slate-600">Subject:</span>
