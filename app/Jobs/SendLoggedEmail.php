@@ -48,7 +48,8 @@ class SendLoggedEmail implements ShouldQueue
                 'assigned_reviewer' => 'Open Paper & Review',
                 'author_revision_uploaded' => 'Inspect Updated Paper',
                 'send_reviewer', 'reviewer_changes', 'reviewer_approve', 'edas_fix', 'revert_done' => 'Open Paper in Paperflow',
-                default => 'Track Submission',
+                'broadcast_email', 'broadcast_test' => 'Open Link',
+                default => 'Open Link',
             };
             $body = $this->body;
             $accentColor = $this->emailLog->conference?->brandAccent() ?? '#f47c20';

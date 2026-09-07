@@ -179,7 +179,8 @@ class ConferenceMailer
         array $cc = [],
         ?User $sender = null,
         ?string $actionUrl = null,
-        string $templateKey = 'broadcast_email'
+        string $templateKey = 'broadcast_email',
+        string $actionLabel = 'Open Link'
     ): ?EmailLog {
         $recipientEmails = array_values(array_filter(array_map('trim', explode(',', (string) $recipient)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL)));
         if (empty($recipientEmails)) {
@@ -204,7 +205,7 @@ class ConferenceMailer
             $actionUrl = rtrim($matches[0], '.,);');
         }
 
-        SendLoggedEmail::dispatch($log, $body, $log->cc ?? [], $actionUrl);
+        SendLoggedEmail::dispatch($log, $body, $log->cc ?? [], $actionUrl, $actionLabel);
 
         return $log;
     }

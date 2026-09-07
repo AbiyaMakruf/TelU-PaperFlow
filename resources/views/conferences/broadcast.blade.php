@@ -420,7 +420,7 @@
                                         <template x-if="paymentLink && paymentLink.trim().length > 0">
                                             <div class="pt-4 pb-2 text-center border-t border-slate-100">
                                                 <a :href="paymentLink" target="_blank" class="inline-block bg-orange text-white text-xs font-black py-3 px-6 rounded-xl shadow-md hover:opacity-90 transition">
-                                                    Action Link / Target &rarr;
+                                                    Open Link &rarr;
                                                 </a>
                                             </div>
                                         </template>
