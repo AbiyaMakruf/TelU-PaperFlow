@@ -64,6 +64,7 @@ class OperationalFeaturesTest extends TestCase
 
     public function test_revision_reminder_uses_the_same_wib_calendar_day_as_the_author_portal_deadline(): void
     {
+        Carbon::setTestNow('2026-09-01 10:00:00');
         Queue::fake();
         [$conference, $admin, $submission] = $this->fixture();
         $submission->update([

@@ -182,6 +182,19 @@ class EditorialWorkflowTest extends TestCase
         ])->assertRedirect();
     }
 
+    public function test_staff_can_download_pdf_express_with_custom_name(): void
+    {
+        [, $admin, $editor, $reviewer, $submission] = $this->workflowFixture();
+        $this->actingAs($admin)->post(route('submissions.accept', $submission));
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $editor->id, 'role' => 'editorial', 'manuscript_format' => 'docx']);
+        $this->actingAs($admin)->post(route('submissions.assign', $submission), ['user_id' => $reviewer->id, 'role' => 'reviewer']);
+        $this->uploadPdfExpress($editor, $submission);
+
+        $response = $this->actingAs($reviewer)->get(route('submissions.pdf-express.download', $submission));
+        $response->assertOk();
+        $this->assertStringContainsString('pdf-express.pdf', $response->headers->get('content-disposition'));
+    }
+
     public function test_conference_admin_can_export_visible_papers_as_csv(): void
     {
         [, $admin, , , $submission] = $this->workflowFixture();

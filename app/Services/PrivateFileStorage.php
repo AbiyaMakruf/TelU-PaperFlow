@@ -103,13 +103,18 @@ class PrivateFileStorage
             throw new RuntimeException('Supabase tidak mengembalikan signed URL.');
         }
 
-        if (str_starts_with($signedUrl, 'http')) {
-            return $signedUrl;
+        $url = str_starts_with($signedUrl, 'http')
+            ? $signedUrl
+            : (str_starts_with($signedUrl, '/storage/v1/')
+                ? rtrim($this->baseUrl(), '/').$signedUrl
+                : $this->storageUrl('/'.ltrim($signedUrl, '/')));
+
+        if ($downloadName && ! str_contains($url, 'download=')) {
+            $separator = str_contains($url, '?') ? '&' : '?';
+            $url .= $separator.'download='.urlencode($downloadName);
         }
 
-        return str_starts_with($signedUrl, '/storage/v1/')
-            ? rtrim($this->baseUrl(), '/').$signedUrl
-            : $this->storageUrl('/'.ltrim($signedUrl, '/'));
+        return $url;
     }
 
     public function delete(string $path): void

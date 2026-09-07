@@ -60,6 +60,12 @@ class ConferenceFileStorage
     /** @param array<string, mixed> $attributes */
     public function downloadSubmissionPdf(Conference $conference, array $attributes, string $downloadName): RedirectResponse|BinaryFileResponse
     {
+        if (($attributes['disk'] ?? null) === 'supabase' && $this->privateStorage->usesSupabase()) {
+            if ($url = $this->privateStorage->temporaryUrl($attributes['storage_path'], 300, $downloadName)) {
+                return redirect()->away($url);
+            }
+        }
+
         $file = new FileVersion([
             'disk' => $attributes['disk'], 'storage_path' => $attributes['storage_path'], 'original_name' => $downloadName,
             'external_id' => $attributes['external_id'] ?? null,
