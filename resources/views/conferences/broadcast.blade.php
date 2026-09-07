@@ -4,7 +4,8 @@
         audienceUrl: '{{ route('conferences.broadcast.audience', $activeConference) }}',
         testSendUrl: '{{ route('conferences.broadcast.test', $activeConference) }}',
         csrfToken: '{{ csrf_token() }}',
-        conferenceName: '{{ addslashes($activeConference->name) }}'
+        conferenceName: '{{ addslashes($activeConference->name) }}',
+        defaultTestEmail: '{{ addslashes(auth()->user()->email ?? '') }}'
     })" x-init="init()">
         <x-conference-header :conference="$activeConference" active="broadcast" />
 
@@ -58,23 +59,15 @@
                             <span class="text-xs font-bold text-muted" x-text="isLoadingAudience ? 'Refreshing...' : audienceSummaryText"></span>
                         </div>
 
-                        <!-- Target Segment Tabs -->
+                        <!-- Target Group / Segment Dropdown -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-2">Target Group / Segment</label>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                <button type="button" @click="setSegment('all')" :class="segment === 'all' ? 'bg-navy text-white shadow-xs font-black' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold'" class="px-3 py-2 text-xs rounded-xl transition text-center">
-                                    All Papers
-                                </button>
-                                <button type="button" @click="setSegment('missing_edas')" :class="segment === 'missing_edas' ? 'bg-rose-600 text-white shadow-xs font-black' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold'" class="px-3 py-2 text-xs rounded-xl transition text-center">
-                                    Missing (EDAS)
-                                </button>
-                                <button type="button" @click="setSegment('submitted')" :class="segment === 'submitted' ? 'bg-emerald-600 text-white shadow-xs font-black' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold'" class="px-3 py-2 text-xs rounded-xl transition text-center">
-                                    Submitted
-                                </button>
-                                <button type="button" @click="setSegment('custom')" :class="segment === 'custom' ? 'bg-orange text-white shadow-xs font-black' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold'" class="px-3 py-2 text-xs rounded-xl transition text-center">
-                                    Secretariat List ▾
-                                </button>
-                            </div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Target Group / Segment</label>
+                            <select x-model="segment" @change="fetchAudience()" class="form-select text-xs w-full bg-white font-semibold">
+                                <option value="all">All Papers (Entire Conference Pool)</option>
+                                <option value="missing_edas">Missing in Paperflow (From EDAS)</option>
+                                <option value="submitted">Submitted in Paperflow</option>
+                                <option value="custom">Secretariat List (Custom Paper IDs / CSV)</option>
+                            </select>
                         </div>
 
                         <!-- Secretariat List Panel (Copy-Paste / CSV) -->
@@ -106,16 +99,25 @@
                             </div>
                         </div>
 
-                        <!-- Cross-Filters & Recipient Scope -->
+                        <!-- Cross-Filters & Recipient Scope (Both as styled Radio Button Groups) -->
                         <div class="grid sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                            <!-- Manuscript Status Filter -->
+                            <!-- Manuscript Status Filter Radio -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1.5">Manuscript Upload Status</label>
-                                <select x-model="manuscriptFilter" @change="fetchAudience()" class="form-select text-xs w-full bg-white">
-                                    <option value="all">All matching papers</option>
-                                    <option value="only_uploaded">Only if manuscript is ALREADY uploaded</option>
-                                    <option value="only_missing">Only if manuscript is NOT YET uploaded</option>
-                                </select>
+                                <div class="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                    <label class="flex items-center gap-2 cursor-pointer text-xs">
+                                        <input type="radio" name="manuscript_radio" value="all" x-model="manuscriptFilter" @change="fetchAudience()" class="text-orange focus:ring-orange">
+                                        <span class="font-bold text-navy">All matching papers</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer text-xs">
+                                        <input type="radio" name="manuscript_radio" value="only_uploaded" x-model="manuscriptFilter" @change="fetchAudience()" class="text-orange focus:ring-orange">
+                                        <span class="font-bold text-navy">Only if ALREADY uploaded</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer text-xs">
+                                        <input type="radio" name="manuscript_radio" value="only_missing" x-model="manuscriptFilter" @change="fetchAudience()" class="text-orange focus:ring-orange">
+                                        <span class="font-bold text-navy">Only if NOT YET uploaded</span>
+                                    </label>
+                                </div>
                             </div>
 
                             <!-- Recipient Scope Toggle -->
@@ -147,18 +149,17 @@
                                 </button>
                             </div>
 
-                            <!-- Expandable Paper Items Table -->
-                            <div x-show="showPaperList" x-cloak class="max-h-64 overflow-y-auto border border-slate-200 rounded-xl bg-white">
-                                <table class="w-full text-left text-xs">
+                            <!-- Expandable Paper Items Table (Horizontally contained) -->
+                            <div x-show="showPaperList" x-cloak class="max-h-64 overflow-y-auto overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                                <table class="w-full table-fixed text-left text-xs">
                                     <thead class="bg-slate-100 text-slate-700 font-bold sticky top-0">
                                         <tr>
-                                            <th class="p-2 w-8 text-center">
+                                            <th class="p-2 w-10 text-center">
                                                 <input type="checkbox" :checked="isAllSelected()" @change="toggleSelectAll($event)">
                                             </th>
-                                            <th class="p-2">Paper ID</th>
+                                            <th class="p-2 w-32">Paper ID</th>
                                             <th class="p-2">Paper Title</th>
-                                            <th class="p-2">Authors &amp; Recipients</th>
-                                            <th class="p-2 text-right">Status</th>
+                                            <th class="p-2 w-48 sm:w-60">Authors &amp; Recipients</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
@@ -167,21 +168,18 @@
                                                 <td class="p-2 text-center">
                                                     <input type="checkbox" name="selected_keys[]" :value="paper.key" :checked="selectedKeys.includes(paper.key)" @change="togglePaper(paper.key)">
                                                 </td>
-                                                <td class="p-2 font-mono font-bold text-navy" x-text="paper.paper_id"></td>
-                                                <td class="p-2 max-w-[200px] truncate" :title="paper.paper_title" x-text="paper.paper_title"></td>
-                                                <td class="p-2">
-                                                    <div class="space-y-0.5">
-                                                        <p class="font-bold text-slate-800" x-text="paper.first_author_name"></p>
-                                                        <p class="text-[11px] text-slate-500 font-mono" x-text="paper.recipients.join(', ') || 'No valid email'"></p>
+                                                <td class="p-2 font-mono font-bold text-navy truncate" :title="paper.paper_id" x-text="paper.paper_id"></td>
+                                                <td class="p-2 truncate" :title="paper.paper_title" x-text="paper.paper_title"></td>
+                                                <td class="p-2 truncate">
+                                                    <div class="space-y-0.5 min-w-0">
+                                                        <p class="font-bold text-slate-800 truncate" :title="paper.first_author_name" x-text="paper.first_author_name"></p>
+                                                        <p class="text-[11px] text-slate-500 font-mono truncate" :title="paper.recipients.join(', ')" x-text="paper.recipients.join(', ') || 'No valid email'"></p>
                                                     </div>
-                                                </td>
-                                                <td class="p-2 text-right">
-                                                    <span :class="paper.status_badge" class="badge text-[10px] font-extrabold" x-text="paper.status_label"></span>
                                                 </td>
                                             </tr>
                                         </template>
                                         <tr x-show="papers.length === 0">
-                                            <td colspan="5" class="p-4 text-center text-xs text-muted">No papers match the current selection criteria.</td>
+                                            <td colspan="4" class="p-4 text-center text-xs text-muted">No papers match the current selection criteria.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -275,7 +273,7 @@
                             <span class="badge bg-orange/10 text-orange text-xs font-extrabold">Instant Render</span>
                         </div>
 
-                        <!-- Live Preview Frame -->
+                        <!-- Live Preview Frame (No action button at the end) -->
                         <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50 shadow-inner">
                             <div class="bg-navy p-3.5 text-white space-y-1">
                                 <div class="flex items-center justify-between text-[11px] text-slate-300">
@@ -285,23 +283,27 @@
                                 <h3 class="text-xs font-extrabold text-white truncate" x-text="renderedPreviewSubject || 'Subject Preview'"></h3>
                             </div>
 
-                            <div class="p-4 bg-white min-h-[300px] text-xs text-slate-800 space-y-3 leading-relaxed whitespace-pre-line font-sans border-b border-slate-100" x-text="renderedPreviewBody || 'Email body will render here...'">
-                            </div>
-
-                            <div class="p-3 bg-slate-100/70 text-[11px] text-slate-600 flex items-center justify-between">
-                                <span>Button Action Target:</span>
-                                <span class="font-mono font-bold text-navy truncate max-w-[200px]" x-text="paymentLink || '{{ route('public.submission.show', $activeConference->slug ?: $activeConference->id) }}'"></span>
+                            <div class="p-4 bg-white min-h-[300px] text-xs text-slate-800 space-y-3 leading-relaxed whitespace-pre-line font-sans" x-text="renderedPreviewBody || 'Email body will render here...'">
                             </div>
                         </div>
 
-                        <!-- Action Buttons -->
-                        <div class="space-y-3 pt-2">
-                            <!-- Test Send Button -->
-                            <button type="button" @click="sendTestEmail()" :disabled="isSendingTest" class="btn btn-secondary w-full py-2.5 text-xs font-extrabold flex items-center justify-center gap-2 text-navy hover:text-orange transition shadow-2xs">
-                                <span x-show="!isSendingTest">✉️ Send Test Email to Me ({{ auth()->user()->email }})</span>
-                                <span x-show="isSendingTest" x-cloak>⏳ Sending Test Email...</span>
-                            </button>
+                        <!-- Test Send Input & Button -->
+                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                            <label class="block text-xs font-extrabold text-navy">
+                                ✉️ Send Test Email
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input type="email" x-model="testEmail" placeholder="Enter destination email..." class="form-input text-xs w-full bg-white">
+                                <button type="button" @click="sendTestEmail()" :disabled="isSendingTest" class="btn btn-secondary py-2 px-3 text-xs font-extrabold shrink-0 text-navy hover:text-orange transition shadow-2xs">
+                                    <span x-show="!isSendingTest">Send Test</span>
+                                    <span x-show="isSendingTest" x-cloak>Sending...</span>
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-slate-500">You can customize the destination address above to test delivery in any inbox.</p>
+                        </div>
 
+                        <!-- Action Buttons -->
+                        <div class="space-y-3 pt-1">
                             <!-- Mass Blast Confirmation Trigger Button -->
                             <button type="button" @click="openConfirmModal()" :disabled="totalRecipientsCount === 0 || isLoadingAudience" class="btn btn-primary w-full py-3.5 text-xs font-black shadow-md flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white transition">
                                 <span>🚀 Queue Broadcast to <strong x-text="totalRecipientsCount"></strong> Recipient(s)</span>
@@ -376,6 +378,7 @@
                 uploadedFileName: '',
                 uploadedFile: null,
                 paymentLink: '',
+                testEmail: config.defaultTestEmail || '',
                 subject: '',
                 body: '',
                 papers: [],
@@ -547,9 +550,14 @@
                         alert('Please provide a subject and message body first.');
                         return;
                     }
+                    if (!this.testEmail) {
+                        alert('Please provide a destination email address.');
+                        return;
+                    }
                     this.isSendingTest = true;
                     const payload = {
                         _token: config.csrfToken,
+                        test_email: this.testEmail,
                         subject: this.subject,
                         body: this.body,
                         payment_link: this.paymentLink

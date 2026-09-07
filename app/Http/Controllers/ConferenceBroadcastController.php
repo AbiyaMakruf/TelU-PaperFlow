@@ -139,16 +139,146 @@ class ConferenceBroadcastController extends Controller
      */
     private function resolvePaperCandidatePool(Conference $conference): array
     {
-        $submissions = Submission::query()
+        $paperflowSubmissions = Submission::query()
             ->where('conference_id', $conference->id)
             ->with(['authors', 'files'])
             ->get();
 
-        $candidates = [];
+        $exactMap = [];
+        $normMap = [];
 
-        // 1. Index from live submissions
-        foreach ($submissions as $sub) {
+        foreach ($paperflowSubmissions as $sub) {
+            $codes = array_filter([$sub->paper_id, $sub->paper_code, $sub->original_paper_code]);
+            foreach ($codes as $code) {
+                $lower = strtolower(trim((string) $code));
+                $exactMap[$lower] = $sub;
+
+                $norm = $this->normalizeCode($code);
+                if (! empty($norm) && ! isset($normMap[$norm])) {
+                    $normMap[$norm] = $sub;
+                }
+            }
+        }
+
+        $candidates = [];
+        $matchedSubmissionIds = [];
+
+        $edasSettings = $conference->settings['edas_reconciliation'] ?? [];
+        $rawEdasItems = $edasSettings['raw_items'] ?? [];
+
+        // 1. Process EDAS items using exact same matching strategy as EdasReconciliationController
+        foreach ($rawEdasItems as $item) {
+            $edasPaperId = trim((string) ($item['edas_paper_id'] ?? ''));
+            if (empty($edasPaperId)) {
+                continue;
+            }
+
+            $lowerEdasId = strtolower($edasPaperId);
+            $normEdasId = $this->normalizeCode($edasPaperId);
+
+            $matchedSub = $exactMap[$lowerEdasId] ?? ($normMap[$normEdasId] ?? null);
+
+            $edasTitle = trim((string) ($item['edas_title'] ?? 'Untitled Paper'));
+            $rawAuthors = $item['edas_authors'] ?? '';
+            $authorNames = collect(preg_split('/[;\r\n]+/', (string) $rawAuthors) ?: [])
+                ->map(fn (string $a) => trim(preg_replace('/\s+/', ' ', $a) ?? ''))
+                ->filter()
+                ->values()
+                ->all();
+
+            $rawEmails = $item['edas_author_emails'] ?? [];
+            $authorEmails = [];
+            if (is_array($rawEmails)) {
+                foreach ($rawEmails as $em) {
+                    $cleanEm = strtolower(trim((string) $em));
+                    if (filter_var($cleanEm, FILTER_VALIDATE_EMAIL)) {
+                        $authorEmails[] = $cleanEm;
+                    }
+                }
+            }
+
+            $key = $normEdasId ?: $lowerEdasId;
+
+            if ($matchedSub) {
+                $matchedSubmissionIds[] = $matchedSub->id;
+                $token = $matchedSub->ensureValidAuthorToken();
+                $portalUrl = url("/submission/access/{$token}");
+
+                if ($matchedSub->relationLoaded('authors') && $matchedSub->authors->isNotEmpty()) {
+                    foreach ($matchedSub->authors as $author) {
+                        if (! empty($author->name) && ! in_array(trim($author->name), $authorNames, true)) {
+                            $authorNames[] = trim($author->name);
+                        }
+                        if (! empty($author->email) && filter_var($author->email, FILTER_VALIDATE_EMAIL)) {
+                            $em = strtolower(trim($author->email));
+                            if (! in_array($em, $authorEmails, true)) {
+                                $authorEmails[] = $em;
+                            }
+                        }
+                    }
+                }
+
+                if (filter_var($matchedSub->corresponding_author_email, FILTER_VALIDATE_EMAIL)) {
+                    $corrEm = strtolower(trim((string) $matchedSub->corresponding_author_email));
+                    if (! in_array($corrEm, $authorEmails, true)) {
+                        array_unshift($authorEmails, $corrEm);
+                    }
+                }
+
+                $primaryName = $matchedSub->corresponding_author_name ?: ($authorNames[0] ?? 'Author');
+                $primaryEmail = $matchedSub->corresponding_author_email ?: ($authorEmails[0] ?? '');
+
+                $candidates[$key] = [
+                    'key' => $key,
+                    'paper_id' => $edasPaperId,
+                    'paper_title' => $matchedSub->title ?: $edasTitle,
+                    'has_submission' => true,
+                    'submission_id' => $matchedSub->id,
+                    'submission' => $matchedSub,
+                    'portal_url' => $portalUrl,
+                    'first_author_name' => $primaryName,
+                    'first_author_email' => $primaryEmail,
+                    'all_author_names' => array_values(array_unique($authorNames)),
+                    'all_author_emails' => array_values(array_unique($authorEmails)),
+                    'status_badge' => 'badge-success',
+                    'status_label' => 'Submitted in Paperflow',
+                    'submission_status' => $matchedSub->status?->value ?? 'submitted',
+                ];
+            } else {
+                $primaryName = $authorNames[0] ?? 'Author';
+                $primaryEmail = $authorEmails[0] ?? '';
+                $publicSubmitUrl = route('public.submission.show', $conference->slug ?: $conference->id);
+
+                $candidates[$key] = [
+                    'key' => $key,
+                    'paper_id' => $edasPaperId,
+                    'paper_title' => $edasTitle,
+                    'has_submission' => false,
+                    'submission_id' => null,
+                    'submission' => null,
+                    'portal_url' => $publicSubmitUrl,
+                    'first_author_name' => $primaryName,
+                    'first_author_email' => $primaryEmail,
+                    'all_author_names' => array_values(array_unique($authorNames)),
+                    'all_author_emails' => array_values(array_unique($authorEmails)),
+                    'status_badge' => 'badge-danger',
+                    'status_label' => 'Missing in Paperflow (EDAS)',
+                    'submission_status' => 'missing_edas',
+                ];
+            }
+        }
+
+        // 2. Include any Paperflow submissions that were not in EDAS list (if any)
+        $unmatchedSubmissions = $paperflowSubmissions->filter(fn ($s) => ! in_array($s->id, $matchedSubmissionIds, true));
+
+        foreach ($unmatchedSubmissions as $sub) {
             $code = $sub->original_paper_code ?: ($sub->paper_id ?: $sub->paper_code);
+            $key = $this->normalizeCode($code) ?: ('sub_' . $sub->id);
+
+            if (isset($candidates[$key])) {
+                continue;
+            }
+
             $token = $sub->ensureValidAuthorToken();
             $portalUrl = url("/submission/access/{$token}");
 
@@ -166,21 +296,15 @@ class ConferenceBroadcastController extends Controller
                 }
             }
 
-            if (! in_array(strtolower((string) $sub->corresponding_author_email), array_map('strtolower', $authorEmails), true) && filter_var($sub->corresponding_author_email, FILTER_VALIDATE_EMAIL)) {
-                array_unshift($authorEmails, strtolower(trim((string) $sub->corresponding_author_email)));
+            if (filter_var($sub->corresponding_author_email, FILTER_VALIDATE_EMAIL)) {
+                $corrEm = strtolower(trim((string) $sub->corresponding_author_email));
+                if (! in_array($corrEm, $authorEmails, true)) {
+                    array_unshift($authorEmails, $corrEm);
+                }
             }
 
-            if (empty($authorNames) && ! empty($sub->corresponding_author_name)) {
-                $authorNames[] = trim($sub->corresponding_author_name);
-            }
-
-            $primaryEmail = $sub->corresponding_author_email ?: ($authorEmails[0] ?? '');
             $primaryName = $sub->corresponding_author_name ?: ($authorNames[0] ?? 'Author');
-
-            $key = $this->normalizeCode($code);
-            if (empty($key)) {
-                $key = 'sub_' . $sub->id;
-            }
+            $primaryEmail = $sub->corresponding_author_email ?: ($authorEmails[0] ?? '');
 
             $candidates[$key] = [
                 'key' => $key,
@@ -197,74 +321,6 @@ class ConferenceBroadcastController extends Controller
                 'status_badge' => 'badge-success',
                 'status_label' => 'Submitted in Paperflow',
                 'submission_status' => $sub->status?->value ?? 'submitted',
-            ];
-        }
-
-        // 2. Index from EDAS reconciliation raw items (especially for missing ones)
-        $edasSettings = $conference->settings['edas_reconciliation'] ?? [];
-        $rawEdasItems = $edasSettings['raw_items'] ?? [];
-
-        foreach ($rawEdasItems as $item) {
-            $edasPaperId = trim((string) ($item['edas_paper_id'] ?? ''));
-            if (empty($edasPaperId)) {
-                continue;
-            }
-
-            $key = $this->normalizeCode($edasPaperId);
-            if (isset($candidates[$key])) {
-                // Merge EDAS emails if any missing
-                $edasEmails = $item['edas_author_emails'] ?? [];
-                if (is_array($edasEmails)) {
-                    foreach ($edasEmails as $em) {
-                        $cleanEm = strtolower(trim((string) $em));
-                        if (filter_var($cleanEm, FILTER_VALIDATE_EMAIL) && ! in_array($cleanEm, $candidates[$key]['all_author_emails'], true)) {
-                            $candidates[$key]['all_author_emails'][] = $cleanEm;
-                        }
-                    }
-                }
-                continue;
-            }
-
-            // Paper not in Paperflow (Missing)
-            $edasTitle = trim((string) ($item['edas_title'] ?? 'Untitled Paper'));
-            $rawAuthors = $item['edas_authors'] ?? '';
-            $authorNames = collect(preg_split('/[;\r\n]+/', (string) $rawAuthors) ?: [])
-                ->map(fn (string $a) => trim(preg_replace('/\s+/', ' ', $a) ?? ''))
-                ->filter()
-                ->values()
-                ->all();
-
-            $edasEmails = $item['edas_author_emails'] ?? [];
-            $authorEmails = [];
-            if (is_array($edasEmails)) {
-                foreach ($edasEmails as $em) {
-                    $cleanEm = strtolower(trim((string) $em));
-                    if (filter_var($cleanEm, FILTER_VALIDATE_EMAIL)) {
-                        $authorEmails[] = $cleanEm;
-                    }
-                }
-            }
-
-            $primaryEmail = $authorEmails[0] ?? '';
-            $primaryName = $authorNames[0] ?? 'Author';
-
-            $publicSubmitUrl = route('public.submission.show', $conference->slug ?: $conference->id);
-
-            $candidates[$key] = [
-                'key' => $key,
-                'paper_id' => $edasPaperId,
-                'paper_title' => $edasTitle,
-                'has_submission' => false,
-                'submission_id' => null,
-                'submission' => null,
-                'portal_url' => $publicSubmitUrl,
-                'first_author_name' => $primaryName,
-                'first_author_email' => $primaryEmail,
-                'all_author_names' => array_values(array_unique($authorNames)),
-                'all_author_emails' => array_values(array_unique($authorEmails)),
-                'status_badge' => 'badge-danger',
-                'status_label' => 'Missing in Paperflow (EDAS)',
-                'submission_status' => 'missing_edas',
             ];
         }
 
@@ -425,22 +481,25 @@ class ConferenceBroadcastController extends Controller
         $this->authorize('update', $activeConference);
 
         $validated = $request->validate([
+            'test_email' => ['nullable', 'email', 'max:255'],
             'subject' => ['required', 'string', 'max:500'],
             'body' => ['required', 'string', 'max:50000'],
             'payment_link' => ['nullable', 'url', 'max:1000'],
         ]);
 
         $user = $request->user();
-        $targetEmail = $user->email;
+        $targetEmail = filled($validated['test_email'] ?? null)
+            ? trim($validated['test_email'])
+            : $user->email;
 
         if (! filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Your authenticated user does not have a valid email address.',
+                'message' => 'Please provide a valid destination email address.',
             ], 422);
         }
 
-        $paymentLink = $validated['payment_link'] ?: 'https://forms.google.com/sample-conference-registration';
+        $paymentLink = ($validated['payment_link'] ?? null) ?: 'https://forms.google.com/sample-conference-registration';
         $portalUrl = route('public.submission.show', $activeConference->slug ?: $activeConference->id);
 
         $replace = [

@@ -185,13 +185,15 @@ class ConferenceBroadcastTest extends TestCase
         $this->assertEquals('1570999002', $responseCsv->json('papers.0.paper_id'));
     }
 
-    public function test_send_test_email_dispatches_to_admin(): void
+    public function test_send_test_email_dispatches_to_custom_destination_or_admin(): void
     {
         Queue::fake();
         [$conference, $admin] = $this->createConferenceWithRoles();
 
+        // 1. Send to custom email
         $response = $this->actingAs($admin)
             ->postJson(route('conferences.broadcast.test', $conference), [
+                'test_email' => 'reviewer.custom@example.com',
                 'subject' => 'Test Subject for {{conference_name}}',
                 'body' => 'Hello {{author_name}}, please pay via {{payment_link}}.',
                 'payment_link' => 'https://forms.google.com/test-payment',
@@ -202,6 +204,20 @@ class ConferenceBroadcastTest extends TestCase
                 'success' => true,
             ]);
 
+        $this->assertDatabaseHas('email_logs', [
+            'conference_id' => $conference->id,
+            'recipient' => 'reviewer.custom@example.com',
+            'template_key' => 'broadcast_test',
+        ]);
+
+        // 2. Fallback to admin email if omitted
+        $responseDefault = $this->actingAs($admin)
+            ->postJson(route('conferences.broadcast.test', $conference), [
+                'subject' => 'Test Subject for {{conference_name}}',
+                'body' => 'Hello {{author_name}}, please pay via {{payment_link}}.',
+            ]);
+
+        $responseDefault->assertOk();
         $this->assertDatabaseHas('email_logs', [
             'conference_id' => $conference->id,
             'recipient' => 'admin@example.com',
