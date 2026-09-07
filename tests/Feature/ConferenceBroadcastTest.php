@@ -293,4 +293,49 @@ class ConferenceBroadcastTest extends TestCase
 
         Queue::assertPushed(SendLoggedEmail::class);
     }
+
+    public function test_email_monitoring_displays_broadcast_system_and_test_broadcast_system(): void
+    {
+        [$conference, $admin] = $this->createConferenceWithRoles();
+
+        // 1. Broadcast test email (no submission)
+        EmailLog::create([
+            'conference_id' => $conference->id,
+            'submission_id' => null,
+            'template_key' => 'broadcast_test',
+            'recipient' => 'tester@example.com',
+            'subject' => '[TEST] Payment Reminder',
+            'body' => 'Test body',
+            'status' => 'sent',
+        ]);
+
+        // 2. Broadcast email without submission (e.g. missing paper from EDAS)
+        EmailLog::create([
+            'conference_id' => $conference->id,
+            'submission_id' => null,
+            'template_key' => 'broadcast_email',
+            'recipient' => 'missing.author@example.com',
+            'subject' => 'Missing Paper Submission Alert',
+            'body' => 'Please submit your manuscript.',
+            'status' => 'sent',
+        ]);
+
+        // 3. Regular non-broadcast email without submission
+        EmailLog::create([
+            'conference_id' => $conference->id,
+            'submission_id' => null,
+            'template_key' => 'smtp_diagnostic',
+            'recipient' => 'sys@example.com',
+            'subject' => 'System Diagnostic',
+            'body' => 'SMTP OK',
+            'status' => 'sent',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('emails.index'));
+
+        $response->assertOk();
+        $response->assertSee('Test Broadcast System');
+        $response->assertSee('Broadcast system');
+        $response->assertSee('Test / Direct System'); // Only for smtp_diagnostic
+    }
 }

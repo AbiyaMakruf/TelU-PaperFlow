@@ -67,6 +67,8 @@ class EmailMonitoringController extends Controller
             'revision_deadline_author' => 'Revision Deadline Reminder (Author)',
             'revision_deadline_editor_digest' => 'Revision Deadline Digest (Editor PIC)',
             'staff_notification' => 'Staff Notification',
+            'broadcast_email' => 'Broadcast system',
+            'broadcast_test' => 'Test Broadcast System',
         ];
 
         foreach ($templateCounts as $row) {
@@ -102,6 +104,7 @@ class EmailMonitoringController extends Controller
                     $subQ->whereRaw('LOWER(recipient) LIKE ?', ["%{$term}%"])
                         ->orWhereRaw('LOWER(subject) LIKE ?', ["%{$term}%"])
                         ->orWhereRaw('LOWER(sender_name) LIKE ?', ["%{$term}%"])
+                        ->orWhereRaw('LOWER(template_key) LIKE ?', ["%{$term}%"])
                         ->orWhereHas('submission', function ($sq) use ($term) {
                             $sq->whereRaw('LOWER(paper_code) LIKE ?', ["%{$term}%"])
                                 ->orWhereRaw('LOWER(paper_id) LIKE ?', ["%{$term}%"])

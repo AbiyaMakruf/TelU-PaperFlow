@@ -176,7 +176,20 @@
                             </td>
                             <td>
                                 <p class="font-bold text-navy text-xs">{{ $log->conference?->name ?? '-' }}</p>
-                                <p class="text-[11px] font-medium text-slate-500">{{ $log->submission?->paper_id ?? $log->submission?->paper_code ?? 'Test / Direct System' }}</p>
+                                @if($log->template_key === 'broadcast_test')
+                                    <p class="text-[11px] font-semibold text-amber-700">Test Broadcast System</p>
+                                @elseif($log->template_key === 'broadcast_email')
+                                    <p class="text-[11px] font-medium text-slate-500">
+                                        @if($log->submission?->paper_id || $log->submission?->paper_code)
+                                            <span class="font-bold text-navy">{{ $log->submission?->paper_id ?? $log->submission?->paper_code }}</span>
+                                            <span class="text-slate-400 font-medium">· Broadcast system</span>
+                                        @else
+                                            Broadcast system
+                                        @endif
+                                    </p>
+                                @else
+                                    <p class="text-[11px] font-medium text-slate-500">{{ $log->submission?->paper_id ?? $log->submission?->paper_code ?? 'Test / Direct System' }}</p>
+                                @endif
                             </td>
                             <td class="text-xs font-semibold text-slate-700">
                                 {{ $log->sender?->name ?? 'System Queue' }}
