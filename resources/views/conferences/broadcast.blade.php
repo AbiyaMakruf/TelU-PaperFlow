@@ -305,30 +305,19 @@
 
                     <!-- Accordion Body -->
                     <div x-show="activeStep === 2" x-collapse x-cloak class="p-5 sm:p-6 space-y-5">
-                        <!-- Quick Template Preset Buttons (No emojis, clean text) -->
-                        <div class="space-y-2">
+                        <!-- Quick Template Presets Dropdown -->
+                        <div class="space-y-1.5">
                             <label class="block text-xs font-bold text-slate-700">Quick Template Presets</label>
-                            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                <button type="button" @click="applyTemplate('unregistered')" class="btn border border-slate-200 bg-slate-50 hover:bg-orange/10 hover:border-orange text-navy text-xs font-bold py-2 px-3 text-left transition rounded-xl flex items-center justify-between">
-                                    <span class="truncate">1. Unpaid / Registration</span>
-                                    <span class="text-[10px] text-muted">&rarr;</span>
-                                </button>
-                                <button type="button" @click="applyTemplate('missing_manuscript')" class="btn border border-slate-200 bg-slate-50 hover:bg-orange/10 hover:border-orange text-navy text-xs font-bold py-2 px-3 text-left transition rounded-xl flex items-center justify-between">
-                                    <span class="truncate">2. Manuscript Reminder</span>
-                                    <span class="text-[10px] text-muted">&rarr;</span>
-                                </button>
-                                <button type="button" @click="applyTemplate('paid_no_manuscript')" class="btn border border-slate-200 bg-slate-50 hover:bg-orange/10 hover:border-orange text-navy text-xs font-bold py-2 px-3 text-left transition rounded-xl flex items-center justify-between">
-                                    <span class="truncate">3. Paid, No Manuscript</span>
-                                    <span class="text-[10px] text-muted">&rarr;</span>
-                                </button>
-                                <button type="button" @click="applyTemplate('uploaded_no_payment')" class="btn border border-slate-200 bg-slate-50 hover:bg-orange/10 hover:border-orange text-navy text-xs font-bold py-2 px-3 text-left transition rounded-xl flex items-center justify-between">
-                                    <span class="truncate">4. Uploaded, No Payment</span>
-                                    <span class="text-[10px] text-muted">&rarr;</span>
-                                </button>
-                                <button type="button" @click="applyTemplate('announcement')" class="btn border border-slate-200 bg-slate-50 hover:bg-orange/10 hover:border-orange text-navy text-xs font-bold py-2 px-3 text-left transition rounded-xl flex items-center justify-between">
-                                    <span class="truncate">5. Custom Announcement</span>
-                                    <span class="text-[10px] text-muted">&rarr;</span>
-                                </button>
+                            <div class="relative">
+                                <select x-model="selectedTemplate" 
+                                        @change="applyTemplate(selectedTemplate)" 
+                                        class="form-select text-xs w-full bg-slate-50 hover:bg-white text-navy font-bold rounded-xl border-2 border-slate-300 focus:border-navy focus:bg-white focus:ring-4 focus:ring-navy/10 shadow-xs py-2.5 px-3.5 transition cursor-pointer">
+                                    <option value="unregistered">1. Unpaid / Registration</option>
+                                    <option value="missing_manuscript">2. Manuscript Reminder</option>
+                                    <option value="paid_no_manuscript">3. Paid, No Manuscript</option>
+                                    <option value="uploaded_no_payment">4. Uploaded, No Payment</option>
+                                    <option value="announcement">5. Custom Announcement</option>
+                                </select>
                             </div>
                         </div>
 
@@ -555,6 +544,7 @@
                 isDragging: false,
                 uploadedFileName: '',
                 uploadedFile: null,
+                selectedTemplate: 'unregistered',
                 paymentLink: '',
                 testEmail: config.defaultTestEmail || '',
                 subject: '',
@@ -626,6 +616,7 @@
                 },
 
                 applyTemplate(key) {
+                    this.selectedTemplate = key;
                     if (this.templates[key]) {
                         this.subject = this.templates[key].subject;
                         this.body = this.templates[key].body;
