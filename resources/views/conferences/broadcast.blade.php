@@ -678,13 +678,22 @@
                     this.totalRecipientsCount = total;
                 },
 
+                notify(message, type = 'success') {
+                    window.dispatchEvent(new CustomEvent('paperflow-toast', {
+                        detail: {
+                            message: message,
+                            type: type
+                        }
+                    }));
+                },
+
                 sendTestEmail() {
                     if (!this.subject || !this.body) {
-                        alert('Please provide a subject and message body first.');
+                        this.notify('Please provide a subject and message body first.', 'error');
                         return;
                     }
                     if (!this.testEmail) {
-                        alert('Please provide a destination email address.');
+                        this.notify('Please provide a destination email address.', 'error');
                         return;
                     }
                     this.isSendingTest = true;
@@ -708,17 +717,17 @@
                     .then(res => res.json())
                     .then(data => {
                         this.isSendingTest = false;
-                        alert(data.message || 'Test email queued successfully.');
+                        this.notify(data.message || 'Test email queued successfully.', 'success');
                     })
                     .catch(() => {
                         this.isSendingTest = false;
-                        alert('Failed to send test email. Please check server logs.');
+                        this.notify('Failed to send test email. Please check server logs.', 'error');
                     });
                 },
 
                 openConfirmModal() {
                     if (this.totalRecipientsCount === 0) {
-                        alert('No recipients are currently selected.');
+                        this.notify('No recipients are currently selected.', 'error');
                         return;
                     }
                     this.showModal = true;
