@@ -32,6 +32,7 @@ class ConferenceDataExportController extends Controller
                     'corresponding_author_name' => 'Corresponding Author', 'corresponding_author_email' => 'Corresponding Author Email',
                     'corresponding_author_phone' => 'Corresponding Author WhatsApp', 'authors' => 'All Paperflow Authors',
                     'edas_authors' => 'Authors from EDAS',
+                    'edas_author_emails' => 'Author Emails from EDAS',
                 ],
             ],
             'workflow' => [
@@ -195,6 +196,7 @@ class ConferenceDataExportController extends Controller
             'corresponding_author_phone' => (string) $submission->corresponding_author_phone,
             'authors' => $submission->authors->map(fn ($author) => $author->name)->filter()->implode('; '),
             'edas_authors' => collect(preg_split('/[;\r\n]+/', (string) ($edasData['edas_authors'] ?? '')) ?: [])->map(fn ($name) => trim($name))->filter()->implode('; '),
+            'edas_author_emails' => collect($edasData['edas_author_emails'] ?? [])->filter()->implode('; '),
             'status' => $submission->status->label(),
             'editor' => (string) ($submission->editor?->name ?? ''),
             'reviewer' => (string) ($submission->reviewer?->name ?? ''),

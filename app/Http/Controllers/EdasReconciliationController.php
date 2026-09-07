@@ -85,6 +85,29 @@ class EdasReconciliationController extends Controller
             $edasTitle = trim((string) ($raw['edas_title'] ?? ''));
             $edasAuthors = $this->parseAuthors($raw['edas_authors'] ?? '');
 
+            // Process author emails
+            $rawEmails = $raw['edas_author_emails'] ?? [];
+            $parsedEmails = [];
+            if (is_array($rawEmails)) {
+                foreach ($rawEmails as $k => $em) {
+                    $emClean = trim((string) $em);
+                    if (! empty($emClean)) {
+                        $parsedEmails[$k] = $emClean;
+                    }
+                }
+            }
+
+            $authorDetails = [];
+            foreach ($edasAuthors as $aIdx => $authorName) {
+                $email = $parsedEmails[$aIdx + 1] ?? $parsedEmails[$aIdx] ?? null;
+                $authorDetails[] = [
+                    'name' => $authorName,
+                    'email' => $email,
+                ];
+            }
+
+            $allActiveEmails = array_values($parsedEmails);
+
             if (empty($edasPaperId)) {
                 continue;
             }
@@ -131,6 +154,8 @@ class EdasReconciliationController extends Controller
                 'edas_paper_id' => $edasPaperId ?: '-',
                 'edas_title' => $edasTitle ?: '-',
                 'edas_authors' => $edasAuthors,
+                'edas_author_emails' => $allActiveEmails,
+                'edas_author_details' => $authorDetails,
                 'status_state' => $statusState,
                 'match_reason' => $matchReason,
                 'warning_message' => $warningMessage,
@@ -236,24 +261,45 @@ class EdasReconciliationController extends Controller
             return back()->withErrors(['csv_file' => 'The uploaded CSV file is empty or has an invalid format.']);
         }
 
-        $header = array_map(fn ($col) => strtolower(trim($col)), $rows[0]);
+        $header = array_map(function ($col) {
+            $cleaned = preg_replace('/^[\xEF\xBB\xBF\xFEFF\x{FEFF}]+/u', '', trim((string) $col));
+
+            return strtolower(trim((string) $cleaned));
+        }, $rows[0]);
         $hasHeader = false;
 
         $idColIndex = -1;
         $titleColIndex = -1;
         $authorsColIndex = -1;
+        $emailColIndices = [];
 
         foreach ($header as $idx => $colName) {
             if (in_array($colName, ['#', 'paper_id', 'paper id', 'paperid', 'id', 'paper', 'edas_id', 'edas id', 'number', 'no', 'no.', 'paper #'], true)) {
                 $idColIndex = $idx;
                 $hasHeader = true;
+                continue;
             }
             if (in_array($colName, ['title', 'paper_title', 'paper title', 'manuscript title', 'name'], true)) {
                 $titleColIndex = $idx;
                 $hasHeader = true;
+                continue;
             }
             if (in_array($colName, ['authors', 'author', 'paper authors', 'paper_author'], true)) {
                 $authorsColIndex = $idx;
+                $hasHeader = true;
+                continue;
+            }
+
+            // Dynamically match any "Author N email", "Author email N", "Author_N_Email", etc.
+            if (preg_match('/author\s*(\d+)\s*email/i', $colName, $m) ||
+                preg_match('/author\s*email\s*(\d+)/i', $colName, $m) ||
+                preg_match('/email\s*author\s*(\d+)/i', $colName, $m) ||
+                preg_match('/email\s*(\d+)/i', $colName, $m)) {
+                $num = (int) $m[1];
+                $emailColIndices[$num] = $idx;
+                $hasHeader = true;
+            } elseif (preg_match('/author.*email/i', $colName) || preg_match('/email/i', $colName)) {
+                $emailColIndices[count($emailColIndices) + 1] = $idx;
                 $hasHeader = true;
             }
         }
@@ -270,11 +316,23 @@ class EdasReconciliationController extends Controller
             $authorsColIndex = 2;
         }
 
+        ksort($emailColIndices);
+
         $rawItems = [];
         foreach ($dataRows as $index => $row) {
             $edasPaperId = isset($row[$idColIndex]) ? trim((string) $row[$idColIndex]) : '';
             $edasTitle = ($titleColIndex !== -1 && isset($row[$titleColIndex])) ? trim((string) $row[$titleColIndex]) : '';
             $edasAuthors = ($authorsColIndex !== -1 && isset($row[$authorsColIndex])) ? trim((string) $row[$authorsColIndex]) : '';
+
+            $rowEmails = [];
+            foreach ($emailColIndices as $num => $colIdx) {
+                if (isset($row[$colIdx])) {
+                    $emailVal = trim((string) $row[$colIdx]);
+                    if (! empty($emailVal)) {
+                        $rowEmails[$num] = $emailVal;
+                    }
+                }
+            }
 
             if (empty($edasPaperId)) {
                 continue;
@@ -285,6 +343,7 @@ class EdasReconciliationController extends Controller
                 'edas_paper_id' => $edasPaperId,
                 'edas_title' => $edasTitle,
                 'edas_authors' => $edasAuthors,
+                'edas_author_emails' => $rowEmails,
             ];
         }
 
@@ -363,7 +422,7 @@ class EdasReconciliationController extends Controller
 
             return response()->streamDownload(function () use ($items) {
                 $output = fopen('php://output', 'w');
-                fputcsv($output, ['No', 'EDAS Paper ID', 'EDAS Paper Title', 'EDAS Authors', 'Paperflow Status', 'Paperflow Paper Code', 'Paperflow Title', 'Author Name', 'Author Email', 'Submission Status', 'Warning Note']);
+                fputcsv($output, ['No', 'EDAS Paper ID', 'EDAS Paper Title', 'EDAS Authors', 'EDAS Author Emails', 'Paperflow Status', 'Paperflow Paper Code', 'Paperflow Title', 'Author Name', 'Author Email', 'Submission Status', 'Warning Note']);
                 foreach ($items as $item) {
                     $sub = $item['paperflow_submission'];
                     fputcsv($output, [
@@ -371,6 +430,7 @@ class EdasReconciliationController extends Controller
                         $item['edas_paper_id'],
                         $item['edas_title'],
                         implode('; ', $item['edas_authors'] ?? []),
+                        implode('; ', $item['edas_author_emails'] ?? []),
                         $item['status_state'] === 'submitted' ? 'Submitted' : 'Missing',
                         $sub['paper_code'] ?? '-',
                         $sub['title'] ?? '-',
@@ -402,12 +462,13 @@ class EdasReconciliationController extends Controller
 
         return response()->streamDownload(function () use ($missingItems) {
             $output = fopen('php://output', 'w');
-            fputcsv($output, ['EDAS Paper ID', 'Title', 'Authors', 'Status in Paperflow']);
+            fputcsv($output, ['EDAS Paper ID', 'Title', 'Authors', 'Author Emails', 'Status in Paperflow']);
             foreach ($missingItems as $item) {
                 fputcsv($output, [
                     $item['edas_paper_id'],
                     $item['edas_title'],
                     implode('; ', $item['edas_authors'] ?? []),
+                    implode('; ', $item['edas_author_emails'] ?? []),
                     'Not Submitted (Missing)',
                 ]);
             }

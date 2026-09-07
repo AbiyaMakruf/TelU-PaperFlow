@@ -218,8 +218,17 @@ class SubmissionController extends Controller
             ->map(fn (string $author) => trim(preg_replace('/\s+/', ' ', $author) ?? ''))
             ->filter()
             ->values();
+        $rawEmails = is_array($edasRow['edas_author_emails'] ?? null) ? $edasRow['edas_author_emails'] : [];
+        $edasAuthorDetails = $edasAuthors->map(function (string $name, int $index) use ($rawEmails) {
+            $email = $rawEmails[$index + 1] ?? $rawEmails[$index] ?? null;
 
-        return view('submissions.show', compact('submission', 'editors', 'reviewers', 'emailLogs', 'defaultCc', 'whatsappUrl', 'edasAuthors'));
+            return [
+                'name' => $name,
+                'email' => $email,
+            ];
+        });
+
+        return view('submissions.show', compact('submission', 'editors', 'reviewers', 'emailLogs', 'defaultCc', 'whatsappUrl', 'edasAuthors', 'edasAuthorDetails'));
     }
 
     private function normalizeExternalPaperId(?string $code): string

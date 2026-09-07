@@ -82,8 +82,7 @@ Do not update `submissions.status` directly when a transition should be validate
 - **Staff Author-Portal Preview Action ("Buka Portal Author")**: Direct header action button on paper detail page allowing staff to inspect the exact portal view seen by authors (`/submission/access/{token}`).
 - **Staff Editable Submission Details & Original Identifier Preservation**: Superadmin and Conference Admin can edit submission metadata (Paper ID, Title, Primary Author Name/Email/Phone, Manuscript Format, Initial & Final Page Counts) on the paper detail page (`/papers/{id}`). Original paper code, title, and email (`original_paper_code`, `original_title`, `original_author_email`) are preserved in database migrations to ensure subsequent CSV imports or Webhook re-submissions match existing papers seamlessly even after manual Paper ID modification.
 - **Paper Detail Accordion Sections**: Converted Catatan Internal, Feedback & Komunikasi Author, and Versioning File cards into collapsible `<details>` accordions with `<summary>` headers to keep paper detail pages clean and compact.
-- **Initial & Final Page Count Tracking**: Captures initial page count during PIC assignment and final page count during editorial approval, displaying side-by-side differential metrics (`Awal: 8 hal → Final: 6 hal (-2 hal)`).
-- **Conference-Scoped EDAS Reconciliation & PDF Report Export**: Scoped to conference sub-navigation (`/conferences/{id}/edas-reconciliation`) with database-persisted reconciliation data, live refresh, tolerant ID matching, and export dropdown supporting both CSV and formatted PDF reports.
+- **Conference-Scoped EDAS Reconciliation & PDF Report Export**: Scoped to conference sub-navigation (`/conferences/{id}/edas-reconciliation`) with database-persisted reconciliation data, live refresh, tolerant ID matching, dynamic author email support (handling arbitrary author counts: 6, 7, 8, 9+ authors with `Author N email` columns), search-by-email, and export dropdown supporting both CSV and formatted PDF reports.
 - **Paper List Quick Workflow Presets & Instant Live Search**:
   - Emoji-free preset tabs (`All Papers`, `My Assigned Tasks`, `Waiting Author Revision`, `Ready for EDAS`) calculated in a single aggregated SQL count query to prevent $N+1$ query count regressions.
   - Instant debounced live search swapping DOM table/pagination containers via `DOMParser()` without full page reload, built with a Flex Input Group structure preventing icon and text overlap.
@@ -336,8 +335,8 @@ php artisan migrate --force
 
 Current baseline:
 
-- **135 tests**
-- **728 assertions**
+- **142 tests**
+- **787 assertions**
 - Production Vite build passes (`npm run build`)
 - Blade view caching compiled (`php artisan view:cache`)
 - Eloquent eager loading optimized (`with(['conference', 'editor', 'reviewer', 'authors', 'files'])`)

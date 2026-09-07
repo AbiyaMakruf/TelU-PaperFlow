@@ -1,7 +1,7 @@
 # Paperflow - Executive LLM Handoff & Knowledge Base
 
 > **Handoff Target**: Any new LLM / AI Coding Agent (e.g. Claude 3.7 Sonnet, GPT-4o, Gemini 1.5/2.0 Pro)  
-> **Last Verified Baseline**: 127 Feature Tests (646 Assertions) Passing 100% | Laravel 12 | PHP 8.2 | Tailwind CSS 4 | Vite | PostgreSQL 17 / Supabase  
+> **Last Verified Baseline**: 142 Feature Tests (787 Assertions) Passing 100% | Laravel 12 | PHP 8.2 | Tailwind CSS 4 | Vite | PostgreSQL 17 / Supabase  
 > **Active Git Branch**: `agent/build-paperflow` (synced and merged to `main`)  
 > **Primary Repository Documentation**: [`AGENTS.md`](./AGENTS.md)
 

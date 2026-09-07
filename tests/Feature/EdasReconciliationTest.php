@@ -284,4 +284,87 @@ CSV);
         $csvMissingRes->assertOk();
         $csvMissingRes->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }
+
+    public function test_edas_csv_with_dynamic_author_emails_is_accepted_and_reconciled(): void
+    {
+        [$conference, $admin] = $this->createConferenceWithRoles();
+
+        $submission = Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => '1571255297',
+            'paper_code' => 'ICOICT-5297',
+            'title' => 'Question Answering System on Top of Enriched Knowledge Graph for Indonesian Geographic Information',
+            'corresponding_author_name' => 'Satria Aji',
+            'corresponding_author_email' => '2023.satriaaji@gmail.com',
+            'submitted_at' => now(),
+        ]);
+
+        // Sample with variable number of authors (up to 8 authors dynamically)
+        $csvContent = <<<'CSV'
+"#","Title","Authors","Author 1 email","Author 2 email","Author 3 email","Author 4 email","Author 5 email","Author 6 email","Author 7 email","Author 8 email"
+"1571255297","Question Answering System on Top of Enriched Knowledge Graph for Indonesian Geographic Information","Satria Aji Permana Siwi; Kemas Wiharja; Raihan Atsal Hafizh","2023.satriaaji@gmail.com","bagindokemas@telkomuniversity.ac.id","rhnatsal@student.telkomuniversity.ac.id","","","","",""
+"1571259462","Performance Evaluation of K-Means, DBSCAN, and K-Medoids for E-Commerce Customer Segmentation Using RFM Analysis","Amir Acalapati Henry; Henderi; Carissa Azarine Henry; Sofa Sofiana","amir.acalapati@raharja.info","henderi@raharja.info","carissaazarine36@students.unnes.ac.id","dosen00407@unpam.ac.id","","","",""
+"1571283544","Design of a Dialogflow-Based Educational Chatbot to Improve Retirement Planning Awareness Among Millennials","Fatih Mutrovin; Bayu Rima Aditya; Shadia Suhaimi; I Nyoman Darma Kotama; Rd. Rohmat Saedudin; Mufti Danial Azka","fatihmutrovin@student.telkomuniversity.ac.id","bayu@tass.telkomuniversity.ac.id","shadia.suhaimi@mmu.edu.my","kotama@student.unud.ac.id","rdrohmat@telkomuniversity.ac.id","muftidanialazka@student.telkomuniversity.ac.id","extra7@example.com","extra8@example.com"
+CSV;
+
+        // Prepend UTF-8 BOM to verify robustness against BOM-encoded exports from Excel/EDAS
+        $csvFile = UploadedFile::fake()->createWithContent('edas_authors_with_emails.csv', "\xEF\xBB\xBF".$csvContent);
+
+        $response = $this->actingAs($admin)
+            ->post(route('conferences.edas-reconciliation.upload', $conference), ['csv_file' => $csvFile]);
+
+        $response->assertRedirect(route('conferences.edas-reconciliation.index', $conference));
+        $response->assertSessionHas('success');
+
+        $conference->refresh();
+        $stored = $conference->settings['edas_reconciliation']['raw_items'];
+        $this->assertCount(3, $stored);
+
+        // Verify stored emails for row 1
+        $this->assertSame([
+            1 => '2023.satriaaji@gmail.com',
+            2 => 'bagindokemas@telkomuniversity.ac.id',
+            3 => 'rhnatsal@student.telkomuniversity.ac.id',
+        ], $stored[0]['edas_author_emails']);
+
+        // Verify stored emails for row 3 (has 8 authors)
+        $this->assertCount(8, $stored[2]['edas_author_emails']);
+        $this->assertSame('extra8@example.com', $stored[2]['edas_author_emails'][8]);
+
+        // Check index page renders author emails
+        $indexRes = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.index', $conference));
+        $indexRes->assertOk();
+        $indexRes->assertSee('2023.satriaaji@gmail.com');
+        $indexRes->assertSee('bagindokemas@telkomuniversity.ac.id');
+        $indexRes->assertSee('extra8@example.com');
+        $indexRes->assertSee('mailto:2023.satriaaji@gmail.com', false);
+
+        // Check paper details page displays author emails
+        $showRes = $this->actingAs($admin)->get(route('submissions.show', $submission));
+        $showRes->assertOk();
+        $showRes->assertSee('Authors from EDAS');
+        $showRes->assertSee('Satria Aji Permana Siwi');
+        $showRes->assertSee('2023.satriaaji@gmail.com');
+        $showRes->assertSee('mailto:2023.satriaaji@gmail.com', false);
+
+        // Check export all CSV
+        $exportAll = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.export', [
+            'conference' => $conference,
+            'format' => 'csv_all',
+        ]));
+        $exportAll->assertOk();
+        $content = $exportAll->streamedContent();
+        $this->assertStringContainsString('EDAS Author Emails', $content);
+        $this->assertStringContainsString('2023.satriaaji@gmail.com; bagindokemas@telkomuniversity.ac.id; rhnatsal@student.telkomuniversity.ac.id', $content);
+
+        // Check export missing CSV
+        $exportMissing = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.export', [
+            'conference' => $conference,
+            'format' => 'csv_missing',
+        ]));
+        $exportMissing->assertOk();
+        $missingContent = $exportMissing->streamedContent();
+        $this->assertStringContainsString('Author Emails', $missingContent);
+        $this->assertStringContainsString('amir.acalapati@raharja.info', $missingContent);
+    }
 }

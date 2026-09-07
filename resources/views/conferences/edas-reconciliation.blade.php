@@ -77,7 +77,11 @@
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
-                            <span><strong>Authors (Optional):</strong> Header <code>Authors</code>. Separate multiple names with a semicolon (<code>;</code>).</span>
+                            <span><strong>Authors (Optional):</strong> Header <code>Authors</code> (semicolon-separated).</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="size-1.5 rounded-full bg-orange mt-1.5 shrink-0"></span>
+                            <span><strong>Author Emails (Optional &amp; Dynamic):</strong> Headers <code>Author 1 email</code>, <code>Author 2 email</code>, ..., <code>Author N email</code> (supports 6, 7, 8, 9, or any number of authors).</span>
                         </li>
                     </ul>
                     <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-[11px] text-emerald-900 leading-normal space-y-1">
@@ -212,7 +216,7 @@
                             </thead>
                             @foreach($reconciledData['items'] as $item)
                                     @php
-                                        $rowSearch = strtolower($item['edas_paper_id'] . ' ' . $item['edas_title'] . ' ' . implode(' ', $item['edas_authors'] ?? []) . ' ' . ($item['paperflow_submission']['title'] ?? '') . ' ' . ($item['warning_message'] ?? ''));
+                                        $rowSearch = strtolower($item['edas_paper_id'] . ' ' . $item['edas_title'] . ' ' . implode(' ', $item['edas_authors'] ?? []) . ' ' . implode(' ', $item['edas_author_emails'] ?? []) . ' ' . ($item['paperflow_submission']['title'] ?? '') . ' ' . ($item['warning_message'] ?? ''));
                                         $hasWarning = ! empty($item['warning_message']);
                                     @endphp
                             <tbody x-data="{ open: false }" x-show="(activeTab === 'all' || (activeTab === 'missing' && '{{ $item['status_state'] }}' === 'missing') || (activeTab === 'submitted' && '{{ $item['status_state'] }}' === 'submitted') || (activeTab === 'warnings' && {{ $hasWarning ? 'true' : 'false' }})) && (!searchQuery || {{ Js::from($rowSearch) }}.includes(searchQuery.toLowerCase()))">
@@ -250,7 +254,7 @@
                                                     </p>
                                                     <div class="flex items-center gap-2 text-[11px]">
                                                         <span class="badge badge-{{ $item['paperflow_submission']['status_color'] }} text-[10px]">
-                                                            {{ $item['paperflow_submission']['status_label'] }}
+                                                             {{ $item['paperflow_submission']['status_label'] }}
                                                         </span>
                                                         <span class="text-slate-600 truncate">{{ $item['paperflow_submission']['author_name'] }}</span>
                                                     </div>
@@ -271,8 +275,31 @@
                                     </tr>
                                     <tr x-show="open" x-cloak>
                                         <td colspan="6" class="bg-slate-50 px-6 py-4">
-                                            <p class="text-[10px] font-black uppercase tracking-wider text-muted">EDAS Authors ({{ count($item['edas_authors'] ?? []) }})</p>
-                                            @if(! empty($item['edas_authors']))
+                                            <div class="flex items-center justify-between gap-4">
+                                                <p class="text-[10px] font-black uppercase tracking-wider text-muted">EDAS Authors ({{ count($item['edas_authors'] ?? []) }})</p>
+                                                @if(! empty($item['edas_author_emails']))
+                                                    <span class="text-[11px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
+                                                        📧 {{ count($item['edas_author_emails']) }} Email(s)
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            @if(! empty($item['edas_author_details']))
+                                                <ol class="mt-2 grid gap-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-3">
+                                                    @foreach($item['edas_author_details'] as $author)
+                                                        <li class="rounded-lg border border-slate-200 bg-white p-2.5 space-y-1 shadow-2xs">
+                                                            <div class="font-bold text-slate-800">{{ $loop->iteration }}. {{ $author['name'] ?: 'Unknown Author' }}</div>
+                                                            @if(! empty($author['email']))
+                                                                <div class="flex items-center gap-1 text-[11px] text-sky-700 font-medium truncate" title="{{ $author['email'] }}">
+                                                                    <svg class="w-3.5 h-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                                                    <a href="mailto:{{ $author['email'] }}" class="hover:underline truncate">{{ $author['email'] }}</a>
+                                                                </div>
+                                                            @else
+                                                                <div class="text-[11px] text-slate-400 italic">No email provided</div>
+                                                            @endif
+                                                        </li>
+                                                    @endforeach
+                                                </ol>
+                                            @elseif(! empty($item['edas_authors']))
                                                 <ol class="mt-2 grid gap-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-3">
                                                     @foreach($item['edas_authors'] as $author)
                                                         <li class="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold">{{ $loop->iteration }}. {{ $author }}</li>

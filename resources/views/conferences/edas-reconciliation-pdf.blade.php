@@ -76,9 +76,12 @@
                         @if(! empty($item['warning_message']))
                             <div class="warning-text">⚠️ {{ $item['warning_message'] }}</div>
                         @endif
-                    </td>
-                    <td>{{ implode('; ', $item['edas_authors'] ?? []) ?: '-' }}</td>
                     <td>
+                        <div style="font-weight: 600;">{{ implode('; ', $item['edas_authors'] ?? []) ?: '-' }}</div>
+                        @if(! empty($item['edas_author_emails']))
+                            <div style="font-size: 10px; color: #0284c7; margin-top: 2px;">{{ implode('; ', $item['edas_author_emails']) }}</div>
+                        @endif
+                    </td>
                         @if($item['status_state'] === 'submitted')
                             <span class="badge badge-success">✓ Submitted</span>
                         @else
