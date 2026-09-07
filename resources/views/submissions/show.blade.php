@@ -217,9 +217,8 @@
                                     <li class="rounded-lg border border-sky-100 bg-white px-3 py-2 space-y-0.5">
                                         <div class="font-semibold text-slate-800">{{ $loop->iteration }}. {{ $authorName }}</div>
                                         @if($authorEmail)
-                                            <div class="flex items-center gap-1 text-[11px] text-sky-700 truncate" title="{{ $authorEmail }}">
-                                                <svg class="w-3 h-3 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                                <a href="mailto:{{ $authorEmail }}" class="hover:underline truncate">{{ $authorEmail }}</a>
+                                            <div class="text-[11px] text-sky-700 truncate" title="{{ $authorEmail }}">
+                                                <a href="mailto:{{ $authorEmail }}" class="hover:underline">{{ $authorEmail }}</a>
                                             </div>
                                         @endif
                                     </li>

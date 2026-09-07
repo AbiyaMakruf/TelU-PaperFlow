@@ -289,9 +289,8 @@
                                                         <li class="rounded-lg border border-slate-200 bg-white p-2.5 space-y-1 shadow-2xs">
                                                             <div class="font-bold text-slate-800">{{ $loop->iteration }}. {{ $author['name'] ?: 'Unknown Author' }}</div>
                                                             @if(! empty($author['email']))
-                                                                <div class="flex items-center gap-1 text-[11px] text-sky-700 font-medium truncate" title="{{ $author['email'] }}">
-                                                                    <svg class="w-3.5 h-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                                                    <a href="mailto:{{ $author['email'] }}" class="hover:underline truncate">{{ $author['email'] }}</a>
+                                                                <div class="text-[11px] text-sky-700 font-medium truncate" title="{{ $author['email'] }}">
+                                                                    <a href="mailto:{{ $author['email'] }}" class="hover:underline">{{ $author['email'] }}</a>
                                                                 </div>
                                                             @else
                                                                 <div class="text-[11px] text-slate-400 italic">No email provided</div>
