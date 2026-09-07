@@ -93,7 +93,6 @@ class ConferenceBroadcastTest extends TestCase
             ->get(route('conferences.broadcast.index', $conference));
 
         $response->assertOk()
-            ->assertSee('Conference Email Broadcast Center')
             ->assertSee('Select Target Audience')
             ->assertSee('1. Unpaid / Registration')
             ->assertSee('2. Manuscript Reminder');

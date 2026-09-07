@@ -9,33 +9,6 @@
     })" x-init="init()">
         <x-conference-header :conference="$activeConference" active="broadcast" />
 
-        <!-- Header Card -->
-        <div class="card p-6 bg-white border border-slate-200 text-navy shadow-sm">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div class="space-y-1.5 min-w-0">
-                    <div class="flex items-center gap-2">
-                        <span class="badge bg-orange text-white text-xs font-black uppercase tracking-wider px-2.5 py-1">Mass Outreach</span>
-                        <span class="badge bg-navy/10 text-navy text-xs font-bold px-2.5 py-1">📌 {{ $activeConference->name }}</span>
-                    </div>
-                    <h1 class="text-xl sm:text-2xl font-black tracking-tight text-navy">Conference Email Broadcast Center</h1>
-                    <p class="text-xs text-slate-600 leading-relaxed max-w-3xl">
-                        Send targeted, personalized notification and reminder emails to paper authors. Supports dual inputs (copy-pasting Paper IDs &amp; CSV upload), flexible recipient scopes, Google Form payment links, and queued delivery.
-                    </p>
-                </div>
-
-                <div class="flex items-center gap-3 shrink-0">
-                    <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl text-xs">
-                        <span class="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span class="text-slate-600 font-medium">Database Pool:</span>
-                        <span class="font-extrabold text-navy">{{ $stats['total_papers'] }} papers</span>
-                        <span class="text-slate-300">|</span>
-                        <span class="text-emerald-700 font-bold">{{ $stats['submitted_papers'] }} submitted</span>
-                        <span class="text-slate-300">|</span>
-                        <span class="text-rose-700 font-bold">{{ $stats['missing_papers'] }} missing</span>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Main Form -->
         <form id="broadcast-form" method="POST" action="{{ route('conferences.broadcast.send', $activeConference) }}" @submit="confirmSend($event)">
