@@ -71,13 +71,24 @@ class ConferenceBroadcastController extends Controller
             return [];
         }
 
-        $handle = fopen($file->getRealPath(), 'r');
+        $filePath = $file->getRealPath();
+        $handle = fopen($filePath, 'r');
         if (! $handle) {
             return [];
         }
 
+        $firstLine = fgets($handle);
+        rewind($handle);
+
+        $delimiter = ',';
+        if (str_contains((string) $firstLine, ';')) {
+            $delimiter = ';';
+        } elseif (str_contains((string) $firstLine, "\t")) {
+            $delimiter = "\t";
+        }
+
         $paperIds = [];
-        $headerRow = fgetcsv($handle, 2000, ',');
+        $headerRow = fgetcsv($handle, 4096, $delimiter);
 
         if (! $headerRow) {
             fclose($handle);
@@ -85,11 +96,11 @@ class ConferenceBroadcastController extends Controller
             return [];
         }
 
-        // Try to identify Paper ID column index
+        // Try to identify Paper ID column index (specifically prioritizing 'paperid')
         $targetColIndex = null;
         foreach ($headerRow as $idx => $colName) {
             $colClean = strtolower(trim(preg_replace('/[^a-zA-Z0-9#]/', '', (string) $colName)));
-            if (in_array($colClean, ['#', 'paperid', 'paper_id', 'id', 'papercode', 'paper_code', 'paper'], true)) {
+            if (in_array($colClean, ['paperid', 'paper_id', '#', 'id', 'papercode', 'paper_code', 'paper'], true)) {
                 $targetColIndex = $idx;
                 break;
             }
@@ -104,7 +115,7 @@ class ConferenceBroadcastController extends Controller
             $targetColIndex = 0;
         }
 
-        while (($row = fgetcsv($handle, 2000, ',')) !== false) {
+        while (($row = fgetcsv($handle, 4096, $delimiter)) !== false) {
             if (isset($row[$targetColIndex])) {
                 $val = trim((string) $row[$targetColIndex]);
                 if (! empty($val)) {
@@ -555,6 +566,7 @@ class ConferenceBroadcastController extends Controller
             'segment' => ['nullable', 'string'],
             'manuscript_filter' => ['nullable', 'string'],
             'custom_paper_ids' => ['nullable', 'string'],
+            'csv_file' => ['nullable', 'file', 'max:10240'],
         ]);
 
         $filteredCandidates = $this->filterAudience($activeConference, $request);

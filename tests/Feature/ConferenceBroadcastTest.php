@@ -182,6 +182,21 @@ class ConferenceBroadcastTest extends TestCase
         $responseCsv->assertOk();
         $this->assertEquals(1, $responseCsv->json('paper_count'));
         $this->assertEquals('1570999002', $responseCsv->json('papers.0.paper_id'));
+
+        // Test CSV upload specifically with 'paperid' header name
+        $csvContentPaperId = "paperid,title\n1570999002,Quantum Cryptography Protocol\n";
+        $filePaperId = UploadedFile::fake()->createWithContent('paperid_list.csv', $csvContentPaperId);
+
+        $responseCsvPaperId = $this->actingAs($admin)
+            ->post(route('conferences.broadcast.audience', $conference), [
+                'segment' => 'custom',
+                'recipient_scope' => 'corresponding_only',
+                'csv_file' => $filePaperId,
+            ], ['X-Requested-With' => 'XMLHttpRequest']);
+
+        $responseCsvPaperId->assertOk();
+        $this->assertEquals(1, $responseCsvPaperId->json('paper_count'));
+        $this->assertEquals('1570999002', $responseCsvPaperId->json('papers.0.paper_id'));
     }
 
     public function test_send_test_email_dispatches_to_custom_destination_or_admin(): void

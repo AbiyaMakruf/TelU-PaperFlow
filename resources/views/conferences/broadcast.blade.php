@@ -10,11 +10,11 @@
         <x-conference-header :conference="$activeConference" active="broadcast" />
 
         <!-- Main Form -->
-        <form id="broadcast-form" method="POST" action="{{ route('conferences.broadcast.send', $activeConference) }}" @submit="confirmSend($event)">
+        <form id="broadcast-form" method="POST" action="{{ route('conferences.broadcast.send', $activeConference) }}" enctype="multipart/form-data" @submit="confirmSend($event)">
             @csrf
             <input type="hidden" name="segment" :value="segment">
             <input type="hidden" name="manuscript_filter" :value="manuscriptFilter">
-            <input type="hidden" name="custom_paper_ids" :value="customPaperIds">
+            <input type="hidden" name="custom_paper_ids" :value="segment === 'custom' && customMode === 'paste' ? customPaperIds : ''">
             <input type="hidden" name="recipient_scope" :value="recipientScope">
 
             <div class="space-y-4 w-full">
@@ -53,41 +53,110 @@
                                 <select x-model="segment" 
                                         @change="fetchAudience()" 
                                         class="form-select text-xs w-full bg-slate-50 hover:bg-white text-navy font-bold rounded-xl border-2 border-slate-300 focus:border-navy focus:bg-white focus:ring-4 focus:ring-navy/10 shadow-xs py-2.5 px-3.5 transition cursor-pointer">
-                                    <option value="all">All Papers (Entire Conference Pool)</option>
-                                    <option value="missing_edas">Missing in Paperflow (From EDAS)</option>
+                                    <option value="all">All papers</option>
+                                    <option value="missing_edas">Missing in Paperflow</option>
                                     <option value="submitted">Submitted in Paperflow</option>
-                                    <option value="custom">Secretariat List (Custom Paper IDs / CSV)</option>
+                                    <option value="custom">Custom list</option>
                                 </select>
                             </div>
-                            <p class="text-[11px] text-slate-500">Filter which papers from the pool should be targeted for this outreach.</p>
                         </div>
 
-                        <!-- Secretariat List Panel (Copy-Paste / CSV) -->
-                        <div x-show="segment === 'custom'" x-cloak class="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-4">
+                        <!-- Custom List Panel (Option A: Paste vs Option B: Upload CSV) -->
+                        <div x-show="segment === 'custom'" x-cloak class="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
                             <div class="flex items-center justify-between">
-                                <h3 class="text-xs font-black text-amber-950 flex items-center gap-1.5">
-                                    <span>📋 Input Secretariat Paper IDs</span>
+                                <h3 class="text-xs font-black text-navy uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>📋 Custom List</span>
                                 </h3>
-                                <span class="text-[11px] text-amber-800">Direct paste or file upload</span>
                             </div>
 
-                            <div class="space-y-2">
-                                <label class="block text-xs font-bold text-amber-900">
-                                    Option A: Paste Paper IDs (from Excel, WhatsApp, etc.)
+                            <!-- Radio selector: Choose Option A or Option B -->
+                            <div class="grid sm:grid-cols-2 gap-3 pt-0.5">
+                                <label class="flex items-center gap-2.5 p-3 rounded-xl border bg-white cursor-pointer transition shadow-2xs"
+                                       :class="customMode === 'paste' ? 'border-navy ring-2 ring-navy/10' : 'border-slate-200 hover:border-slate-300'">
+                                    <input type="radio" 
+                                           name="custom_mode_choice"
+                                           value="paste" 
+                                           x-model="customMode" 
+                                           @change="switchCustomMode('paste')" 
+                                           class="text-navy focus:ring-navy/20 size-4">
+                                    <span class="text-xs font-bold text-navy">Option A: Paste papers IDs seperated by comma</span>
                                 </label>
-                                <textarea x-model="customPaperIds" @input.debounce.500ms="fetchAudience()" rows="3" placeholder="e.g. 1570123456, 1570789012 or paste a column from Excel..." class="form-input text-xs font-mono w-full bg-white"></textarea>
-                                <p class="text-[11px] text-amber-700">Accepts comma, newline, tab, semicolon, or space-separated Paper IDs.</p>
+                                <label class="flex items-center gap-2.5 p-3 rounded-xl border bg-white cursor-pointer transition shadow-2xs"
+                                       :class="customMode === 'csv' ? 'border-navy ring-2 ring-navy/10' : 'border-slate-200 hover:border-slate-300'">
+                                    <input type="radio" 
+                                           name="custom_mode_choice"
+                                           value="csv" 
+                                           x-model="customMode" 
+                                           @change="switchCustomMode('csv')" 
+                                           class="text-navy focus:ring-navy/20 size-4">
+                                    <span class="text-xs font-bold text-navy">Option B: Upload CSV file with headername paperid</span>
+                                </label>
                             </div>
 
-                            <div class="border-t border-amber-200/80 pt-3 space-y-2">
-                                <label class="block text-xs font-bold text-amber-900">
-                                    Option B: Upload CSV or TXT File
+                            <!-- Option A Field (Only shown when customMode === 'paste') -->
+                            <div x-show="customMode === 'paste'" x-cloak class="space-y-1.5 pt-1">
+                                <label class="block text-xs font-bold text-navy">
+                                    Option A: Paste papers IDs seperated by comma
                                 </label>
-                                <div class="flex items-center gap-3">
-                                    <input type="file" accept=".csv,.txt" @change="handleFileUpload($event)" class="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-navy file:text-white hover:file:bg-navy/80 cursor-pointer">
-                                    <span x-show="uploadedFileName" class="text-xs font-bold text-emerald-700" x-text="'📎 ' + uploadedFileName"></span>
+                                <div class="relative">
+                                    <input type="text" 
+                                           x-model="customPaperIds" 
+                                           @input.debounce.500ms="fetchAudience()" 
+                                           @paste="handlePasteIds($event)"
+                                           placeholder="e.g. 1570123456, 1570789012, 1570999888" 
+                                           class="form-input text-xs font-mono w-full bg-white h-11 py-2.5 px-4 flex items-center leading-normal">
                                 </div>
-                                <p class="text-[11px] text-amber-700">Auto-detects <code>#</code>, <code>Paper ID</code>, <code>Paper Code</code>, or uses the first column.</p>
+                            </div>
+
+                            <!-- Option B Field (Only shown when customMode === 'csv') -->
+                            <div x-show="customMode === 'csv'" x-cloak class="space-y-1.5 pt-1">
+                                <label class="block text-xs font-bold text-navy">
+                                    Option B: Upload CSV file with headername paperid
+                                </label>
+                                
+                                <div class="relative border-2 border-dashed rounded-2xl p-6 text-center transition cursor-pointer"
+                                     :class="isDragging ? 'border-orange bg-orange/5' : 'border-slate-300 bg-white hover:border-orange hover:bg-orange/5'"
+                                     @dragover.prevent="isDragging = true"
+                                     @dragleave.prevent="isDragging = false"
+                                     @drop.prevent="isDragging = false; handleDropFile($event)">
+                                    
+                                    <input type="file" 
+                                           name="csv_file"
+                                           accept=".csv" 
+                                           x-ref="csvFileInput"
+                                           @change="handleFileUpload($event)" 
+                                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+
+                                    <div class="flex flex-col items-center justify-center gap-2.5 pointer-events-none">
+                                        <div class="size-12 rounded-full bg-slate-100 group-hover:bg-orange/10 text-navy group-hover:text-orange flex items-center justify-center transition">
+                                            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                            </svg>
+                                        </div>
+
+                                        <div class="space-y-0.5">
+                                            <p class="text-xs font-bold text-navy">
+                                                <span class="text-orange underline font-extrabold">Click to choose file</span> or drag and drop your CSV here
+                                            </p>
+                                            <p class="text-[11px] text-slate-500">Only .csv files with header column <strong>paperid</strong></p>
+                                        </div>
+
+                                        <!-- Prominent Choose File Button -->
+                                        <div class="mt-1">
+                                            <span class="btn btn-secondary text-xs py-2 px-4 font-bold shadow-2xs pointer-events-none flex items-center gap-1.5">
+                                                <span>📁</span> Choose CSV File
+                                            </span>
+                                        </div>
+
+                                        <template x-if="uploadedFileName">
+                                            <div class="mt-2 inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xs">
+                                                <span>📎</span>
+                                                <span x-text="uploadedFileName"></span>
+                                                <button type="button" @click.stop="clearUploadedFile()" class="pointer-events-auto text-emerald-700 hover:text-rose-600 ml-1 font-black text-sm transition">&times;</button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -482,6 +551,8 @@
                 manuscriptFilter: 'all',
                 recipientScope: 'corresponding_only',
                 customPaperIds: '',
+                customMode: 'paste',
+                isDragging: false,
                 uploadedFileName: '',
                 uploadedFile: null,
                 paymentLink: '',
@@ -605,12 +676,64 @@
                         .replace(/\{\{payment_link\}\}/g, payLink);
                 },
 
+                switchCustomMode(mode) {
+                    this.customMode = mode;
+                    if (mode === 'paste') {
+                        this.clearUploadedFile(false);
+                    } else if (mode === 'csv') {
+                        this.customPaperIds = '';
+                    }
+                    this.fetchAudience();
+                },
+
+                clearUploadedFile(refetch = true) {
+                    this.uploadedFile = null;
+                    this.uploadedFileName = '';
+                    if (this.$refs.csvFileInput) {
+                        this.$refs.csvFileInput.value = '';
+                    }
+                    if (refetch) {
+                        this.fetchAudience();
+                    }
+                },
+
                 handleFileUpload(e) {
                     const file = e.target.files[0];
                     if (!file) return;
                     this.uploadedFileName = file.name;
                     this.uploadedFile = file;
                     this.fetchAudience();
+                },
+
+                handleDropFile(e) {
+                    const files = e.dataTransfer.files;
+                    if (files && files.length > 0) {
+                        const file = files[0];
+                        if (!file.name.toLowerCase().endsWith('.csv')) {
+                            this.notify('Please upload a .csv file format.', 'error');
+                            return;
+                        }
+                        this.uploadedFileName = file.name;
+                        this.uploadedFile = file;
+                        if (this.$refs.csvFileInput) {
+                            try {
+                                const dt = new DataTransfer();
+                                dt.items.add(file);
+                                this.$refs.csvFileInput.files = dt.files;
+                            } catch (_) {}
+                        }
+                        this.fetchAudience();
+                    }
+                },
+
+                handlePasteIds(e) {
+                    const pasteData = (e.clipboardData || window.clipboardData)?.getData('text');
+                    if (pasteData && (pasteData.includes('\n') || pasteData.includes('\r'))) {
+                        e.preventDefault();
+                        const cleaned = pasteData.split(/[\r\n,;\t]+/).map(s => s.trim()).filter(Boolean).join(', ');
+                        this.customPaperIds = cleaned;
+                        this.fetchAudience();
+                    }
                 },
 
                 fetchAudience() {
@@ -620,9 +743,13 @@
                     formData.append('segment', this.segment);
                     formData.append('manuscript_filter', this.manuscriptFilter);
                     formData.append('recipient_scope', this.recipientScope);
-                    formData.append('custom_paper_ids', this.customPaperIds);
-                    if (this.uploadedFile) {
-                        formData.append('csv_file', this.uploadedFile);
+
+                    if (this.segment === 'custom') {
+                        if (this.customMode === 'paste') {
+                            formData.append('custom_paper_ids', this.customPaperIds || '');
+                        } else if (this.customMode === 'csv' && this.uploadedFile) {
+                            formData.append('csv_file', this.uploadedFile);
+                        }
                     }
 
                     fetch(config.audienceUrl, {
