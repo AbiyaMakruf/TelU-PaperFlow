@@ -436,17 +436,37 @@
                             <div class="lg:col-span-5 space-y-5">
                                 <!-- Test Send Box -->
                                 <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
-                                    <label class="block text-xs font-extrabold text-navy">
-                                        ✉️ Send Test Email
-                                    </label>
+                                    <div class="flex items-center justify-between">
+                                        <label class="block text-xs font-extrabold text-navy">
+                                            ✉️ Send Test Email
+                                        </label>
+                                        <span class="text-[11px] font-bold text-slate-500" x-show="testEmails.length > 0">
+                                            <span x-text="testEmails.length"></span> recipient<span x-show="testEmails.length !== 1">s</span>
+                                        </span>
+                                    </div>
                                     <div class="space-y-2">
-                                        <input type="email" x-model="testEmail" placeholder="Enter destination email..." class="form-input text-xs w-full bg-white">
-                                        <button type="button" @click="sendTestEmail()" :disabled="isSendingTest" class="btn btn-secondary w-full py-2.5 px-3 text-xs font-extrabold text-navy hover:text-orange transition shadow-2xs">
-                                            <span x-show="!isSendingTest">Send Test Email</span>
+                                        <!-- Interactive Test Recipients Tag Input -->
+                                        <div class="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-white border border-slate-300 focus-within:ring-2 focus-within:ring-orange/30 focus-within:border-orange min-w-0 shadow-2xs">
+                                            <template x-for="(tag, index) in testEmails" :key="index">
+                                                <span class="inline-flex items-center gap-1 rounded-lg bg-navy text-white px-2 py-0.5 text-xs font-bold shadow-sm max-w-full truncate">
+                                                    <span x-text="tag" class="truncate"></span>
+                                                    <button type="button" @click="removeTestEmailTag(index)" class="text-orange hover:text-white font-black text-sm leading-none ml-0.5 shrink-0" title="Remove recipient">&times;</button>
+                                                </span>
+                                            </template>
+                                            <input class="flex-1 bg-transparent text-xs border-0 focus:outline-none focus:ring-0 p-1 min-w-[140px] text-slate-700 placeholder:text-slate-400"
+                                                   x-model="testEmailInput"
+                                                   @keydown.comma.prevent="addTestEmailTag()"
+                                                   @keydown.enter.prevent="addTestEmailTag()"
+                                                   @blur="addTestEmailTag()"
+                                                   placeholder="Type email and press comma...">
+                                        </div>
+
+                                        <button type="button" @click="sendTestEmail()" :disabled="isSendingTest || (testEmails.length === 0 && !testEmailInput.trim())" class="btn btn-secondary w-full py-2.5 px-3 text-xs font-extrabold text-navy hover:text-orange transition shadow-2xs">
+                                            <span x-show="!isSendingTest">Send Test Email (<span x-text="testEmails.length + (testEmailInput.trim() ? 1 : 0)"></span> recipient<span x-show="(testEmails.length + (testEmailInput.trim() ? 1 : 0)) !== 1">s</span>)</span>
                                             <span x-show="isSendingTest" x-cloak>Sending Test Email...</span>
                                         </button>
                                     </div>
-                                    <p class="text-[11px] text-slate-500">You can customize the destination address above to test delivery in any inbox.</p>
+                                    <p class="text-[11px] text-slate-500">Separate multiple emails with commas. 1 test email will be dispatched with all recipients combined.</p>
                                 </div>
 
                                 <!-- Launch Summary Box -->
@@ -566,7 +586,8 @@
                 uploadedFile: null,
                 selectedTemplate: 'unregistered',
                 paymentLink: '',
-                testEmail: config.defaultTestEmail || '',
+                testEmails: config.defaultTestEmail ? [config.defaultTestEmail] : [],
+                testEmailInput: '',
                 subject: '',
                 body: '',
                 papers: [],
@@ -825,19 +846,39 @@
                     }));
                 },
 
+                addTestEmailTag() {
+                    const raw = (this.testEmailInput || '').trim();
+                    if (!raw) return;
+
+                    const parts = raw.split(/[,;\s]+/).map(p => p.trim()).filter(Boolean);
+                    parts.forEach(email => {
+                        if (!this.testEmails.includes(email)) {
+                            this.testEmails.push(email);
+                        }
+                    });
+                    this.testEmailInput = '';
+                },
+
+                removeTestEmailTag(index) {
+                    this.testEmails.splice(index, 1);
+                },
+
                 sendTestEmail() {
+                    if (this.testEmailInput && this.testEmailInput.trim()) {
+                        this.addTestEmailTag();
+                    }
                     if (!this.subject || !this.body) {
                         this.notify('Please provide a subject and message body first.', 'error');
                         return;
                     }
-                    if (!this.testEmail) {
-                        this.notify('Please provide a destination email address.', 'error');
+                    if (this.testEmails.length === 0) {
+                        this.notify('Please provide at least one destination email address.', 'error');
                         return;
                     }
                     this.isSendingTest = true;
                     const payload = {
                         _token: config.csrfToken,
-                        test_email: this.testEmail,
+                        test_email: this.testEmails.join(', '),
                         subject: this.subject,
                         body: this.body,
                         payment_link: this.paymentLink
@@ -855,7 +896,11 @@
                     .then(res => res.json())
                     .then(data => {
                         this.isSendingTest = false;
-                        this.notify(data.message || 'Test email queued successfully.', 'success');
+                        if (data.success) {
+                            this.notify(data.message || 'Test email queued successfully.', 'success');
+                        } else {
+                            this.notify(data.message || 'Failed to send test email.', 'error');
+                        }
                     })
                     .catch(() => {
                         this.isSendingTest = false;

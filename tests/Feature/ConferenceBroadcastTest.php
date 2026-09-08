@@ -238,7 +238,27 @@ class ConferenceBroadcastTest extends TestCase
             'template_key' => 'broadcast_test',
         ]);
 
-        Queue::assertPushed(SendLoggedEmail::class);
+        // 3. Multiple comma-separated emails sent as 1 single email
+        $responseMultiple = $this->actingAs($admin)
+            ->postJson(route('conferences.broadcast.test', $conference), [
+                'test_email' => 'alpha@example.com, beta@example.com, gamma@example.com',
+                'subject' => 'Test Subject for {{conference_name}}',
+                'body' => 'Hello team.',
+            ]);
+
+        $responseMultiple->assertOk()
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('email_logs', [
+            'conference_id' => $conference->id,
+            'recipient' => 'alpha@example.com, beta@example.com, gamma@example.com',
+            'template_key' => 'broadcast_test',
+        ]);
+
+        // Total 3 jobs pushed across the 3 test assertions (1 job per dispatch)
+        Queue::assertPushed(SendLoggedEmail::class, 3);
     }
 
     public function test_send_broadcast_queues_emails_and_records_audit_log(): void

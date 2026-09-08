@@ -492,24 +492,30 @@ class ConferenceBroadcastController extends Controller
         $this->authorize('update', $activeConference);
 
         $validated = $request->validate([
-            'test_email' => ['nullable', 'email', 'max:255'],
+            'test_email' => ['nullable', 'string', 'max:2000'],
             'subject' => ['required', 'string', 'max:500'],
             'body' => ['required', 'string', 'max:50000'],
             'payment_link' => ['nullable', 'url', 'max:1000'],
         ]);
 
         $user = $request->user();
-        $targetEmail = filled($validated['test_email'] ?? null)
-            ? trim($validated['test_email'])
-            : $user->email;
+        $rawTargetEmail = filled($validated['test_email'] ?? null)
+            ? (string) $validated['test_email']
+            : (string) $user->email;
 
-        if (! filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
+        $targetEmails = array_values(array_unique(array_filter(
+            array_map('trim', preg_split('/[,;]+/', $rawTargetEmail) ?: []),
+            fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL)
+        )));
+
+        if (empty($targetEmails)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Please provide a valid destination email address.',
+                'message' => 'Please provide at least one valid destination email address.',
             ], 422);
         }
 
+        $targetEmailString = implode(', ', $targetEmails);
         $paymentLink = ($validated['payment_link'] ?? null) ?: 'https://forms.google.com/sample-conference-registration';
         $portalUrl = route('public.submission.show', $activeConference->slug ?: $activeConference->id);
 
@@ -532,7 +538,7 @@ class ConferenceBroadcastController extends Controller
         $mailer->queueBroadcast(
             conference: $activeConference,
             submission: null,
-            recipient: $targetEmail,
+            recipient: $targetEmailString,
             subject: $renderedSubject,
             body: $renderedBody,
             cc: [],
@@ -541,9 +547,14 @@ class ConferenceBroadcastController extends Controller
             templateKey: 'broadcast_test'
         );
 
+        $count = count($targetEmails);
+        $message = $count > 1
+            ? "Test email successfully queued for {$count} recipients ({$targetEmailString})."
+            : "Test email successfully queued for {$targetEmailString}.";
+
         return response()->json([
             'success' => true,
-            'message' => "Test email successfully queued for {$targetEmail}.",
+            'message' => $message,
         ]);
     }
 
