@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\SystemBackupController;
 use App\Http\Controllers\Admin\SystemPurgeController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WebsiteAnalyticsController;
 use App\Http\Controllers\Api\GoogleFormWebhookController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -203,6 +204,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/impersonate/leave', [ImpersonationController::class, 'leave'])->name('impersonate.leave');
 
         Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
+            Route::get('/analytics', [WebsiteAnalyticsController::class, 'index'])->name('analytics.index');
+            Route::get('/analytics/export', [WebsiteAnalyticsController::class, 'export'])->name('analytics.export');
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
             Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
             Route::post('/users/{user}/impersonate', [ImpersonationController::class, 'impersonate'])->name('users.impersonate');

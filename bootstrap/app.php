@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ForcePasswordChange;
 use App\Http\Middleware\RequireSuperAdmin;
 use App\Http\Middleware\SkipNgrokWarning;
+use App\Http\Middleware\TrackWebsitePageview;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/webhooks/*',
         ]);
         $middleware->appendToGroup('web', EnsureUserIsActive::class);
+        $middleware->appendToGroup('web', TrackWebsitePageview::class);
         $middleware->alias([
             'password.changed' => ForcePasswordChange::class,
             'superadmin' => RequireSuperAdmin::class,

@@ -115,6 +115,7 @@
                         <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') || request()->routeIs('audit.*') ? 'nav-link-active' : '' }}">Monitoring &amp; Audit</a>
                     @endif
                     @if(auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.analytics.index') }}" class="nav-link {{ request()->routeIs('admin.analytics.*') ? 'nav-link-active' : '' }}">Website Analytics</a>
                         <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}">Users</a>
                     @endif
                     <a href="{{ route('user-manual.index') }}" class="nav-link {{ request()->routeIs('user-manual.*') ? 'nav-link-active' : '' }}">User Manual</a>
@@ -203,6 +204,7 @@
                         <a href="{{ route('admin.monitoring.index') }}" class="nav-link {{ request()->routeIs('admin.monitoring.*') || request()->routeIs('audit.*') ? 'nav-link-active' : '' }}"><span class="text-xs">MO</span><span>Monitoring &amp; Audit</span></a>
                     @endif
                     @if(auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.analytics.index') }}" class="nav-link {{ request()->routeIs('admin.analytics.*') ? 'nav-link-active' : '' }}"><span class="text-xs">AN</span><span>Website Analytics</span></a>
                         <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}"><span class="text-xs">US</span><span>Users</span></a>
                     @endif
                     <a href="{{ route('user-manual.index') }}" class="nav-link {{ request()->routeIs('user-manual.*') ? 'nav-link-active' : '' }}"><span class="text-xs">UM</span><span>User Manual</span></a>
