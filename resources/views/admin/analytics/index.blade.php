@@ -391,8 +391,20 @@
     </div>
 
     <!-- Chart.js Engine & Initialization Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        function initAnalyticsCharts() {
+            if (typeof Chart === 'undefined') {
+                // If script is still loading from CDN, retry after 50ms (up to 5s)
+                window.__chartRetryCount = (window.__chartRetryCount || 0) + 1;
+                if (window.__chartRetryCount < 100) {
+                    setTimeout(initAnalyticsCharts, 50);
+                } else {
+                    console.error('Chart.js failed to load from CDN.');
+                }
+                return;
+            }
+
             // 1. Line Chart: Daily Traffic Trend & Unique Visitors
             const ctxTrend = document.getElementById('trafficTrendChart')?.getContext('2d');
             if (ctxTrend) {
@@ -562,6 +574,12 @@
                     }
                 });
             }
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAnalyticsCharts);
+        } else {
+            initAnalyticsCharts();
+        }
     </script>
 </x-layouts.app>
