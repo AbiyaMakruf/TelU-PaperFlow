@@ -100,11 +100,17 @@
             }" class="space-y-6">
 
                 <!-- Stat Cards Grid -->
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     <div class="card p-5 bg-white space-y-2 border-l-4 border-l-navy shadow-xs">
                         <p class="text-xs font-bold text-muted uppercase tracking-wider">Total EDAS Papers</p>
                         <p class="text-2xl sm:text-3xl font-black text-navy">{{ number_format($reconciledData['total_edas_count']) }}</p>
-                        <p class="text-[11px] text-muted truncate" title="Uploaded by {{ $reconciledData['uploaded_by_name'] ?? 'Admin' }}">File: {{ $reconciledData['filename'] }}</p>
+                        <p class="text-[11px] text-muted truncate" title="Uploaded by {{ $reconciledData['uploaded_by_name'] ?? 'Admin' }}">
+                            @if(($reconciledData['withdrawn_count'] ?? 0) > 0)
+                                <span class="font-bold text-navy">{{ $reconciledData['active_edas_count'] }}</span> Active · <span class="font-bold text-slate-600">{{ $reconciledData['withdrawn_count'] }}</span> Withdrawn
+                            @else
+                                File: {{ $reconciledData['filename'] }}
+                            @endif
+                        </p>
                     </div>
 
                     <div class="card p-5 bg-white space-y-2 border-l-4 border-l-emerald-500 shadow-xs">
@@ -119,10 +125,19 @@
                     <div class="card p-5 bg-white space-y-2 border-l-4 border-l-rose-500 shadow-xs">
                         <div class="flex items-center justify-between">
                             <p class="text-xs font-bold text-muted uppercase tracking-wider">Missing in Paperflow</p>
-                            <span class="badge badge-danger text-[10px] font-bold">✕ {{ number_format(100 - $reconciledData['submission_rate_percent'], 1) }}%</span>
+                            <span class="badge badge-danger text-[10px] font-bold">✕ {{ ($reconciledData['active_edas_count'] ?? $reconciledData['total_edas_count']) > 0 ? number_format(round(($reconciledData['missing_count'] / ($reconciledData['active_edas_count'] ?? $reconciledData['total_edas_count'])) * 100, 1), 1) : 0 }}%</span>
                         </div>
                         <p class="text-2xl sm:text-3xl font-black text-rose-700">{{ number_format($reconciledData['missing_count']) }}</p>
                         <p class="text-[11px] text-rose-800 font-semibold">Requires reminder / follow-up</p>
+                    </div>
+
+                    <div class="card p-5 bg-white space-y-2 border-l-4 border-l-slate-400 shadow-xs">
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs font-bold text-muted uppercase tracking-wider">Withdrawn Papers</p>
+                            <span class="badge bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-bold">⊘ Withdrawn</span>
+                        </div>
+                        <p class="text-2xl sm:text-3xl font-black text-slate-700">{{ number_format($reconciledData['withdrawn_count'] ?? 0) }}</p>
+                        <p class="text-[11px] text-slate-500 font-semibold">Excluded from follow-up</p>
                     </div>
 
                     <div class="card p-5 bg-white space-y-2 border-l-4 border-l-amber-500 shadow-xs">
@@ -148,6 +163,9 @@
                             </button>
                             <button type="button" @click="activeTab = 'submitted'" :class="activeTab === 'submitted' ? 'bg-emerald-600 text-white font-black shadow-xs' : 'text-slate-600 hover:text-navy font-bold'" class="px-3.5 py-2 text-xs rounded-lg transition">
                                 Submitted ({{ $reconciledData['submitted_count'] }})
+                            </button>
+                            <button type="button" @click="activeTab = 'withdrawn'" :class="activeTab === 'withdrawn' ? 'bg-slate-700 text-white font-black shadow-xs' : 'text-slate-600 hover:text-navy font-bold'" class="px-3.5 py-2 text-xs rounded-lg transition">
+                                Withdrawn ({{ $reconciledData['withdrawn_count'] ?? 0 }})
                             </button>
                             @if($reconciledData['warning_count'] > 0)
                                 <button type="button" @click="activeTab = 'warnings'" :class="activeTab === 'warnings' ? 'bg-amber-500 text-white font-black shadow-xs' : 'text-slate-600 hover:text-navy font-bold'" class="px-3.5 py-2 text-xs rounded-lg transition">
@@ -182,11 +200,15 @@
                                     <a class="block px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition" href="{{ route('conferences.edas-reconciliation.export', ['conference' => $activeConference, 'format' => 'csv_missing']) }}">
                                         📄 Missing Papers (.csv)
                                     </a>
+                                    <a class="block px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition" target="_blank" href="{{ route('conferences.edas-reconciliation.export', ['conference' => $activeConference, 'format' => 'pdf_missing']) }}">
+                                        📑 Missing Papers (.pdf)
+                                    </a>
+                                    <div class="my-1 border-t border-slate-100"></div>
                                     <a class="block px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition" href="{{ route('conferences.edas-reconciliation.export', ['conference' => $activeConference, 'format' => 'csv_all']) }}">
                                         📊 Full Reconciliation (.csv)
                                     </a>
-                                    <a class="block px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition" target="_blank" href="{{ route('conferences.edas-reconciliation.export', ['conference' => $activeConference, 'format' => 'pdf']) }}">
-                                        🖨️ PDF Report (Print)
+                                    <a class="block px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition" target="_blank" href="{{ route('conferences.edas-reconciliation.export', ['conference' => $activeConference, 'format' => 'pdf_all']) }}">
+                                        🖨️ Full Report (.pdf)
                                     </a>
                                 </div>
                             </div>
@@ -220,18 +242,23 @@
                                         $rowSearch = strtolower($item['edas_paper_id'] . ' ' . $item['edas_title'] . ' ' . implode(' ', $item['edas_authors'] ?? []) . ' ' . implode(' ', $item['edas_author_emails'] ?? []) . ' ' . ($item['paperflow_submission']['title'] ?? '') . ' ' . ($item['warning_message'] ?? ''));
                                         $hasWarning = ! empty($item['warning_message']);
                                     @endphp
-                            <tbody x-data="{ open: false }" x-show="(activeTab === 'all' || (activeTab === 'missing' && '{{ $item['status_state'] }}' === 'missing') || (activeTab === 'submitted' && '{{ $item['status_state'] }}' === 'submitted') || (activeTab === 'warnings' && {{ $hasWarning ? 'true' : 'false' }})) && (!searchQuery || {{ Js::from($rowSearch) }}.includes(searchQuery.toLowerCase()))">
-                                    <tr @click="open = !open" class="cursor-pointer hover:bg-slate-50/80 transition" title="Click to view EDAS authors">
+                            <tbody x-data="{ open: false }" x-show="(activeTab === 'all' || (activeTab === 'missing' && '{{ $item['status_state'] }}' === 'missing') || (activeTab === 'submitted' && '{{ $item['status_state'] }}' === 'submitted') || (activeTab === 'withdrawn' && '{{ $item['status_state'] }}' === 'withdrawn') || (activeTab === 'warnings' && {{ $hasWarning ? 'true' : 'false' }})) && (!searchQuery || {{ Js::from($rowSearch) }}.includes(searchQuery.toLowerCase()))">
+                                    <tr @click="open = !open" class="cursor-pointer transition {{ $item['status_state'] === 'withdrawn' ? 'bg-slate-50/70 opacity-90' : 'hover:bg-slate-50/80' }}" title="Click to view EDAS authors">
                                         <td class="text-center text-xs font-bold text-muted">{{ $item['row_number'] }}</td>
-                                        <td class="font-mono font-bold text-xs whitespace-nowrap text-navy">
+                                        <td class="font-mono font-bold text-xs whitespace-nowrap {{ $item['status_state'] === 'withdrawn' ? 'text-slate-500 line-through' : 'text-navy' }}">
                                             {{ $item['edas_paper_id'] }}
                                         </td>
                                         <td class="text-xs">
-                                            <p class="font-semibold text-slate-800 break-words">{{ $item['edas_title'] }}</p>
+                                            <p class="font-semibold {{ $item['status_state'] === 'withdrawn' ? 'text-slate-600' : 'text-slate-800' }} break-words">{{ $item['edas_title'] }}</p>
                                             @if(! empty($item['warning_message']))
                                                 <div class="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">
                                                     <span>⚠️</span>
                                                     <span>{{ $item['warning_message'] }}</span>
+                                                </div>
+                                            @endif
+                                            @if(! empty($item['withdrawn_meta']['by_name']))
+                                                <div class="mt-1 text-[10px] text-slate-500 italic">
+                                                    Withdrawn by {{ $item['withdrawn_meta']['by_name'] }}
                                                 </div>
                                             @endif
                                         </td>
@@ -240,6 +267,15 @@
                                                 <span class="badge badge-success text-[10px] font-extrabold inline-flex items-center gap-1">
                                                     <span>✓ Submitted</span>
                                                 </span>
+                                            @elseif($item['status_state'] === 'withdrawn')
+                                                <span class="badge bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-extrabold inline-flex items-center gap-1" title="Marked as withdrawn">
+                                                    <span>⊘ Withdrawn</span>
+                                                </span>
+                                                @if($item['withdrawn_type'] === 'missing')
+                                                    <span class="text-[10px] text-muted block mt-0.5 font-medium">(EDAS Missing)</span>
+                                                @elseif($item['withdrawn_type'] === 'submitted')
+                                                    <span class="text-[10px] text-muted block mt-0.5 font-medium">(Submission)</span>
+                                                @endif
                                             @else
                                                 <span class="badge badge-danger text-[10px] font-extrabold inline-flex items-center gap-1">
                                                     <span>✕ Missing</span>
@@ -264,14 +300,36 @@
                                                 <span class="text-xs text-muted italic">Not found in Paperflow</span>
                                             @endif
                                         </td>
-                                        <td @click.stop class="text-right whitespace-nowrap">
+                                        <td @click.stop class="text-right whitespace-nowrap space-x-1">
                                             @if($item['paperflow_submission'])
-                                                <a href="{{ route('submissions.show', $item['paperflow_submission']['id']) }}" class="btn btn-secondary text-xs py-1 px-2.5 font-bold" target="_blank">
-                                                    Open Paper ↗
+                                                <a href="{{ route('submissions.show', $item['paperflow_submission']['id']) }}" class="btn btn-secondary text-xs py-1 px-2.5 font-bold inline-flex items-center gap-1" target="_blank">
+                                                    <span>Open Paper ↗</span>
                                                 </a>
-                                            @else
-                                                <span class="text-xs text-rose-600 font-bold">Unsubmitted</span>
                                             @endif
+
+                                            @can('update', $activeConference)
+                                                @if($item['status_state'] === 'withdrawn')
+                                                    <form method="POST" action="{{ route('conferences.edas-reconciliation.unwithdraw', $activeConference) }}" onsubmit="return confirm('Restore paper {{ $item['edas_paper_id'] }} (Un-withdraw)?');" class="inline-block">
+                                                        @csrf
+                                                        <input type="hidden" name="paper_id" value="{{ $item['edas_paper_id'] }}">
+                                                        <button type="submit" class="btn border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs py-1 px-2.5 font-bold inline-flex items-center gap-1 shadow-2xs" title="Restore paper (Un-withdraw)">
+                                                            <span>↺ Un-withdraw</span>
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <form method="POST" action="{{ route('conferences.edas-reconciliation.withdraw', $activeConference) }}" onsubmit="return confirm('Mark paper {{ $item['edas_paper_id'] }} as Withdrawn? It will be excluded from missing follow-ups.');" class="inline-block">
+                                                        @csrf
+                                                        <input type="hidden" name="paper_id" value="{{ $item['edas_paper_id'] }}">
+                                                        <button type="submit" class="btn border border-slate-300 bg-white hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 text-slate-600 text-xs py-1 px-2.5 font-bold inline-flex items-center gap-1 shadow-2xs" title="Mark paper as Withdrawn">
+                                                            <span>⊘ Withdraw</span>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            @else
+                                                @if(! $item['paperflow_submission'] && $item['status_state'] !== 'withdrawn')
+                                                    <span class="text-xs text-rose-600 font-bold">Unsubmitted</span>
+                                                @endif
+                                            @endcan
                                         </td>
                                     </tr>
                                     <tr x-show="open" x-cloak>

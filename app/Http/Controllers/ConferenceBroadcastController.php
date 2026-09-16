@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\SubmissionStatus;
 use App\Models\Conference;
 use App\Models\EmailLog;
 use App\Models\Submission;
@@ -238,6 +239,8 @@ class ConferenceBroadcastController extends Controller
 
                 $primaryName = $matchedSub->corresponding_author_name ?: ($authorNames[0] ?? 'Author');
                 $primaryEmail = $matchedSub->corresponding_author_email ?: ($authorEmails[0] ?? '');
+                $withdrawnEdasIds = array_map('strval', $edasSettings['withdrawn_edas_ids'] ?? []);
+                $isWithdrawn = in_array((string) $edasPaperId, $withdrawnEdasIds, true) || $matchedSub->status === SubmissionStatus::Withdrawn;
 
                 $candidates[$key] = [
                     'key' => $key,
@@ -251,14 +254,16 @@ class ConferenceBroadcastController extends Controller
                     'first_author_email' => $primaryEmail,
                     'all_author_names' => array_values(array_unique($authorNames)),
                     'all_author_emails' => array_values(array_unique($authorEmails)),
-                    'status_badge' => 'badge-success',
-                    'status_label' => 'Submitted in Paperflow',
-                    'submission_status' => $matchedSub->status?->value ?? 'submitted',
+                    'status_badge' => $isWithdrawn ? 'badge-neutral' : 'badge-success',
+                    'status_label' => $isWithdrawn ? 'Withdrawn in Paperflow' : 'Submitted in Paperflow',
+                    'submission_status' => $isWithdrawn ? 'withdrawn' : ($matchedSub->status?->value ?? 'submitted'),
                 ];
             } else {
                 $primaryName = $authorNames[0] ?? 'Author';
                 $primaryEmail = $authorEmails[0] ?? '';
                 $publicSubmitUrl = route('public.submission.show', $conference->slug ?: $conference->id);
+                $withdrawnEdasIds = array_map('strval', $edasSettings['withdrawn_edas_ids'] ?? []);
+                $isWithdrawn = in_array((string) $edasPaperId, $withdrawnEdasIds, true);
 
                 $candidates[$key] = [
                     'key' => $key,
@@ -272,9 +277,9 @@ class ConferenceBroadcastController extends Controller
                     'first_author_email' => $primaryEmail,
                     'all_author_names' => array_values(array_unique($authorNames)),
                     'all_author_emails' => array_values(array_unique($authorEmails)),
-                    'status_badge' => 'badge-danger',
-                    'status_label' => 'Missing in Paperflow (EDAS)',
-                    'submission_status' => 'missing_edas',
+                    'status_badge' => $isWithdrawn ? 'badge-neutral' : 'badge-danger',
+                    'status_label' => $isWithdrawn ? 'Withdrawn (EDAS)' : 'Missing in Paperflow (EDAS)',
+                    'submission_status' => $isWithdrawn ? 'withdrawn' : 'missing_edas',
                 ];
             }
         }
@@ -396,7 +401,7 @@ class ConferenceBroadcastController extends Controller
             }
         } elseif ($segment === 'missing_edas') {
             foreach ($pool as $k => $c) {
-                if (! $c['has_submission']) {
+                if (! $c['has_submission'] && ($c['submission_status'] ?? '') !== 'withdrawn') {
                     $filtered[$k] = $c;
                 }
             }

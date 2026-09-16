@@ -4,11 +4,14 @@ namespace Tests\Feature;
 
 use App\Enums\ConferenceRole;
 use App\Enums\ConferenceStatus;
+use App\Enums\SubmissionStatus;
 use App\Models\Conference;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class EdasReconciliationTest extends TestCase
@@ -366,5 +369,157 @@ CSV;
         $missingContent = $exportMissing->streamedContent();
         $this->assertStringContainsString('Author Emails', $missingContent);
         $this->assertStringContainsString('amir.acalapati@raharja.info', $missingContent);
+    }
+
+    public function test_export_missing_papers_as_pdf(): void
+    {
+        [$conference, $admin] = $this->createConferenceWithRoles();
+
+        $csvContent = "Paper ID,Title,Authors,Author 1 email\n".
+            "1570990001,Submitted Paper,Author One,author1@example.com\n".
+            "1570990002,Missing Paper Title,Missing Author,missing@example.com\n";
+
+        $file = UploadedFile::fake()->createWithContent('edas.csv', $csvContent);
+        $this->actingAs($admin)->post(route('conferences.edas-reconciliation.upload', $conference), ['csv_file' => $file]);
+
+        Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => '1570990001',
+            'paper_code' => 'ICOICT-001',
+            'title' => 'Submitted Paper',
+            'manuscript_format' => 'docx',
+            'corresponding_author_name' => 'Author One',
+            'corresponding_author_email' => 'author1@example.com',
+            'submitted_at' => now(),
+        ]);
+
+        // 1. Export via format=pdf_missing
+        $resPdfMissing = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.export', [
+            'conference' => $conference,
+            'format' => 'pdf_missing',
+        ]));
+        $resPdfMissing->assertOk();
+        $resPdfMissing->assertSee('EDAS Missing Papers Report');
+        $resPdfMissing->assertSee('1570990002');
+        $resPdfMissing->assertSee('Missing Paper Title');
+        $resPdfMissing->assertSee('missing@example.com');
+        // Submitted paper should NOT be in missing report table
+        $resPdfMissing->assertDontSee('ICOICT-001');
+
+        // 2. Export via export-missing route with format=pdf
+        $resRoutePdf = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.export-missing', [
+            'conference' => $conference,
+            'format' => 'pdf',
+        ]));
+        $resRoutePdf->assertOk();
+        $resRoutePdf->assertSee('EDAS Missing Papers Report');
+        $resRoutePdf->assertSee('1570990002');
+    }
+
+    public function test_withdraw_and_unwithdraw_by_admin_and_superadmin(): void
+    {
+        Mail::fake();
+        Notification::fake();
+
+        [$conference, $admin, $editor] = $this->createConferenceWithRoles();
+
+        $submission = Submission::create([
+            'conference_id' => $conference->id,
+            'paper_id' => '1570990001',
+            'paper_code' => 'ICOICT-001',
+            'title' => 'Submitted Paper',
+            'status' => SubmissionStatus::Submitted,
+            'manuscript_format' => 'docx',
+            'corresponding_author_name' => 'Author One',
+            'corresponding_author_email' => 'author1@example.com',
+            'submitted_at' => now(),
+        ]);
+
+        $csvContent = "Paper ID,Title,Authors,Author 1 email\n".
+            "1570990001,Submitted Paper,Author One,author1@example.com\n".
+            "1570990002,Missing Paper Title,Missing Author,missing@example.com\n";
+
+        $file = UploadedFile::fake()->createWithContent('edas.csv', $csvContent);
+        $this->actingAs($admin)->post(route('conferences.edas-reconciliation.upload', $conference), ['csv_file' => $file]);
+
+        // Verify initial state: 1 submitted, 1 missing, 0 withdrawn
+        $initialRes = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.index', $conference));
+        $initialRes->assertOk();
+        $initialData = $initialRes->viewData('reconciledData');
+        $this->assertEquals(2, $initialData['total_edas_count']);
+        $this->assertEquals(1, $initialData['submitted_count']);
+        $this->assertEquals(1, $initialData['missing_count']);
+        $this->assertEquals(0, $initialData['withdrawn_count']);
+        $this->assertEquals(50.0, $initialData['submission_rate_percent']);
+
+        // 1. Non-admin (Editor) cannot withdraw paper
+        $this->actingAs($editor)->post(route('conferences.edas-reconciliation.withdraw', $conference), [
+            'paper_id' => '1570990002',
+        ])->assertForbidden();
+
+        // 2. Admin can withdraw a MISSING paper
+        $withdrawMissingRes = $this->actingAs($admin)->post(route('conferences.edas-reconciliation.withdraw', $conference), [
+            'paper_id' => '1570990002',
+            'reason' => 'Author withdrew via email',
+        ]);
+        $withdrawMissingRes->assertRedirect();
+        $withdrawMissingRes->assertSessionHas('success');
+
+        // Verify NO emails or notifications sent
+        Mail::assertNothingSent();
+        Notification::assertNothingSent();
+
+        // Verify summary after withdrawing missing paper: missing drops to 0, withdrawn becomes 1, submission rate becomes 100% (1/1 active)
+        $afterWithdrawRes = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.index', $conference));
+        $data1 = $afterWithdrawRes->viewData('reconciledData');
+        $this->assertEquals(2, $data1['total_edas_count']);
+        $this->assertEquals(1, $data1['active_edas_count']);
+        $this->assertEquals(1, $data1['submitted_count']);
+        $this->assertEquals(0, $data1['missing_count']); // Excluded from missing!
+        $this->assertEquals(1, $data1['withdrawn_count']);
+        $this->assertEquals(100.0, $data1['submission_rate_percent']); // 1 of 1 active is 100%
+
+        // 3. Superadmin can withdraw a SUBMITTED paper
+        $superadmin = User::factory()->create(['is_super_admin' => true]);
+        $withdrawSubmittedRes = $this->actingAs($superadmin)->post(route('conferences.edas-reconciliation.withdraw', $conference), [
+            'paper_id' => '1570990001',
+        ]);
+        $withdrawSubmittedRes->assertRedirect();
+
+        // Verify Submission status updated to Withdrawn without email
+        $this->assertEquals(SubmissionStatus::Withdrawn, $submission->fresh()->status);
+        Mail::assertNothingSent();
+        Notification::assertNothingSent();
+
+        // Verify summary after both withdrawn
+        $afterBothRes = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.index', $conference));
+        $data2 = $afterBothRes->viewData('reconciledData');
+        $this->assertEquals(2, $data2['withdrawn_count']);
+        $this->assertEquals(0, $data2['submitted_count']);
+        $this->assertEquals(0, $data2['missing_count']);
+
+        // 4. Admin can UN-WITHDRAW paper 1570990001 (Submission)
+        $unwithdrawRes = $this->actingAs($admin)->post(route('conferences.edas-reconciliation.unwithdraw', $conference), [
+            'paper_id' => '1570990001',
+        ]);
+        $unwithdrawRes->assertRedirect();
+        $unwithdrawRes->assertSessionHas('success');
+
+        // Verify Submission status restored
+        $this->assertEquals(SubmissionStatus::Submitted, $submission->fresh()->status);
+        Mail::assertNothingSent();
+
+        // 5. Admin can UN-WITHDRAW missing paper 1570990002
+        $this->actingAs($admin)->post(route('conferences.edas-reconciliation.unwithdraw', $conference), [
+            'paper_id' => '1570990002',
+        ])->assertRedirect();
+
+        // Verify summary back to initial
+        $finalRes = $this->actingAs($admin)->get(route('conferences.edas-reconciliation.index', $conference));
+        $dataFinal = $finalRes->viewData('reconciledData');
+        $this->assertEquals(0, $dataFinal['withdrawn_count']);
+        $this->assertEquals(1, $dataFinal['submitted_count']);
+        $this->assertEquals(1, $dataFinal['missing_count']);
+        $this->assertEquals(50.0, $dataFinal['submission_rate_percent']);
     }
 }

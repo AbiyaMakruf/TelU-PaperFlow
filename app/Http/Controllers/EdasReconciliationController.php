@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\SubmissionStatus;
 use App\Models\Conference;
+use App\Models\StatusHistory;
 use App\Models\Submission;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
@@ -54,6 +56,8 @@ class EdasReconciliationController extends Controller
         if (empty($rawItems)) {
             return [];
         }
+
+        $withdrawnEdasIds = array_map('strval', $storedEdasData['withdrawn_edas_ids'] ?? []);
 
         $paperflowSubmissions = Submission::query()
             ->where('conference_id', $conference->id)
@@ -128,9 +132,12 @@ class EdasReconciliationController extends Controller
                 $warningMessage = "ID format mismatch: EDAS has '{$edasPaperId}' while Paperflow has '{$matchedSub->paper_code}'";
             }
 
+            $isWithdrawn = in_array((string) $edasPaperId, $withdrawnEdasIds, true)
+                || ($matchedSub && $matchedSub->status === SubmissionStatus::Withdrawn);
+
             if ($matchedSub) {
                 $matchedSubmissionIds[] = $matchedSub->id;
-                $statusState = 'submitted';
+                $statusState = $isWithdrawn ? 'withdrawn' : 'submitted';
 
                 // Title discrepancy warning check
                 if (! empty($edasTitle) && ! empty($matchedSub->title)) {
@@ -146,7 +153,7 @@ class EdasReconciliationController extends Controller
                     }
                 }
             } else {
-                $statusState = 'missing';
+                $statusState = $isWithdrawn ? 'withdrawn' : 'missing';
             }
 
             $reconciledItems[] = [
@@ -157,6 +164,9 @@ class EdasReconciliationController extends Controller
                 'edas_author_emails' => $allActiveEmails,
                 'edas_author_details' => $authorDetails,
                 'status_state' => $statusState,
+                'is_withdrawn' => $isWithdrawn,
+                'withdrawn_type' => $isWithdrawn ? ($matchedSub ? 'submitted' : 'missing') : null,
+                'withdrawn_meta' => $storedEdasData['withdrawn_metadata'][$edasPaperId] ?? null,
                 'match_reason' => $matchReason,
                 'warning_message' => $warningMessage,
                 'paperflow_submission' => $matchedSub ? [
@@ -176,10 +186,12 @@ class EdasReconciliationController extends Controller
         $paperflowOnlySubmissions = $paperflowSubmissions->filter(fn ($s) => ! in_array($s->id, $matchedSubmissionIds, true));
 
         $totalEdasCount = count($reconciledItems);
+        $withdrawnCount = collect($reconciledItems)->where('status_state', 'withdrawn')->count();
+        $activeEdasCount = $totalEdasCount - $withdrawnCount;
         $submittedCount = collect($reconciledItems)->where('status_state', 'submitted')->count();
         $missingCount = collect($reconciledItems)->where('status_state', 'missing')->count();
-        $warningCount = collect($reconciledItems)->whereNotNull('warning_message')->count();
-        $submissionRate = $totalEdasCount > 0 ? round(($submittedCount / $totalEdasCount) * 100, 1) : 0;
+        $warningCount = collect($reconciledItems)->whereNotNull('warning_message')->where('status_state', '!=', 'withdrawn')->count();
+        $submissionRate = $activeEdasCount > 0 ? round(($submittedCount / $activeEdasCount) * 100, 1) : 0;
 
         return [
             'uploaded_at' => $storedEdasData['uploaded_at'] ?? now()->toIso8601String(),
@@ -187,6 +199,8 @@ class EdasReconciliationController extends Controller
             'uploaded_by_name' => $storedEdasData['uploaded_by_name'] ?? 'Conference Admin',
             'conference_name' => $conference->name,
             'total_edas_count' => $totalEdasCount,
+            'withdrawn_count' => $withdrawnCount,
+            'active_edas_count' => $activeEdasCount,
             'submitted_count' => $submittedCount,
             'missing_count' => $missingCount,
             'warning_count' => $warningCount,
@@ -397,6 +411,152 @@ class EdasReconciliationController extends Controller
             ->with('success', 'EDAS reconciliation data successfully cleared from database.');
     }
 
+    public function withdraw(Request $request, Conference $conference, AuditLogger $auditLogger): RedirectResponse
+    {
+        $conference = $this->resolveConference($conference);
+        $this->authorize('update', $conference);
+
+        $validated = $request->validate([
+            'paper_id' => ['required', 'string'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $paperId = trim($validated['paper_id']);
+        $reason = trim((string) ($validated['reason'] ?? ''));
+
+        $settings = $conference->settings ?? [];
+        $storedEdasData = $settings['edas_reconciliation'] ?? [];
+
+        if (empty($storedEdasData)) {
+            return back()->withErrors(['csv_file' => 'No active EDAS reconciliation data found.']);
+        }
+
+        $withdrawnIds = array_map('strval', $storedEdasData['withdrawn_edas_ids'] ?? []);
+        if (! in_array($paperId, $withdrawnIds, true)) {
+            $withdrawnIds[] = $paperId;
+        }
+        $storedEdasData['withdrawn_edas_ids'] = array_values(array_unique($withdrawnIds));
+
+        $meta = $storedEdasData['withdrawn_metadata'] ?? [];
+        $meta[$paperId] = [
+            'withdrawn_at' => now()->toIso8601String(),
+            'by_name' => $request->user()->name,
+            'reason' => $reason ?: 'Withdrawn via EDAS Reconciliation',
+        ];
+        $storedEdasData['withdrawn_metadata'] = $meta;
+
+        $settings['edas_reconciliation'] = $storedEdasData;
+        $conference->update(['settings' => $settings]);
+
+        // If there is a matching Submission in Paperflow, update its status without sending email
+        $lowerId = strtolower($paperId);
+        $normId = $this->normalizeCode($paperId);
+
+        $matchedSub = Submission::where('conference_id', $conference->id)
+            ->get()
+            ->first(function ($sub) use ($lowerId, $normId) {
+                $codes = array_filter([$sub->paper_id, $sub->paper_code, $sub->original_paper_code]);
+                foreach ($codes as $code) {
+                    if (strtolower(trim((string) $code)) === $lowerId || $this->normalizeCode($code) === $normId) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+
+        if ($matchedSub && $matchedSub->status !== SubmissionStatus::Withdrawn) {
+            $fromStatus = $matchedSub->status;
+            $matchedSub->update(['status' => SubmissionStatus::Withdrawn]);
+
+            StatusHistory::create([
+                'submission_id' => $matchedSub->id,
+                'from_status' => $fromStatus,
+                'to_status' => SubmissionStatus::Withdrawn,
+                'changed_by' => $request->user()->id,
+                'note' => $reason ?: 'Withdrawn via EDAS Reconciliation',
+                'created_at' => now(),
+            ]);
+        }
+
+        $auditLogger->record('conference.edas_paper_withdrawn', $conference, $conference, newValues: [
+            'paper_id' => $paperId,
+            'reason' => $reason ?: 'Withdrawn via EDAS Reconciliation',
+        ]);
+
+        return back()->with('success', "Paper {$paperId} has been marked as Withdrawn.");
+    }
+
+    public function unwithdraw(Request $request, Conference $conference, AuditLogger $auditLogger): RedirectResponse
+    {
+        $conference = $this->resolveConference($conference);
+        $this->authorize('update', $conference);
+
+        $validated = $request->validate([
+            'paper_id' => ['required', 'string'],
+        ]);
+
+        $paperId = trim($validated['paper_id']);
+
+        $settings = $conference->settings ?? [];
+        $storedEdasData = $settings['edas_reconciliation'] ?? [];
+
+        if (empty($storedEdasData)) {
+            return back()->withErrors(['csv_file' => 'No active EDAS reconciliation data found.']);
+        }
+
+        $withdrawnIds = array_map('strval', $storedEdasData['withdrawn_edas_ids'] ?? []);
+        $storedEdasData['withdrawn_edas_ids'] = array_values(array_filter($withdrawnIds, fn ($id) => (string) $id !== $paperId));
+
+        if (isset($storedEdasData['withdrawn_metadata'][$paperId])) {
+            unset($storedEdasData['withdrawn_metadata'][$paperId]);
+        }
+
+        $settings['edas_reconciliation'] = $storedEdasData;
+        $conference->update(['settings' => $settings]);
+
+        // If there is a matching Submission in Paperflow that was Withdrawn, restore it without sending email
+        $lowerId = strtolower($paperId);
+        $normId = $this->normalizeCode($paperId);
+
+        $matchedSub = Submission::where('conference_id', $conference->id)
+            ->get()
+            ->first(function ($sub) use ($lowerId, $normId) {
+                $codes = array_filter([$sub->paper_id, $sub->paper_code, $sub->original_paper_code]);
+                foreach ($codes as $code) {
+                    if (strtolower(trim((string) $code)) === $lowerId || $this->normalizeCode($code) === $normId) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+
+        if ($matchedSub && $matchedSub->status === SubmissionStatus::Withdrawn) {
+            $prevStatus = $matchedSub->statusHistory()
+                ->where('to_status', '!=', SubmissionStatus::Withdrawn)
+                ->latest('id')
+                ->value('to_status') ?? SubmissionStatus::Submitted;
+
+            $matchedSub->update(['status' => $prevStatus]);
+
+            StatusHistory::create([
+                'submission_id' => $matchedSub->id,
+                'from_status' => SubmissionStatus::Withdrawn,
+                'to_status' => $prevStatus,
+                'changed_by' => $request->user()->id,
+                'note' => 'Restored from withdrawn via EDAS Reconciliation',
+                'created_at' => now(),
+            ]);
+        }
+
+        $auditLogger->record('conference.edas_paper_unwithdrawn', $conference, $conference, newValues: [
+            'paper_id' => $paperId,
+        ]);
+
+        return back()->with('success', "Paper {$paperId} has been restored (Un-withdrawn).");
+    }
+
     public function export(Request $request, Conference $conference)
     {
         $conference = $this->resolveConference($conference);
@@ -410,10 +570,19 @@ class EdasReconciliationController extends Controller
         $calculated = $this->calculateReconciliation($conference, $storedEdasData);
         $format = $request->query('format', 'csv_missing');
 
-        if ($format === 'pdf') {
+        if ($format === 'pdf' || $format === 'pdf_all') {
             return view('conferences.edas-reconciliation-pdf', [
                 'activeConference' => $conference,
                 'reconciledData' => $calculated,
+                'scope' => 'all',
+            ]);
+        }
+
+        if ($format === 'pdf_missing') {
+            return view('conferences.edas-reconciliation-pdf', [
+                'activeConference' => $conference,
+                'reconciledData' => $calculated,
+                'scope' => 'missing',
             ]);
         }
 
@@ -425,18 +594,23 @@ class EdasReconciliationController extends Controller
                 fputcsv($output, ['No', 'EDAS Paper ID', 'EDAS Paper Title', 'EDAS Authors', 'EDAS Author Emails', 'Paperflow Status', 'Paperflow Paper Code', 'Paperflow Title', 'Author Name', 'Author Email', 'Submission Status', 'Warning Note']);
                 foreach ($items as $item) {
                     $sub = $item['paperflow_submission'];
+                    $statusText = match ($item['status_state']) {
+                        'submitted' => 'Submitted',
+                        'withdrawn' => 'Withdrawn',
+                        default => 'Missing',
+                    };
                     fputcsv($output, [
                         $item['row_number'],
                         $item['edas_paper_id'],
                         $item['edas_title'],
                         implode('; ', $item['edas_authors'] ?? []),
                         implode('; ', $item['edas_author_emails'] ?? []),
-                        $item['status_state'] === 'submitted' ? 'Submitted' : 'Missing',
+                        $statusText,
                         $sub['paper_code'] ?? '-',
                         $sub['title'] ?? '-',
                         $sub['author_name'] ?? '-',
                         $sub['author_email'] ?? '-',
-                        $sub['status_label'] ?? '-',
+                        $sub['status_label'] ?? ($item['status_state'] === 'withdrawn' ? 'Withdrawn' : '-'),
                         $item['warning_message'] ?? '-',
                     ]);
                 }
@@ -458,6 +632,15 @@ class EdasReconciliationController extends Controller
         }
 
         $calculated = $this->calculateReconciliation($conference, $storedEdasData);
+
+        if ($request->query('format') === 'pdf') {
+            return view('conferences.edas-reconciliation-pdf', [
+                'activeConference' => $conference,
+                'reconciledData' => $calculated,
+                'scope' => 'missing',
+            ]);
+        }
+
         $missingItems = collect($calculated['items'])->where('status_state', 'missing')->values();
 
         return response()->streamDownload(function () use ($missingItems) {
